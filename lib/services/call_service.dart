@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
@@ -153,7 +154,102 @@ class CallService {
     // Multi-word queries: all words present somewhere.
     final wWords = w.split(' ');
     if (wWords.length > 1 && wWords.every(c.contains)) return 55;
+    // SOUNDS LIKE IT (2026-10-11): speech recognition writes "jayatha
+    // mawa" for a contact saved as "Jayantha Mava", and the call failed
+    // with "I couldn't find anyone". Same sound, different spelling:
+    // 30-38, below every real text match, so a picker still offers both.
+    final sim = soundAlike(contactName, wanted);
+    if (sim >= 0.88) return 30 + ((sim - 0.88) * 66).round().clamp(0, 8);
     return 0;
+  }
+
+  /// True when [saved] matches [spoken] only by SOUND, not by its text —
+  /// a guess the user must confirm before anyone is dialled.
+  bool onlySoundsLike(String saved, String spoken) {
+    final s = _score(saved, spoken);
+    return s > 0 && s < 40;
+  }
+
+  /// A name reduced to how it sounds, word by word (th/t, sh/s, w/v,
+  /// doubled letters, a trailing "a") — the server's agents/contactFix.js.
+  static List<String> _sound(String s) => s
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9 ]'), ' ')
+      .replaceAll('th', 't')
+      .replaceAll('dh', 'd')
+      .replaceAll('bh', 'b')
+      .replaceAll('ph', 'f')
+      .replaceAll('sh', 's')
+      .replaceAll('kh', 'k')
+      .replaceAll('gh', 'g')
+      .replaceAll('ch', 'c')
+      .replaceAll('w', 'v')
+      .replaceAll('z', 'j')
+      .replaceAll('ee', 'i')
+      .replaceAll('oo', 'u')
+      .replaceAllMapped(RegExp(r'(.)\1+'), (m) => m[1]!)
+      .split(RegExp(r'\s+'))
+      .where((w) => w.isNotEmpty)
+      .map((w) => w.length > 3 && w.endsWith('a') ? w.substring(0, w.length - 1) : w)
+      .toList();
+
+  static double _jw(String a, String b) {
+    if (a == b) return 1;
+    if (a.isEmpty || b.isEmpty) return 0;
+    final range = (a.length > b.length ? a.length : b.length) ~/ 2 - 1;
+    final am = List<bool>.filled(a.length, false);
+    final bm = List<bool>.filled(b.length, false);
+    var m = 0;
+    for (var i = 0; i < a.length; i++) {
+      final lo = i - range < 0 ? 0 : i - range;
+      final hi = i + range + 1 > b.length ? b.length : i + range + 1;
+      for (var j = lo; j < hi; j++) {
+        if (!bm[j] && a[i] == b[j]) {
+          am[i] = bm[j] = true;
+          m++;
+          break;
+        }
+      }
+    }
+    if (m == 0) return 0;
+    var t = 0;
+    for (var i = 0, k = 0; i < a.length; i++) {
+      if (!am[i]) continue;
+      while (!bm[k]) {
+        k++;
+      }
+      if (a[i] != b[k]) t++;
+      k++;
+    }
+    final j = (m / a.length + m / b.length + (m - t / 2) / m) / 3;
+    var p = 0;
+    while (p < 4 && p < a.length && p < b.length && a[p] == b[p]) {
+      p++;
+    }
+    return j + p * 0.1 * (1 - j);
+  }
+
+  /// How alike two names SOUND, 0..1: every spoken word must find its
+  /// partner in the saved name; run together only when of similar length.
+  @visibleForTesting
+  static double soundAlike(String saved, String spoken) {
+    final a = _sound(spoken), b = _sound(saved);
+    if (a.isEmpty || b.isEmpty) return 0;
+    var words = 0.0;
+    for (final w in a) {
+      var best = 0.0;
+      for (final x in b) {
+        final v = _jw(w, x);
+        if (v > best) best = v;
+      }
+      words += best;
+    }
+    words /= a.length;
+    final ca = a.join(), cb = b.join();
+    final shorter = ca.length < cb.length ? ca.length : cb.length;
+    final longer = ca.length < cb.length ? cb.length : ca.length;
+    final whole = shorter / longer >= 0.8 ? _jw(ca, cb) : 0.0;
+    return words > whole ? words : whole;
   }
 
   /// Contacts matching [name], best first. Empty = none / no permission.

@@ -781,7 +781,20 @@ class ApiService {
     checkQuota(r.statusCode, r.body); // 402 → QuotaExceeded (upsell)
     if (r.statusCode != 202 && r.statusCode != 200) {
       _flagAuthFailure(r.statusCode);
-      throw Exception('agent call failed: ${r.statusCode}');
+      // WHY it was refused, in plain words (2026-10-11) — not the server's
+      // "say", which promises a direct dial this app no longer makes.
+      String? reason;
+      try {
+        final j = jsonDecode(r.body);
+        if (j is Map) reason = (j['reason'] ?? j['error'])?.toString();
+      } catch (_) {}
+      throw AgentCallFailed(
+          r.statusCode,
+          r.statusCode == 400
+              ? "the saved number doesn't look like a valid phone number"
+              : reason == 'call_service_rejected'
+                  ? 'the calling service refused our caller number'
+                  : 'the calling service did not accept the call');
     }
     return jsonDecode(r.body)['id'] as String;
   }
@@ -1072,6 +1085,15 @@ class ProRequired implements Exception {}
 /// The backend has no telephony (Plivo) configured — agent calls are
 /// unavailable; the app falls back to placing a normal direct call.
 class AgentCallUnavailable implements Exception {}
+
+/// The server refused to place a relayed call; [say] is its own sentence.
+class AgentCallFailed implements Exception {
+  AgentCallFailed(this.status, this.say);
+  final int status;
+  final String? say;
+  @override
+  String toString() => 'agent call failed: $status';
+}
 
 /// The backend answered 402: the current plan's allowance is used up.
 /// [message] is a ready-to-speak upsell line from the server.

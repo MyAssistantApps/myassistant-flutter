@@ -2346,9 +2346,11 @@ class AssistantEngine extends ChangeNotifier {
 
   Future<void> _nextNote() async {
     if (_notesRunning || _turnRunning || _notes.isEmpty) return;
-    // A real phone call always wins: nothing is said over it.
+    // A real phone call always wins: nothing is said over it — but the
+    // news waits for the call to end instead of being thrown away (a
+    // call's outcome arriving while they talk was lost, 2026-10-11).
     if (PhoneStateGuard.instance.inCall) {
-      _notes.clear();
+      Timer(const Duration(seconds: 10), () => unawaited(_nextNote()));
       return;
     }
     if (_listening) {
@@ -3951,6 +3953,28 @@ class AssistantEngine extends ChangeNotifier {
       return;
     }
 
+    // HEARD WRONG, SAVED RIGHT (2026-10-11): "jayatha mawa" for the
+    // contact "Jayantha Mava". One contact that only SOUNDS like the name
+    // is a good guess, not an instruction: ask "did you mean…?" once,
+    // instead of "I couldn't find anyone" or dialling a guess.
+    if (matches.length == 1 &&
+        matches.first.id.isNotEmpty &&
+        CallService.instance.onlySoundsLike(matches.first.name, name)) {
+      _localCallFlow = true;
+      ambiguousContacts = [matches.first];
+      _pendingLookupName = name;
+      notifyListeners();
+      _offerContactPicker();
+      await _tellModel(
+          '[SYSTEM] No contact is saved exactly as "$name"; the closest is '
+          '"${matches.first.name}" (it sounds the same). NO call was placed. Ask '
+          'in ONE short question: "Did you mean ${matches.first.name}?". If they '
+          'say yes, call place_phone_call again with the name '
+          '"${matches.first.name}", the same message, and confirmed:true — do '
+          'not read the message back again.');
+      return;
+    }
+
     if (matches.length == 1) {
       await _actOnResolvedCall(matches.first);
       return;
@@ -4015,6 +4039,7 @@ class AssistantEngine extends ChangeNotifier {
         task.isNotEmpty &&
         _localCallAgentAvailable) {
       String? id;
+      String why = '';
       try {
         id = await ApiService.startAgentCall(
           toNumber: contact.phone,
@@ -4026,8 +4051,23 @@ class AssistantEngine extends ChangeNotifier {
           voice: _localCallVoice,
           lang: _localCallLanguage,
         );
-      } catch (_) {
-        id = null; // unavailable / quota / network — fall through
+      } on TimeoutException {
+        // SLOW IS NOT FAILED (2026-10-11): the server may still place it.
+        // "Try again" here would ring them twice.
+        await _tellModel('[SYSTEM] The calling service is slow to answer, so '
+            'the call to ${contact.name} may still go out in a moment. Say that '
+            'in one short sentence. Do NOT say it failed and do NOT call again '
+            'unless I ask; the result will be in the Calls screen.');
+        return;
+      } catch (e) {
+        id = null; // unavailable / quota / refused / offline
+        why = e is AgentCallFailed && (e.say ?? '').trim().isNotEmpty
+            ? e.say!.trim()
+            : e is AgentCallUnavailable
+                ? 'the calling service is not available right now'
+                : e is QuotaExceeded
+                    ? "today's limit for assistant calls is used up"
+                    : 'the phone could not reach the server';
       }
       if (id != null) {
         // The call is the assistant's now: followed to its real end, and
@@ -4046,11 +4086,16 @@ class AssistantEngine extends ChangeNotifier {
       // call then met a busy line. "Use agent call … when such request is
       // made." So nothing is dialled here: the user hears that the call
       // could not be placed and decides.
+      // WHY, AND THE WAY ON (2026-10-11): "nothing was dialled — try
+      // again?" five times in a row helped nobody. The reason, then two
+      // real choices.
       await _tellModel(
-          '[SYSTEM] ERROR: I could not place the call to ${contact.name} with '
-          'the message just now, and NOTHING was dialled. Tell me that in one '
-          'short sentence and ask whether you should try again. Do NOT '
-          'dial them from my phone unless I ask for that myself.');
+          '[SYSTEM] ERROR: The assistant could not place the call to '
+          '${contact.name} with the message ($why), so nothing was dialled. '
+          'Tell me that in one short sentence with the reason, then offer the '
+          'two ways on: dial ${contact.name} from my phone now so I can say it '
+          'myself, or send the message as a text (send_agent_message). Do NOT '
+          'dial or send anything until I choose.');
       return;
     }
 
@@ -4388,13 +4433,25 @@ class AssistantEngine extends ChangeNotifier {
     // A real conversation runs well past 3 minutes: the old deadline
     // announced "did not go through" while the call was still going.
     final deadline = DateTime.now().add(const Duration(minutes: 15));
+    var unknown = 0;
     while (DateTime.now().isBefore(deadline)) {
       await Future.delayed(const Duration(seconds: 3));
       try {
         final st = await ApiService.agentCallStatus(id);
         state = st.state;
         result = st.result ?? result;
-      } catch (_) {
+        unknown = 0;
+      } catch (e) {
+        // The server no longer knows this call (2026-10-11): say so after
+        // a few tries instead of "still going on" fifteen minutes later.
+        if (e.toString().contains('404') && ++unknown >= 5) {
+          callStatus = null;
+          notifyListeners();
+          await _tellModel('[SYSTEM] I lost track of the call to $who. Tell me '
+              'in one short sentence to check the Calls screen for how it went. '
+              'Do NOT say it went through and do NOT say it failed.');
+          return;
+        }
         continue; // transient poll failure — keep following
       }
       if (state == 'completed' || state == 'no_answer' || state == 'failed') {
@@ -4423,7 +4480,8 @@ class AssistantEngine extends ChangeNotifier {
                 : 'The call to $who did not go through.');
     await _tellModel(
         '[SYSTEM] The call to $who has ended. Result: $said Tell me this '
-        'now in one short sentence, exactly as it happened.');
+        'now in one short sentence, exactly as it happened.'
+        '${state == 'completed' ? '' : ' Then offer, in the same breath, to send the message as a text or to dial $who from my phone.'}');
   }
 
   // ---------------- helpers ----------------
