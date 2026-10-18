@@ -4,8 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../design/dock_metrics.dart';
 import '../design/motion.dart';
 import '../design/neon_tokens.dart';
-import '../core/daily_quotes.dart';
 import '../features/home/home_cards.dart';
+import '../features/home/quote_cards_sheet.dart';
+import '../features/home/quote_of_day.dart';
 import '../services/auth_service.dart';
 import '../widgets/call_led.dart';
 import 'search_screen.dart';
@@ -132,28 +133,51 @@ class HomeDashboard extends StatelessWidget {
             // motivational quotes right below the date"). No card, no tint:
             // an accent rule down the left, brighter ink, a size up — it
             // reads as something meant, without a background of any kind.
+            // A NEW LINE EVERY DAY, AND ITS PICTURES (2026-10-18): the line
+            // comes from the server (the same for everyone), the built-in
+            // rotation when it has none yet; a tap opens the day's images
+            // to share.
             const SizedBox(height: 16),
-            IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Container(
-                    width: 3,
-                    decoration: BoxDecoration(
-                      gradient: Neon.gBrand,
-                      borderRadius: BorderRadius.circular(2),
+            ValueListenableBuilder<QuoteDay?>(
+              valueListenable: QuoteOfDay.current,
+              builder: (context, _, __) {
+                QuoteOfDay.ensureFresh();
+                return Semantics(
+                  button: true,
+                  hint: "Opens today's quote as images to share",
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => showQuoteCardsSheet(context),
+                    child: IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Container(
+                            width: 3,
+                            decoration: BoxDecoration(
+                              gradient: Neon.gBrand,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              QuoteOfDay.line(),
+                              style: NeonType.manrope(NeonType.rowTitle, FontWeight.w500)
+                                  .copyWith(color: Neon.textHi, height: 1.4, letterSpacing: 0.1),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Align(
+                            alignment: Alignment.bottomCenter,
+                            child: Icon(Icons.image_outlined, size: 18, color: Neon.textLo),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      DailyQuotes.today(),
-                      style: NeonType.manrope(NeonType.rowTitle, FontWeight.w500)
-                          .copyWith(color: Neon.textHi, height: 1.4, letterSpacing: 0.1),
-                    ),
-                  ),
-                ],
-              ),
+                );
+              },
             ),
           ],
         );
