@@ -28,8 +28,7 @@ import '../meeting_prep/meeting_prep_sheet.dart';
 import '../shopping/shopping_list_screen.dart';
 import '../shopping/shopping_service.dart';
 import 'home_extras.dart';
-import 'weather_card.dart';
-import 'weather_forecast.dart';
+import 'birthday_card.dart';
 import 'home_feed.dart';
 import 'home_memory.dart';
 
@@ -114,7 +113,7 @@ class HomeFeedView extends StatefulWidget {
     this.clock = DateTime.now,
   });
 
-  /// Scrolls as the first item: the greeting, the date and the weather.
+  /// Scrolls as the first item: the greeting and the date.
   final Widget leading;
   final EdgeInsets padding;
   final HomeActions actions;
@@ -140,14 +139,14 @@ class _HomeFeedViewState extends State<HomeFeedView> {
     super.initState();
     unawaited(HomeMemory.instance.load());
     unawaited(HomeNews.instance.load());
-    unawaited(WeatherForecastService.instance.load());
+    unawaited(BirthdaysService.instance.ensureFresh());
     ShoppingService.instance.ensureLoaded();
     _tick = Timer.periodic(const Duration(minutes: 1), (_) {
       if (!mounted) return;
       // The saved headlines are refreshed in the background (News warms
       // them at launch and on return); pick them up.
       unawaited(HomeNews.instance.load());
-      unawaited(WeatherForecastService.instance.refreshIfStale());
+      unawaited(BirthdaysService.instance.ensureFresh());
       setState(() {});
     });
   }
@@ -168,7 +167,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
         memory,
         HomeNews.instance,
         ShoppingService.instance,
-        WeatherForecastService.instance,
+        BirthdaysService.instance,
         _do.brief,
       ]),
       builder: (context, _) {
@@ -202,18 +201,17 @@ class _HomeFeedViewState extends State<HomeFeedView> {
           for (final i in ShoppingService.instance.items)
             if (!i.checked) i.name,
         ];
-        // THE WEATHER CARD (2026-09-30): the week's sky in place of the
-        // one-line rain row; it takes one of the context slots.
-        final wx = state == 'loading' ? null : WeatherForecastService.instance.forecast;
+        // BORN TODAY (2026-10-19, owner: the weather card out, today's
+        // famous birthdays in its place). It takes one of the context slots.
+        final born = state == 'loading' ? const <BirthdayPerson>[] : BirthdaysService.instance.people;
         final extras = state == 'loading'
             ? const <HomeExtra>[]
             : HomeExtras.pick(
                 room: math.max(
                     0,
                     HomeExtras.room(personal: personal, hasDay: feed.day.isNotEmpty) -
-                        (wx != null ? 1 : 0)),
+                        (born.isNotEmpty ? 1 : 0)),
                 now: now,
-                weather: wx == null ? svc.brief.weatherNote : null,
                 toBuy: toBuy.length,
                 toBuyNames: toBuy.take(3).toList(),
                 news: HomeNews.instance.itemsWith(svc.brief.headlines),
@@ -244,11 +242,11 @@ class _HomeFeedViewState extends State<HomeFeedView> {
             ),
             if (state == 'partial' || (state == 'loaded' && svc.stale))
               _status(svc),
-            if (wx != null) ...[
+            if (born.isNotEmpty) ...[
               const SizedBox(height: 24),
               Reveal(
                 delayMs: 120,
-                child: WeatherCard(forecast: wx, clock: widget.clock),
+                child: BirthdayCard(people: born, now: widget.clock),
               ),
             ],
             if (extras.isNotEmpty) ...[

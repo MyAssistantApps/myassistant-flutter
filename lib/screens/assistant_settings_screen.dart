@@ -21,6 +21,8 @@ import 'app_lock_section.dart';
 import 'theme_colour_screen.dart';
 import 'voice_picker_screen.dart';
 import 'avatar_identity_screen.dart';
+import 'memory_screen.dart';
+import 'overlay_section.dart';
 import 'bills_email_screen.dart';
 import '../models/mail_inbox.dart';
 import '../services/mail_inbox_service.dart';
@@ -251,6 +253,32 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
+
+                // MEMORY (2026-10-19): what the assistant has learned about
+                // them, to review and remove.
+                const GroupLabel('Memory'),
+                GroupedCard(
+                  dividerInset: 60,
+                  children: [
+                    AppleRow(
+                      leading: IconTile(
+                          Icons.psychology_rounded, AppleColors.indigo),
+                      title: 'What I remember',
+                      subtitle: 'Review what the assistant knows about you',
+                      trailing: Icon(Icons.chevron_right_rounded,
+                          color: Neon.textDim, size: 20),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const MemoryScreen()),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // OVER OTHER APPS (2026-10-19): notification pop-ups and the
+                // floating mic.
+                const OverlaySection(),
 
                 // NEARBY (2026-10-01): the same two choices the Nearby tab
                 // shows, here where every other preference lives.

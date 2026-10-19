@@ -8,6 +8,12 @@
     tools:ignore="ProtectedPermissions"/>
 <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+<!-- THE ASSISTANT OVER OTHER APPS (2026-10-19): the floating mic and the
+     reply / inform pop-ups are overlays the owner allows in Settings; the
+     microphone service runs only while a reply pop-up listens. -->
+<uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/>
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
 <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
 <uses-permission android:name="android.permission.CAMERA"/>
 <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
@@ -339,6 +345,31 @@
                 <data android:scheme="com.myassistant.myassistant" android:host="connected"/>
             </intent-filter>
         </activity>
+        <!-- Every new notification, sorted (HariNotificationListener). Runs
+             only once the owner grants Notification access. -->
+        <service
+            android:name=".HariNotificationListener"
+            android:exported="false"
+            android:label="Hari Assistant"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService"/>
+            </intent-filter>
+        </service>
+        <!-- Keeps the floating mic on screen while it is switched on. -->
+        <service
+            android:name=".BubbleService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Floating assistant button the user turned on, shown over other apps"/>
+        </service>
+        <!-- Only while a reply pop-up is listening. -->
+        <service
+            android:name=".MicService"
+            android:exported="false"
+            android:foregroundServiceType="microphone"/>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

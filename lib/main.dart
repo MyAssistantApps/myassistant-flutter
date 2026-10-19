@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 
 import 'ai/identity.dart';
+import 'services/overlay_bridge.dart';
 import 'core/bundled_fonts.dart';
 import 'design/accent_controller.dart';
 import 'design/motion.dart';
@@ -50,6 +51,9 @@ Future<void> main() async {
     // The assistant's AI Logic identity: App Check now, the Firebase user
     // on every sign-in (lib/ai/identity.dart). Not awaited.
     unawaited(AiIdentity.instance.start());
+    // The notification listener and floating mic keep their own copy of
+    // the session (lib/services/overlay_bridge.dart).
+    OverlayBridge.install();
     await PushService.instance.init();
   } catch (e) {
     debugPrint('Firebase init failed (missing google-services.json?): $e');

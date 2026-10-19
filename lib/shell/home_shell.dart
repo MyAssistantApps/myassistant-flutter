@@ -34,6 +34,7 @@ import 'focus_nav.dart';
 import '../screens/bills_email_screen.dart' show BillsEmailNav;
 import '../core/log.dart';
 import '../services/auth_service.dart';
+import '../services/overlay_bridge.dart';
 import '../features/assistant/widgets/action_cards.dart' show DocumentGalleryScreen;
 import '../screens/assistant_settings_screen.dart';
 import '../screens/home_dashboard.dart';
@@ -164,6 +165,9 @@ class _HomeShellState extends State<HomeShell>
       AssistantEngine.instance.onAppResumed();
       // A widget tap while the app was already running arrives here.
       _checkQuickTaskLaunch();
+      // …and a tap on the floating mic; the session copy kept current.
+      _checkTalkLaunch();
+      unawaited(OverlayBridge.syncAuth());
       // Coming back from a phone call is exactly when a fresh system
       // call recording exists — pick it up for analysis now.
       CallRecordingWatcher.instance.scan();
@@ -218,6 +222,7 @@ class _HomeShellState extends State<HomeShell>
     HomeShell.requestedTab.removeListener(_onTabRequested);
     AssistantEngine.instance.removeListener(_onEngineForPicker);
     AssistantEngine.instance.removeListener(_onEngineForToast);
+    AssistantEngine.instance.removeListener(_onEngineForBubble);
     _cancelToastLift();
     _tabChanges.dispose();
     // Only if it is still ours: a rebuilt shell (theme flip) has set its own.
@@ -420,6 +425,29 @@ class _HomeShellState extends State<HomeShell>
     }
   }
 
+  /// The bubble shows a live conversation started from it.
+  bool _bubbleActive = false;
+  void _onEngineForBubble() {
+    final e = AssistantEngine.instance;
+    final active = e.bubbleTalk && (e.starting || e.inlineVoice || e.liveActive);
+    if (active == _bubbleActive) return;
+    _bubbleActive = active;
+    unawaited(OverlayBridge.setBubbleActive(active));
+  }
+
+  /// DID THE FLOATING MIC OPEN US? (2026-10-19) Asked like the widget's
+  /// quick task, for the same race. The bubble's tap is the owner's
+  /// gesture, as the orb's is: it starts the conversation.
+  Future<void> _checkTalkLaunch() async {
+    if (!await OverlayBridge.takeTalk() || !mounted) return;
+    final engine = AssistantEngine.instance;
+    if (engine.starting || engine.liveActive || engine.inlineVoice) return;
+    HomeShell.requestedTab.value = 0;
+    unawaited(engine
+        .beginInlineConversation(name: AuthService.instance.user?.name)
+        .catchError((Object e) => AppLog.add('overlay', 'talk failed: $e')));
+  }
+
   @override
   void initState() {
     super.initState();
@@ -432,6 +460,11 @@ class _HomeShellState extends State<HomeShell>
     _sessionWasVisible = _sessionVisible();
     AssistantEngine.instance.addListener(_onEngineForToast);
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkQuickTaskLaunch());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkTalkLaunch());
+    // The floating mic talks through the running app, in the background.
+    OverlayBridge.onBubbleTap = AssistantEngine.instance.bubbleTap;
+    OverlayBridge.onStopAll = AssistantEngine.instance.endInlineConversation;
+    AssistantEngine.instance.addListener(_onEngineForBubble);
     final engine = AssistantEngine.instance;
     engine.start();
     engine.ensureFreshSession(); // account switch → new session, new greeting

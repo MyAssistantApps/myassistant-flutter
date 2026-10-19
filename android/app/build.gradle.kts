@@ -127,4 +127,8 @@ dependencies {
     // from the carrier by Google after Android's consent sheet — it replaced
     // the SMS code (firebase_auth). PhoneNumberVerificationBridge.
     implementation("com.google.firebase:firebase-pnv:16.1.1")
+
+    // THE ASSISTANT OVER OTHER APPS (2026-10-19): the session copy the
+    // notification listener uses is kept encrypted (NotifyPrefs).
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 }

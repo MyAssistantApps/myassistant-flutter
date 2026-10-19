@@ -61,6 +61,7 @@ import '../../../services/sms_service.dart';
 import '../widgets/action_cards.dart' show shareDocumentFile;
 import '../../../services/app_feedback.dart';
 import '../../../services/auth_service.dart';
+import '../../../services/overlay_bridge.dart';
 import '../../../services/app_update_service.dart';
 import '../../../services/assistant_identity.dart';
 import '../../../services/call_history.dart';
@@ -2473,6 +2474,8 @@ class AssistantEngine extends ChangeNotifier {
     _conversationOpen = false;
     inlineVoice = false;
     _endAfterTurn = false;
+    // Every way a conversation ends comes through here.
+    _endBubbleTalk();
     // MUTE BELONGS TO THE CONVERSATION THAT SET IT: the only unmute control
     // lives in the voice overlay.
     if (speakerMuted) setSpeakerMuted(false);
@@ -4231,12 +4234,73 @@ class AssistantEngine extends ChangeNotifier {
   /// having never opened the assistant (2026-09-20).
   bool _foreground = true;
 
+  /// The app's own window is on screen (the lifecycle alone). _foreground
+  /// is this OR a conversation the owner started from the floating mic.
+  bool _appVisible = true;
+
+  /// A conversation the owner started by tapping the FLOATING MIC over
+  /// another app (2026-10-19, owner: "when I click that, let it respond —
+  /// don't open the app"). The bubble is on screen and the tap is the
+  /// gesture, so for exactly as long as this conversation lasts the
+  /// assistant counts as looked at (_foreground): it may speak and listen
+  /// over the other app. It ends with the conversation (leaveConversation:
+  /// a tap, "bye", the quiet minute, a call), and _foreground returns to
+  /// the app's own state. Nothing else changes what _foreground means.
+  bool _bubbleTalk = false;
+  bool get bubbleTalk => _bubbleTalk;
+
+  /// The floating mic was tapped. Same rule as the orb: one tap stops
+  /// anything running, otherwise it starts. Returns 'started' or 'stopped'.
+  Future<String> bubbleTap() async {
+    final running = _starting ||
+        inlineVoice ||
+        liveActive ||
+        (phase != AssistantPhase.idle && phase != AssistantPhase.completed);
+    AppLog.add('bubble', running ? 'tap → stop' : 'tap → start');
+    if (running) {
+      await endInlineConversation();
+      _endBubbleTalk();
+      return 'stopped';
+    }
+    if (PhoneStateGuard.instance.inCall) return 'stopped';
+    _bubbleTalk = true;
+    _foreground = true;
+    _player.muted = speakerMuted;
+    notifyListeners();
+    try {
+      await beginInlineConversation(name: AuthService.instance.user?.name);
+    } catch (e) {
+      AppLog.add('bubble', 'start failed: $e');
+      _endBubbleTalk();
+      return 'stopped';
+    }
+    // A start that did not take (cancelled, refused) leaves no conversation.
+    if (!_bubbleTalk) return 'stopped';
+    return 'started';
+  }
+
+  void _endBubbleTalk() {
+    if (!_bubbleTalk) return;
+    _bubbleTalk = false;
+    _foreground = _appVisible;
+    if (!_foreground) _player.muted = true;
+    unawaited(OverlayBridge.bubbleTalkEnded());
+    notifyListeners();
+  }
+
   /// The app went to the background: GO QUIET THE INSTANT IT LEAVES THE
   /// SCREEN — her voice stops mid-word and nothing listens (a phone in a
   /// pocket must not be listening to a conversation). A turn still being
   /// answered finishes silently; the conversation itself is left alone,
   /// so a caller back in two seconds finds it still there.
   void onAppPaused() {
+    _appVisible = false;
+    // The app left while a bubble conversation was going (it was opened
+    // mid-talk): the usual rule applies — go quiet.
+    if (_bubbleTalk) {
+      _bubbleTalk = false;
+      unawaited(OverlayBridge.bubbleTalkEnded());
+    }
     _foreground = false;
     _backgroundedAt = DateTime.now();
     // Location is only kept current while the app is on screen.
@@ -4254,6 +4318,7 @@ class AssistantEngine extends ChangeNotifier {
     // FIRST LINE, BEFORE ANY EARLY RETURN: a false left here would silence
     // every later chime for the rest of the app's life.
     _foreground = true;
+    _appVisible = true;
     _player.muted = speakerMuted;
     // Back from the chat the shortcut opened: carry on with its next step.
     unawaited(ShortcutRunner.instance.resumePending(shortcutPorts));
@@ -4775,8 +4840,11 @@ class AssistantEngine extends ChangeNotifier {
     final name = '${picked[0].toUpperCase()}${picked.substring(1)}';
     AppLog.add('voice', 'voice changed to $picked');
     AppFeedback.toast('Voice set to $name. Tap the orb to hear it.');
-    // Connected now in the new voice (warm() replaces the old session).
-    if (_liveWanted && _foreground) {
+    // Connected now in the new voice (warm() replaces the old session) —
+    // only where the server lets a session connect before the tap: a
+    // connected WebRTC call records from the microphone on Android even
+    // with no track in it (owner, 2026-10-19: the mic dot before any tap).
+    if (_liveWanted && _foreground && (!_gptLive || AiConfigStore.instance.current.live.prewarm)) {
       unawaited(_live.warm().catchError((Object _) => false));
     }
   }

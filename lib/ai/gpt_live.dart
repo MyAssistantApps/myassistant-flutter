@@ -142,9 +142,12 @@ class GptLiveConnector implements LiveConnector {
     final sdp = p.sdp;
     final sw = Stopwatch()..start();
     // THE MICROPHONE OPENS WHEN THEY ARE LISTENED TO (2026-10-06), not when
-    // the session is warmed: a session waiting for the tap holds none (no
-    // privacy indicator), and the greeting needs none. The first
+    // the session is warmed: no track is sent until the first
     // setMicOpen(true) opens it and puts it in the call's audio slot.
+    // BUT (measured 2026-10-19): once the call connects, Android's WebRTC
+    // audio layer starts recording for the send slot anyway, track or not,
+    // so the privacy dot shows. A session must not connect before the tap
+    // (the server's GPT_LIVE_PREWARM=off).
     MediaStream? mic;
     MediaStreamTrack? track;
     Future<void>? micOpening;
@@ -353,6 +356,9 @@ class GptLiveSession implements LiveSessionPort, CancellableReply, OwnsAudio {
   /// for the tap stays silent even if the model decides to speak.
   bool _audible = false;
 
+  /// The event kinds already logged this session.
+  final Set<String> _seenKinds = {};
+
   /// When the opening line was asked for (session clock), until her first
   /// words: how long GPT-Live takes to start speaking.
   int? _openingAskedMs;
@@ -437,7 +443,13 @@ class GptLiveSession implements LiveSessionPort, CancellableReply, OwnsAudio {
       return;
     }
     _emit(const LiveInPing());
-    switch ('${e['type'] ?? ''}') {
+    // Each kind of event once per session (2026-10-19): where a turn that
+    // promised an action stopped — her words, the hand-off, the tool.
+    final kind = '${e['type'] ?? ''}';
+    if (kind.isNotEmpty && _seenKinds.add(kind)) {
+      AppLog.add('live', 'gpt-live event: $kind${_audible ? '' : ' (not yet audible)'}');
+    }
+    switch (kind) {
       case 'session.started':
         // No greeting here: a session can be up before anyone tapped the
         // orb. The engine asks for it with [greetOpening] when they did.
@@ -587,6 +599,7 @@ class GptLiveSession implements LiveSessionPort, CancellableReply, OwnsAudio {
     final name = '${item['name'] ?? ''}';
     final callId = '${item['call_id'] ?? ''}';
     if (name.isEmpty || callId.isEmpty || item['type'] != 'function_call') return;
+    AppLog.add('live', 'gpt-live: backend asked for $name');
     final id = responseId.isNotEmpty
         ? responseId
         : _responseForDelegation[delegationId] ?? '';

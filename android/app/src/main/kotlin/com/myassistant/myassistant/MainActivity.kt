@@ -32,12 +32,21 @@ class MainActivity : FlutterFragmentActivity() {
      */
     private var pendingQuickTask = false
 
+    /** Set when the floating mic opened us: Flutter starts a conversation. */
+    private var pendingTalk = false
+
+    override fun onPause() {
+        Overlay.setAppVisible(this, false)
+        super.onPause()
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         if (intent.getBooleanExtra(TaskWidgetProvider.EXTRA_QUICK_TASK, false)) {
             pendingQuickTask = true
         }
+        if (intent.getBooleanExtra(Overlay.EXTRA_TALK, false)) pendingTalk = true
     }
 
     @Deprecated("Activity results for the uninstall confirmation")
@@ -60,6 +69,8 @@ class MainActivity : FlutterFragmentActivity() {
 
     override fun onResume() {
         super.onResume()
+        // The floating mic steps aside while the app itself is on screen.
+        Overlay.setAppVisible(this, true)
         hideWholeScreenFocusOutline()
         // Back here after installing the app they asked to open: open it.
         InstallWatch.takeReady(this)?.let {
@@ -92,6 +103,12 @@ class MainActivity : FlutterFragmentActivity() {
         try { off(window.decorView) } catch (_: Throwable) {}
     }
 
+    override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
+        // The engine is going: a bubble tap opens the app instead.
+        Overlay.dart = null
+        super.cleanUpFlutterEngine(flutterEngine)
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         // A stopped voice player's last write must not kill the app (see
@@ -100,6 +117,72 @@ class MainActivity : FlutterFragmentActivity() {
 
         if (intent?.getBooleanExtra(TaskWidgetProvider.EXTRA_QUICK_TASK, false) == true) {
             pendingQuickTask = true
+        }
+        if (intent?.getBooleanExtra(Overlay.EXTRA_TALK, false) == true) pendingTalk = true
+
+        // THE ASSISTANT OVER OTHER APPS (2026-10-19): permissions, the two
+        // switches, the session copy for the listener, and the bubble's tap.
+        val overlayChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "hari/overlay")
+        Overlay.dart = overlayChannel
+        overlayChannel
+            .setMethodCallHandler { call, result ->
+                val ctx = applicationContext
+                when (call.method) {
+                    "status" -> result.success(mapOf(
+                        "overlay" to android.provider.Settings.canDrawOverlays(ctx),
+                        "notifications" to androidx.core.app.NotificationManagerCompat
+                            .getEnabledListenerPackages(ctx).contains(packageName),
+                        "replies" to NotifyPrefs.repliesOn(ctx),
+                        "bubble" to NotifyPrefs.bubbleOn(ctx),
+                    ))
+                    "openOverlaySettings" -> {
+                        try {
+                            startActivity(Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                Uri.parse("package:$packageName")))
+                            result.success(true)
+                        } catch (_: Throwable) { result.success(false) }
+                    }
+                    "openNotificationAccess" -> {
+                        try {
+                            startActivity(Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+                            result.success(true)
+                        } catch (_: Throwable) { result.success(false) }
+                    }
+                    "setReplies" -> {
+                        NotifyPrefs.setRepliesOn(ctx, call.argument<Boolean>("on") == true)
+                        result.success(true)
+                    }
+                    "setBubble" -> {
+                        val on = call.argument<Boolean>("on") == true
+                        NotifyPrefs.setBubbleOn(ctx, on)
+                        if (on) BubbleService.start(ctx) else BubbleService.stop(ctx)
+                        result.success(true)
+                    }
+                    "setAuth" -> {
+                        NotifyPrefs.setAuth(ctx, call.argument<String>("token"), call.argument<String>("baseUrl"))
+                        result.success(true)
+                    }
+                    // The bubble conversation ended: let go of the mic service.
+                    "bubbleTalkEnded" -> {
+                        MicService.release(ctx, "bubble")
+                        Overlay.setBubbleActive(false)
+                        result.success(true)
+                    }
+                    "bubbleActive" -> {
+                        Overlay.setBubbleActive(call.argument<Boolean>("on") == true)
+                        result.success(true)
+                    }
+                    "takeTalk" -> {
+                        val had = pendingTalk
+                        pendingTalk = false
+                        result.success(had)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+        // The bubble was on before the app was last closed.
+        if (NotifyPrefs.bubbleOn(applicationContext) && android.provider.Settings.canDrawOverlays(this)) {
+            BubbleService.start(applicationContext)
         }
 
         // PHONE CALENDAR. Auto-understood documents (a shared timetable,
