@@ -40,8 +40,8 @@ import kotlin.math.abs
  *    gone by itself after 8 seconds; says so when it was kept in memory.
  *  • The floating mic: the app's orb, small, draggable; a tap opens the
  *    assistant straight into a conversation. Hidden while the app itself is
- *    on screen. A border of light runs round it, and "Speak now" shows
- *    beside it while it is the owner's turn (2026-10-26).
+ *    on screen. Still, except on the owner's turn: then a green border
+ *    runs round it and "Speak now" shows beside it (2026-10-26).
  * Drawn natively so it works with the app closed. One pop-up at a time.
  */
 @SuppressLint("StaticFieldLeak")
@@ -149,6 +149,9 @@ object Overlay {
     private fun syncLabel(ctx: Context) {
         val b = bubble; val blp = bubbleParams
         if (!labelWanted || b == null || blp == null || appVisible || b.visibility != View.VISIBLE) {
+            if (labelWanted && label?.visibility != View.GONE) {
+                Log.i(TAG, "speak-now held back: bubble=${b != null} appVisible=$appVisible shown=${b?.visibility == View.VISIBLE}")
+            }
             label?.visibility = View.GONE
             return
         }
@@ -161,11 +164,13 @@ object Overlay {
             gravity = Gravity.CENTER; maxLines = 1
             val p = dp(c, 12f).toInt()
             setPadding(p, 0, p, 0)
-            background = GradientDrawable(GradientDrawable.Orientation.TL_BR,
-                intArrayOf(Color.parseColor("#F21C1640"), Color.parseColor("#F2120E2A"))).apply {
+            // Green, as the border on the owner's turn.
+            background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
+                intArrayOf(Color.parseColor("#F21DB866"), Color.parseColor("#F20E8F4E"))).apply {
                 cornerRadius = h / 2f
-                setStroke(dp(c, 1.2f).toInt(), Color.parseColor("#9922E4FF"))
+                setStroke(dp(c, 1.2f).toInt(), Color.parseColor("#CCB6FFD6"))
             }
+            elevation = dp(c, 4f)
             visibility = View.GONE
         }
         // Touches pass through it to the app underneath.
@@ -181,6 +186,7 @@ object Overlay {
             if (label == null) { wm(c).addView(tv, lp); label = tv; labelParams = lp }
             else wm(c).updateViewLayout(tv, lp)
             if (tv.visibility != View.VISIBLE) {
+                Log.i(TAG, "speak-now shown")
                 tv.alpha = 0f; tv.visibility = View.VISIBLE
                 tv.animate().alpha(1f).setDuration(180).start()
             }
@@ -201,6 +207,7 @@ object Overlay {
      * says "Listening…").
      */
     fun setBubbleActive(active: Boolean, userTurn: Boolean = false) {
+        Log.i(TAG, "bubble state: active=$active userTurn=$userTurn")
         main.post {
             (bubble as? OrbView)?.let { it.listening = active; it.userTurn = active && userTurn }
             labelWanted = active && userTurn

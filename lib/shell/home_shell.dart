@@ -431,10 +431,21 @@ class _HomeShellState extends State<HomeShell>
   /// open — the moment the voice screen says "Listening…".
   bool _bubbleActive = false;
   bool _bubbleUserTurn = false;
+  String _bubbleWhy = '';
   void _onEngineForBubble() {
     final e = AssistantEngine.instance;
     final active = e.bubbleTalk && (e.starting || e.inlineVoice || e.liveActive);
-    final userTurn = active && e.micOpen && orbMoodFor(e) == OrbMood.listening;
+    final mood = orbMoodFor(e);
+    final userTurn = active && e.micOpen && mood == OrbMood.listening;
+    // What decided it, each time any part changes (read over adb: the
+    // owner saw no "Speak now" on build 174 and nothing said why).
+    if (e.bubbleTalk) {
+      final why = '$active ${e.phase.name} ${mood.name} mic=${e.micOpen}';
+      if (why != _bubbleWhy) {
+        _bubbleWhy = why;
+        debugPrint('bubble: $why → userTurn=$userTurn');
+      }
+    }
     if (active == _bubbleActive && userTurn == _bubbleUserTurn) return;
     _bubbleActive = active;
     _bubbleUserTurn = userTurn;

@@ -17,12 +17,13 @@ import android.view.View
  * soft glow and the mic in the middle, in the same light as the in-app orb.
  * [listening] makes it breathe faster.
  *
- * THE FLOATING MIC MOVES (owner, 2026-10-26: "it should not be static"):
- * with [halo] the orb sits a size smaller inside a border of light that runs
- * round it — twice as fast while a conversation is live — and while it is
- * the owner's turn to speak ([userTurn]) rings ripple out from it. It runs
- * on its own clock, not the system animator, so it keeps moving when the
- * phone has animations turned down (battery saver), as the in-app orb does.
+ * THE FLOATING MIC SAYS WHEN TO SPEAK (owner, 2026-10-26): with [halo] it
+ * stays still — at rest, while she thinks, while she speaks — and only on
+ * the owner's turn ([userTurn]) does a green border of light run round it
+ * and green rings ripple out. Movement means "speak now"; nothing else
+ * moves it. That turn runs on its own clock, not the system animator, so
+ * it shows with animations turned down (battery saver). Without [halo]
+ * (the reply pop-up's small orb) it turns and breathes as before.
  */
 class OrbView(
     context: Context,
@@ -34,6 +35,8 @@ class OrbView(
         val PINK = Color.parseColor("#E040FB")
         val CYAN = Color.parseColor("#22E4FF")
         val NIGHT = Color.parseColor("#14102E")
+        val GREEN = Color.parseColor("#22E07A")
+        val MINT = Color.parseColor("#B6FFD6")
 
         /** With [halo]: the orb's share of the view; the border runs in the rest. */
         const val BODY = 0.78f
@@ -82,16 +85,18 @@ class OrbView(
     }
 
     override fun onDraw(c: Canvas) {
-        advance()
+        // The floating mic moves only on the owner's turn; still otherwise.
+        val moving = !halo || userTurn
+        if (moving) advance() else lastT = 0L
         // The next frame, for as long as it is on screen (hidden, it rests).
-        if (isShown) postInvalidateOnAnimation()
+        if (moving && isShown) postInvalidateOnAnimation()
         val w = width.toFloat(); val h = height.toFloat()
         val cx = w / 2; val cy = h / 2
         val edge = minOf(w, h) / 2
         val r = if (halo) edge * BODY else edge
         val inner = r * 0.74f
 
-        if (halo) drawHalo(c, cx, cy, r, edge)
+        if (halo && userTurn) drawHalo(c, cx, cy, r, edge)
 
         // Glow behind, breathing.
         val g = r * (0.92f + 0.08f * pulse)
@@ -123,29 +128,27 @@ class OrbView(
         c.drawLine(cx, top + mh + cr * 0.55f, cx, top + mh + cr * 0.95f, micLine)
     }
 
-    /** The border round the orb [r], out to [edge]; the ripples on the owner's turn. */
+    /** The owner's turn: the green border round the orb [r], out to [edge], and its ripples. */
     private fun drawHalo(c: Canvas, cx: Float, cy: Float, r: Float, edge: Float) {
-        // His turn: two cyan rings ripple out, one after the other.
-        if (userTurn) {
-            val now = SystemClock.uptimeMillis()
-            for (k in 0 until 2) {
-                val e = now - rippleFrom - k * RIPPLE / 2
-                if (e < 0) continue
-                val f = (e % RIPPLE) / RIPPLE.toFloat()
-                ripple.strokeWidth = edge * 0.05f * (1f - f) + 1f
-                ripple.color = Color.argb((170 * (1f - f)).toInt(), 34, 228, 255)
-                c.drawCircle(cx, cy, r + (edge - r) * f, ripple)
-            }
+        // Two green rings ripple out, one after the other.
+        val now = SystemClock.uptimeMillis()
+        for (k in 0 until 2) {
+            val e = now - rippleFrom - k * RIPPLE / 2
+            if (e < 0) continue
+            val f = (e % RIPPLE) / RIPPLE.toFloat()
+            ripple.strokeWidth = edge * 0.05f * (1f - f) + 1f
+            ripple.color = Color.argb((170 * (1f - f)).toInt(), 34, 224, 122)
+            c.drawCircle(cx, cy, r + (edge - r) * f, ripple)
         }
-        // A faint track, and two lights chasing round it.
+        // A green track, and two lights chasing round it.
         val br = r + (edge - r) * 0.42f
         track.strokeWidth = edge * 0.035f
-        track.color = Color.argb(70, 139, 92, 255)
+        track.color = Color.argb(110, 34, 224, 122)
         c.drawCircle(cx, cy, br, track)
-        val clear = Color.argb(0, 139, 92, 255)
+        val clear = Color.argb(0, 34, 224, 122)
         val t = tail?.takeIf { tailAt == cx } ?: SweepGradient(cx, cy,
-            intArrayOf(clear, VIOLET, PINK, CYAN, clear, VIOLET, PINK, CYAN),
-            floatArrayOf(0f, 0.30f, 0.43f, 0.5f, 0.5f, 0.80f, 0.93f, 1f)).also { tail = it; tailAt = cx }
+            intArrayOf(clear, GREEN, MINT, Color.WHITE, clear, GREEN, MINT, Color.WHITE),
+            floatArrayOf(0f, 0.30f, 0.45f, 0.5f, 0.5f, 0.80f, 0.95f, 1f)).also { tail = it; tailAt = cx }
         m.setRotate(orbit, cx, cy); t.setLocalMatrix(m)
         border.shader = t
         border.strokeWidth = edge * 0.07f
