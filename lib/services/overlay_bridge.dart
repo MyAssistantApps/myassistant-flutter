@@ -99,8 +99,10 @@ class OverlayBridge {
   /// microphone service and the bubble rests.
   static Future<void> bubbleTalkEnded() => _call('bubbleTalkEnded');
 
-  /// The bubble breathes faster while a conversation from it is live.
-  static Future<void> setBubbleActive(bool active) => _call('bubbleActive', {'on': active});
+  /// The bubble breathes faster while a conversation from it is live, and
+  /// shows "Speak now" while it is the owner's turn to speak.
+  static Future<void> setBubbleActive(bool active, {bool userTurn = false}) =>
+      _call('bubbleActive', {'on': active, 'userTurn': userTurn});
 
   /// Did the floating mic open the app? Answered once.
   static Future<bool> takeTalk() async {

@@ -61,6 +61,18 @@ class BubbleService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_STOP) { stopEverything(); return START_NOT_STICKY }
         val n = note(this, "Assistant is ready over other apps", stop = true)
+        // ONLY THE OWNER'S SWITCH STARTS IT (owner, 2026-10-20): Android may
+        // revive a sticky service after the app was killed, so it checks the
+        // switch and the permission itself and goes away when either is off.
+        if (!NotifyPrefs.bubbleOn(this) || !android.provider.Settings.canDrawOverlays(this)) {
+            try {
+                if (Build.VERSION.SDK_INT >= 34) startForeground(41, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+                else startForeground(41, n)
+            } catch (_: Throwable) {}
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+            return START_NOT_STICKY
+        }
         if (Build.VERSION.SDK_INT >= 34) startForeground(41, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
         else startForeground(41, n)
         Overlay.showBubble(this)

@@ -149,7 +149,16 @@ class MainActivity : FlutterFragmentActivity() {
                         } catch (_: Throwable) { result.success(false) }
                     }
                     "setReplies" -> {
-                        NotifyPrefs.setRepliesOn(ctx, call.argument<Boolean>("on") == true)
+                        val on = call.argument<Boolean>("on") == true
+                        NotifyPrefs.setRepliesOn(ctx, on)
+                        // On: ask Android to connect the listener again (it let
+                        // go while the switch was off). Off: it lets go itself.
+                        if (on) {
+                            try {
+                                android.service.notification.NotificationListenerService.requestRebind(
+                                    android.content.ComponentName(ctx, HariNotificationListener::class.java))
+                            } catch (_: Throwable) {}
+                        }
                         result.success(true)
                     }
                     "setBubble" -> {
@@ -169,7 +178,8 @@ class MainActivity : FlutterFragmentActivity() {
                         result.success(true)
                     }
                     "bubbleActive" -> {
-                        Overlay.setBubbleActive(call.argument<Boolean>("on") == true)
+                        Overlay.setBubbleActive(call.argument<Boolean>("on") == true,
+                            call.argument<Boolean>("userTurn") == true)
                         result.success(true)
                     }
                     "takeTalk" -> {

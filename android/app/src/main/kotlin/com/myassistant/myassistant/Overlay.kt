@@ -40,7 +40,8 @@ import kotlin.math.abs
  *    gone by itself after 8 seconds; says so when it was kept in memory.
  *  • The floating mic: the app's orb, small, draggable; a tap opens the
  *    assistant straight into a conversation. Hidden while the app itself is
- *    on screen.
+ *    on screen. A border of light runs round it, and "Speak now" shows
+ *    beside it while it is the owner's turn (2026-10-26).
  * Drawn natively so it works with the app closed. One pop-up at a time.
  */
 @SuppressLint("StaticFieldLeak")
@@ -55,6 +56,11 @@ object Overlay {
     // ── the floating mic ─────────────────────────────────────────────────
     private var bubble: View? = null
     private var bubbleParams: WindowManager.LayoutParams? = null
+    private var bubbleSize = 0
+    // "Speak now" beside the bubble while it is the owner's turn.
+    private var label: TextView? = null
+    private var labelParams: WindowManager.LayoutParams? = null
+    private var labelWanted = false
     @Volatile var appVisible = false
         private set
 
@@ -63,6 +69,7 @@ object Overlay {
         main.post {
             if (visible) bubble?.visibility = View.GONE
             else if (NotifyPrefs.bubbleOn(ctx)) { if (bubble == null) showBubble(ctx) else bubble?.visibility = View.VISIBLE }
+            syncLabel(ctx)
         }
     }
 
@@ -85,12 +92,14 @@ object Overlay {
     fun showBubble(ctx: Context) {
         if (!Settings.canDrawOverlays(ctx)) return
         if (bubble != null) { if (!appVisible) bubble?.visibility = View.VISIBLE; return }
-        val size = dp(ctx, 58f).toInt()
-        val orb = OrbView(ctx.applicationContext)
+        // The orb (58 dp, as before) with room round it for its border of
+        // light (OrbView.BODY): that room is its margin from the screen edge.
+        val size = dp(ctx, 74f).toInt()
+        val orb = OrbView(ctx.applicationContext, halo = true)
         orb.contentDescription = "Talk to the assistant"
         val lp = overlayParams(size, size).apply {
             gravity = Gravity.TOP or Gravity.START
-            x = ctx.resources.displayMetrics.widthPixels - size - dp(ctx, 10f).toInt()
+            x = ctx.resources.displayMetrics.widthPixels - size - dp(ctx, 2f).toInt()
             y = (ctx.resources.displayMetrics.heightPixels * 0.62f).toInt()
         }
         var downX = 0f; var downY = 0f; var startX = 0; var startY = 0; var moved = false
@@ -100,7 +109,7 @@ object Overlay {
                 MotionEvent.ACTION_MOVE -> {
                     val dx = e.rawX - downX; val dy = e.rawY - downY
                     if (abs(dx) > 12 || abs(dy) > 12) moved = true
-                    if (moved) { lp.x = startX + dx.toInt(); lp.y = startY + dy.toInt(); try { wm(ctx).updateViewLayout(orb, lp) } catch (_: Throwable) {} }
+                    if (moved) { lp.x = startX + dx.toInt(); lp.y = startY + dy.toInt(); try { wm(ctx).updateViewLayout(orb, lp) } catch (_: Throwable) {}; syncLabel(ctx) }
                     true
                 }
                 MotionEvent.ACTION_UP -> {
@@ -108,8 +117,9 @@ object Overlay {
                     else {
                         // Rest against the nearer edge.
                         val wpx = ctx.resources.displayMetrics.widthPixels
-                        lp.x = if (lp.x + size / 2 < wpx / 2) dp(ctx, 6f).toInt() else wpx - size - dp(ctx, 6f).toInt()
+                        lp.x = if (lp.x + size / 2 < wpx / 2) 0 else wpx - size
                         try { wm(ctx).updateViewLayout(orb, lp) } catch (_: Throwable) {}
+                        syncLabel(ctx)
                     }
                     true
                 }
@@ -118,15 +128,63 @@ object Overlay {
         }
         try {
             wm(ctx).addView(orb, lp)
-            bubble = orb; bubbleParams = lp
+            bubble = orb; bubbleParams = lp; bubbleSize = size
             if (appVisible) orb.visibility = View.GONE
         } catch (t: Throwable) { Log.w(TAG, "bubble: ${t.javaClass.simpleName}") }
     }
 
     fun hideBubble() {
-        val b = bubble ?: return
+        labelWanted = false
+        val l = label
+        label = null; labelParams = null
+        val b = bubble ?: run { if (l != null) main.post { try { wm?.removeView(l) } catch (_: Throwable) {} }; return }
         bubble = null
-        main.post { try { wm?.removeView(b) } catch (_: Throwable) {} }
+        main.post {
+            if (l != null) try { wm?.removeView(l) } catch (_: Throwable) {}
+            try { wm?.removeView(b) } catch (_: Throwable) {}
+        }
+    }
+
+    /** "Speak now" beside the bubble, on the side away from the screen edge — or hidden. */
+    private fun syncLabel(ctx: Context) {
+        val b = bubble; val blp = bubbleParams
+        if (!labelWanted || b == null || blp == null || appVisible || b.visibility != View.VISIBLE) {
+            label?.visibility = View.GONE
+            return
+        }
+        val c = ctx.applicationContext
+        val h = dp(c, 28f).toInt()
+        val tv = label ?: TextView(c).apply {
+            text = "Speak now"
+            setTextColor(Color.WHITE); textSize = 12.5f
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER; maxLines = 1
+            val p = dp(c, 12f).toInt()
+            setPadding(p, 0, p, 0)
+            background = GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                intArrayOf(Color.parseColor("#F21C1640"), Color.parseColor("#F2120E2A"))).apply {
+                cornerRadius = h / 2f
+                setStroke(dp(c, 1.2f).toInt(), Color.parseColor("#9922E4FF"))
+            }
+            visibility = View.GONE
+        }
+        // Touches pass through it to the app underneath.
+        val lp = labelParams ?: overlayParams(WindowManager.LayoutParams.WRAP_CONTENT, h).apply {
+            flags = flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+        }
+        val wpx = c.resources.displayMetrics.widthPixels
+        val onLeft = blp.x + bubbleSize / 2 < wpx / 2
+        lp.gravity = Gravity.TOP or (if (onLeft) Gravity.START else Gravity.END)
+        lp.x = if (onLeft) blp.x + bubbleSize else wpx - blp.x
+        lp.y = blp.y + (bubbleSize - h) / 2
+        try {
+            if (label == null) { wm(c).addView(tv, lp); label = tv; labelParams = lp }
+            else wm(c).updateViewLayout(tv, lp)
+            if (tv.visibility != View.VISIBLE) {
+                tv.alpha = 0f; tv.visibility = View.VISIBLE
+                tv.animate().alpha(1f).setDuration(180).start()
+            }
+        } catch (t: Throwable) { Log.w(TAG, "label: ${t.javaClass.simpleName}") }
     }
 
     /**
@@ -136,9 +194,18 @@ object Overlay {
      */
     @Volatile var dart: io.flutter.plugin.common.MethodChannel? = null
 
-    /** The bubble breathes faster while a conversation from it is live. */
-    fun setBubbleActive(active: Boolean) {
-        main.post { (bubble as? OrbView)?.listening = active }
+    /**
+     * The bubble breathes faster while a conversation from it is live, and
+     * ripples with "Speak now" beside it while it is the owner's turn
+     * ([userTurn]: the microphone open for him — when the voice screen
+     * says "Listening…").
+     */
+    fun setBubbleActive(active: Boolean, userTurn: Boolean = false) {
+        main.post {
+            (bubble as? OrbView)?.let { it.listening = active; it.userTurn = active && userTurn }
+            labelWanted = active && userTurn
+            app?.let { syncLabel(it) }
+        }
     }
 
     /** The bubble's tap: talk in place; open the app only if it is not running. */

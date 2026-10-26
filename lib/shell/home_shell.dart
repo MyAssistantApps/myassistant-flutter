@@ -17,6 +17,7 @@ import '../design/theme_controller.dart';
 import '../widgets/contact_picker_sheet.dart';
 import '../widgets/ambient_background.dart';
 import '../widgets/inline_voice.dart';
+import '../widgets/voice_orb.dart' show OrbMood;
 import '../widgets/activity_pill.dart';
 import '../widgets/news_panel.dart';
 import '../widgets/schedule_panel.dart';
@@ -425,14 +426,19 @@ class _HomeShellState extends State<HomeShell>
     }
   }
 
-  /// The bubble shows a live conversation started from it.
+  /// The bubble shows a live conversation started from it, and the owner's
+  /// turn to speak: the orb's listening mood with the microphone actually
+  /// open — the moment the voice screen says "Listening…".
   bool _bubbleActive = false;
+  bool _bubbleUserTurn = false;
   void _onEngineForBubble() {
     final e = AssistantEngine.instance;
     final active = e.bubbleTalk && (e.starting || e.inlineVoice || e.liveActive);
-    if (active == _bubbleActive) return;
+    final userTurn = active && e.micOpen && orbMoodFor(e) == OrbMood.listening;
+    if (active == _bubbleActive && userTurn == _bubbleUserTurn) return;
     _bubbleActive = active;
-    unawaited(OverlayBridge.setBubbleActive(active));
+    _bubbleUserTurn = userTurn;
+    unawaited(OverlayBridge.setBubbleActive(active, userTurn: userTurn));
   }
 
   /// DID THE FLOATING MIC OPEN US? (2026-10-19) Asked like the widget's

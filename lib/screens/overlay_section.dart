@@ -57,12 +57,15 @@ class _OverlaySectionState extends State<OverlaySection> with WidgetsBindingObse
 
   Future<void> _refresh({bool finish = false}) async {
     var s = await OverlayBridge.status();
-    // Back from Android's page with what was missing: finish what they began.
+    // Back from Android's page: finish what they began ONLY when Android
+    // granted everything it needs. Otherwise it stays off and no page
+    // opens again by itself — the next step is the owner's tap
+    // (owner, 2026-10-20: nothing on unless the user said).
     if (finish && _wanted != null) {
       final w = _wanted;
       _wanted = null;
-      if (w == 'replies') await _setReplies(true, status: s);
-      if (w == 'bubble') await _setBubble(true, status: s);
+      if (w == 'replies' && s.overlay && s.notifications) await OverlayBridge.setReplies(true);
+      if (w == 'bubble' && s.overlay) await OverlayBridge.setBubble(true);
       s = await OverlayBridge.status();
     }
     if (mounted) setState(() => _s = s);

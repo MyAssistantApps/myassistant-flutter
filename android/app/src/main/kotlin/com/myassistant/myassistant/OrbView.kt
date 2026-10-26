@@ -1,6 +1,5 @@
 package com.myassistant.myassistant
 
-import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
@@ -10,27 +9,50 @@ import android.graphics.RadialGradient
 import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.SweepGradient
+import android.os.SystemClock
 import android.view.View
-import android.view.animation.LinearInterpolator
 
 /**
  * The app's orb, small (2026-10-19): a turning violet–pink–cyan ring with a
  * soft glow and the mic in the middle, in the same light as the in-app orb.
  * [listening] makes it breathe faster.
+ *
+ * THE FLOATING MIC MOVES (owner, 2026-10-26: "it should not be static"):
+ * with [halo] the orb sits a size smaller inside a border of light that runs
+ * round it — twice as fast while a conversation is live — and while it is
+ * the owner's turn to speak ([userTurn]) rings ripple out from it. It runs
+ * on its own clock, not the system animator, so it keeps moving when the
+ * phone has animations turned down (battery saver), as the in-app orb does.
  */
-class OrbView(context: Context, private val showMic: Boolean = true) : View(context) {
+class OrbView(
+    context: Context,
+    private val showMic: Boolean = true,
+    private val halo: Boolean = false,
+) : View(context) {
     companion object {
         val VIOLET = Color.parseColor("#8B5CFF")
         val PINK = Color.parseColor("#E040FB")
         val CYAN = Color.parseColor("#22E4FF")
         val NIGHT = Color.parseColor("#14102E")
+
+        /** With [halo]: the orb's share of the view; the border runs in the rest. */
+        const val BODY = 0.78f
+        private const val RIPPLE = 1600L
     }
 
     var listening = false
         set(v) { field = v; invalidate() }
 
+    /** The owner's turn to speak: rings ripple out from the orb ([halo] only). */
+    var userTurn = false
+        set(v) { if (v && !field) rippleFrom = SystemClock.uptimeMillis(); field = v; invalidate() }
+
+    private var lastT = 0L
     private var turn = 0f
+    private var orbit = 0f
+    private var breath = 0.0
     private var pulse = 0f
+    private var rippleFrom = 0L
     private val ring = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
     private val glow = Paint(Paint.ANTI_ALIAS_FLAG)
     private val core = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -38,28 +60,38 @@ class OrbView(context: Context, private val showMic: Boolean = true) : View(cont
     private val micLine = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.WHITE; style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND
     }
+    private val border = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
+    private val track = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
+    private val ripple = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
+    private var tail: SweepGradient? = null
+    private var tailAt = Float.NaN
     private val m = Matrix()
-    private val anim = ValueAnimator.ofFloat(0f, 1f).apply {
-        duration = 4000
-        repeatCount = ValueAnimator.INFINITE
-        interpolator = LinearInterpolator()
-        addUpdateListener {
-            val f = it.animatedValue as Float
-            turn = f * 360f
-            val speed = if (listening) 4f else 2f
-            pulse = ((Math.sin(f * Math.PI * 2 * speed) + 1) / 2).toFloat()
-            invalidate()
-        }
+
+    override fun onAttachedToWindow() { super.onAttachedToWindow(); lastT = 0L; invalidate() }
+
+    /** One frame on: the same speeds as before (a turn every 4 s, a breath every 2 s, 1 s live). */
+    private fun advance() {
+        val now = SystemClock.uptimeMillis()
+        // Back from hidden: carry on from where it was, no jump.
+        val dt = if (lastT == 0L) 0L else minOf(now - lastT, 100L)
+        lastT = now
+        turn = (turn + dt * 360f / 4000f) % 360f
+        orbit = (orbit + dt * 360f / (if (listening) 1400f else 2800f)) % 360f
+        breath = (breath + dt * Math.PI * 2 / (if (listening) 1000.0 else 2000.0)) % (Math.PI * 2)
+        pulse = ((Math.sin(breath) + 1) / 2).toFloat()
     }
 
-    override fun onAttachedToWindow() { super.onAttachedToWindow(); anim.start() }
-    override fun onDetachedFromWindow() { anim.cancel(); super.onDetachedFromWindow() }
-
     override fun onDraw(c: Canvas) {
+        advance()
+        // The next frame, for as long as it is on screen (hidden, it rests).
+        if (isShown) postInvalidateOnAnimation()
         val w = width.toFloat(); val h = height.toFloat()
         val cx = w / 2; val cy = h / 2
-        val r = minOf(w, h) / 2
+        val edge = minOf(w, h) / 2
+        val r = if (halo) edge * BODY else edge
         val inner = r * 0.74f
+
+        if (halo) drawHalo(c, cx, cy, r, edge)
 
         // Glow behind, breathing.
         val g = r * (0.92f + 0.08f * pulse)
@@ -89,5 +121,34 @@ class OrbView(context: Context, private val showMic: Boolean = true) : View(cont
         val cr = mw * 0.95f
         c.drawArc(RectF(cx - cr, top + mh * 0.25f, cx + cr, top + mh + cr * 0.55f), 20f, 140f, false, micLine)
         c.drawLine(cx, top + mh + cr * 0.55f, cx, top + mh + cr * 0.95f, micLine)
+    }
+
+    /** The border round the orb [r], out to [edge]; the ripples on the owner's turn. */
+    private fun drawHalo(c: Canvas, cx: Float, cy: Float, r: Float, edge: Float) {
+        // His turn: two cyan rings ripple out, one after the other.
+        if (userTurn) {
+            val now = SystemClock.uptimeMillis()
+            for (k in 0 until 2) {
+                val e = now - rippleFrom - k * RIPPLE / 2
+                if (e < 0) continue
+                val f = (e % RIPPLE) / RIPPLE.toFloat()
+                ripple.strokeWidth = edge * 0.05f * (1f - f) + 1f
+                ripple.color = Color.argb((170 * (1f - f)).toInt(), 34, 228, 255)
+                c.drawCircle(cx, cy, r + (edge - r) * f, ripple)
+            }
+        }
+        // A faint track, and two lights chasing round it.
+        val br = r + (edge - r) * 0.42f
+        track.strokeWidth = edge * 0.035f
+        track.color = Color.argb(70, 139, 92, 255)
+        c.drawCircle(cx, cy, br, track)
+        val clear = Color.argb(0, 139, 92, 255)
+        val t = tail?.takeIf { tailAt == cx } ?: SweepGradient(cx, cy,
+            intArrayOf(clear, VIOLET, PINK, CYAN, clear, VIOLET, PINK, CYAN),
+            floatArrayOf(0f, 0.30f, 0.43f, 0.5f, 0.5f, 0.80f, 0.93f, 1f)).also { tail = it; tailAt = cx }
+        m.setRotate(orbit, cx, cy); t.setLocalMatrix(m)
+        border.shader = t
+        border.strokeWidth = edge * 0.07f
+        c.drawCircle(cx, cy, br, border)
     }
 }

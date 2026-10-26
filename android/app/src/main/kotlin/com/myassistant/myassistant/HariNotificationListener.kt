@@ -59,6 +59,18 @@ class HariNotificationListener : NotificationListenerService() {
         }
     }
 
+    /**
+     * Android connects this whenever Notification access is granted. Unless
+     * the owner's switch is on, it lets go at once: nothing is read, not
+     * even locally (owner, 2026-10-20: "only if the user said").
+     */
+    override fun onListenerConnected() {
+        super.onListenerConnected()
+        if (!NotifyPrefs.repliesOn(applicationContext)) {
+            try { requestUnbind() } catch (_: Throwable) {}
+        }
+    }
+
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         try {
             handle(sbn ?: return)
@@ -69,7 +81,8 @@ class HariNotificationListener : NotificationListenerService() {
 
     private fun handle(sbn: StatusBarNotification) {
         val ctx = applicationContext
-        if (!NotifyPrefs.repliesOn(ctx)) return
+        // Switched off since it connected: let go, read nothing.
+        if (!NotifyPrefs.repliesOn(ctx)) { try { requestUnbind() } catch (_: Throwable) {}; return }
         val pkg = sbn.packageName ?: return
         if (pkg == packageName || pkg in SKIP_PACKAGES) return
         val n = sbn.notification ?: return
