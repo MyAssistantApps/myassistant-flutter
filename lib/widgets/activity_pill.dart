@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../design/motion.dart';
 import '../design/neon_tokens.dart';
 import '../features/assistant/state/assistant_engine.dart';
+import 'agent_strip.dart' show AgentHandoffLane;
 
 /// WHAT THE USER SEES WHILE A TOOL IS RUNNING.
 ///
@@ -72,6 +73,7 @@ class _AssistantActivityPillState extends State<AssistantActivityPill>
   String? get _controlLine {
     final held = engine.agentControl.value;
     if (held == null) return null;
+    if (held.over) return 'Done \u00b7 ${held.control.summary}';
     final running = held.running;
     return running != null ? '$running agent' : held.control.summary;
   }
@@ -207,7 +209,11 @@ class _AssistantActivityPillState extends State<AssistantActivityPill>
                 ),
               ],
             ),
-            child: Row(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+            Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 // THE SPINNER AND THE DOTS ON THEIR OWN LAYERS, repainted
@@ -283,6 +289,13 @@ class _AssistantActivityPillState extends State<AssistantActivityPill>
                     painter: _DotsPainter(t: _spin, color: Neon.textLo),
                   ),
                 ),
+              ],
+            ),
+            // The hand-off: manager → each specialist, waiting/working/done.
+            if (engine.agentControl.value case final turn?) ...[
+              const SizedBox(height: 8),
+              AgentHandoffLane(turn: turn, pulse: _spin),
+            ],
               ],
             ),
           ),

@@ -155,3 +155,8 @@ class AgentControl {
     return AgentControl(via: j['via'] is String ? j['via'] as String : 'skip', agents: agents, toolAgent: owners);
   }
 }
+
+/// One turn's hand-off as the owner sees it: who has control, which
+/// specialist runs now (its label), which have finished (ids), and
+/// whether the reply is out.
+typedef AgentTurn = ({AgentControl control, String? running, Set<String> done, bool over});

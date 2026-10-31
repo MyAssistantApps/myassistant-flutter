@@ -16,7 +16,7 @@ import '../../../ai/live_voice.dart';
 import '../../../ai/model_port.dart';
 import '../../../ai/search_suggestions.dart';
 import '../../../ai/speech.dart' show SpeechEngine;
-import '../../../ai/types.dart' show AgentControl, AiToolSpec;
+import '../../../ai/types.dart' show AgentTurn, AiToolSpec;
 import '../../../core/log.dart';
 // Screens and settings reachable BY VOICE (open_app_screen / set_theme).
 import '../../../services/avatar_message_service.dart';
@@ -644,8 +644,12 @@ class AssistantEngine extends ChangeNotifier {
   /// Who has control of the running turn — the manager agent and the
   /// specialists it chose — and which of them runs the current tool.
   /// Null between turns and when the manager stayed out of it.
-  final ValueNotifier<({AgentControl control, String? running})?> agentControl =
-      ValueNotifier(null);
+  /// [done]: the specialist ids that have finished their part; [over]:
+  /// the reply is out — the hand-off stays on screen a moment, all done.
+  final ValueNotifier<AgentTurn?> agentControl = ValueNotifier(null);
+
+  /// The turn the hand-off lane shows; cleared shortly after it ends.
+  Timer? _agentClear;
 
   /// The status line's words for the phase: while a tool runs
   /// (RESPONDING) the tool's own ("Checking your calendar…").
@@ -2143,8 +2147,10 @@ class AssistantEngine extends ChangeNotifier {
           case BrainRouteChosen(:final route, :final reason, :final control):
             AppLog.add('brain', '${route.name} ($reason)'
                 '${control == null ? '' : ' — ${control.summary} (${control.via})'}');
-            agentControl.value =
-                control == null || control.skipped ? null : (control: control, running: null);
+            _agentClear?.cancel();
+            agentControl.value = control == null || control.skipped
+                ? null
+                : (control: control, running: null, done: const {}, over: false);
           case BrainPartialText(:final text):
             _finishTools();
             if (phase == AssistantPhase.responding) {
@@ -2187,7 +2193,21 @@ class AssistantEngine extends ChangeNotifier {
         _turnRunning = false;
         _finishTools();
         activityLabel.value = null;
-        agentControl.value = null;
+        // Every specialist has done its part: shown a moment, then cleared.
+        final held = agentControl.value;
+        if (held != null) {
+          final turn = (
+            control: held.control,
+            running: null,
+            done: {for (final a in held.control.agents) a.id},
+            over: true,
+          );
+          agentControl.value = turn;
+          _agentClear?.cancel();
+          _agentClear = Timer(const Duration(milliseconds: 1600), () {
+            if (identical(agentControl.value, turn)) agentControl.value = null;
+          });
+        }
         replyComplete = true;
         _afterTurn();
       }
@@ -2276,11 +2296,29 @@ class AssistantEngine extends ChangeNotifier {
   }
 
   /// The tool the model is using, as a chip ("Checking the weather…").
+  /// The id of the specialist [held] says is running, if any.
+  static String? _agentIdOf(AgentTurn held) {
+    final label = held.running;
+    if (label == null) return null;
+    for (final a in held.control.agents) {
+      if (a.label == label) return a.id;
+    }
+    return null;
+  }
+
   void _toolStarted(String tool) {
     _finishTools();
     final held = agentControl.value;
     if (held != null) {
-      agentControl.value = (control: held.control, running: held.control.labelFor(tool));
+      final next = held.control.toolAgent[tool];
+      final prev = _agentIdOf(held);
+      agentControl.value = (
+        control: held.control,
+        running: held.control.labelFor(tool),
+        // The specialist handing over has finished its part.
+        done: {...held.done, if (prev != null && prev != next) prev},
+        over: false,
+      );
     }
     if (LocationService.locationTools.contains(tool)) {
       unawaited(_maybeAskLocation());

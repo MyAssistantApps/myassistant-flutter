@@ -6,33 +6,46 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../design/motion.dart';
 import '../design/neon_tokens.dart';
+import '../ai/types.dart' show AgentTurn;
 import '../features/assistant/state/assistant_engine.dart';
 
 /// One of the assistant's agents, as the owner sees it. The ids match the
 /// server's specialists (backend src/agents/manager.js).
 class AgentInfo {
-  const AgentInfo(this.id, this.label, this.icon, this.blurb);
+  const AgentInfo(this.id, this.label, this.icon, this.blurb, [this.short]);
   final String id;
   final String label;
   final IconData icon;
   final String blurb;
+
+  /// The chip's word in the hand-off lane.
+  final String? short;
+  String get chip => short ?? label;
+}
+
+AgentInfo? agentById(String id) {
+  for (final a in agentRoster) {
+    if (a.id == id) return a;
+  }
+  return null;
 }
 
 /// The manager first, then the eight specialists it hands turns to.
 const agentRoster = <AgentInfo>[
   AgentInfo('manager', 'Manager', Icons.hub_rounded,
-      'Reads each request and decides which agents handle it.'),
-  AgentInfo('comms', 'Communication', Icons.forum_rounded, 'Calls, messages, WhatsApp and email.'),
+      'Reads each request and decides which agents handle it.', 'Manager'),
+  AgentInfo('comms', 'Communication', Icons.forum_rounded, 'Calls, messages, WhatsApp and email.',
+      'Comms'),
   AgentInfo('planner', 'Planning', Icons.event_note_rounded,
       'Reminders, calendar, alarms, timers and your day.'),
   AgentInfo('info', 'Information', Icons.travel_explore_rounded,
-      'Search, news, weather, places, law and travel.'),
+      'Search, news, weather, places, law and travel.', 'Info'),
   AgentInfo('commerce', 'Shopping and money', Icons.shopping_bag_rounded,
-      'Shopping list, orders, rides, recharges and payments.'),
+      'Shopping list, orders, rides, recharges and payments.', 'Shopping'),
   AgentInfo('creative', 'Creative', Icons.palette_rounded,
       'Images, video, photo edits, documents and music.'),
   AgentInfo('device', 'Phone control', Icons.tune_rounded,
-      'Settings, apps, the camera, screenshots and shortcuts.'),
+      'Settings, apps, the camera, screenshots and shortcuts.', 'Phone'),
   AgentInfo('memory', 'Memory', Icons.psychology_rounded,
       'What to remember or forget about you and your people.'),
   AgentInfo('records', 'Records', Icons.folder_copy_rounded,
@@ -389,4 +402,102 @@ Future<void> showAgentSheet(BuildContext context) {
       },
     ),
   );
+}
+
+/// THE HAND-OFF, ON SCREEN (2026-10-31): the manager, then each specialist
+/// it chose — waiting (dim), working (lit, pulsing) or done (✓) — so the
+/// owner watches the work move from one agent to the next.
+class AgentHandoffLane extends StatelessWidget {
+  const AgentHandoffLane({super.key, required this.turn, required this.pulse});
+
+  final AgentTurn turn;
+  final Animation<double> pulse;
+
+  @override
+  Widget build(BuildContext context) {
+    final started = turn.over || turn.running != null || turn.done.isNotEmpty;
+    final chips = <Widget>[
+      _HandoffChip(
+        agent: agentRoster.first,
+        state: started ? _ChipState.done : _ChipState.working,
+        pulse: pulse,
+      ),
+    ];
+    for (final a in turn.control.agents) {
+      final info = agentById(a.id);
+      if (info == null) continue;
+      final state = turn.done.contains(a.id)
+          ? _ChipState.done
+          : turn.running == a.label
+              ? _ChipState.working
+              : _ChipState.waiting;
+      chips
+        ..add(Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 3),
+          child: Icon(Icons.arrow_forward_rounded, size: 12, color: Neon.textLo),
+        ))
+        ..add(_HandoffChip(agent: info, state: state, pulse: pulse));
+    }
+    return Semantics(
+      label: 'Handed from the manager to ${turn.control.agents.map((a) => a.label).join(', ')}',
+      // Wraps rather than scrolls: a chip cut at the edge hid "Memory".
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        runSpacing: 6,
+        children: chips,
+      ),
+    );
+  }
+}
+
+enum _ChipState { waiting, working, done }
+
+class _HandoffChip extends StatelessWidget {
+  const _HandoffChip({required this.agent, required this.state, required this.pulse});
+
+  final AgentInfo agent;
+  final _ChipState state;
+  final Animation<double> pulse;
+
+  @override
+  Widget build(BuildContext context) {
+    final working = state == _ChipState.working;
+    final done = state == _ChipState.done;
+    final color = done ? Neon.success : (working ? Neon.violet : Neon.textLo);
+    Widget chip(double glow) => AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          padding: const EdgeInsets.fromLTRB(7, 4, 9, 4),
+          decoration: BoxDecoration(
+            color: working ? Neon.violet.withValues(alpha: 0.12 + 0.10 * glow) : Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: working ? Neon.violet : (done ? Neon.success.withValues(alpha: 0.6) : Neon.line),
+              width: working ? 1.4 : 1,
+            ),
+            boxShadow: working
+                ? [BoxShadow(color: Neon.violet.withValues(alpha: 0.35 * glow), blurRadius: 10)]
+                : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(done ? Icons.check_circle_rounded : agent.icon, size: 13, color: color),
+              const SizedBox(width: 4),
+              Text(
+                agent.chip,
+                style: GoogleFonts.spaceGrotesk(
+                  color: state == _ChipState.waiting ? Neon.textLo : Neon.textHi,
+                  fontSize: 11.5,
+                  fontWeight: working ? FontWeight.w700 : FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        );
+    if (!working) return chip(0);
+    return AnimatedBuilder(
+      animation: pulse,
+      builder: (_, __) => chip(math.sin(pulse.value * math.pi * 2).abs()),
+    );
+  }
 }
