@@ -66,15 +66,20 @@ class AmbientBackground extends StatelessWidget {
             child: style == 'plain'
                 ? ColoredBox(color: Neon.bg)
                 : style == 'gradient'
+                    // A gradient the owner can SEE (2026-10-31: 10% read as
+                    // no gradient at all): the brand colour washes in from
+                    // the top-left, its partner from the bottom-right, the
+                    // page between — light themes a touch gentler.
                     ? DecoratedBox(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
+                            stops: const [0, 0.55, 1],
                             colors: [
-                              Color.lerp(Neon.bg, Neon.violet, 0.10)!,
+                              Color.lerp(Neon.bg, Neon.violet, Neon.isDark ? 0.42 : 0.28)!,
                               Neon.bg,
-                              Color.lerp(Neon.bg, Neon.pink, 0.08)!,
+                              Color.lerp(Neon.bg, Neon.pink, Neon.isDark ? 0.34 : 0.22)!,
                             ],
                           ),
                         ),
