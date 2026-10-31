@@ -66,11 +66,8 @@ TextStyle displayFont({
       decorationThickness: decorationThickness,
     );
   }
-  // The two bundled families by name, never GoogleFonts.getFont: a family
-  // chosen at runtime keeps all ~1,500 of the package's fonts in the build
-  // (+18 MB, 2026-10-31).
-  final font = family == 'Manrope' ? GoogleFonts.manrope : GoogleFonts.spaceGrotesk;
-  return font(
+  return GoogleFonts.getFont(
+    family,
     textStyle: textStyle,
     color: color,
     backgroundColor: backgroundColor,
@@ -97,7 +94,7 @@ TextStyle displayFont({
 TextTheme bodyTextTheme(TextTheme base) {
   final family = NeonFonts.body;
   if (NeonFonts._system(family)) return base;
-  return family == 'Space Grotesk' ? GoogleFonts.spaceGroteskTextTheme(base) : GoogleFonts.manropeTextTheme(base);
+  return GoogleFonts.getTextTheme(family, base);
 }
 
 /// One style in the body font — the same arguments GoogleFonts.manrope took.
@@ -133,8 +130,7 @@ TextStyle bodyFont({
       decorationThickness: decorationThickness,
     );
   }
-  final font = family == 'Space Grotesk' ? GoogleFonts.spaceGrotesk : GoogleFonts.manrope;
-  return font(
+  return GoogleFonts.getFont(family,
       textStyle: textStyle, color: color, backgroundColor: backgroundColor, fontSize: fontSize,
       fontWeight: fontWeight, fontStyle: fontStyle, letterSpacing: letterSpacing,
       wordSpacing: wordSpacing, textBaseline: textBaseline, height: height, locale: locale,
