@@ -1,6 +1,8 @@
 name: Tester build
 
-# Every push builds a release-signed APK and sends it through Firebase App
+# Every push builds an APK signed with the TEAM DEBUG KEY (SHA-1 39:03:80:…,
+# the "MyAssistant debug.keystore (base64)" Bitwarden note — the original
+# release key is lost) and sends it through Firebase App
 # Distribution:
 #   hardening       → the "testers" group
 #   hardening-test  → the owner only (dhanushinsit@gmail.com)
@@ -8,8 +10,7 @@ name: Tester build
 # update over the last one (pubspec's +N is only for local builds).
 #
 # Secrets (repo settings → Secrets → Actions):
-#   RELEASE_KEYSTORE_BASE64   base64 of hari-release.jks
-#   RELEASE_KEY_PROPERTIES    android/key.properties, storeFile=hari-release.jks
+#   DEBUG_KEYSTORE_BASE64     base64 of the team debug.keystore
 #   GOOGLE_SERVICES_JSON      android/app/google-services.json
 #   APP_CHECK_DEBUG_TOKEN     the registered App Check debug token
 #   FIREBASE_SERVICE_ACCOUNT  service-account JSON with App Distribution access
@@ -47,19 +48,20 @@ jobs:
 
       - name: Signing, Firebase config and App Check token
         env:
-          KEYSTORE_B64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
-          KEY_PROPERTIES: ${{ secrets.RELEASE_KEY_PROPERTIES }}
+          KEYSTORE_B64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
           GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
           APP_CHECK_DEBUG_TOKEN: ${{ secrets.APP_CHECK_DEBUG_TOKEN }}
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
           missing=0
-          for v in KEYSTORE_B64 KEY_PROPERTIES GOOGLE_SERVICES_JSON FIREBASE_SERVICE_ACCOUNT; do
+          for v in KEYSTORE_B64 GOOGLE_SERVICES_JSON FIREBASE_SERVICE_ACCOUNT; do
             if [ -z "${!v}" ]; then echo "::error::secret for $v is missing"; missing=1; fi
           done
           [ "$missing" = 0 ] || exit 1
-          echo "$KEYSTORE_B64" | base64 -d > android/app/hari-release.jks
-          printf '%s\n' "$KEY_PROPERTIES" > android/key.properties
+          # No android/key.properties → build.gradle.kts signs release
+          # builds with ~/.android/debug.keystore.
+          mkdir -p ~/.android
+          echo "$KEYSTORE_B64" | base64 -d > ~/.android/debug.keystore
           printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
           if [ -n "$APP_CHECK_DEBUG_TOKEN" ]; then
             printf '%s' "$APP_CHECK_DEBUG_TOKEN" > android/app-check-debug-token.txt
@@ -73,12 +75,12 @@ jobs:
       - name: Build APK
         run: BUILD_NUMBER=$((200 + GITHUB_RUN_NUMBER)) tool/build_apk.sh
 
-      - name: The APK must carry the release signature
+      - name: The APK must carry the team key
         run: |
           APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
           "$APKSIGNER" verify --print-certs build/app/outputs/flutter-apk/app-release.apk | tee certs.txt
-          if grep -qi "CN=Android Debug" certs.txt; then
-            echo "::error::The APK is debug-signed — testers' installed copies could not update to it."
+          if ! grep -qi "SHA-1 digest: 3903808d51b762b3835fabc509635ab4d39a5e1d" certs.txt; then
+            echo "::error::The APK is not signed with the team key (39:03:80:…) — installed copies could not update to it."
             exit 1
           fi
 
@@ -101,4 +103,4 @@ jobs:
 
       - name: Remove secrets from the runner
         if: always()
-        run: rm -f android/app/hari-release.jks android/key.properties android/app-check-debug-token.txt "$RUNNER_TEMP/firebase-sa.json"
+        run: rm -f ~/.android/debug.keystore android/app-check-debug-token.txt "$RUNNER_TEMP/firebase-sa.json"

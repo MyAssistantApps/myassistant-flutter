@@ -1,22 +1,19 @@
 #!/usr/bin/env bash
 # Owner only: store the secrets .github/workflows/distribute.yml needs.
-# Run from the repo root after `gh auth login`. Nothing is printed or committed.
-#
-#   tool/set_ci_secrets.sh ~/release-key
-#
-# The folder must hold hari-release.jks and key.properties.
+# Run from anywhere after `gh auth login`. Nothing is printed or committed.
+# Needs ./setup.sh to have run first (team debug keystore, App Check token,
+# backend firebase-adminsdk.json).
 set -euo pipefail
 cd "$(dirname "$0")/.."
-KEYDIR="${1:-$HOME/release-key}"
 REPO=MyAssistantApps/myassistant-flutter
+KS="$HOME/.android/debug.keystore"
 
-[ -f "$KEYDIR/hari-release.jks" ] || { echo "missing $KEYDIR/hari-release.jks"; exit 1; }
-[ -f "$KEYDIR/key.properties" ]   || { echo "missing $KEYDIR/key.properties"; exit 1; }
+# Refuse anything but the team key, so a personal debug key never ships.
+keytool -list -v -keystore "$KS" -storepass android 2>/dev/null \
+  | grep -q "SHA1: 39:03:80:8D:51:B7:62:B3:83:5F:AB:C5:09:63:5A:B4:D3:9A:5E:1D" \
+  || { echo "$KS is not the team debug key — run ./setup.sh first"; exit 1; }
 
-base64 -w0 "$KEYDIR/hari-release.jks" | gh secret set RELEASE_KEYSTORE_BASE64 -R "$REPO"
-# CI writes the keystore to android/app/hari-release.jks, so point storeFile there.
-sed 's#^storeFile=.*#storeFile=hari-release.jks#' "$KEYDIR/key.properties" \
-  | gh secret set RELEASE_KEY_PROPERTIES -R "$REPO"
+base64 -w0 "$KS" | gh secret set DEBUG_KEYSTORE_BASE64 -R "$REPO"
 gh secret set FIREBASE_SERVICE_ACCOUNT -R "$REPO" < ../myassistant-backend/firebase-adminsdk.json
 tr -d '[:space:]' < android/app-check-debug-token.txt | gh secret set APP_CHECK_DEBUG_TOKEN -R "$REPO"
 gh secret list -R "$REPO"

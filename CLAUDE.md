@@ -33,7 +33,7 @@ owner and asked for it; otherwise push a branch and open a PR.
 
 ## Pushing sends a build to testers
 
-Every push to `hardening` builds a release-signed APK in GitHub Actions
+Every push to `hardening` builds an APK (signed with the team debug key) in GitHub Actions
 (`.github/workflows/distribute.yml`) and sends it to the Firebase App
 Distribution group `testers`. Push to `hardening-test` to send a build to
 the owner only (dhanushinsit@gmail.com) first. Other branches build nothing.
