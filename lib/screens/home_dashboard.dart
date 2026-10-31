@@ -7,7 +7,6 @@ import '../design/neon_tokens.dart';
 import '../features/home/home_cards.dart';
 import '../features/home/quote_cards_sheet.dart';
 import '../features/home/quote_of_day.dart';
-import '../services/auth_service.dart';
 import '../widgets/call_led.dart';
 import 'search_screen.dart';
 
@@ -21,13 +20,6 @@ class HomeDashboard extends StatelessWidget {
 
   /// Test seam: the time the greeting, the date and the feed are for.
   final DateTime Function() clock;
-
-  String get _greeting {
-    final h = clock().hour;
-    if (h < 12) return 'Good morning';
-    if (h < 17) return 'Good afternoon';
-    return 'Good evening';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,69 +40,45 @@ class HomeDashboard extends StatelessWidget {
     final header = Reveal(
         child: Builder(
       builder: (context) {
-        final first = (AuthService.instance.user?.name ?? '')
-            .trim()
-            .split(RegExp(r'\s+'))
-            .first;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // THE GREETING, LIT (2026-09-30, the client's reference): the
-            // time of day as a glowing sun or moon, the name on its own
-            // line in the app's light (cyan into magenta), search in a lit
-            // ring beside it. Read out as one line.
+            // THE APP'S NAME, LIT (owner, 2026-10-31: no "Good evening",
+            // no user name — just MyAssistant), in the light the name had
+            // (cyan into magenta), search in a lit ring beside it.
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 2, right: 10),
-                  child: _DayIcon(hour: now.hour),
-                ),
                 Expanded(
                   child: Semantics(
                     header: true,
-                    label: first.isEmpty ? _greeting : '$_greeting, $first',
+                    label: 'MyAssistant',
                     child: ExcludeSemantics(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            first.isEmpty ? _greeting : '$_greeting,',
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: ShaderMask(
+                          blendMode: BlendMode.srcIn,
+                          shaderCallback: (r) => LinearGradient(
+                            colors: [Neon.cyan, Neon.violet, Neon.pink],
+                          ).createShader(r),
+                          child: Text(
+                            'MyAssistant',
                             style: GoogleFonts.spaceGrotesk(
-                              fontSize: NeonType.title2,
+                              fontSize: NeonType.largeTitle + 6,
                               fontWeight: FontWeight.w700,
-                              letterSpacing: -0.5,
-                              color: Neon.textHi,
+                              letterSpacing: -0.8,
+                              height: 1.1,
+                              color: Colors.white,
+                              // its own glow, tinted by the gradient
+                              shadows: [
+                                Shadow(
+                                    color: Colors.white.withValues(alpha: 0.55),
+                                    blurRadius: 18),
+                              ],
                             ),
                           ),
-                          if (first.isNotEmpty)
-                            FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerLeft,
-                              child: ShaderMask(
-                                blendMode: BlendMode.srcIn,
-                                shaderCallback: (r) => LinearGradient(
-                                  colors: [Neon.cyan, Neon.violet, Neon.pink],
-                                ).createShader(r),
-                                child: Text(
-                                  first,
-                                  style: GoogleFonts.spaceGrotesk(
-                                    fontSize: NeonType.largeTitle + 10,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: -0.8,
-                                    height: 1.1,
-                                    color: Colors.white,
-                                    // its own glow, tinted by the gradient
-                                    shadows: [
-                                      Shadow(
-                                          color: Colors.white.withValues(alpha: 0.55),
-                                          blurRadius: 18),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
@@ -205,30 +173,6 @@ class HomeDashboard extends StatelessWidget {
   }
 }
 
-/// The time of day, lit: a sun by day, the dusk in the evening, a moon at
-/// night — each with its own glow.
-class _DayIcon extends StatelessWidget {
-  const _DayIcon({required this.hour});
-  final int hour;
-
-  @override
-  Widget build(BuildContext context) {
-    final (icon, color) = hour >= 5 && hour < 17
-        ? (Icons.wb_sunny_rounded, const Color(0xFFFFC53D))
-        : hour >= 17 && hour < 20
-            ? (Icons.wb_twilight_rounded, const Color(0xFFFF9A4D))
-            : (Icons.nightlight_round, const Color(0xFFC9B8FF));
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        boxShadow: Neon.halo(color, strength: 0.9),
-      ),
-      child: Icon(icon, size: 30, color: color),
-    );
-  }
-}
-
-/// Search in a lit ring: the app's rim around a round glass button.
 class _SearchRing extends StatelessWidget {
   const _SearchRing({required this.onTap});
   final VoidCallback onTap;
