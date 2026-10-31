@@ -41,6 +41,17 @@ abstract final class SpeechMarkup {
       r'<\s*(?:tone|prompt|style|voice|delivery|manner|mood)\s*:\s*([^<>\n]{1,80}?)\s*>',
       caseSensitive: false);
 
+  // HTML-style marks (2026-10-31, "</tone><informative>" on screen): the
+  // tone note written "<tone>informative</tone>", and closing tags.
+  static final _toneXml = RegExp(r'<\s*tone\s*>\s*([^<>\n]{1,80}?)\s*<\s*/\s*tone\s*>',
+      caseSensitive: false);
+  static final _closing = RegExp(r'<\s*/\s*[a-zA-Z][a-zA-Z \-]{0,30}\s*>');
+
+  /// The model's variants in the one form the rest reads.
+  static String _normal(String raw) => raw
+      .replaceAllMapped(_toneXml, (m) => '<tone: ${m[1]!.trim()}>')
+      .replaceAll(_closing, _cut);
+
   // Where a mark was cut or kept, so spacing is mended there and only there.
   static const _cut = '\u0000';
   static final _cuts = RegExp('[ \\t]*$_cut(?:[ \\t]*$_cut)*[ \\t]*');
@@ -52,7 +63,7 @@ abstract final class SpeechMarkup {
   /// [raw] split into what is shown, what is said and the tone.
   static SpokenReply parse(String raw) {
     String? tone;
-    final noTone = raw.replaceAllMapped(_tone, (m) {
+    final noTone = _normal(raw).replaceAllMapped(_tone, (m) {
       tone ??= m[1]!.trim();
       return _cut;
     });
@@ -64,7 +75,8 @@ abstract final class SpeechMarkup {
   }
 
   /// [text] as shown: tone notes and expressions removed.
-  static String strip(String text) => _mend(_expressions(text.replaceAll(_tone, _cut), keep: false));
+  static String strip(String text) =>
+      _mend(_expressions(_normal(text).replaceAll(_tone, _cut), keep: false));
 
   /// A reply still streaming, safe to show: [strip], less a trailing "<…"
   /// that may yet become a mark.
@@ -82,12 +94,15 @@ abstract final class SpeechMarkup {
     if (r.length > 90 || rest.contains('\n')) return false;
     if (RegExp(r'^t(o(n(e ?(:.*)?)?)?)?$').hasMatch(r)) return true;
     if (RegExp(r'^p(r(o(m(p(t ?(:.*)?)?)?)?)?)?$').hasMatch(r)) return true;
-    return expressions.any((e) => e.startsWith(r));
+    // Any word tag, opening or closing, is removed once it closes.
+    return RegExp(r'^/?\s*[a-z][a-z \-]{0,30}$').hasMatch(r) || r.isEmpty || r == '/';
   }
 
   static String _expressions(String text, {required bool keep}) =>
       text.replaceAllMapped(_tag, (m) {
-        if (!isExpression(m[1]!)) return m[0]!;
+        // A word in angle brackets that is no expression ("<informative>")
+        // is a stray mark: never shown, never read out.
+        if (!isExpression(m[1]!)) return _cut;
         return keep ? '$_cut<${_name(m[1]!)}>$_cut' : _cut;
       });
 
