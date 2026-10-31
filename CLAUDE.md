@@ -31,6 +31,13 @@ opens a pull request; the owner reviews and merges.
 Claude: never push to `hardening` unless the person at the keyboard is the
 owner and asked for it; otherwise push a branch and open a PR.
 
+## Pushing sends a build to testers
+
+Every push to `hardening` builds a release-signed APK in GitHub Actions
+(`.github/workflows/distribute.yml`) and sends it to the Firebase App
+Distribution group `testers`. Push to `hardening-test` to send a build to
+the owner only (dhanushinsit@gmail.com) first. Other branches build nothing.
+
 ## Secrets — both repos are PUBLIC
 
 Never commit `google-services.json`, `.env*` files, keystores,

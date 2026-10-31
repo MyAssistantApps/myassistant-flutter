@@ -46,5 +46,13 @@ else
   echo "  so Firebase AI Logic will refuse it once App Check is enforced." >&2
 fi
 
+# BUILD_NUMBER (optional) overrides the +N in pubspec.yaml — CI sets it so
+# every automatic build installs as an update over the previous one.
+EXTRA=()
+if [ -n "${BUILD_NUMBER:-}" ]; then
+  EXTRA+=("--build-number=$BUILD_NUMBER")
+  echo "→ build number $BUILD_NUMBER"
+fi
+
 flutter build apk --release --target-platform "$TARGETS" \
-  ${DEFINES[@]+"${DEFINES[@]}"}
+  ${DEFINES[@]+"${DEFINES[@]}"} ${EXTRA[@]+"${EXTRA[@]}"}
