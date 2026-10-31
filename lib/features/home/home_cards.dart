@@ -32,8 +32,6 @@ import 'home_extras.dart';
 import 'birthday_card.dart';
 import 'home_feed.dart';
 import 'home_memory.dart';
-import '../../design/ui_spec.dart';
-import 'custom_home_card.dart';
 
 /// A button's background work failed: logged, and said in a toast (there is
 /// no screen context down here).
@@ -227,102 +225,70 @@ class _HomeFeedViewState extends State<HomeFeedView> {
             // Kept alive: scrolled away and back, it must not replay its
             // entrance.
             _KeepAlive(child: widget.leading),
-            // THE SECTIONS, IN THE PERSON'S ORDER (the Design agent,
-            // 2026-10-31): "put my reminders first", "hide Born today", and
-            // the cards it built for them. Unknown or empty ones are skipped.
-            for (final id in _order(UiSpecStore.current.value))
-              ..._section(id, now, state, svc, feed, born, extras),
+            const SizedBox(height: 16),
+            // PLAY MY MORNING (2026-09-30): the day, read aloud — the
+            // brightest thing under the greeting.
+            _playRow(now),
+            const SizedBox(height: 18),
+            // THE AGENTS (2026-10-31): all nine, ready; lit while they work.
+            const AgentStrip(),
+            const SizedBox(height: 20),
+            StateSwitch(
+              state: state,
+              child: switch (state) {
+                'failed' => NeonErrorState(
+                    message: "Couldn't load your day",
+                    onRetry: () => svc.refresh(force: true),
+                  ),
+                'loading' => const _Skeleton(),
+                _ => _body(feed),
+              },
+            ),
+            if (state == 'partial' || (state == 'loaded' && svc.stale))
+              _status(svc),
+            if (born.isNotEmpty) ...[
+              const SizedBox(height: 24),
+              Reveal(
+                delayMs: 120,
+                child: BirthdayCard(people: born, now: widget.clock),
+              ),
+            ],
+            if (extras.isNotEmpty) ...[
+              const SizedBox(height: 24),
+              Reveal(
+                delayMs: 140,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final e in extras)
+                      KeyedSubtree(key: ValueKey(e.id), child: _extra(e, svc.brief)),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 20),
+            // A chip that says what today's tip card says is dropped.
+            Reveal(
+              delayMs: 160,
+              child: _asks([
+                for (final a in feed.asks)
+                  if (!extras.any((e) => e.tip != null && (e.tip!.ask == a.request || e.tip!.say == a.label)))
+                    a,
+              ]),
+            ),
+            const SizedBox(height: 8),
+            Reveal(
+              delayMs: 180,
+              child: _toolShortcuts(),
+            ),
+            const SizedBox(height: 20),
+            // Once per release: what just got better. Below the day, never
+            // above what needs the user.
+            const WhatsNewCard(),
           ],
         );
       },
     );
-  }
-
-  // ── sections, in the person's order ──────────────────────────────────
-
-  static const _builtIn = ['play', 'agents', 'today', 'born', 'extras', 'asks', 'shortcuts', 'whatsnew'];
-
-  /// The visible sections in order: theirs, then any built-in section
-  /// their look does not mention (a newer build's), in the app's order.
-  List<String> _order(UiSpec look) {
-    final listed = [for (final s in look.sections) s.id];
-    return [
-      for (final s in look.sections)
-        if (s.visible && (_builtIn.contains(s.id) || look.cards.containsKey(s.id.replaceFirst('card:', '')))) s.id,
-      for (final id in _builtIn)
-        if (!listed.contains(id)) id,
-    ];
-  }
-
-  List<Widget> _section(String id, DateTime now, String state, BriefService svc, HomeFeed feed,
-      List<BirthdayPerson> born, List<HomeExtra> extras) {
-    switch (id) {
-      case 'play':
-        // PLAY MY MORNING (2026-09-30): the day, read aloud.
-        return [const SizedBox(height: 16), _playRow(now)];
-      case 'agents':
-        // THE AGENTS: all ten, ready; lit while they work.
-        return [const SizedBox(height: 18), const AgentStrip()];
-      case 'today':
-        return [
-          const SizedBox(height: 20),
-          StateSwitch(
-            state: state,
-            child: switch (state) {
-              'failed' => NeonErrorState(
-                  message: "Couldn't load your day",
-                  onRetry: () => svc.refresh(force: true),
-                ),
-              'loading' => const _Skeleton(),
-              _ => _body(feed),
-            },
-          ),
-          if (state == 'partial' || (state == 'loaded' && svc.stale)) _status(svc),
-        ];
-      case 'born':
-        if (born.isEmpty) return const [];
-        return [
-          const SizedBox(height: 24),
-          Reveal(delayMs: 120, child: BirthdayCard(people: born, now: widget.clock)),
-        ];
-      case 'extras':
-        if (extras.isEmpty) return const [];
-        return [
-          const SizedBox(height: 24),
-          Reveal(
-            delayMs: 140,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (final e in extras) KeyedSubtree(key: ValueKey(e.id), child: _extra(e, svc.brief)),
-              ],
-            ),
-          ),
-        ];
-      case 'asks':
-        // A chip that says what today's tip card says is dropped.
-        return [
-          const SizedBox(height: 20),
-          Reveal(
-            delayMs: 160,
-            child: _asks([
-              for (final a in feed.asks)
-                if (!extras.any((e) => e.tip != null && (e.tip!.ask == a.request || e.tip!.say == a.label))) a,
-            ]),
-          ),
-        ];
-      case 'shortcuts':
-        return [const SizedBox(height: 8), Reveal(delayMs: 180, child: _toolShortcuts())];
-      case 'whatsnew':
-        // Once per release: what just got better.
-        return [const SizedBox(height: 20), const WhatsNewCard()];
-    }
-    if (id.startsWith('card:')) {
-      final card = UiSpecStore.current.value.cards[id.substring(5)];
-      if (card == null) return const [];
-      return [const SizedBox(height: 20), CustomHomeCard(card: card)];
-    }
-    return const [];
   }
 
   // ── play my morning ──────────────────────────────────────────────────

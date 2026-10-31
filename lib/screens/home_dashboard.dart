@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../design/dock_metrics.dart';
 import '../design/motion.dart';
@@ -8,8 +9,6 @@ import '../features/home/quote_cards_sheet.dart';
 import '../features/home/quote_of_day.dart';
 import '../widgets/call_led.dart';
 import 'search_screen.dart';
-import '../design/neon_fonts.dart';
-import '../design/ui_spec.dart';
 
 /// HOME TAB — what needs you now (2026-09-29).
 ///
@@ -38,8 +37,6 @@ class HomeDashboard extends StatelessWidget {
     // with no gap or ground — the suggestion chips looked like they slid
     // beneath its text. Now greeting, date and quote are simply the top of
     // the list; only the call light stays put.
-    // The person's look (the Design agent): the title, date and quote.
-    final look = UiSpecStore.current.value;
     final header = Reveal(
         child: Builder(
       builder: (context) {
@@ -55,7 +52,7 @@ class HomeDashboard extends StatelessWidget {
                 Expanded(
                   child: Semantics(
                     header: true,
-                    label: look.title,
+                    label: 'MyAssistant',
                     child: ExcludeSemantics(
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
@@ -66,8 +63,8 @@ class HomeDashboard extends StatelessWidget {
                             colors: [Neon.cyan, Neon.violet, Neon.pink],
                           ).createShader(r),
                           child: Text(
-                            look.title,
-                            style: displayFont(
+                            'MyAssistant',
+                            style: GoogleFonts.spaceGrotesk(
                               fontSize: NeonType.largeTitle + 6,
                               fontWeight: FontWeight.w700,
                               letterSpacing: -0.8,
@@ -92,16 +89,14 @@ class HomeDashboard extends StatelessWidget {
                 ),
               ],
             ),
+            const SizedBox(height: 4),
             // The date alone (owner, 2026-09-30: the weather chip beside
             // it "looks bad"). Rain or heat worth knowing about still gets
-            // its own card in the feed. Their look may hide it.
-            if (look.showDate) ...[
-              const SizedBox(height: 4),
-              Text(
-                '${wk[now.weekday - 1]}, ${now.day} ${mo[now.month - 1]}',
-                style: TextStyle(color: Neon.textLo, fontSize: NeonType.body),
-              ),
-            ],
+            // its own card in the feed.
+            Text(
+              '${wk[now.weekday - 1]}, ${now.day} ${mo[now.month - 1]}',
+              style: TextStyle(color: Neon.textLo, fontSize: NeonType.body),
+            ),
             // THE DAY'S LINE, right under the date (owner, 2026-09-30: "need
             // motivational quotes right below the date"). No card, no tint:
             // an accent rule down the left, brighter ink, a size up — it
@@ -110,7 +105,6 @@ class HomeDashboard extends StatelessWidget {
             // comes from the server (the same for everyone), the built-in
             // rotation when it has none yet; a tap opens the day's images
             // to share.
-            if (look.showQuote) ...[
             const SizedBox(height: 16),
             ValueListenableBuilder<QuoteDay?>(
               valueListenable: QuoteOfDay.current,
@@ -153,7 +147,6 @@ class HomeDashboard extends StatelessWidget {
                 );
               },
             ),
-            ],
           ],
         );
       },

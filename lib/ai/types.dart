@@ -209,7 +209,6 @@ const agentLabels = <String, String>{
   'device': 'Phone control',
   'memory': 'Memory',
   'records': 'Records',
-  'design': 'Design',
 };
 
 /// The short name for a label, where a long one would not fit (the orb).

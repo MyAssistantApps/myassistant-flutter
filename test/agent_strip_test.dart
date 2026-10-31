@@ -12,16 +12,15 @@ void main() {
   final engine = AssistantEngine.instance;
   tearDown(() => engine.agentControl.value = null);
 
-  test('the roster is the manager plus the nine server specialists', () {
+  test('the roster is the manager plus the eight server specialists', () {
     expect(agentRoster.map((a) => a.id), [
       'manager', 'comms', 'planner', 'info', 'commerce', 'creative', 'device', 'memory', 'records',
-      'design',
     ]);
   });
 
   testWidgets('idle: all nine shown, ready', (tester) async {
     await tester.pumpWidget(_host());
-    expect(find.text('10 agents ready'), findsOneWidget);
+    expect(find.text('9 agents ready'), findsOneWidget);
     for (final a in agentRoster) {
       expect(find.byIcon(a.icon), findsOneWidget);
     }
@@ -42,7 +41,7 @@ void main() {
     expect(find.text('Planning agent working'), findsOneWidget);
     engine.agentControl.value = null;
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('10 agents ready'), findsOneWidget);
+    expect(find.text('9 agents ready'), findsOneWidget);
   });
 
   testWidgets('tap: the list of who does what', (tester) async {

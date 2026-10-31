@@ -2,12 +2,12 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../design/motion.dart';
 import '../design/neon_tokens.dart';
 import '../ai/types.dart' show AgentTurn;
 import '../features/assistant/state/assistant_engine.dart';
-import '../design/neon_fonts.dart';
 
 /// One of the assistant's agents, as the owner sees it. The ids match the
 /// server's specialists (backend src/agents/manager.js).
@@ -30,7 +30,7 @@ AgentInfo? agentById(String id) {
   return null;
 }
 
-/// The manager first, then the nine specialists it hands turns to.
+/// The manager first, then the eight specialists it hands turns to.
 const agentRoster = <AgentInfo>[
   AgentInfo('manager', 'Manager', Icons.hub_rounded,
       'Reads each request and decides which agents handle it.', 'Manager'),
@@ -50,13 +50,11 @@ const agentRoster = <AgentInfo>[
       'What to remember or forget about you and your people.'),
   AgentInfo('records', 'Records', Icons.folder_copy_rounded,
       'Saved documents, record books, cases and clients.'),
-  AgentInfo('design', 'Design', Icons.brush_rounded,
-      'How this app looks: colours, cards, fonts, Home layout and new cards.'),
 ];
 
 /// THE AGENTS, ON SCREEN (2026-10-31).
 ///
-/// All ten agents in one row. Idle ones sit dim and take a slow breath
+/// All nine agents in one row. Idle ones sit dim and take a slow breath
 /// every few seconds — available, not in use. When a turn starts, the
 /// manager and the specialists it chose light up, and the one running a
 /// tool pulses. Tap for the list of who does what.
@@ -180,7 +178,7 @@ class _AgentStripState extends State<AgentStrip> with TickerProviderStateMixin {
                         key: ValueKey(_caption),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: displayFont(
+                        style: GoogleFonts.spaceGrotesk(
                           color: _working ? Neon.violet : Neon.textLo,
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
@@ -359,7 +357,7 @@ Future<void> showAgentSheet(BuildContext context) {
     context: context,
     backgroundColor: Neon.surface,
     showDragHandle: true,
-    // Tall enough for all ten without a scroll on a phone.
+    // Tall enough for all nine without a scroll on a phone.
     isScrollControlled: true,
     builder: (_) => ValueListenableBuilder(
       valueListenable: engine.agentControl,
@@ -372,7 +370,7 @@ Future<void> showAgentSheet(BuildContext context) {
           children: [
             Text(
               'Your agents',
-              style: displayFont(
+              style: GoogleFonts.spaceGrotesk(
                 color: Neon.textHi,
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
@@ -487,7 +485,7 @@ class _HandoffChip extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 agent.chip,
-                style: displayFont(
+                style: GoogleFonts.spaceGrotesk(
                   color: state == _ChipState.waiting ? Neon.textLo : Neon.textHi,
                   fontSize: 11.5,
                   fontWeight: working ? FontWeight.w700 : FontWeight.w600,

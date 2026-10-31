@@ -32,7 +32,6 @@ import 'services/background_scan.dart';
 import 'services/push_service.dart';
 import 'services/telemetry.dart';
 import 'theme/app_theme.dart';
-import 'design/ui_spec.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -79,9 +78,6 @@ Future<void> main() async {
   // bars to match — light bars/dark icons or the other way around).
   await ThemeController.load();
   await AccentController.load();
-  // The person's own look (the Design agent), cached: drawn from the first
-  // frame; the server's copy follows after sign-in.
-  await UiSpecStore.load();
   // Style + language prefs load in parallel with the first frame; every
   // later read is a plain field access (no disk on hot paths).
   StylePrefs.instance.load();
@@ -122,10 +118,6 @@ Future<void> main() async {
 /// directly in a live voice conversation with their assistant
 /// (HomeShell). Voice mode, history, clients, settings and MCP are
 /// secondary screens behind ⋯ More.
-/// The phone's text scale times the person's own ([UiSpec.scale]).
-TextScaler _scaled(TextScaler phone, double mine) =>
-    mine == 1 ? phone : TextScaler.linear(phone.scale(14) / 14 * mine);
-
 class MyAssistantApp extends StatelessWidget {
   const MyAssistantApp({super.key});
 
@@ -136,9 +128,7 @@ class MyAssistantApp extends StatelessWidget {
     // Two things repaint the whole app: the light/dark flip and the
     // user's accent colour. Both resolve inside build methods, so the
     // tree is rebuilt for either.
-    return ValueListenableBuilder<UiSpec>(
-      valueListenable: UiSpecStore.current,
-      builder: (_, look, ___) => ValueListenableBuilder<Color>(
+    return ValueListenableBuilder<Color>(
       valueListenable: AccentController.seed,
       builder: (_, __, ___) => ValueListenableBuilder<bool>(
       valueListenable: ThemeController.dark,
@@ -157,19 +147,14 @@ class MyAssistantApp extends StatelessWidget {
         themeMode: ThemeMode.light, // AppTheme reads Neon.isDark itself
         // F1 — the app lock, drawn over the Navigator so it covers every
         // screen, not only the first one (audit, 2026-09-27).
-        builder: (context, child) => MediaQuery(
-            // Their text size (the Design agent), on top of the phone's.
-            data: MediaQuery.of(context).copyWith(
-                textScaler: _scaled(MediaQuery.textScalerOf(context), look.scale)),
-            child: LockLayer(
-                locked: () => AuthGate.locked,
-                changes: AuthGate.lockChanges,
-                // The connection, over every screen (widgets/net_banner.dart).
-                child: NetBanner(child: child!))),
+        builder: (context, child) => LockLayer(
+            locked: () => AuthGate.locked,
+            changes: AuthGate.lockChanges,
+            // The connection, over every screen (widgets/net_banner.dart).
+            child: NetBanner(child: child!)),
         home: KeyedSubtree(
-            key: ValueKey('$dark|${AccentController.seed.value.toARGB32()}|${UiSpecStore.stamp}'),
+            key: ValueKey('$dark|${AccentController.seed.value.toARGB32()}'),
             child: const AuthGate()),
-      ),
       ),
       ),
     );
@@ -289,8 +274,6 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
     // as "changes only appear after closing and reopening the app".
     if (state == AppLifecycleState.resumed) {
       BriefService.instance.refresh(force: true);
-      // A look changed on another phone (or by voice there) comes over.
-      if (AuthService.instance.isSignedIn) unawaited(UiSpecStore.refresh());
       // "Paste & edit" for text copied in another app (2026-10-04); after a
       // beat, because Android lets a window read the clipboard only once
       // it has focus again.
@@ -311,9 +294,6 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
 
   void _onAuthChanged() {
     if (mounted) setState(() {});
-    // Their look from the server, once per person: a reinstall gets it back.
-    final me = AuthService.instance.user;
-    if (AuthService.instance.isSignedIn && me != null) unawaited(UiSpecStore.ensureFor(me.id));
     // Signed in (at launch too): the admin may have asked for a self-check.
     if (AuthService.instance.isSignedIn) {
       Future.delayed(const Duration(seconds: 8), SelfCheck.instance.runIfRequested);

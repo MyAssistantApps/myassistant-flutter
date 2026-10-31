@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../design/neon_tokens.dart';
@@ -13,7 +14,6 @@ import '../splash_screen.dart';
 import 'guide_screen.dart';
 import 'permissions_screen.dart';
 import 'welcome_screen.dart';
-import '../../design/neon_fonts.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  NAME YOUR ASSISTANT — the last step of registration.
@@ -227,7 +227,7 @@ class _AssistantSetupScreenState extends State<AssistantSetupScreen> {
                   const SizedBox(height: 22),
                   Text(
                     'Name your assistant',
-                    style: displayFont(
+                    style: GoogleFonts.spaceGrotesk(
                       fontSize: 26,
                       fontWeight: FontWeight.w700,
                       color: Neon.textHi,

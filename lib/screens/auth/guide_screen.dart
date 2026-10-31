@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../design/neon_tokens.dart';
 import '../../design/motion.dart';
 import '../../design/neon_widgets.dart';
 import '../../widgets/glow_cta.dart';
 import '../../services/assistant_identity.dart';
-import '../../design/neon_fonts.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  FIRST-RUN GUIDE — four swipeable cards, shown once after the welcome
@@ -121,7 +121,7 @@ class _GuideScreenState extends State<GuideScreen> {
                               const SizedBox(height: 26),
                               Text(
                                 p.title,
-                                style: displayFont(
+                                style: GoogleFonts.spaceGrotesk(
                                   fontSize: 26,
                                   fontWeight: FontWeight.w700,
                                   color: Neon.textHi,

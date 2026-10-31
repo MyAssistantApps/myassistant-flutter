@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../ai/listen.dart';
 import '../ai/model_port.dart';
@@ -14,7 +15,6 @@ import '../services/assistant_identity.dart';
 import '../widgets/inline_voice.dart' show NightField;
 import '../widgets/voice_orb.dart';
 import '../design/motion.dart';
-import '../design/neon_fonts.dart';
 
 /// ─────────────────────────────────────────────────────────────────────
 ///  ASSIGN A TASK AND WALK AWAY.
@@ -179,7 +179,7 @@ class _QuickTaskScreenState extends State<QuickTaskScreen> {
                       'Assign a task',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: displayFont(
+                      style: GoogleFonts.spaceGrotesk(
                         color: Neon.textHi,
                         fontSize: 19,
                         fontWeight: FontWeight.w700,
@@ -254,7 +254,7 @@ class _QuickTaskScreenState extends State<QuickTaskScreen> {
                   _caption,
                   key: ValueKey(_caption),
                   textAlign: TextAlign.center,
-                  style: displayFont(
+                  style: GoogleFonts.spaceGrotesk(
                     color: _stage == _Stage.failed
                         ? Neon.errorInk
                         : _stage == _Stage.sent

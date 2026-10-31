@@ -209,7 +209,7 @@ class GlassCard extends StatelessWidget {
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(Neon.s4),
-    this.radius,
+    this.radius = Neon.rCard,
     this.glow,
     this.wash,
     this.minHeight = 0,
@@ -218,9 +218,7 @@ class GlassCard extends StatelessWidget {
 
   final Widget child;
   final EdgeInsets padding;
-
-  /// Null: the person's card radius ([Neon.cardRadius]).
-  final double? radius;
+  final double radius;
 
   /// The one lit card on the screen: its halo and edge in this colour.
   final Color? glow;
@@ -236,9 +234,7 @@ class GlassCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final g = glow;
     final w = wash ?? g;
-    final radius = this.radius ?? Neon.cardRadius;
     final r = BorderRadius.circular(radius);
-    final style = Neon.cardStyle;
     Widget inner = Container(
       constraints: BoxConstraints(minHeight: minHeight),
       padding: padding,
@@ -258,27 +254,6 @@ class GlassCard extends StatelessWidget {
       child: child,
     );
     if (clip) inner = ClipRRect(borderRadius: r, child: inner);
-    // THE PERSON'S CARD STYLE (the Design agent): glass is the app's own;
-    // solid is the card colour, no light; outlined is a border on the page;
-    // flat is the card colour with no lift.
-    if (style != 'glass') {
-      return DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: r,
-          color: style == 'outlined' ? Colors.transparent : Neon.surface,
-          border: style == 'outlined'
-              ? Border.all(color: (g ?? Neon.textLo).withValues(alpha: 0.55), width: 1.2)
-              : style == 'solid'
-                  ? Border.all(color: Neon.hairline)
-                  : null,
-          boxShadow: [
-            if (style == 'solid') ...Neon.lift,
-            if (g != null) ...Neon.halo(g, strength: 0.35),
-          ],
-        ),
-        child: inner,
-      );
-    }
     return CustomPaint(
       foregroundPainter: _HairlinePainter(
         radius: radius,

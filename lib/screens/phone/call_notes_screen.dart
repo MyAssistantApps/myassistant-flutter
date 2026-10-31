@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../design/apple_kit.dart';
 import '../../design/motion.dart';
@@ -11,7 +12,6 @@ import '../../services/call_notes_service.dart';
 import '../../services/call_recording_watcher.dart';
 import 'call_detail_screen.dart';
 import '../../services/app_feedback.dart';
-import '../../design/neon_fonts.dart';
 
 /// CALL NOTES — the phone keeps its own dialer and its own recorder; this
 /// screen owns the consent toggle, walks the user to the system setting
@@ -116,7 +116,7 @@ class _CallNotesScreenState extends State<CallNotesScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('One more step — on your phone',
-                style: displayFont(
+                style: GoogleFonts.spaceGrotesk(
                     color: Neon.textHi,
                     fontSize: 17,
                     fontWeight: FontWeight.w700)),

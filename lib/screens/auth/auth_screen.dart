@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -10,7 +11,6 @@ import '../../design/neon_widgets.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/glow_cta.dart';
-import '../../design/neon_fonts.dart';
 
 /// First screen of the app when signed out.
 ///
@@ -125,7 +125,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       const SizedBox(height: 22),
                       Text(
                         _isSignUp ? 'Create your account' : 'Welcome back',
-                        style: displayFont(
+                        style: GoogleFonts.spaceGrotesk(
                           fontSize: 26,
                           fontWeight: FontWeight.w700,
                           color: Neon.textHi,

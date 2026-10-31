@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../design/apple_kit.dart';
@@ -12,7 +13,6 @@ import 'chat_screen.dart';
 import '../services/app_feedback.dart';
 import '../services/contacts_sync_service.dart';
 import '../design/motion.dart';
-import '../design/neon_fonts.dart';
 
 /// ─────────────────────────────────────────────────────────────────────
 ///  WHO CAN I TALK TO, AND WHO DO I HAVE TO INVITE.
@@ -219,7 +219,7 @@ class _ChatNewScreenState extends State<ChatNewScreen> with WidgetsBindingObserv
       appBar: AppBar(
         title: Text(
           widget.pickForGroup ? 'Add people' : 'New chat',
-          style: displayFont(fontWeight: FontWeight.w700),
+          style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700),
         ),
       ),
       floatingActionButton: widget.pickForGroup && _picked.isNotEmpty

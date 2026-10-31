@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../design/neon_tokens.dart';
 import '../../design/neon_widgets.dart';
@@ -10,7 +11,6 @@ import '../../features/assistant/widgets/siri_orb.dart';
 import '../../services/assistant_identity.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/glow_cta.dart';
-import '../../design/neon_fonts.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  WELCOME — the payoff moment, shown ONCE right after onboarding.
@@ -129,7 +129,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                             ? 'Welcome aboard!'
                                             : 'You\'re all set, $who!',
                                         textAlign: TextAlign.center,
-                                        style: displayFont(
+                                        style: GoogleFonts.spaceGrotesk(
                                           fontSize: 30,
                                           fontWeight: FontWeight.w700,
                                           color: Neon.textHi,

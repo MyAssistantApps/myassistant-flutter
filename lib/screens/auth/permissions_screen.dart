@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../design/apple_kit.dart';
@@ -8,7 +9,6 @@ import '../../design/neon_widgets.dart';
 import '../../widgets/glow_cta.dart';
 import '../../services/call_history.dart';
 import '../../services/contacts_sync_service.dart';
-import '../../design/neon_fonts.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  PERMISSIONS — asked for up front, required only where the app cannot
@@ -233,7 +233,7 @@ class _PermissionsScreenState extends State<PermissionsScreen>
                   const SizedBox(height: 22),
                   Text(
                     'Give it its senses',
-                    style: displayFont(
+                    style: GoogleFonts.spaceGrotesk(
                       fontSize: 26,
                       fontWeight: FontWeight.w700,
                       color: Neon.textHi,

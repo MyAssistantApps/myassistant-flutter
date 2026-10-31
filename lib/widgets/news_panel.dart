@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../design/dock_metrics.dart';
 import '../design/motion.dart';
@@ -11,7 +12,6 @@ import '../services/app_feedback.dart';
 import '../services/news_feed.dart';
 import '../services/news_follow.dart';
 import 'news_deck.dart';
-import '../design/neon_fonts.dart';
 
 /// TODAY'S HEADLINES, ON SCREEN.
 ///
@@ -250,7 +250,7 @@ class _NewsPanelState extends State<NewsPanel> {
               title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: displayFont(
+              style: GoogleFonts.spaceGrotesk(
                 color: Neon.textHi,
                 fontSize: 19,
                 fontWeight: FontWeight.w700,

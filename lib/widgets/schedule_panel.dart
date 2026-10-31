@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../design/dock_metrics.dart';
 import '../design/motion.dart';
@@ -6,7 +7,6 @@ import '../design/neon_tokens.dart';
 import '../features/assistant/state/assistant_engine.dart';
 import '../models/schedule_item.dart';
 import 'neon_cards.dart';
-import '../design/neon_fonts.dart';
 
 /// THE DAY'S COMMITMENTS, ON SCREEN.
 ///
@@ -157,7 +157,7 @@ class _SchedulePanelState extends State<SchedulePanel> {
             child: Text(
               // The count IS the answer to "how many do I have".
               n == 1 ? '1 thing $day' : '$n things $day',
-              style: displayFont(
+              style: GoogleFonts.spaceGrotesk(
                 color: Neon.textHi,
                 fontSize: 19,
                 fontWeight: FontWeight.w700,
@@ -189,7 +189,7 @@ class _SchedulePanelState extends State<SchedulePanel> {
             child: Text(
               'Could not read ${engine.scheduleFailed.join(", ")} — this list '
               'may be incomplete.',
-              style: displayFont(
+              style: GoogleFonts.spaceGrotesk(
                 color: Neon.warningInk,
                 fontSize: 13,
                 height: 1.3,
@@ -233,7 +233,7 @@ class _SchedulePanelState extends State<SchedulePanel> {
               width: 66,
               child: Text(
                 item.time,
-                style: displayFont(
+                style: GoogleFonts.spaceGrotesk(
                   color: open ? Neon.cyanInk : Neon.textLo,
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
@@ -254,7 +254,7 @@ class _SchedulePanelState extends State<SchedulePanel> {
                   children: [
                     Text(
                       item.title,
-                      style: displayFont(
+                      style: GoogleFonts.spaceGrotesk(
                         color: Neon.textHi,
                         fontSize: 16,
                         height: 1.3,
@@ -269,7 +269,7 @@ class _SchedulePanelState extends State<SchedulePanel> {
                           sub,
                           maxLines: open ? 6 : 1,
                           overflow: open ? TextOverflow.visible : TextOverflow.ellipsis,
-                          style: displayFont(
+                          style: GoogleFonts.spaceGrotesk(
                             color: Neon.textDim,
                             fontSize: 13,
                             height: 1.35,
@@ -288,7 +288,7 @@ class _SchedulePanelState extends State<SchedulePanel> {
                             Flexible(
                               child: Text(
                                 'Looking this up — ask me anything about it',
-                                style: displayFont(
+                                style: GoogleFonts.spaceGrotesk(
                                   color: Neon.cyanInk,
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
