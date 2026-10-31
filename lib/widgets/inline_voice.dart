@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import '../ai/types.dart' show AgentTurn, agentShortName;
 
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
@@ -859,10 +860,18 @@ class _InlineCaptionOverlayState extends State<InlineCaptionOverlay>
                                                   String>(
                                                 valueListenable:
                                                     AssistantIdentity.notifier,
+                                                // WHO IS SPEAKING (2026-10-31): the assistant's
+                                                // name, or the agent the owner asked for
+                                                // ("call your manager" → Manager), or the
+                                                // specialist at work — back to the name
+                                                // when the turn is done.
                                                 builder: (_, name, __) =>
-                                                    VoiceOrb(
-                                                  size: _orbSize,
-                                                  label: orbLabelFor(name),
+                                                    ValueListenableBuilder<AgentTurn?>(
+                                                  valueListenable: engine.agentControl,
+                                                  builder: (_, turn, __) => VoiceOrb(
+                                                    size: _orbSize,
+                                                    label: orbLabelFor(speakerFor(turn, name)),
+                                                  ),
                                                 ),
                                               ),
                                             ),
@@ -2126,4 +2135,12 @@ class _AnswerAfterglowState extends State<AnswerAfterglow> {
       ),
     );
   }
+}
+
+/// The name under the orb for [turn]: the agent answering in person, else
+/// the specialist at work, else the assistant's own [name].
+String speakerFor(AgentTurn? turn, String name) {
+  if (turn == null || turn.over) return name;
+  final who = turn.persona ?? turn.running;
+  return who == null ? name : agentShortName(who);
 }

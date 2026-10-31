@@ -111,7 +111,12 @@ class AiToolSpec {
 /// each turn to specialist agents (backend agents/manager.js) and says
 /// which, so the owner can see it — "Manager → Shopping and money".
 class AgentControl {
-  const AgentControl({this.via = 'skip', this.agents = const [], this.toolAgent = const {}});
+  const AgentControl({
+    this.via = 'skip',
+    this.agents = const [],
+    this.toolAgent = const {},
+    this.addressed,
+  });
 
   /// How the manager decided: rules, model, carry, none, late or skip.
   final String via;
@@ -121,6 +126,21 @@ class AgentControl {
 
   /// Tool name -> the specialist id that owns it this turn.
   final Map<String, String> toolAgent;
+
+  /// The agent the owner asked to speak to ("call your manager"), who
+  /// answers this turn in person.
+  final ({String id, String label})? addressed;
+
+  /// The same, with [id] among the specialists (a Live turn adds each one
+  /// as the model reaches for its tools).
+  AgentControl withAgent(String id) => agents.any((a) => a.id == id)
+      ? this
+      : AgentControl(
+          via: via,
+          agents: [...agents, (id: id, label: agentLabels[id] ?? id)],
+          toolAgent: toolAgent,
+          addressed: addressed,
+        );
 
   /// The manager stayed out of it (a shortcut, a note from the app).
   bool get skipped => via == 'skip';
@@ -152,11 +172,50 @@ class AgentControl {
         for (final e in (j['toolAgent'] as Map).entries)
           if (e.key is String && e.value is String) e.key as String: e.value as String,
     };
-    return AgentControl(via: j['via'] is String ? j['via'] as String : 'skip', agents: agents, toolAgent: owners);
+    final a = j['addressed'];
+    return AgentControl(
+      via: j['via'] is String ? j['via'] as String : 'skip',
+      agents: agents,
+      toolAgent: owners,
+      addressed: a is Map && a['id'] is String && a['label'] is String
+          ? (id: a['id'] as String, label: a['label'] as String)
+          : null,
+    );
   }
 }
 
 /// One turn's hand-off as the owner sees it: who has control, which
 /// specialist runs now (its label), which have finished (ids), and
 /// whether the reply is out.
-typedef AgentTurn = ({AgentControl control, String? running, Set<String> done, bool over});
+///
+/// [persona]: the agent answering in person ("Manager"), when the owner
+/// asked for one — the name on screen for that turn.
+typedef AgentTurn = ({
+  AgentControl control,
+  String? running,
+  Set<String> done,
+  bool over,
+  String? persona,
+});
+
+/// The agents' names, by the server's ids (backend agents/manager.js).
+const agentLabels = <String, String>{
+  'manager': 'Manager',
+  'comms': 'Communication',
+  'planner': 'Planning',
+  'info': 'Information',
+  'commerce': 'Shopping and money',
+  'creative': 'Creative',
+  'device': 'Phone control',
+  'memory': 'Memory',
+  'records': 'Records',
+};
+
+/// The short name for a label, where a long one would not fit (the orb).
+String agentShortName(String label) => const {
+      'Communication': 'Comms',
+      'Information': 'Info',
+      'Shopping and money': 'Shopping',
+      'Phone control': 'Phone',
+    }[label] ??
+    label;

@@ -806,6 +806,10 @@ class LiveVoice {
   /// This session's tools whose calls may run together (pure reads; the
   /// server's /ai/context parallelSafe).
   Set<String> _parallelSafe = const {};
+
+  /// Which specialist owns each of this session's tools (the server's
+  /// manager), so a Live turn shows the agent at work too.
+  AgentControl? agentMap;
   String? _sid;
   String? _handle;
   bool _resumable = false;
@@ -1033,6 +1037,7 @@ class LiveVoice {
       ];
       _serverTools = names;
       _parallelSafe = ctx.parallelSafe;
+      agentMap = ctx.manager;
       final setup = LiveSetup(
         model: cfg.model,
         voice: LiveVoicePrefs.voiceFor(cfg),

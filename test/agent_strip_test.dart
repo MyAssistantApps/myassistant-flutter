@@ -33,10 +33,10 @@ void main() {
       agents: [(id: 'planner', label: 'Planning')],
       toolAgent: {'create_reminder': 'planner'},
     );
-    engine.agentControl.value = (control: control, running: null, done: const {}, over: false);
+    engine.agentControl.value = (control: control, running: null, done: const {}, over: false, persona: null);
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('Manager → Planning'), findsOneWidget);
-    engine.agentControl.value = (control: control, running: 'Planning', done: const {}, over: false);
+    engine.agentControl.value = (control: control, running: 'Planning', done: const {}, over: false, persona: null);
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('Planning agent working'), findsOneWidget);
     engine.agentControl.value = null;

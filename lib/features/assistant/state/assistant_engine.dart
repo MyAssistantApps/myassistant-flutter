@@ -16,7 +16,7 @@ import '../../../ai/live_voice.dart';
 import '../../../ai/model_port.dart';
 import '../../../ai/search_suggestions.dart';
 import '../../../ai/speech.dart' show SpeechEngine;
-import '../../../ai/types.dart' show AgentTurn, AiToolSpec;
+import '../../../ai/types.dart' show AgentControl, AgentTurn, AiToolSpec, agentLabels;
 import '../../../core/log.dart';
 // Screens and settings reachable BY VOICE (open_app_screen / set_theme).
 import '../../../services/avatar_message_service.dart';
@@ -1781,8 +1781,8 @@ class AssistantEngine extends ChangeNotifier {
       case LiveBrain(:final event):
         _liveTurnBegins();
         switch (event) {
-          case BrainToolCall(:final name):
-            _toolStarted(name);
+          case BrainToolCall(:final name, :final args):
+            _toolStarted(name, args);
             _setPhase(AssistantPhase.responding, silent: true);
           case BrainDeviceAction(:final tool, :final action, :final respond):
             unawaited(_performForBrain(tool, action, respond));
@@ -1862,6 +1862,7 @@ class AssistantEngine extends ChangeNotifier {
   /// LISTENING (or the goodbye closes the conversation).
   void _onLiveTurnDone(String user, String reply, bool interrupted) {
     _lastLifeAt = DateTime.now();
+    _agentsDone();
     // Only a Live turn's own flag: a cascade turn running meanwhile (typed,
     // a note) keeps its own.
     if (_liveTurnRunning) _turnRunning = false;
@@ -2150,7 +2151,13 @@ class AssistantEngine extends ChangeNotifier {
             _agentClear?.cancel();
             agentControl.value = control == null || control.skipped
                 ? null
-                : (control: control, running: null, done: const {}, over: false);
+                : (
+                    control: control,
+                    running: null,
+                    done: const {},
+                    over: false,
+                    persona: control.addressed?.label,
+                  );
           case BrainPartialText(:final text):
             _finishTools();
             if (phase == AssistantPhase.responding) {
@@ -2158,8 +2165,8 @@ class AssistantEngine extends ChangeNotifier {
             }
             _captionLine('hari', text);
             live = _liveReply(live, text);
-          case BrainToolCall(:final name):
-            _toolStarted(name);
+          case BrainToolCall(:final name, :final args):
+            _toolStarted(name, args);
             if (phase != AssistantPhase.speaking) {
               _setPhase(AssistantPhase.responding, silent: true);
             }
@@ -2193,21 +2200,7 @@ class AssistantEngine extends ChangeNotifier {
         _turnRunning = false;
         _finishTools();
         activityLabel.value = null;
-        // Every specialist has done its part: shown a moment, then cleared.
-        final held = agentControl.value;
-        if (held != null) {
-          final turn = (
-            control: held.control,
-            running: null,
-            done: {for (final a in held.control.agents) a.id},
-            over: true,
-          );
-          agentControl.value = turn;
-          _agentClear?.cancel();
-          _agentClear = Timer(const Duration(milliseconds: 1600), () {
-            if (identical(agentControl.value, turn)) agentControl.value = null;
-          });
-        }
+        _agentsDone();
         replyComplete = true;
         _afterTurn();
       }
@@ -2296,6 +2289,25 @@ class AssistantEngine extends ChangeNotifier {
   }
 
   /// The tool the model is using, as a chip ("Checking the weather…").
+  /// The turn's work is done: every agent ✓ for a moment, then the name
+  /// and the lane go back to the assistant.
+  void _agentsDone() {
+    final held = agentControl.value;
+    if (held == null || held.over) return;
+    final turn = (
+      control: held.control,
+      running: null,
+      done: {for (final a in held.control.agents) a.id},
+      over: true,
+      persona: held.persona,
+    );
+    agentControl.value = turn;
+    _agentClear?.cancel();
+    _agentClear = Timer(const Duration(milliseconds: 1600), () {
+      if (identical(agentControl.value, turn)) agentControl.value = null;
+    });
+  }
+
   /// The id of the specialist [held] says is running, if any.
   static String? _agentIdOf(AgentTurn held) {
     final label = held.running;
@@ -2306,19 +2318,47 @@ class AssistantEngine extends ChangeNotifier {
     return null;
   }
 
-  void _toolStarted(String tool) {
+  void _toolStarted(String tool, [Map<String, Object?> args = const {}]) {
     _finishTools();
-    final held = agentControl.value;
+    var held = agentControl.value;
+    // A Live turn has no manager's plan: it starts from the session's map
+    // of who owns which tool, and adds each agent as it is used.
+    if (held == null || held.over) {
+      final map = _live.agentMap;
+      if (map != null && _liveTurnRunning) {
+        _agentClear?.cancel();
+        held = (
+          control: AgentControl(via: 'live', toolAgent: map.toolAgent),
+          running: null,
+          done: const <String>{},
+          over: false,
+          persona: null,
+        );
+      }
+    }
     if (held != null) {
-      final next = held.control.toolAgent[tool];
-      final prev = _agentIdOf(held);
-      agentControl.value = (
-        control: held.control,
-        running: held.control.labelFor(tool),
-        // The specialist handing over has finished its part.
-        done: {...held.done, if (prev != null && prev != next) prev},
-        over: false,
-      );
+      // "Call your manager": that agent answers this turn in person.
+      if (tool == 'talk_as_agent') {
+        agentControl.value = (
+          control: held.control,
+          running: held.running,
+          done: held.done,
+          over: false,
+          persona: agentLabels[args['agent']] ?? 'Manager',
+        );
+      } else {
+        final next = held.control.toolAgent[tool];
+        final prev = _agentIdOf(held);
+        final control = next == null ? held.control : held.control.withAgent(next);
+        agentControl.value = (
+          control: control,
+          running: control.labelFor(tool),
+          // The specialist handing over has finished its part.
+          done: {...held.done, if (prev != null && prev != next) prev},
+          over: false,
+          persona: held.persona,
+        );
+      }
     }
     if (LocationService.locationTools.contains(tool)) {
       unawaited(_maybeAskLocation());
