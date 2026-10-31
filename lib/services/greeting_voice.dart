@@ -56,17 +56,14 @@ class GreetingVoice {
 
   static const _magic = [0x50, 0x43, 0x4D, 0x31]; // "PCM1", then the rate
 
-  /// THE SHARED LIVE VOICE. OpenAI Realtime and GPT-Live both use this same
-  /// fixed female voice. Its greeting is generated once by the backend and
-  /// shared across users, then cached on each phone for instant playback.
+  /// THE VOICE SHE TALKS IN: the one picked in Settings (or the server's
+  /// default), for GPT-Live and for OpenAI Realtime alike. The greeting is
+  /// made once per voice by the backend and cached on each phone. It was
+  /// fixed to "marin" before, so the hello never matched a pick.
   String? _liveVoice() {
     final c = _config();
     if (!c.viaServer) return null;
-    if (c.live.transport == 'gpt-live') {
-      return LiveVoicePrefs.voiceFor(c.live);
-    }
-    // The server forces this same preset for Realtime and speech replies.
-    return 'marin';
+    return LiveVoicePrefs.voiceFor(c.live);
   }
 
   /// One file per wording AND voice: a new voice is a new greeting.

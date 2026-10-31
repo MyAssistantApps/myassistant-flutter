@@ -101,7 +101,7 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
         configured,
       ].whereType<String>().firstWhere(
             (v) => offered.contains(v),
-            orElse: () => 'shimmer',
+            orElse: () => configured.isNotEmpty ? configured : 'coral',
           );
       _rules = (r?['instructions'] as List?) ?? [];
     });
@@ -157,7 +157,7 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
   }
 
   String _voiceName(String id) {
-    if (id.isEmpty) return 'Gleam';
+    if (id.isEmpty) return 'Default';
     return '${id[0].toUpperCase()}${id.substring(1)}';
   }
 

@@ -245,7 +245,7 @@ class _VoicePickerScreenState extends State<VoicePickerScreen> {
               children: [
                 AppleRow(
                   leading: IconTile(Icons.wifi_off_rounded, Neon.textLo),
-                  title: "Couldn't load GPT Live voices",
+                  title: "Couldn't load the voices",
                   subtitle: 'Check your connection and try again.',
                   trailing: TextButton(
                     onPressed: _loadVoices,
