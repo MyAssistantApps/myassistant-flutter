@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../design/apple_kit.dart';
@@ -17,6 +16,7 @@ import '../../services/studio_service.dart';
 import 'studio_look_screen.dart';
 import '../../services/app_feedback.dart';
 import '../../design/motion.dart';
+import '../../design/neon_fonts.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  STYLE STUDIO — the front door.
@@ -379,7 +379,7 @@ class _StudioScreenState extends State<StudioScreen> {
           ),
           const SizedBox(height: 18),
           Text('See yourself in it first',
-              style: GoogleFonts.spaceGrotesk(
+              style: displayFont(
                   fontSize: 25,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.5,

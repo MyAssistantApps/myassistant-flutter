@@ -3,9 +3,9 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../services/assistant_identity.dart';
+import '../design/neon_fonts.dart';
 
 /// THE SPLASH (2026-10-06, the owner: "something new and modern"). The new
 /// logo comes alive: the microphone draws itself on, its capsule fills with
@@ -128,7 +128,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                     valueListenable: AssistantIdentity.notifier,
                     builder: (_, name, __) => Text(
                       name == AssistantIdentity.fallback ? 'My Assistant' : name,
-                      style: GoogleFonts.spaceGrotesk(
+                      style: displayFont(
                         color: Colors.white,
                         fontSize: 32,
                         letterSpacing: -0.5,

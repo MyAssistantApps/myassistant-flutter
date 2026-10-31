@@ -5,7 +5,6 @@ import '../ai/types.dart' show AgentTurn, agentShortName;
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart' show ImageSource;
 import 'package:permission_handler/permission_handler.dart';
 
@@ -21,6 +20,7 @@ import '../services/auth_service.dart';
 import 'caption_scroll.dart';
 import 'streaming_caption.dart';
 import 'voice_orb.dart';
+import '../design/neon_fonts.dart';
 
 /// Is the full-screen voice session on screen right now? One definition
 /// for the overlay, the shell's Back handling and the toast policy.
@@ -1221,7 +1221,7 @@ abstract final class _VoiceType {
   /// 24 pt w700 spotlight was. One style per size, made once.
   static final Map<double, TextStyle> _spoken = {};
   static TextStyle spoken(double size) =>
-      _spoken[size] ??= GoogleFonts.spaceGrotesk(
+      _spoken[size] ??= displayFont(
         fontSize: size,
         height: 1.34,
         fontWeight: FontWeight.w600,

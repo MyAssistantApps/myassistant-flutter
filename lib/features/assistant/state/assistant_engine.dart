@@ -82,6 +82,7 @@ import '../../people/address_sheet.dart';
 import '../../shopping/shop_handoff.dart';
 import '../../shopping/shopping_list_screen.dart';
 import '../../shopping/shopping_service.dart';
+import '../../../design/ui_spec.dart';
 
 /// The assistant experience's single source of truth (ChangeNotifier — the
 /// state-management style used across this codebase; the UI observes it
@@ -3060,6 +3061,36 @@ class AssistantEngine extends ChangeNotifier {
           } else {
             _reportDeviceFailure('set_app_theme',
                 target: mode, reason: 'not a theme this app has');
+          }
+        }
+        break;
+
+      // THE DESIGN AGENT (2026-10-31): the person's new look, already saved
+      // on the server — drawn at once, the whole app.
+      case 'apply_ui_spec':
+        {
+          final spec = e['spec'];
+          if (spec is Map) {
+            UiSpecStore.applyFromServer(Map<String, Object?>.from(spec));
+          } else {
+            _reportDeviceFailure('design_app', target: 'look', reason: 'no design came with it');
+          }
+        }
+        break;
+
+      // "Show me some options": each look for a few seconds, then back.
+      case 'preview_ui_specs':
+        {
+          final options = [
+            if (e['options'] is List)
+              for (final o in e['options'] as List)
+                if (o is Map && o['spec'] is Map)
+                  (label: o['label']?.toString() ?? 'Option', spec: Map<String, Object?>.from(o['spec'] as Map)),
+          ];
+          if (options.isEmpty) {
+            _reportDeviceFailure('preview_designs', target: 'options', reason: 'no options came with it');
+          } else {
+            UiSpecStore.preview(options, (e['seconds'] as num?)?.toInt() ?? 4);
           }
         }
         break;

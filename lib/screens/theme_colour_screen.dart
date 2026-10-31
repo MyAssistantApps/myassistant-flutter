@@ -5,6 +5,7 @@ import '../design/accent_controller.dart';
 import '../design/motion.dart';
 import '../design/neon_tokens.dart';
 import '../design/neon_widgets.dart';
+import '../design/ui_spec.dart';
 
 /// THEME COLOUR — its own screen, reached from Settings → Appearance.
 ///
@@ -71,6 +72,46 @@ class _ThemeColourScreenState extends State<ThemeColourScreen> {
                   ),
                 ],
               ),
+            ),
+            // YOUR DESIGN (the Design agent, 2026-10-31): the way back from
+            // any look, always here — undo the last change, or the app's own.
+            const SizedBox(height: 32),
+            Text('Your design',
+                style: TextStyle(color: Neon.textHi, fontSize: 17, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 6),
+            Text(
+              'Ask the assistant to change how the app looks — "make it feel like a sunset", '
+              '"rounder cards", "put my reminders first". It is saved to your account.',
+              style: TextStyle(color: Neon.textLo, fontSize: 14, height: 1.4),
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.undo_rounded, size: 18),
+                  label: const Text('Undo last change'),
+                  onPressed: () async {
+                    final ok = await UiSpecStore.undo();
+                    if (!ok && context.mounted) {
+                      ScaffoldMessenger.maybeOf(context)
+                          ?.showSnackBar(const SnackBar(content: Text('There is no earlier look to go back to.')));
+                    }
+                  },
+                ),
+                FilledButton.icon(
+                  icon: const Icon(Icons.restart_alt_rounded, size: 18),
+                  label: const Text('Reset to the original look'),
+                  onPressed: () async {
+                    final ok = await UiSpecStore.reset();
+                    if (!ok && context.mounted) {
+                      ScaffoldMessenger.maybeOf(context)
+                          ?.showSnackBar(const SnackBar(content: Text("Couldn't reach the server — try again.")));
+                    }
+                  },
+                ),
+              ],
             ),
           ],
         ),

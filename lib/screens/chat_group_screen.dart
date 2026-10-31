@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../design/neon_tokens.dart';
 import '../design/neon_widgets.dart';
@@ -11,6 +10,7 @@ import '../services/app_feedback.dart';
 import '../design/motion.dart';
 import '../widgets/chat_bubble.dart';
 import '../widgets/task_list_card.dart';
+import '../design/neon_fonts.dart';
 
 /// ─────────────────────────────────────────────────────────────────────
 ///  A GROUP, WITH THE ASSISTANT IN IT.
@@ -346,7 +346,7 @@ class _ChatGroupScreenState extends State<ChatGroupScreen> {
                 Text(widget.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.spaceGrotesk(
+                    style: displayFont(
                         fontWeight: FontWeight.w700, fontSize: 17)),
                 Text(
                   _members > 0 ? '$_members members' : 'Group',
@@ -477,7 +477,7 @@ class _ChatGroupScreenState extends State<ChatGroupScreen> {
               padding: const EdgeInsets.only(bottom: 3),
               child: Text(
                 m.name.split(' ').first,
-                style: GoogleFonts.spaceGrotesk(
+                style: displayFont(
                   color: Neon.cyanInk,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,

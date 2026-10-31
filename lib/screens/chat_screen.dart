@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../design/apple_kit.dart' show GroupedCard;
 import '../design/dock_metrics.dart';
@@ -19,6 +18,7 @@ import '../widgets/chat_bubble.dart';
 import 'chat_group_screen.dart';
 import 'chat_new_screen.dart';
 import '../services/app_feedback.dart';
+import '../design/neon_fonts.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  CHAT — the WhatsApp-style face of the agent-message rail.
@@ -174,7 +174,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 // (cyan into magenta at night); it was the one plain white
                 // tab name.
                 _litTitle(Text('Chat',
-                    style: GoogleFonts.spaceGrotesk(
+                    style: displayFont(
                         fontSize: 32,
                         fontWeight: FontWeight.w700,
                         letterSpacing: -0.6,

@@ -2,12 +2,13 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../design/motion.dart';
 import '../design/neon_tokens.dart';
 import '../features/assistant/state/assistant_engine.dart';
 import 'agent_strip.dart' show AgentHandoffLane;
+import '../design/neon_fonts.dart';
+import '../design/ui_spec.dart';
 
 /// WHAT THE USER SEES WHILE A TOOL IS RUNNING.
 ///
@@ -54,6 +55,7 @@ class _AssistantActivityPillState extends State<AssistantActivityPill>
     super.initState();
     engine.activityLabel.addListener(_onLabel);
     engine.agentControl.addListener(_onControl);
+    UiSpecStore.previewing.addListener(_onControl);
     // The shell can be rebuilt mid-turn — a theme flip remounts the whole
     // tree — with a tool already running, and the listener alone would
     // never fire for a label that is ALREADY set.
@@ -64,13 +66,17 @@ class _AssistantActivityPillState extends State<AssistantActivityPill>
   void _onControl() {
     if (!mounted) return;
     setState(() {});
-    final busy = engine.agentControl.value != null || _label != null;
+    final busy = engine.agentControl.value != null || _label != null ||
+        UiSpecStore.previewing.value != null;
     if (busy && !_spin.isAnimating && !_still) _spin.repeat();
     if (!busy) _spin.stop();
   }
 
   /// The small line naming who has control, or null.
   String? get _controlLine {
+    // Showing design options: which one is on screen now.
+    final preview = UiSpecStore.previewing.value;
+    if (preview != null) return preview;
     final held = engine.agentControl.value;
     if (held == null) return null;
     if (held.over) return 'Done \u00b7 ${held.control.summary}';
@@ -83,6 +89,7 @@ class _AssistantActivityPillState extends State<AssistantActivityPill>
   void dispose() {
     engine.activityLabel.removeListener(_onLabel);
     engine.agentControl.removeListener(_onControl);
+    UiSpecStore.previewing.removeListener(_onControl);
     _tick?.cancel();
     _spin.dispose();
     super.dispose();
@@ -260,7 +267,7 @@ class _AssistantActivityPillState extends State<AssistantActivityPill>
                             control,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.spaceGrotesk(
+                            style: displayFont(
                               color: Neon.violet,
                               fontSize: 11.5,
                               fontWeight: FontWeight.w600,
@@ -271,7 +278,7 @@ class _AssistantActivityPillState extends State<AssistantActivityPill>
                           tool ? _text : (control ?? ''),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.spaceGrotesk(
+                          style: displayFont(
                             color: Neon.textHi,
                             fontSize: 15,
                             fontWeight: FontWeight.w600,

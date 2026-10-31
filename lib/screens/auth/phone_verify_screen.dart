@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../design/neon_tokens.dart';
 import '../../design/neon_widgets.dart';
 import '../../widgets/glow_cta.dart';
 import '../../services/auth_service.dart';
 import '../../services/phone_verify_service.dart';
+import '../../design/neon_fonts.dart';
 
 /// Mandatory step between signing in and reaching the assistant.
 ///
@@ -146,7 +146,7 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
                   const SizedBox(height: 22),
                   Text(
                     'Verify your number',
-                    style: GoogleFonts.spaceGrotesk(
+                    style: displayFont(
                       fontSize: 26,
                       fontWeight: FontWeight.w700,
                       color: Neon.textHi,

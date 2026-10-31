@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'neon_tokens.dart';
 import 'motion.dart';
+import 'neon_fonts.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  APPLE KIT — the app's shared iOS-style building blocks.
@@ -44,7 +44,7 @@ class LargeTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     final title = Text(
       text,
-      style: GoogleFonts.spaceGrotesk(
+      style: displayFont(
         fontSize: 32,
         fontWeight: FontWeight.w700,
         letterSpacing: -0.6,
@@ -82,7 +82,7 @@ PreferredSizeWidget appleAppBar(BuildContext context, String title,
     // A BARE TextStyle, ON PURPOSE (2026-09-24). This is the one place
     // where the "bare fontWeight draws the regular file" rule does not
     // hold: AppBar wraps its title in the theme's titleTextStyle, which is
-    // GoogleFonts.spaceGrotesk(w700), so this title inherits the family
+    // displayFont(w700), so this title inherits the family
     // "SpaceGrotesk_700" and already draws from the bold file. Only size,
     // colour and spacing are set here, so all 20 detail bars keep the one
     // app-bar face the plain AppBars and LargeTitle use. (The clarity pass

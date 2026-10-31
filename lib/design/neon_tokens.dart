@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'neon_palette.dart';
+import 'neon_fonts.dart';
 
 export 'neon_palette.dart';
 
@@ -34,6 +35,28 @@ class Neon {
   static void usePalette(NeonPalette? p) {
     _palette = p;
     if (p != null) isDark = p.dark;
+  }
+
+  /// THE PERSON'S LOOK beyond colour (the Design agent, 2026-10-31; set
+  /// only through UiSpecStore): card corners, card style and the page's
+  /// background. Null is the app's own.
+  static double? _cardRadius;
+  static String? _cardStyle;
+  static String? _background;
+
+  /// A card's corner radius: theirs, or [rCard].
+  static double get cardRadius => _cardRadius ?? rCard;
+
+  /// glass (the app's own) | solid | outlined | flat.
+  static String get cardStyle => _cardStyle ?? 'glass';
+
+  /// ambient (the app's own light) | gradient | plain.
+  static String get backgroundStyle => _background ?? 'ambient';
+
+  static void useLook({double? radius, String? cardStyle, String? background}) {
+    _cardRadius = radius;
+    _cardStyle = cardStyle;
+    _background = background;
   }
 
   // Core palette — deep, confident accents on white; PURE BLACK in the
@@ -411,14 +434,20 @@ class Neon {
   static LinearGradient get glassFill => LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: isDark
+        colors: _palette != null
+            // A chosen palette's own cards, light or dark.
             ? [
-                Color.alphaBlend(
-                    const Color(0xFFB4C6FF).withValues(alpha: 0.07), surfaceHigh)
-                    .withValues(alpha: 0.94),
-                surface.withValues(alpha: 0.94),
+                Color.lerp(surface, surfaceHigh, 0.35)!.withValues(alpha: 0.95),
+                surface.withValues(alpha: 0.95),
               ]
-            : [const Color(0xFFFFFFFF), const Color(0xFFF8F8FC)],
+            : isDark
+                ? [
+                    Color.alphaBlend(
+                        const Color(0xFFB4C6FF).withValues(alpha: 0.07), surfaceHigh)
+                        .withValues(alpha: 0.94),
+                    surface.withValues(alpha: 0.94),
+                  ]
+                : [const Color(0xFFFFFFFF), const Color(0xFFF8F8FC)],
       );
 
   /// THE HAIRLINE EDGE of a glass card: brightest where the light falls
@@ -532,7 +561,7 @@ abstract final class NeonType {
   /// these sit in rows that rebuild while a list scrolls.
   static TextStyle manrope(double size, [FontWeight weight = FontWeight.w400]) =>
       _cache[weight.value * 1000 + (size * 10).round()] ??=
-          GoogleFonts.manrope(fontSize: size, fontWeight: weight);
+          bodyFont(fontSize: size, fontWeight: weight);
 
   /// Every weight [manrope] is asked for anywhere in lib/ (clarity_test
   /// fails if a call site uses one that is not here).
@@ -560,7 +589,7 @@ abstract final class NeonType {
   static Future<void> preload(
       {Duration wait = const Duration(milliseconds: 400)}) {
     for (final w in weights) {
-      GoogleFonts.manrope(fontWeight: w);
+      bodyFont(fontWeight: w);
     }
     return GoogleFonts.pendingFonts()
         .timeout(wait)

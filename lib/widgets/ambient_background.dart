@@ -55,12 +55,31 @@ class AmbientBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // THE PERSON'S BACKGROUND (the Design agent): the app's ambient light,
+    // a quiet page-to-card gradient, or the plain page colour.
+    final style = Neon.backgroundStyle;
     return Stack(
       children: [
         Positioned.fill(
           child: Visibility.maintain(
             visible: !covered,
-            child: const AmbientLight(),
+            child: style == 'plain'
+                ? ColoredBox(color: Neon.bg)
+                : style == 'gradient'
+                    ? DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Color.lerp(Neon.bg, Neon.violet, 0.10)!,
+                              Neon.bg,
+                              Color.lerp(Neon.bg, Neon.pink, 0.08)!,
+                            ],
+                          ),
+                        ),
+                      )
+                    : const AmbientLight(),
           ),
         ),
         child,
