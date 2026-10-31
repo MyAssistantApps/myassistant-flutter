@@ -2150,7 +2150,11 @@ class AssistantEngine extends ChangeNotifier {
             AppLog.add('brain', '${route.name} ($reason)'
                 '${control == null ? '' : ' — ${control.summary} (${control.via})'}');
             _agentClear?.cancel();
-            agentControl.value = control == null || control.skipped
+            // MAYA FIRST: a turn she handles herself shows no hand-off;
+            // only the Designer, or a request needing the manager, does.
+            final mayaAlone = control != null && control.via == 'maya' &&
+                !control.agents.any((a) => a.id == 'design');
+            agentControl.value = control == null || control.skipped || mayaAlone
                 ? null
                 : (
                     control: control,

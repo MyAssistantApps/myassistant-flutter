@@ -62,8 +62,11 @@ class HomeDashboard extends StatelessWidget {
                         alignment: Alignment.centerLeft,
                         child: ShaderMask(
                           blendMode: BlendMode.srcIn,
+                          // The design's own title colour, else the brand gradient.
                           shaderCallback: (r) => LinearGradient(
-                            colors: [Neon.cyan, Neon.violet, Neon.pink],
+                            colors: Neon.headerTitle != null
+                                ? [Neon.headerTitle!, Neon.headerTitle!]
+                                : [Neon.cyan, Neon.violet, Neon.pink],
                           ).createShader(r),
                           child: Text(
                             look.title,

@@ -8,6 +8,7 @@ import '../design/neon_tokens.dart';
 import '../ai/types.dart' show AgentTurn;
 import '../features/assistant/state/assistant_engine.dart';
 import '../design/neon_fonts.dart';
+import '../services/assistant_identity.dart';
 
 /// One of the assistant's agents, as the owner sees it. The ids match the
 /// server's specialists (backend src/agents/manager.js).
@@ -418,9 +419,14 @@ class AgentHandoffLane extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final started = turn.over || turn.running != null || turn.done.isNotEmpty;
+    // Maya hands design straight to the Designer — no manager in between.
+    final lead = turn.control.via == 'maya'
+        ? AgentInfo('maya', AssistantIdentity.notifier.value.trim().isEmpty ? 'Maya' : AssistantIdentity.notifier.value.trim(),
+            Icons.mic_rounded, 'Your assistant.')
+        : agentRoster.first;
     final chips = <Widget>[
       _HandoffChip(
-        agent: agentRoster.first,
+        agent: lead,
         state: started ? _ChipState.done : _ChipState.working,
         pulse: pulse,
       ),

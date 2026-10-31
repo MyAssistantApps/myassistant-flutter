@@ -267,10 +267,12 @@ class GlassCard extends StatelessWidget {
           borderRadius: r,
           color: style == 'outlined' ? Colors.transparent : Neon.surface,
           border: style == 'outlined'
-              ? Border.all(color: (g ?? Neon.textLo).withValues(alpha: 0.55), width: 1.2)
+              ? Border.all(color: g ?? Neon.cardBorder ?? Neon.textLo.withValues(alpha: 0.55), width: 1.2)
               : style == 'solid'
-                  ? Border.all(color: Neon.hairline)
-                  : null,
+                  ? Border.all(color: Neon.cardBorder ?? Neon.hairline)
+                  : Neon.cardBorder == null
+                      ? null
+                      : Border.all(color: Neon.cardBorder!),
           boxShadow: [
             if (style == 'solid') ...Neon.lift,
             if (g != null) ...Neon.halo(g, strength: 0.35),
@@ -283,7 +285,7 @@ class GlassCard extends StatelessWidget {
       foregroundPainter: _HairlinePainter(
         radius: radius,
         colors: g == null
-            ? Neon.glassEdge
+            ? (Neon.cardBorder == null ? Neon.glassEdge : [Neon.cardBorder!, Neon.cardBorder!.withValues(alpha: 0.6)])
             : [g.withValues(alpha: 0.55), g.withValues(alpha: 0.12)],
       ),
       child: DecoratedBox(

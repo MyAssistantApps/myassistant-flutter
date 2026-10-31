@@ -38,7 +38,7 @@ class CustomHomeCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: displayFont(
-                    color: Neon.textHi,
+                    color: Neon.cardText,
                     fontSize: NeonType.headline,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.3,
@@ -66,10 +66,10 @@ class _Block extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final label = block.label?.trim() ?? '';
-    final small = TextStyle(color: Neon.textLo, fontSize: NeonType.footnote, fontWeight: FontWeight.w600);
+    final small = TextStyle(color: Neon.cardMuted, fontSize: NeonType.footnote, fontWeight: FontWeight.w600);
     switch (block.type) {
       case 'text':
-        return Text(block.value ?? '', style: TextStyle(color: Neon.textHi, fontSize: NeonType.body, height: 1.35));
+        return Text(block.value ?? '', style: TextStyle(color: Neon.cardText, fontSize: NeonType.body, height: 1.35));
       case 'stat':
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -79,7 +79,7 @@ class _Block extends StatelessWidget {
               block.value ?? '—',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: displayFont(color: Neon.textHi, fontSize: NeonType.title3, fontWeight: FontWeight.w700),
+              style: displayFont(color: Neon.cardText, fontSize: NeonType.title3, fontWeight: FontWeight.w700),
             ),
           ],
         );
@@ -102,7 +102,7 @@ class _Block extends StatelessWidget {
                         child: Container(width: 5, height: 5, decoration: BoxDecoration(color: accent, shape: BoxShape.circle)),
                       ),
                       Expanded(
-                        child: Text(item, style: TextStyle(color: Neon.textHi, fontSize: NeonType.body, height: 1.35)),
+                        child: Text(item, style: TextStyle(color: Neon.cardText, fontSize: NeonType.body, height: 1.35)),
                       ),
                     ],
                   ),

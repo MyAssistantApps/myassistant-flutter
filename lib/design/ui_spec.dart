@@ -65,6 +65,12 @@ class UiSpec {
   const UiSpec({
     this.mode,
     this.palette,
+    this.cardText,
+    this.cardMuted,
+    this.cardBorder,
+    this.headerTitle,
+    this.gradientFrom,
+    this.gradientTo,
     this.radius,
     this.cardStyle,
     this.font,
@@ -80,6 +86,9 @@ class UiSpec {
 
   final String? mode;
   final NeonPalette? palette;
+
+  /// Colours the design sets beyond the palette (null = the app's own).
+  final Color? cardText, cardMuted, cardBorder, headerTitle, gradientFrom, gradientTo;
   final double? radius;
   final String? cardStyle, font, background;
   final double scale;
@@ -105,56 +114,113 @@ class UiSpec {
     return true;
   }
 
-  static NeonPalette? _palette(Object? p) {
-    if (p is! Map) return null;
-    final c = {for (final k in ['bg', 'surface', 'surfaceHigh', 'primary', 'partner', 'secondary', 'tertiary', 'textHi', 'textLo', 'textDim', 'success', 'warning', 'error']) k: _color(p[k])};
-    if (c.entries.where((e) => !['success', 'warning', 'error'].contains(e.key)).any((e) => e.value == null)) {
-      return null;
-    }
-    return NeonPalette(
-      name: p['name']?.toString() ?? 'Mine',
-      dark: p['dark'] == true,
-      bg: c['bg']!,
-      surface: c['surface']!,
-      surfaceHigh: c['surfaceHigh']!,
-      primary: c['primary']!,
-      partner: c['partner']!,
-      secondary: c['secondary']!,
-      tertiary: c['tertiary']!,
-      textHi: c['textHi']!,
-      textLo: c['textLo']!,
-      textDim: c['textDim']!,
-      success: c['success'],
-      warning: c['warning'],
-      error: c['error'],
-    );
+  /// The app's own colours by the design document's names (backend
+  /// src/design/spec.js APP_COLORS), dark and light.
+  static const _app = {
+    true: {
+      'page': Color(0xFF070B2B), 'pageText': Color(0xFFF3F6FF), 'pageMuted': Color(0xFFBAC4E3),
+      'pageFaint': Color(0xFF8E9AC2), 'card': Color(0xFF0C1440), 'cardRaised': Color(0xFF121B4E),
+      'primary': Color(0xFF3D8BFF), 'partner': Color(0xFFE04BF5), 'secondary': Color(0xFF22E4FF),
+      'tertiary': Color(0xFFBDF64B),
+    },
+    false: {
+      'page': Color(0xFFF7F7FB), 'pageText': Color(0xFF1B1D28), 'pageMuted': Color(0xFF585E70),
+      'pageFaint': Color(0xFF6B7185), 'card': Color(0xFFFFFFFF), 'cardRaised': Color(0xFFEEEFF6),
+      'primary': Color(0xFF2563EB), 'partner': Color(0xFFC026D3), 'secondary': Color(0xFF0891B2),
+      'tertiary': Color(0xFF65A30D),
+    },
+  };
+
+  /// The v1 look (palette/shape/type) as a v2 document, for one cached
+  /// before the Designer changed format.
+  static Map<String, Object?> _v2(Map<String, Object?> s) {
+    if (s['version'] == 2 || s['palette'] is! Map && s['shape'] is! Map) return s;
+    final p = (s['palette'] as Map?) ?? const {};
+    const map = {
+      'bg': 'page', 'surface': 'card', 'surfaceHigh': 'cardRaised', 'textHi': 'pageText',
+      'textLo': 'pageMuted', 'textDim': 'pageFaint', 'primary': 'primary', 'partner': 'partner',
+      'secondary': 'secondary', 'tertiary': 'tertiary',
+    };
+    final shape = (s['shape'] as Map?) ?? const {};
+    final type = (s['type'] as Map?) ?? const {};
+    return {
+      ...s,
+      'version': 2,
+      'colors': {for (final e in map.entries) if (p[e.key] != null) e.value: p[e.key]},
+      'background': {'style': s['background'] is String ? s['background'] : null},
+      'cards': {'style': shape['cardStyle'], 'radius': shape['radius']},
+      'typography': {'font': type['font'], 'scale': type['scale']},
+    };
   }
 
-  /// From GET /ui/spec: [spec], and [cards] (the custom cards filled in).
-  static UiSpec fromJson(Map<String, Object?> spec, [List<Object?>? cards]) {
-    final shape = spec['shape'] is Map ? spec['shape'] as Map : const {};
-    final type = spec['type'] is Map ? spec['type'] as Map : const {};
+  /// From GET /ui/spec: the design document [spec] (v2), and [cards] (the
+  /// custom cards filled in).
+  static UiSpec fromJson(Map<String, Object?> input, [List<Object?>? cards]) {
+    final spec = _v2(input);
+    final colors = spec['colors'] is Map ? spec['colors'] as Map : const {};
+    final c = <String, Color>{
+      for (final e in colors.entries)
+        if (_color(e.value) case final v?) e.key.toString(): v,
+    };
+    // Dark by the page colour when set, else by the mode.
+    final dark = spec['dark'] is bool
+        ? spec['dark'] as bool
+        : c['page'] != null
+            ? c['page']!.computeLuminance() < 0.2
+            : spec['mode'] != 'light';
+    final palette = c.isEmpty
+        ? null
+        : () {
+            final base = _app[dark]!;
+            Color k(String key) => c[key] ?? base[key]!;
+            return NeonPalette(
+              name: spec['name']?.toString() ?? 'Mine',
+              dark: dark,
+              bg: k('page'),
+              surface: k('card'),
+              surfaceHigh: k('cardRaised'),
+              primary: k('primary'),
+              partner: k('partner'),
+              secondary: k('secondary'),
+              tertiary: k('tertiary'),
+              textHi: k('pageText'),
+              textLo: k('pageMuted'),
+              textDim: k('pageFaint'),
+              success: c['success'],
+              warning: c['warning'],
+              error: c['error'],
+            );
+          }();
+    final bg = spec['background'] is Map ? spec['background'] as Map : const {};
+    final cardsIn = spec['cards'] is Map ? spec['cards'] as Map : const {};
+    final type = spec['typography'] is Map ? spec['typography'] as Map : const {};
     final header = spec['header'] is Map ? spec['header'] as Map : const {};
     final home = spec['home'] is Map ? spec['home'] as Map : const {};
     final filled = <String, UiCard>{
-      for (final c in cards ?? (spec['customCards'] is List ? spec['customCards'] as List : const []))
-        if (UiCard.fromJson(c) case final x?) x.id: x,
+      for (final x in cards ?? (spec['customCards'] is List ? spec['customCards'] as List : const []))
+        if (UiCard.fromJson(x) case final card?) card.id: card,
     };
     return UiSpec(
       mode: spec['mode']?.toString(),
-      palette: _palette(spec['palette']),
-      radius: (shape['radius'] as num?)?.toDouble(),
-      cardStyle: shape['cardStyle']?.toString(),
+      palette: palette,
+      cardText: c['cardText'] ?? c['pageText'],
+      cardMuted: c['cardMuted'] ?? c['pageMuted'],
+      cardBorder: c['cardBorder'],
+      headerTitle: c['headerTitle'],
+      gradientFrom: _color(bg['from']),
+      gradientTo: _color(bg['to']),
+      radius: (cardsIn['radius'] as num?)?.toDouble(),
+      cardStyle: cardsIn['style']?.toString(),
       font: type['font']?.toString(),
       scale: ((type['scale'] as num?) ?? 1).toDouble().clamp(0.9, 1.3),
-      background: spec['background']?.toString(),
+      background: bg['style']?.toString(),
       title: (header['title']?.toString().trim().isNotEmpty ?? false) ? header['title'].toString() : 'MyAssistant',
       showDate: header['showDate'] != false,
       showQuote: header['showQuote'] != false,
       sections: [
         if (home['sections'] is List)
-          for (final s in home['sections'] as List)
-            if (s is Map && s['id'] is String) (id: s['id'] as String, visible: s['visible'] != false),
+          for (final x in home['sections'] as List)
+            if (x is Map && x['id'] is String) (id: x['id'] as String, visible: x['visible'] != false),
       ],
       cards: filled,
       raw: spec,
@@ -250,7 +316,17 @@ abstract final class UiSpecStore {
 
   static void _apply(UiSpec s, {bool save = true}) {
     Neon.usePalette(s.palette);
-    Neon.useLook(radius: s.radius, cardStyle: s.cardStyle, background: s.background);
+    Neon.useLook(
+      radius: s.radius,
+      cardStyle: s.cardStyle,
+      background: s.background,
+      cardText: s.cardText,
+      cardMuted: s.cardMuted,
+      cardBorder: s.cardBorder,
+      headerTitle: s.headerTitle,
+      gradientFrom: s.gradientFrom,
+      gradientTo: s.gradientTo,
+    );
     NeonFonts.use(s.font);
     // A palette is dark or light by its page; otherwise the mode they asked for.
     final mode = s.palette != null

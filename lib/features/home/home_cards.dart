@@ -439,7 +439,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                         _tile(c.kind, 36),
                         const SizedBox(width: Neon.s3),
                         Text(_kindName(c.kind),
-                            style: NeonType.eyebrow.copyWith(color: Neon.textLo)),
+                            style: NeonType.eyebrow.copyWith(color: Neon.cardMuted)),
                         const Spacer(),
                         Flexible(flex: 3, child: _pill(c.reason)),
                       ],
@@ -449,7 +449,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                       c.title,
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
-                      style: NeonType.glassTitle.copyWith(color: Neon.textHi),
+                      style: NeonType.glassTitle.copyWith(color: Neon.cardText),
                     ),
                     if (c.detail != null) ...[
                       const SizedBox(height: Neon.s1),
@@ -458,7 +458,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                            color: Neon.textLo,
+                            color: Neon.cardMuted,
                             fontSize: NeonType.body,
                             height: 1.3),
                       ),
@@ -512,7 +512,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: NeonType.manrope(NeonType.body, FontWeight.w600)
-                              .copyWith(color: Neon.textHi),
+                              .copyWith(color: Neon.cardText),
                         ),
                         const SizedBox(height: 2),
                         Text(
@@ -520,7 +520,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                              color: Neon.textLo, fontSize: NeonType.footnote,
+                              color: Neon.cardMuted, fontSize: NeonType.footnote,
                               fontFeatures: NeonType.figures),
                         ),
                       ],
@@ -548,7 +548,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                 child: Padding(
                   padding: const EdgeInsets.only(left: Neon.s1),
                   child: Text(feed.dayLabel,
-                      style: NeonType.eyebrow.copyWith(color: Neon.textLo)),
+                      style: NeonType.eyebrow.copyWith(color: Neon.cardMuted)),
                 ),
               ),
             ),
@@ -600,7 +600,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                   child: Text(
                     l.time,
                     style: NeonType.manrope(NeonType.body, FontWeight.w600).copyWith(
-                      color: Neon.textLo,
+                      color: Neon.cardMuted,
                       fontFeatures: NeonType.figures,
                     ),
                   ),
@@ -611,7 +611,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: NeonType.manrope(NeonType.callout, FontWeight.w600)
-                        .copyWith(color: Neon.textHi),
+                        .copyWith(color: Neon.cardText),
                   ),
                 ),
                 const SizedBox(width: Neon.s3),
@@ -778,13 +778,13 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: NeonType.manrope(NeonType.body, FontWeight.w600)
-                              .copyWith(color: Neon.textHi)),
+                              .copyWith(color: Neon.cardText)),
                       const SizedBox(height: 2),
                       Text(subtitle,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                              color: Neon.textLo, fontSize: NeonType.footnote)),
+                              color: Neon.cardMuted, fontSize: NeonType.footnote)),
                     ],
                   ),
                 ),
@@ -847,20 +847,20 @@ class _HomeFeedViewState extends State<HomeFeedView> {
         children: [
           Row(
             children: [
-              Icon(Icons.newspaper_rounded, size: 16, color: Neon.textLo),
+              Icon(Icons.newspaper_rounded, size: 16, color: Neon.cardMuted),
               const SizedBox(width: 8),
               Expanded(
                 child: Semantics(
                   header: true,
                   child: Text('In the news',
-                      style: NeonType.eyebrow.copyWith(color: Neon.textLo)),
+                      style: NeonType.eyebrow.copyWith(color: Neon.cardMuted)),
                 ),
               ),
               IconButton(
                 tooltip: 'Hide news on Home',
                 constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                 onPressed: _hideNews,
-                icon: Icon(Icons.close_rounded, size: 18, color: Neon.textLo),
+                icon: Icon(Icons.close_rounded, size: 18, color: Neon.cardMuted),
               ),
             ],
           ),
@@ -881,13 +881,13 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: NeonType.manrope(NeonType.body, FontWeight.w600)
-                              .copyWith(color: Neon.textHi, height: 1.3)),
+                              .copyWith(color: Neon.cardText, height: 1.3)),
                       const SizedBox(height: 2),
                       Text(
                         [if (n.source.isNotEmpty) n.source, if (n.age.isNotEmpty) n.age]
                             .join(' · '),
                         style: TextStyle(
-                            color: Neon.textLo, fontSize: NeonType.footnote),
+                            color: Neon.cardMuted, fontSize: NeonType.footnote),
                       ),
                     ],
                   ),
@@ -954,16 +954,16 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                       Icon(Icons.auto_awesome_rounded, size: 16, color: Neon.violet),
                       const SizedBox(width: 8),
                       Text('Try asking',
-                          style: NeonType.eyebrow.copyWith(color: Neon.textLo)),
+                          style: NeonType.eyebrow.copyWith(color: Neon.cardMuted)),
                     ],
                   ),
                   const SizedBox(height: 8),
                   Text('“${t.say}”',
                       style: NeonType.manrope(NeonType.rowTitle, FontWeight.w600)
-                          .copyWith(color: Neon.textHi)),
+                          .copyWith(color: Neon.cardText)),
                   const SizedBox(height: 2),
                   Text(t.why,
-                      style: TextStyle(color: Neon.textLo, fontSize: NeonType.footnote)),
+                      style: TextStyle(color: Neon.cardMuted, fontSize: NeonType.footnote)),
                 ],
               ),
             ),
@@ -1153,7 +1153,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
   Widget _secondary(String id, _Act a, bool busy) => TextButton(
         onPressed: busy ? null : () => _run(id, a.run),
         style: TextButton.styleFrom(
-          foregroundColor: Neon.textHi,
+          foregroundColor: Neon.cardText,
           minimumSize: const Size(48, 48),
           padding: const EdgeInsets.symmetric(horizontal: 12),
           textStyle: NeonType.manrope(NeonType.body, FontWeight.w600),
@@ -1235,7 +1235,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
-            color: Neon.textHi.withValues(alpha: 0.06),
+            color: Neon.cardText.withValues(alpha: 0.06),
             borderRadius: BorderRadius.circular(Neon.rPill),
             border: Border.all(color: Neon.hairline),
           ),
@@ -1244,7 +1244,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: NeonType.manrope(NeonType.caption, FontWeight.w700)
-                .copyWith(color: Neon.textHi, fontFeatures: NeonType.figures),
+                .copyWith(color: Neon.cardText, fontFeatures: NeonType.figures),
           ),
         ),
       );
@@ -1319,11 +1319,11 @@ class _AllClear extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text("You're all clear",
-                    style: NeonType.glassTitle.copyWith(color: Neon.textHi)),
+                    style: NeonType.glassTitle.copyWith(color: Neon.cardText)),
                 const SizedBox(height: 2),
                 Text(
                   later ? 'Nothing needs you right now.' : 'Nothing needs you today.',
-                  style: TextStyle(color: Neon.textLo, fontSize: NeonType.body, height: 1.35),
+                  style: TextStyle(color: Neon.cardMuted, fontSize: NeonType.body, height: 1.35),
                 ),
               ],
             ),

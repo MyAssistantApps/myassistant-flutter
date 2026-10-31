@@ -210,11 +210,11 @@ class _BirthdayCardState extends State<BirthdayCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Born today',
-                            style: NeonType.glassTitle.copyWith(color: Neon.textHi)),
+                            style: NeonType.glassTitle.copyWith(color: Neon.cardText)),
                         Text('Famous birthdays in India',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Neon.textLo, fontSize: NeonType.footnote)),
+                            style: TextStyle(color: Neon.cardMuted, fontSize: NeonType.footnote)),
                       ],
                     ),
                   ),
@@ -227,7 +227,7 @@ class _BirthdayCardState extends State<BirthdayCard> {
                     ),
                     child: Text('${now.day} ${_months[now.month - 1]}',
                         style: NeonType.manrope(NeonType.caption, FontWeight.w700)
-                            .copyWith(color: Neon.textHi, fontFeatures: NeonType.figures)),
+                            .copyWith(color: Neon.cardText, fontFeatures: NeonType.figures)),
                   ),
                 ],
               ),
@@ -280,12 +280,12 @@ class _BirthdayCardState extends State<BirthdayCard> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: NeonType.manrope(NeonType.callout, FontWeight.w700)
-                      .copyWith(color: Neon.textHi)),
+                      .copyWith(color: Neon.cardText)),
               if (p.role.isNotEmpty)
                 Text(p.role,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: Neon.textLo, fontSize: NeonType.footnote)),
+                    style: TextStyle(color: Neon.cardMuted, fontSize: NeonType.footnote)),
             ],
           ),
         ),
@@ -356,7 +356,7 @@ class _BirthdayCardState extends State<BirthdayCard> {
               height: 6,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(3),
-                color: i == at ? warm.first : Neon.textLo.withValues(alpha: 0.35),
+                color: i == at ? warm.first : Neon.cardMuted.withValues(alpha: 0.35),
               ),
             ),
         ],

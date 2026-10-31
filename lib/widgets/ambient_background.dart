@@ -76,11 +76,7 @@ class AmbientBackground extends StatelessWidget {
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             stops: const [0, 0.55, 1],
-                            colors: [
-                              Color.lerp(Neon.bg, Neon.violet, Neon.isDark ? 0.42 : 0.28)!,
-                              Neon.bg,
-                              Color.lerp(Neon.bg, Neon.pink, Neon.isDark ? 0.34 : 0.22)!,
-                            ],
+                            colors: [Neon.gradientFrom, Neon.bg, Neon.gradientTo],
                           ),
                         ),
                       )

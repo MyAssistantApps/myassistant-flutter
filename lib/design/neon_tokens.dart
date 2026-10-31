@@ -43,6 +43,21 @@ class Neon {
   static double? _cardRadius;
   static String? _cardStyle;
   static String? _background;
+  static Color? _cardText, _cardMuted, _cardBorder, _headerTitle, _gradientFrom, _gradientTo;
+
+  /// Text inside cards (the design's cardText / cardMuted); else the page's.
+  static Color get cardText => _cardText ?? textHi;
+  static Color get cardMuted => _cardMuted ?? textLo;
+
+  /// A card's outline, when the design sets one.
+  static Color? get cardBorder => _cardBorder;
+
+  /// Home's big title in one colour, when set (else the brand gradient).
+  static Color? get headerTitle => _headerTitle;
+
+  /// The gradient background's two ends (else from the brand colours).
+  static Color get gradientFrom => _gradientFrom ?? Color.lerp(bg, violet, isDark ? 0.42 : 0.28)!;
+  static Color get gradientTo => _gradientTo ?? Color.lerp(bg, pink, isDark ? 0.34 : 0.22)!;
 
   /// A card's corner radius: theirs, or [rCard].
   static double get cardRadius => _cardRadius ?? rCard;
@@ -53,10 +68,26 @@ class Neon {
   /// ambient (the app's own light) | gradient | plain.
   static String get backgroundStyle => _background ?? 'ambient';
 
-  static void useLook({double? radius, String? cardStyle, String? background}) {
+  static void useLook({
+    double? radius,
+    String? cardStyle,
+    String? background,
+    Color? cardText,
+    Color? cardMuted,
+    Color? cardBorder,
+    Color? headerTitle,
+    Color? gradientFrom,
+    Color? gradientTo,
+  }) {
     _cardRadius = radius;
     _cardStyle = cardStyle;
     _background = background;
+    _cardText = cardText;
+    _cardMuted = cardMuted;
+    _cardBorder = cardBorder;
+    _headerTitle = headerTitle;
+    _gradientFrom = gradientFrom;
+    _gradientTo = gradientTo;
   }
 
   // Core palette — deep, confident accents on white; PURE BLACK in the
