@@ -2149,7 +2149,9 @@ class AssistantEngine extends ChangeNotifier {
             AppLog.add('brain', '${route.name} ($reason)'
                 '${control == null ? '' : ' — ${control.summary} (${control.via})'}');
             _agentClear?.cancel();
-            agentControl.value = control == null || control.skipped
+            // MAYA FIRST: a turn she handles herself shows no hand-off;
+            // only a request the manager coordinates does.
+            agentControl.value = control == null || control.skipped || control.via == 'maya'
                 ? null
                 : (
                     control: control,
