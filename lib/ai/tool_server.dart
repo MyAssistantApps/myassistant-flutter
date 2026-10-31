@@ -26,6 +26,8 @@ class AiContext {
     this.system = '',
     this.tools = const [],
     this.history = const [],
+    this.parallelSafe = const {},
+    this.manager,
     this.fromServer = true,
   });
 
@@ -43,6 +45,13 @@ class AiContext {
 
   /// The last turns from the server's memory (<= 8).
   final List<ChatTurn> history;
+
+  /// Tools whose calls may run at the same time as the rest of their
+  /// round: pure reads (the server's registry.isParallelSafe).
+  final Set<String> parallelSafe;
+
+  /// Who has control of this turn (the server's manager agent).
+  final AgentControl? manager;
 
   /// False for the stand-in used when the server could not be reached.
   final bool fromServer;
@@ -65,6 +74,12 @@ class AiContext {
           for (final h in j['history'] as List)
             if (ChatTurn.fromJson(h) case final turn?) turn,
       ],
+      parallelSafe: {
+        if (j['parallelSafe'] is List)
+          for (final n in j['parallelSafe'] as List)
+            if (n is String) n,
+      },
+      manager: AgentControl.fromJson(j['manager']),
     );
   }
 }

@@ -106,3 +106,52 @@ class AiToolSpec {
     );
   }
 }
+
+/// WHO HAS CONTROL OF A TURN (2026-10-31): the server's manager agent hands
+/// each turn to specialist agents (backend agents/manager.js) and says
+/// which, so the owner can see it — "Manager → Shopping and money".
+class AgentControl {
+  const AgentControl({this.via = 'skip', this.agents = const [], this.toolAgent = const {}});
+
+  /// How the manager decided: rules, model, carry, none, late or skip.
+  final String via;
+
+  /// The specialists, most important first: (id, label).
+  final List<({String id, String label})> agents;
+
+  /// Tool name -> the specialist id that owns it this turn.
+  final Map<String, String> toolAgent;
+
+  /// The manager stayed out of it (a shortcut, a note from the app).
+  bool get skipped => via == 'skip';
+
+  /// "Manager → Shopping and money + Communication", or "Manager".
+  String get summary =>
+      agents.isEmpty ? 'Manager' : 'Manager → ${agents.map((a) => a.label).join(' + ')}';
+
+  /// The specialist label running [tool], when one owns it.
+  String? labelFor(String tool) {
+    final id = toolAgent[tool];
+    if (id == null) return null;
+    for (final a in agents) {
+      if (a.id == id) return a.label;
+    }
+    return null;
+  }
+
+  static AgentControl? fromJson(Object? j) {
+    if (j is! Map) return null;
+    final agents = <({String id, String label})>[
+      if (j['agents'] is List)
+        for (final a in j['agents'] as List)
+          if (a is Map && a['id'] is String && a['label'] is String)
+            (id: a['id'] as String, label: a['label'] as String),
+    ];
+    final owners = <String, String>{
+      if (j['toolAgent'] is Map)
+        for (final e in (j['toolAgent'] as Map).entries)
+          if (e.key is String && e.value is String) e.key as String: e.value as String,
+    };
+    return AgentControl(via: j['via'] is String ? j['via'] as String : 'skip', agents: agents, toolAgent: owners);
+  }
+}

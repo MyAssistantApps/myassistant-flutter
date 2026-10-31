@@ -16,7 +16,7 @@ import '../../../ai/live_voice.dart';
 import '../../../ai/model_port.dart';
 import '../../../ai/search_suggestions.dart';
 import '../../../ai/speech.dart' show SpeechEngine;
-import '../../../ai/types.dart' show AiToolSpec;
+import '../../../ai/types.dart' show AgentControl, AiToolSpec;
 import '../../../core/log.dart';
 // Screens and settings reachable BY VOICE (open_app_screen / set_theme).
 import '../../../services/avatar_message_service.dart';
@@ -641,6 +641,12 @@ class AssistantEngine extends ChangeNotifier {
 
   final ValueNotifier<String?> activityLabel = ValueNotifier(null);
 
+  /// Who has control of the running turn — the manager agent and the
+  /// specialists it chose — and which of them runs the current tool.
+  /// Null between turns and when the manager stayed out of it.
+  final ValueNotifier<({AgentControl control, String? running})?> agentControl =
+      ValueNotifier(null);
+
   /// The status line's words for the phase: while a tool runs
   /// (RESPONDING) the tool's own ("Checking your calendar…").
   String get phaseLabel => phase == AssistantPhase.responding
@@ -938,8 +944,12 @@ class AssistantEngine extends ChangeNotifier {
     _missedCheck = missedCheck;
     await start();
     if (!await _startVoice()) return;
-    // On the fast voice the greeting carries the calls (_greetOnLive).
-    if (!_openingDue) unawaited(_mentionMissedCalls(missedCheck));
+    // On the fast voice they follow its greeting (_listenLive); whichever
+    // side gets here first takes the check, so they are said once.
+    if (!_openingDue && identical(_missedCheck, missedCheck)) {
+      _missedCheck = null;
+      unawaited(_mentionMissedCalls(missedCheck));
+    }
   }
 
   /// Set when the orb tap left its hello to the missed-calls mention.
@@ -1573,6 +1583,11 @@ class AssistantEngine extends ChangeNotifier {
           ok = false;
         }
         if (epoch != _voiceEpoch || !_voiceOn) return;
+        // The missed calls the tap checked for, said after the hello on
+        // whichever voice said it (the tap left them to this greeting).
+        final check = _missedCheck;
+        _missedCheck = null;
+        if (check != null) unawaited(_mentionMissedCalls(check));
       } else {
         ok = await _live.start();
       }
@@ -2125,8 +2140,11 @@ class AssistantEngine extends ChangeNotifier {
       await for (final e in events) {
         if (gen != _turnGen) break;
         switch (e) {
-          case BrainRouteChosen(:final route, :final reason):
-            AppLog.add('brain', '${route.name} ($reason)');
+          case BrainRouteChosen(:final route, :final reason, :final control):
+            AppLog.add('brain', '${route.name} ($reason)'
+                '${control == null ? '' : ' — ${control.summary} (${control.via})'}');
+            agentControl.value =
+                control == null || control.skipped ? null : (control: control, running: null);
           case BrainPartialText(:final text):
             _finishTools();
             if (phase == AssistantPhase.responding) {
@@ -2169,6 +2187,7 @@ class AssistantEngine extends ChangeNotifier {
         _turnRunning = false;
         _finishTools();
         activityLabel.value = null;
+        agentControl.value = null;
         replyComplete = true;
         _afterTurn();
       }
@@ -2259,6 +2278,10 @@ class AssistantEngine extends ChangeNotifier {
   /// The tool the model is using, as a chip ("Checking the weather…").
   void _toolStarted(String tool) {
     _finishTools();
+    final held = agentControl.value;
+    if (held != null) {
+      agentControl.value = (control: held.control, running: held.control.labelFor(tool));
+    }
     if (LocationService.locationTools.contains(tool)) {
       unawaited(_maybeAskLocation());
     }
@@ -2991,7 +3014,10 @@ class AssistantEngine extends ChangeNotifier {
           // Nearby took Chat's place in the dock (2026-10-01); 'chat' now
           // means the Messages thread list, pushed from the Hub.
           // Chats (meetings) took Nearby's tab (2026-10-04); Nearby is pushed.
-          const tabs = {'home': 0, 'hub': 1, 'meetings': 2, 'settings': 3};
+          // That tab holds the one-to-one threads too, so "open my chats"
+          // ('chat') is it as well: nothing else builds a chat list
+          // (2026-10-31; it answered "that screen is not available").
+          const tabs = {'home': 0, 'hub': 1, 'chat': 2, 'meetings': 2, 'settings': 3};
           if (screen == 'voice_settings') {
             unawaited(_openVoiceSettings());
           } else if (tabs.containsKey(screen)) {

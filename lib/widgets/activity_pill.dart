@@ -20,6 +20,12 @@ import '../features/assistant/state/assistant_engine.dart';
 /// Deliberately a small pill rather than a blocking spinner: the work is
 /// happening on the user's behalf, not in their way, and a modal overlay
 /// would make a two-second lookup feel heavier than it is.
+///
+/// WHO HAS CONTROL (2026-10-31): the server's manager agent hands each turn
+/// to specialist agents, and the pill says so for the whole turn — a small
+/// line above the tool ("Manager → Planning", then "Planning agent" while
+/// that specialist's tool runs), or alone while the turn is being worked
+/// out with no tool running yet.
 class AssistantActivityPill extends StatefulWidget {
   const AssistantActivityPill({super.key});
 
@@ -46,16 +52,35 @@ class _AssistantActivityPillState extends State<AssistantActivityPill>
   void initState() {
     super.initState();
     engine.activityLabel.addListener(_onLabel);
+    engine.agentControl.addListener(_onControl);
     // The shell can be rebuilt mid-turn — a theme flip remounts the whole
     // tree — with a tool already running, and the listener alone would
     // never fire for a label that is ALREADY set.
     _adopt(engine.activityLabel.value);
+    _onControl();
+  }
+
+  void _onControl() {
+    if (!mounted) return;
+    setState(() {});
+    final busy = engine.agentControl.value != null || _label != null;
+    if (busy && !_spin.isAnimating && !_still) _spin.repeat();
+    if (!busy) _spin.stop();
+  }
+
+  /// The small line naming who has control, or null.
+  String? get _controlLine {
+    final held = engine.agentControl.value;
+    if (held == null) return null;
+    final running = held.running;
+    return running != null ? '$running agent' : held.control.summary;
   }
 
 
   @override
   void dispose() {
     engine.activityLabel.removeListener(_onLabel);
+    engine.agentControl.removeListener(_onControl);
     _tick?.cancel();
     _spin.dispose();
     super.dispose();
@@ -98,7 +123,7 @@ class _AssistantActivityPillState extends State<AssistantActivityPill>
     _label = next;
     _tick?.cancel();
     if (next == null) {
-      _spin.stop();
+      if (engine.agentControl.value == null) _spin.stop();
       return;
     }
     if (!_spin.isAnimating && !_still) _spin.repeat();
@@ -148,8 +173,9 @@ class _AssistantActivityPillState extends State<AssistantActivityPill>
 
   @override
   Widget build(BuildContext context) {
-    final show =
-        _label != null && _label!.isNotEmpty && _elapsed < _staleAfter;
+    final tool = _label != null && _label!.isNotEmpty && _elapsed < _staleAfter;
+    final control = _controlLine;
+    final show = tool || control != null;
     // ONE CLOCK (2026-09-24). The slide ran 260 ms on one curve and the
     // fade 220 ms on a linear one, and it left on its arrival curve, so
     // leaving started abruptly. Now both take 220 ms in (slide on the
@@ -219,17 +245,35 @@ class _AssistantActivityPillState extends State<AssistantActivityPill>
                     duration: const Duration(milliseconds: 180),
                     curve: Motion.easeMove,
                     alignment: Alignment.centerLeft,
-                    child: Text(
-                    _text,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.spaceGrotesk(
-                      color: Neon.textHi,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.2,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (control != null && tool)
+                          Text(
+                            control,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.spaceGrotesk(
+                              color: Neon.violet,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.1,
+                            ),
+                          ),
+                        Text(
+                          tool ? _text : (control ?? ''),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.spaceGrotesk(
+                            color: Neon.textHi,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
                   ),
                 ),
                 const SizedBox(width: 3),

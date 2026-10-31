@@ -96,9 +96,13 @@ sealed class BrainEvent {
 
 /// Which engine answers.
 final class BrainRouteChosen extends BrainEvent {
-  const BrainRouteChosen(this.route, this.reason);
+  const BrainRouteChosen(this.route, this.reason, {this.control});
   final AiRoute route;
   final String reason;
+
+  /// Who has control of the turn — the manager and its specialists — when
+  /// the server said (AiContext.manager).
+  final AgentControl? control;
 }
 
 /// The reply so far ([text]) and what was just added ([delta]).
@@ -310,7 +314,10 @@ class _Turn {
 
   /// /ai/context again, for this very turn (after a lost session).
   Future<AiContext?> Function()? recontext;
-  bool renewed = false;
+
+  /// The one renewal of a lost session, shared by every call that hit it
+  /// (calls of one round can run at the same time). True when it worked.
+  Future<bool>? renewal;
   final _cancelHooks = <void Function()>[];
   final _signal = Completer<void>();
 
@@ -614,7 +621,7 @@ class AssistantBrain {
         config,
       );
       AppLog.add('brain', 'route $decision');
-      t.emit(BrainRouteChosen(decision.route, decision.reason));
+      t.emit(BrainRouteChosen(decision.route, decision.reason, control: ctx.manager));
 
       var engine = decision.route;
       final feed = speak && _speech != null ? _VoiceFeed(_speech) : null;
@@ -779,6 +786,7 @@ class AssistantBrain {
           history: history,
           attachments: attachments,
           tools: [...serverTools, ...local],
+          parallelSafe: canUseTools ? ctx.parallelSafe : const {},
           maxToolRounds: config.limits.maxToolRounds,
           roundTimeout: timeouts.cloudRound,
           firstTimeout: timeouts.cloudFirst,
@@ -1151,17 +1159,18 @@ class AssistantBrain {
         );
     var res = await t.guard(call());
     final again = t.recontext;
-    if (_lostSession(res) && again != null && !t.renewed) {
-      t.renewed = true;
-      AppLog.add('brain', 'session lost on the server: renewing it');
-      final fresh = await t.guard(again());
-      if (fresh?.sessionId != null && fresh?.turnId != null) {
+    if (_lostSession(res) && again != null) {
+      t.renewal ??= () async {
+        AppLog.add('brain', 'session lost on the server: renewing it');
+        final fresh = await t.guard(again());
+        if (fresh?.sessionId == null || fresh?.turnId == null) return false;
         t
           ..sid = fresh!.sessionId
           ..tid = fresh.turnId;
         _sessionId = fresh.sessionId;
-        res = await t.guard(call());
-      }
+        return true;
+      }();
+      if (await t.renewal!) res = await t.guard(call());
     }
     return res;
   }

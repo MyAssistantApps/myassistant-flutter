@@ -29,6 +29,7 @@ class CloudRequest {
     this.history = const [],
     this.attachments = const [],
     this.tools = const [],
+    this.parallelSafe = const {},
     this.maxToolRounds = 6,
     this.roundTimeout = const Duration(seconds: 30),
     this.firstTimeout,
@@ -43,6 +44,9 @@ class CloudRequest {
   /// Sent as inline data; each needs [AiAttachment.bytes].
   final List<AiAttachment> attachments;
   final List<AiToolSpec> tools;
+
+  /// Tool names whose calls may run together (see AiContext.parallelSafe).
+  final Set<String> parallelSafe;
   final int maxToolRounds;
 
   /// The most one model call (one round) may take.
@@ -204,16 +208,29 @@ class CloudEngine {
       // The model's own content goes back unchanged: Gemini's thought
       // signatures ride on these parts and a rebuilt call would lose them.
       contents.add(Content('model', parts));
-      final responses = <FunctionResponse>[];
-      for (final call in calls) {
-        yield CloudToolStarted(call.name, call.args);
-        Map<String, Object?> answer;
+      Future<Map<String, Object?>> run(FunctionCall call) async {
         try {
-          answer = await runTool(call.name, call.args);
+          return await runTool(call.name, call.args);
         } catch (e) {
-          answer = {'ok': false, 'error': '$e'};
+          return {'ok': false, 'error': '$e'};
         }
-        responses.add(FunctionResponse(call.name, answer, id: call.id));
+      }
+      final responses = <FunctionResponse>[];
+      // Pure reads ("weather in Pune and in Delhi") run at the same time;
+      // a round with anything else in it runs in order, as it always did.
+      if (calls.length > 1 && calls.every((c) => r.parallelSafe.contains(c.name))) {
+        for (final call in calls) {
+          yield CloudToolStarted(call.name, call.args);
+        }
+        final answers = await Future.wait([for (final call in calls) run(call)]);
+        for (var i = 0; i < calls.length; i++) {
+          responses.add(FunctionResponse(calls[i].name, answers[i], id: calls[i].id));
+        }
+      } else {
+        for (final call in calls) {
+          yield CloudToolStarted(call.name, call.args);
+          responses.add(FunctionResponse(call.name, await run(call), id: call.id));
+        }
       }
       contents.add(Content('user', responses));
       rounds++;

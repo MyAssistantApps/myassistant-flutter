@@ -802,6 +802,10 @@ class LiveVoice {
   Future<bool>? _connecting;
   LiveSetup? _setup;
   Set<String> _serverTools = const {};
+
+  /// This session's tools whose calls may run together (pure reads; the
+  /// server's /ai/context parallelSafe).
+  Set<String> _parallelSafe = const {};
   String? _sid;
   String? _handle;
   bool _resumable = false;
@@ -1028,6 +1032,7 @@ class LiveVoice {
           if (!names.contains(l.name)) l.spec,
       ];
       _serverTools = names;
+      _parallelSafe = ctx.parallelSafe;
       final setup = LiveSetup(
         model: cfg.model,
         voice: LiveVoicePrefs.voiceFor(cfg),
@@ -2042,13 +2047,12 @@ class LiveVoice {
     t.endUs ??= _lastLoudUs;
     final tools = _toolsOf(t);
     final started = _now();
-    final responses = <FunctionResponse>[];
-    for (final c in calls) {
+    // EVERY CALL IS ANSWERED: the tools are BLOCKING, so a call left
+    // unanswered (a tool that threw, or never came back) left the model
+    // waiting for good — and deaf to him meanwhile.
+    Future<FunctionResponse?> one(FunctionCall c) async {
       final id = c.id;
-      if (id != null && _cancelledIds.contains(id)) continue;
-      // EVERY CALL IS ANSWERED: the tools are BLOCKING, so a call left
-      // unanswered (a tool that threw, or never came back) left the model
-      // waiting for good — and deaf to him meanwhile.
+      if (id != null && _cancelledIds.contains(id)) return null;
       Map<String, Object?> answer;
       try {
         answer = await tools
@@ -2062,8 +2066,22 @@ class LiveVoice {
           'error': e is TimeoutException ? 'It took too long.' : 'It failed.',
         };
       }
-      if (id != null && _cancelledIds.contains(id)) continue;
-      responses.add(FunctionResponse(c.name, answer, id: id));
+      if (id != null && _cancelledIds.contains(id)) return null;
+      return FunctionResponse(c.name, answer, id: id);
+    }
+
+    final responses = <FunctionResponse>[];
+    // Pure reads run at the same time (2026-10-31); anything else in the
+    // round keeps it in order, as before.
+    if (calls.length > 1 && calls.every((c) => _parallelSafe.contains(c.name))) {
+      for (final r in await Future.wait([for (final c in calls) one(c)])) {
+        if (r != null) responses.add(r);
+      }
+    } else {
+      for (final c in calls) {
+        final r = await one(c);
+        if (r != null) responses.add(r);
+      }
     }
     t.toolMs += (_now() - started) ~/ 1000;
     if (!identical(_session, session) || _stopped) {
