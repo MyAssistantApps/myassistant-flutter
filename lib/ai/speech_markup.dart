@@ -45,7 +45,9 @@ abstract final class SpeechMarkup {
   // tone note written "<tone>informative</tone>", and closing tags.
   static final _toneXml = RegExp(r'<\s*tone\s*>\s*([^<>\n]{1,80}?)\s*<\s*/\s*tone\s*>',
       caseSensitive: false);
-  static final _closing = RegExp(r'<\s*/\s*[a-zA-Z][a-zA-Z \-]{0,30}\s*>');
+  // "</tone:>" too, and an empty "<tone:>" (2026-11-01, seen in review).
+  static final _closing =
+      RegExp(r'<\s*/\s*[a-zA-Z][a-zA-Z \-]{0,30}\s*:?\s*>|<\s*tone\s*:\s*>', caseSensitive: false);
 
   /// The model's variants in the one form the rest reads.
   static String _normal(String raw) => raw

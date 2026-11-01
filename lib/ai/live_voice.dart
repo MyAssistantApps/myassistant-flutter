@@ -1753,15 +1753,33 @@ class LiveVoice {
           last != null && last.finished && last.serverDone && !last.interrupted
               ? last
               : _current();
+      final piece = joinPiece(t.said, said);
       t
-        ..said += said
+        ..said += piece
         ..answered = true;
       _watch?.cancel();
       _heardBack();
       _emit(LiveSaid(t.said,
-          delta: said, startMs: c.startMs, endMs: c.endMs));
+          delta: piece, startMs: c.startMs, endMs: c.endMs));
     }
     if (c.turnComplete) _onTurnComplete();
+  }
+
+  /// The next piece of her words as it joins what she has said: a new
+  /// sentence after a finished one gets its space. "One moment, I'll
+  /// check.Here are the headlines" ran together on screen and in the admin
+  /// panel (review, 2026-11-01): the bridge and the answer arrive as two
+  /// responses, the second without a leading space. "3.5" stays "3.5".
+  static String joinPiece(String before, String piece) {
+    if (before.isEmpty || piece.isEmpty) return piece;
+    final end = before[before.length - 1];
+    final start = piece[0];
+    // "ones." ends a sentence; the "U." of "U.S." does not.
+    final word = before.length >= 2 ? before[before.length - 2] : '';
+    final sentenceEnd = (end == '.' || end == '!' || end == '?' || end == '…') &&
+        RegExp(r'''[a-z0-9)"'’\u0900-\u0DFF]''').hasMatch(word);
+    final newSentence = RegExp(r'[A-Z\u00C0-\u024F\u0900-\u0DFF]').hasMatch(start);
+    return sentenceEnd && newSentence ? ' $piece' : piece;
   }
 
   void _onAudio(Uint8List pcm, int rate) {
