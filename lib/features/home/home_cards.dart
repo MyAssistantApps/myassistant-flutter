@@ -28,6 +28,7 @@ import '../meeting_prep/meeting_prep_sheet.dart';
 import '../shopping/shopping_list_screen.dart';
 import '../shopping/shopping_service.dart';
 import 'home_extras.dart';
+import 'home_redesign.dart';
 import 'home_feed.dart';
 import 'home_memory.dart';
 
@@ -295,28 +296,13 @@ class _HomeFeedViewState extends State<HomeFeedView> {
           'Hear your day in about a minute',
         ),
     };
-    return Row(
-      children: [
-        // A glass pill with the brand's disc: the colour in one small
-        // place (2026-09-30, premium pass — no halo of its own).
-        GlassButton(
-          label: label,
-          icon: icon,
-          busy: p.state == BriefPlayState.loading,
-          onPressed: () => _do.playBrief(context),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: ExcludeSemantics(
-            child: Text(
-              hint,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: Neon.textDim, fontSize: NeonType.footnote, height: 1.3),
-            ),
-          ),
-        ),
-      ],
+    return BriefingBar(
+      title: label,
+      hint: hint,
+      icon: icon,
+      playing: p.state == BriefPlayState.playing,
+      busy: p.state == BriefPlayState.loading,
+      onPressed: () => _do.playBrief(context),
     );
   }
 
@@ -519,63 +505,33 @@ class _HomeFeedViewState extends State<HomeFeedView> {
             ),
           ],
         ),
-        // A grouped glass list: time, title, the kind; hairlines between.
-        GlassGroup(
-          indent: Neon.s4,
-          children: [for (final l in feed.day) _line(l)],
+        // THE DAY AS A TIMELINE (redesign, 2026-11-01): times down the
+        // left, a rail with a dot per thing — it is a sequence, so it reads
+        // as one.
+        GlassCard(
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+          child: Column(
+            children: [
+              for (var i = 0; i < feed.day.length; i++)
+                _line(feed.day[i], first: i == 0, last: i == feed.day.length - 1),
+            ],
+          ),
         ),
       ],
     );
   }
 
-  Widget _line(HomeLine l) {
+  Widget _line(HomeLine l, {bool first = false, bool last = false}) {
     final page = l.item.kind == 'reminder'
         ? const RemindersScreen()
         : const CalendarScreen();
-    return Semantics(
-      button: true,
-      label: '${l.time}, ${l.item.title}',
-      excludeSemantics: true,
-      child: InkWell(
-        onTap: () => _do.open(context, page),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 56),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: Neon.s4),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 76,
-                  child: Text(
-                    l.time,
-                    style: NeonType.manrope(NeonType.body, FontWeight.w600).copyWith(
-                      color: Neon.textLo,
-                      fontFeatures: NeonType.figures,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    l.item.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: NeonType.manrope(NeonType.callout, FontWeight.w600)
-                        .copyWith(color: Neon.textHi),
-                  ),
-                ),
-                const SizedBox(width: Neon.s3),
-                Icon(
-                  l.item.kind == 'reminder'
-                      ? Icons.notifications_none_rounded
-                      : Icons.event_outlined,
-                  size: 18,
-                  color: Neon.textDim,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    return TimelineRow(
+      time: l.time,
+      title: l.item.title,
+      icon: l.item.kind == 'reminder' ? Icons.notifications_none_rounded : Icons.event_outlined,
+      first: first,
+      last: last,
+      onTap: () => _do.open(context, page),
     );
   }
 
@@ -621,28 +577,31 @@ class _HomeFeedViewState extends State<HomeFeedView> {
           const FinanceScreen()),
       ('News', Icons.newspaper_rounded, NeonTone.info, const NewsScreen()),
     ];
+    Color tint(NeonTone t) => switch (t) {
+          NeonTone.action => Neon.pink,
+          NeonTone.discovery => Neon.violet,
+          NeonTone.tip => Neon.cyan,
+          _ => Neon.cyan,
+        };
+    // TOOLS AS TILES (redesign, 2026-11-01): five tappable tiles in a row,
+    // not five small pills.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 2, bottom: 6),
-          child: Text(
-            'Open a tool',
-            style: NeonType.eyebrow.copyWith(color: Neon.textLo),
-          ),
+          padding: const EdgeInsets.only(left: 4, bottom: 4),
+          child: Text('Open a tool', style: NeonType.eyebrow.copyWith(color: Neon.textLo)),
         ),
-        Wrap(
-          spacing: 8,
-          runSpacing: 4,
+        Row(
           children: [
             for (final shortcut in shortcuts)
-              NeonPill(
-                label: shortcut.$1,
-                icon: shortcut.$2,
-                tone: shortcut.$3,
-                inkOverride: Neon.textHi,
-                quiet: true,
-                onPressed: () => _do.open(context, shortcut.$4),
+              Expanded(
+                child: ToolTile(
+                  label: shortcut.$1,
+                  icon: shortcut.$2,
+                  tint: tint(shortcut.$3),
+                  onTap: () => _do.open(context, shortcut.$4),
+                ),
               ),
           ],
         ),

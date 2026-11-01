@@ -26,20 +26,34 @@ class HomeDashboard extends StatelessWidget {
   Widget build(BuildContext context) {
     final now = clock();
     const wk = [
-      'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
       'Sunday'
     ];
     const mo = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
     ];
     // THE HEADER SCROLLS WITH THE FEED (2026-09-24, home2.png). Pinned, it
     // took ~250 dp of the screen, and the feed scrolled up under the quote
     // with no gap or ground — the suggestion chips looked like they slid
     // beneath its text. Now greeting, date and quote are simply the top of
     // the list; only the call light stays put.
-    final header = Reveal(
-        child: Builder(
+    final header = Reveal(child: Builder(
       builder: (context) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -52,8 +66,8 @@ class HomeDashboard extends StatelessWidget {
               children: [
                 // THE TINY ROBOT (owner, 2026-11-01): the splash's robot in
                 // its ring, the ring turning and the eyes blinking.
-                const RobotBadge(size: 50),
-                const SizedBox(width: 12),
+                const RobotBadge(size: 60),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Semantics(
                     header: true,
@@ -65,19 +79,40 @@ class HomeDashboard extends StatelessWidget {
                         // THE LOGO'S WORDMARK (owner, 2026-11-01: "make it
                         // stylish"): "My" in the logo's cyan-into-violet
                         // light, "Assistant" in white, both softly lit.
-                        child: Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.baseline,
-                          textBaseline: TextBaseline.alphabetic,
                           children: [
-                            ShaderMask(
-                              blendMode: BlendMode.srcIn,
-                              shaderCallback: (r) => const LinearGradient(
-                                colors: [Color(0xFF3FD8FF), Color(0xFF6E7BFF), Color(0xFFB14DFF)],
-                              ).createShader(r),
-                              child: Text('My', style: _wordmark(Colors.white, glow: 0.5)),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
+                              children: [
+                                ShaderMask(
+                                  blendMode: BlendMode.srcIn,
+                                  shaderCallback: (r) => const LinearGradient(
+                                    colors: [
+                                      Color(0xFF3FD8FF),
+                                      Color(0xFF6E7BFF),
+                                      Color(0xFFB14DFF)
+                                    ],
+                                  ).createShader(r),
+                                  child: Text('My',
+                                      style:
+                                          _wordmark(Colors.white, glow: 0.5)),
+                                ),
+                                Text('Assistant',
+                                    style: _wordmark(Colors.white, glow: 0.35)),
+                              ],
                             ),
-                            Text('Assistant', style: _wordmark(Colors.white, glow: 0.35)),
+                            // The date, under the name, beside the robot.
+                            Text(
+                              '${wk[now.weekday - 1]}, ${now.day} ${mo[now.month - 1]}',
+                              style: TextStyle(
+                                  color: Neon.textLo,
+                                  fontSize: NeonType.body,
+                                  height: 1.4),
+                            ),
                           ],
                         ),
                       ),
@@ -90,14 +125,7 @@ class HomeDashboard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-            // The date alone (owner, 2026-09-30: the weather chip beside
-            // it "looks bad"). Rain or heat worth knowing about still gets
-            // its own card in the feed.
-            Text(
-              '${wk[now.weekday - 1]}, ${now.day} ${mo[now.month - 1]}',
-              style: TextStyle(color: Neon.textLo, fontSize: NeonType.body),
-            ),
+            // The date sits under the name now (redesign, 2026-11-01).
             // THE DAY'S LINE, right under the date (owner, 2026-09-30: "need
             // motivational quotes right below the date"). No card, no tint:
             // an accent rule down the left, brighter ink, a size up — it
@@ -132,14 +160,19 @@ class HomeDashboard extends StatelessWidget {
                           Expanded(
                             child: Text(
                               QuoteOfDay.line(),
-                              style: NeonType.manrope(NeonType.rowTitle, FontWeight.w500)
-                                  .copyWith(color: Neon.textHi, height: 1.4, letterSpacing: 0.1),
+                              style: NeonType.manrope(
+                                      NeonType.rowTitle, FontWeight.w500)
+                                  .copyWith(
+                                      color: Neon.textHi,
+                                      height: 1.4,
+                                      letterSpacing: 0.1),
                             ),
                           ),
                           const SizedBox(width: 8),
                           Align(
                             alignment: Alignment.bottomCenter,
-                            child: Icon(Icons.image_outlined, size: 18, color: Neon.textLo),
+                            child: Icon(Icons.image_outlined,
+                                size: 18, color: Neon.textLo),
                           ),
                         ],
                       ),
@@ -208,13 +241,16 @@ class _SearchRing extends StatelessWidget {
 }
 
 /// The header's wordmark type: the logo's rounded bold, softly lit.
-TextStyle _wordmark(Color color, {double glow = 0.4}) => GoogleFonts.spaceGrotesk(
-      fontSize: NeonType.largeTitle + 4,
+TextStyle _wordmark(Color color, {double glow = 0.4}) =>
+    GoogleFonts.spaceGrotesk(
+      fontSize: NeonType.largeTitle - 2,
       fontWeight: FontWeight.w700,
       letterSpacing: -0.6,
       height: 1.1,
       color: color,
       shadows: [
-        Shadow(color: const Color(0xFF7C8CFF).withValues(alpha: glow), blurRadius: 16),
+        Shadow(
+            color: const Color(0xFF7C8CFF).withValues(alpha: glow),
+            blurRadius: 16),
       ],
     );
