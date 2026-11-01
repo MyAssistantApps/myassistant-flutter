@@ -780,6 +780,41 @@ class MainActivity : FlutterFragmentActivity() {
                 }
             }
 
+        // TASKS INSIDE OTHER APPS (ScreenAgentService.kt; the loop is
+        // lib/services/screen_agent.dart).
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "hari/screen")
+            .setMethodCallHandler { call, result ->
+                val agent = ScreenAgentService.instance
+                when (call.method) {
+                    "enabled" -> result.success(agent != null)
+                    "openSettings" -> {
+                        openAccessibilitySettings(applicationContext)
+                        result.success(true)
+                    }
+                    "dump" -> result.success(agent?.dump())
+                    "act" -> result.success(agent?.act(
+                        call.argument<String>("action") ?: "",
+                        call.argument<Int>("node"),
+                        call.argument<String>("text"),
+                        call.argument<String>("direction"),
+                    ) ?: "screen control is off")
+                    "status" -> {
+                        agent?.status(call.argument<String>("say") ?: "")
+                        result.success(agent != null)
+                    }
+                    "confirm" -> {
+                        if (agent == null) result.success(false)
+                        else agent.confirm(call.argument<String>("question") ?: "Continue?") { result.success(it) }
+                    }
+                    "stopRequested" -> result.success(agent?.stopRequested ?: true)
+                    "hide" -> {
+                        agent?.hide()
+                        result.success(true)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "hari/device")
             .setMethodCallHandler { call, result ->
                 val ctx = applicationContext

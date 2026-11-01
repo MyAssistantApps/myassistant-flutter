@@ -41,6 +41,7 @@ import '../../../screens/avatar_identity_screen.dart';
 import '../../../screens/connected_apps_screen.dart';
 import '../../../screens/shortcuts_screen.dart';
 import '../../../services/voice_choice.dart';
+import '../../../services/screen_agent.dart';
 import '../../../screens/voice_picker_screen.dart';
 import '../../../models/shortcut.dart';
 import '../../../services/shortcut_runner.dart';
@@ -2368,6 +2369,8 @@ class AssistantEngine extends ChangeNotifier {
   /// sheet): the model is answered at once and the result follows as a
   /// turn of its own.
   static const _ownerFlows = {
+    // A task inside another app: its result comes as the next message.
+    'screen_task',
     'analyze_camera',
     'capture_document',
     'open_camera',
@@ -3124,6 +3127,10 @@ class AssistantEngine extends ChangeNotifier {
         _endAfterTurn = true;
         if (_listening) unawaited(_stopListening());
         if (!_turnRunning) unawaited(_endWhenQuiet());
+        break;
+
+      case 'screen_task':
+        unawaited(_runScreenTask('${e['app'] ?? ''}'.trim(), '${e['goal'] ?? ''}'.trim()));
         break;
 
       case 'open_any_app':
@@ -4826,6 +4833,51 @@ class AssistantEngine extends ChangeNotifier {
     if (_liveWanted && _foreground) {
       unawaited(_live.warm().catchError((Object _) => false));
     }
+  }
+
+  /// A TASK INSIDE ANOTHER APP (owner, 2026-11-01): open the app, let the
+  /// screen agent work through it (services/screen_agent.dart), and tell
+  /// the conversation how it ended. Screen control off: its setting opens
+  /// and she says how to switch it on; nothing is done.
+  Future<void> _runScreenTask(String app, String goal) async {
+    const agent = ScreenAgent();
+    bool on;
+    try {
+      on = await agent.enabled();
+    } catch (_) {
+      on = false;
+    }
+    if (!on) {
+      AppFeedback.toast('Turn on "MyAssistant screen control" so I can work in other apps.');
+      try {
+        await agent.openSettings();
+      } catch (_) {}
+      await _tellModel('[SYSTEM] Screen control is OFF, so nothing was done in $app. Accessibility '
+          'settings are open now: tell me in one short sentence to switch on "MyAssistant screen '
+          'control" there and then ask again.');
+      return;
+    }
+    _leftForExternalApp = true;
+    String? opened;
+    try {
+      opened = await const MethodChannel('hari/intent')
+          .invokeMethod<String>('launchApp', {'name': app, 'pkg': ''});
+    } catch (_) {}
+    if (opened == null || opened.isEmpty) {
+      _leftForExternalApp = false;
+      await _tellModel('[SYSTEM] "$app" could not be opened (it may not be installed), so '
+          'nothing was done. Say so in one short sentence.');
+      return;
+    }
+    // The app's first screen, before the first look at it.
+    await Future<void>.delayed(const Duration(milliseconds: 1800));
+    AppLog.add('screen', 'task in $app: $goal');
+    final r = await ScreenTaskRunner().run(goal, app: app);
+    AppLog.add('screen', 'task ${r.ok ? 'done' : 'ended'} after ${r.steps} steps: ${r.summary}');
+    AppFeedback.toast(r.summary);
+    await _tellModel('[SYSTEM] The task in $app ${r.ok ? 'is finished' : 'did not finish'}: '
+        '${r.summary} Tell me that in one short sentence, in my language.'
+        '${r.ok ? '' : ' Do not say it was done.'}');
   }
 
   /// When the conversation was last closed for a task rather than by the

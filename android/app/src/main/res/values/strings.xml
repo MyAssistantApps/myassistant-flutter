@@ -7,4 +7,7 @@
          it asks which screen it was, and "Gallery" is the form's button
          for attaching a different picture. -->
     <string name="feedback_prompt">Tell us what happened, or what you would like improved. Mention the screen you were on, or add a screenshot of it from Gallery.</string>
+    <!-- Settings → Accessibility (ScreenAgentService). -->
+    <string name="screen_agent_label">MyAssistant screen control</string>
+    <string name="screen_agent_description">Lets your assistant do tasks you ask for inside other apps — open a chat, type a message, add to a cart — by reading the screen and tapping for you. It only acts while a task you asked for is running, shows a Stop button the whole time, and asks you before anything that sends, pays, orders or deletes. It never reads or types passwords or codes.</string>
 </resources>
