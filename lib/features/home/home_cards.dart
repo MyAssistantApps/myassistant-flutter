@@ -27,6 +27,7 @@ import '../briefing/brief_player.dart';
 import '../meeting_prep/meeting_prep_sheet.dart';
 import '../shopping/shopping_list_screen.dart';
 import '../shopping/shopping_service.dart';
+import 'deal_banners.dart';
 import 'home_extras.dart';
 import 'home_redesign.dart';
 import 'home_feed.dart';
@@ -261,6 +262,11 @@ class _HomeFeedViewState extends State<HomeFeedView> {
               ]),
             ),
             const SizedBox(height: 8),
+            // ORDER AND SHOP (owner, 2026-11-01): food and shopping apps,
+            // suggested for the time of day and the shopping list, sliding.
+            const SizedBox(height: 12),
+            DealBanners(banners: dealBannersFor(now, toBuy: toBuy)),
+            const SizedBox(height: 20),
             Reveal(
               delayMs: 180,
               child: _toolShortcuts(),
