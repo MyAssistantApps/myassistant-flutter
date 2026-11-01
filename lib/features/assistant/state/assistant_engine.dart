@@ -16,7 +16,7 @@ import '../../../ai/live_voice.dart';
 import '../../../ai/model_port.dart';
 import '../../../ai/search_suggestions.dart';
 import '../../../ai/speech.dart' show SpeechEngine;
-import '../../../ai/types.dart' show AgentControl, AgentTurn, AiToolSpec, agentLabels;
+import '../../../ai/types.dart' show AgentTurn, AiToolSpec;
 import '../../../core/log.dart';
 // Screens and settings reachable BY VOICE (open_app_screen / set_theme).
 import '../../../services/avatar_message_service.dart';
@@ -2148,18 +2148,11 @@ class AssistantEngine extends ChangeNotifier {
           case BrainRouteChosen(:final route, :final reason, :final control):
             AppLog.add('brain', '${route.name} ($reason)'
                 '${control == null ? '' : ' — ${control.summary} (${control.via})'}');
+            // ONE ASSISTANT ON SCREEN (owner, 2026-11-01: "the user should
+            // not be able to see the underlying agents"): no hand-off lane,
+            // no agent name under the orb, whatever the server planned.
             _agentClear?.cancel();
-            // MAYA FIRST: a turn she handles herself shows no hand-off;
-            // only a request the manager coordinates does.
-            agentControl.value = control == null || control.skipped || control.via == 'maya'
-                ? null
-                : (
-                    control: control,
-                    running: null,
-                    done: const {},
-                    over: false,
-                    persona: control.addressed?.label,
-                  );
+            agentControl.value = null;
           case BrainPartialText(:final text):
             _finishTools();
             if (phase == AssistantPhase.responding) {
@@ -2310,58 +2303,8 @@ class AssistantEngine extends ChangeNotifier {
     });
   }
 
-  /// The id of the specialist [held] says is running, if any.
-  static String? _agentIdOf(AgentTurn held) {
-    final label = held.running;
-    if (label == null) return null;
-    for (final a in held.control.agents) {
-      if (a.label == label) return a.id;
-    }
-    return null;
-  }
-
   void _toolStarted(String tool, [Map<String, Object?> args = const {}]) {
     _finishTools();
-    var held = agentControl.value;
-    // A Live turn has no manager's plan: it starts from the session's map
-    // of who owns which tool, and adds each agent as it is used.
-    if (held == null || held.over) {
-      final map = _live.agentMap;
-      if (map != null && _liveTurnRunning) {
-        _agentClear?.cancel();
-        held = (
-          control: AgentControl(via: 'live', toolAgent: map.toolAgent),
-          running: null,
-          done: const <String>{},
-          over: false,
-          persona: null,
-        );
-      }
-    }
-    if (held != null) {
-      // "Call your manager": that agent answers this turn in person.
-      if (tool == 'talk_as_agent') {
-        agentControl.value = (
-          control: held.control,
-          running: held.running,
-          done: held.done,
-          over: false,
-          persona: agentLabels[args['agent']] ?? 'Manager',
-        );
-      } else {
-        final next = held.control.toolAgent[tool];
-        final prev = _agentIdOf(held);
-        final control = next == null ? held.control : held.control.withAgent(next);
-        agentControl.value = (
-          control: control,
-          running: control.labelFor(tool),
-          // The specialist handing over has finished its part.
-          done: {...held.done, if (prev != null && prev != next) prev},
-          over: false,
-          persona: held.persona,
-        );
-      }
-    }
     if (LocationService.locationTools.contains(tool)) {
       unawaited(_maybeAskLocation());
     }

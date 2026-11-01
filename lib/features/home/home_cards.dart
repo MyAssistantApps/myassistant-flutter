@@ -20,7 +20,6 @@ import '../../services/auth_service.dart';
 import '../../services/brief_service.dart';
 import '../../services/call_history.dart';
 import '../../services/missed_calls_service.dart';
-import '../../widgets/agent_strip.dart';
 import '../../widgets/neon_cards.dart';
 import '../../widgets/whats_new_card.dart';
 import '../assistant/state/assistant_engine.dart';
@@ -230,9 +229,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
             // brightest thing under the greeting.
             _playRow(now),
             const SizedBox(height: 18),
-            // THE AGENTS (2026-10-31): all nine, ready; lit while they work.
-            const AgentStrip(),
-            const SizedBox(height: 20),
+            const SizedBox(height: 2),
             StateSwitch(
               state: state,
               child: switch (state) {

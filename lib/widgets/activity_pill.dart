@@ -7,7 +7,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../design/motion.dart';
 import '../design/neon_tokens.dart';
 import '../features/assistant/state/assistant_engine.dart';
-import 'agent_strip.dart' show AgentHandoffLane;
 
 /// WHAT THE USER SEES WHILE A TOOL IS RUNNING.
 ///
@@ -291,11 +290,6 @@ class _AssistantActivityPillState extends State<AssistantActivityPill>
                 ),
               ],
             ),
-            // The hand-off: manager → each specialist, waiting/working/done.
-            if (engine.agentControl.value case final turn?) ...[
-              const SizedBox(height: 8),
-              AgentHandoffLane(turn: turn, pulse: _spin),
-            ],
               ],
             ),
           ),
