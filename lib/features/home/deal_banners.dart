@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:simple_icons/simple_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../design/neon_tokens.dart';
@@ -25,6 +26,8 @@ class DealBanner {
     required this.icon,
     this.pkg = '',
     this.url = '',
+    this.iconPkg = '',
+    this.mark,
   });
 
   final String brand;
@@ -37,6 +40,16 @@ class DealBanner {
   /// Opened when installed; otherwise [url].
   final String pkg;
   final String url;
+
+  /// Whose installed icon to show (defaults to [pkg]): Amazon's and
+  /// Flipkart's banners open their offers pages but show their app's logo.
+  final String iconPkg;
+
+  /// The brand's mark when the app is not installed (simple_icons has
+  /// Swiggy and Zomato).
+  final IconData? mark;
+
+  String get logoPkg => iconPkg.isNotEmpty ? iconPkg : pkg;
 }
 
 /// The banners for [now], with the user's shopping list in mind.
@@ -59,6 +72,7 @@ List<DealBanner> dealBannersFor(DateTime now, {List<String> toBuy = const []}) {
       icon: Icons.delivery_dining_rounded,
       pkg: 'in.swiggy.android',
       url: 'https://www.swiggy.com/',
+      mark: SimpleIcons.swiggy,
     ),
     const DealBanner(
       brand: 'Zomato',
@@ -69,6 +83,7 @@ List<DealBanner> dealBannersFor(DateTime now, {List<String> toBuy = const []}) {
       icon: Icons.restaurant_rounded,
       pkg: 'com.application.zomato',
       url: 'https://www.zomato.com/',
+      mark: SimpleIcons.zomato,
     ),
   ];
   final list = toBuy.where((s) => s.trim().isNotEmpty).toList();
@@ -107,6 +122,7 @@ List<DealBanner> dealBannersFor(DateTime now, {List<String> toBuy = const []}) {
       color: Color(0xFFFF9900),
       icon: Icons.local_offer_rounded,
       url: 'https://www.amazon.in/deals',
+      iconPkg: 'in.amazon.mShop.android.shopping',
     ),
     DealBanner(
       brand: 'Flipkart',
@@ -116,6 +132,7 @@ List<DealBanner> dealBannersFor(DateTime now, {List<String> toBuy = const []}) {
       color: Color(0xFF2874F0),
       icon: Icons.shopping_bag_rounded,
       url: 'https://www.flipkart.com/offers-store',
+      iconPkg: 'com.flipkart.android',
     ),
   ];
   // Meal times lead with food; a list to buy leads with groceries.
@@ -316,23 +333,106 @@ class _BannerCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: c.withValues(alpha: 0.18),
-                      border: Border.all(color: c.withValues(alpha: 0.5)),
-                    ),
-                    child: Icon(banner.icon,
-                        color: Color.lerp(c, Colors.white, 0.2), size: 32),
-                  ),
+                  _BrandLogo(banner: banner, size: 64),
                 ],
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// THE BRAND'S OWN LOGO (owner, 2026-11-01: "add their original logos"):
+/// the installed app's icon, from the phone itself (nothing bundled in our
+/// repo); else the brand's mark from simple_icons; else its initial.
+class _BrandLogo extends StatefulWidget {
+  const _BrandLogo({required this.banner, required this.size});
+  final DealBanner banner;
+  final double size;
+
+  /// Icons read once per run, by package (null: not installed).
+  static final _icons = <String, Future<Uint8List?>>{};
+
+  static Future<Uint8List?> iconOf(String pkg) => _icons[pkg] ??= () async {
+        try {
+          return await const MethodChannel('hari/intent')
+              .invokeMethod<Uint8List>('appIcon', {'pkg': pkg, 'size': 192});
+        } catch (_) {
+          return null;
+        }
+      }();
+
+  @override
+  State<_BrandLogo> createState() => _BrandLogoState();
+}
+
+class _BrandLogoState extends State<_BrandLogo> {
+  Uint8List? _png;
+
+  @override
+  void initState() {
+    super.initState();
+    final pkg = widget.banner.logoPkg;
+    if (pkg.isNotEmpty) {
+      _BrandLogo.iconOf(pkg).then((png) {
+        if (mounted && png != null) setState(() => _png = png);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final b = widget.banner;
+    final c = b.color;
+    final size = widget.size;
+    final png = _png;
+    if (png != null) {
+      // The app's real icon, as on the home screen, with a soft lift.
+      return Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(size * 0.26),
+          boxShadow: [
+            BoxShadow(
+                color: c.withValues(alpha: 0.45),
+                blurRadius: 16,
+                spreadRadius: -2)
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(size * 0.26),
+          child: Image.memory(png,
+              width: size,
+              height: size,
+              fit: BoxFit.cover,
+              gaplessPlayback: true),
+        ),
+      );
+    }
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(size * 0.26),
+        color: c,
+        boxShadow: [
+          BoxShadow(
+              color: c.withValues(alpha: 0.45),
+              blurRadius: 16,
+              spreadRadius: -2)
+        ],
+      ),
+      alignment: Alignment.center,
+      child: b.mark != null
+          ? Icon(b.mark, color: Colors.white, size: size * 0.56)
+          : Text(b.brand.characters.first,
+              style: NeonType.manrope(size * 0.48, FontWeight.w800).copyWith(
+                  color: c.computeLuminance() > 0.5
+                      ? Colors.black
+                      : Colors.white)),
     );
   }
 }

@@ -714,6 +714,25 @@ class MainActivity : FlutterFragmentActivity() {
                         applicationContext,
                         call.argument<ByteArray>("bytes") ?: ByteArray(0),
                         call.argument<String>("name") ?: "card.png"))
+                    // AN INSTALLED APP'S OWN ICON, as PNG (Home's "Order and
+                    // shop" banners show each platform's real logo from the
+                    // phone itself; null when the app is not installed).
+                    "appIcon" -> {
+                        val pkg = call.argument<String>("pkg") ?: ""
+                        val size = (call.argument<Int>("size") ?: 144).coerceIn(48, 256)
+                        try {
+                            val d = packageManager.getApplicationIcon(pkg)
+                            val bmp = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888)
+                            val c = android.graphics.Canvas(bmp)
+                            d.setBounds(0, 0, size, size)
+                            d.draw(c)
+                            val out = java.io.ByteArrayOutputStream()
+                            bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
+                            result.success(out.toByteArray())
+                        } catch (_: Exception) {
+                            result.success(null)
+                        }
+                    }
                     "launchApp" -> {
                         val want = (call.argument<String>("name") ?: "")
                             .lowercase().replace(Regex("[^a-z0-9]"), "")
