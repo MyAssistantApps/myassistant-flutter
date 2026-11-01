@@ -136,7 +136,7 @@ class DealBanners extends StatefulWidget {
 }
 
 class _DealBannersState extends State<DealBanners> {
-  final _page = PageController(viewportFraction: 0.92);
+  final _page = PageController(viewportFraction: 0.9);
   int _at = 0;
   Timer? _auto;
   bool _held = false;
@@ -199,15 +199,16 @@ class _DealBannersState extends State<DealBanners> {
           onPointerUp: (_) => _held = false,
           onPointerCancel: (_) => _held = false,
           child: SizedBox(
-            height: 150,
-            // The neighbours peek in at the edges (viewportFraction).
+            height: 164,
+            // The next banner peeks in on the right (viewportFraction).
             child: PageView.builder(
               controller: _page,
-              padEnds: true,
+              // Lined up with the page's left edge; the next one peeks on the right.
+              padEnds: false,
               itemCount: banners.length,
               onPageChanged: (i) => setState(() => _at = i),
               itemBuilder: (_, i) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 5),
+                padding: const EdgeInsets.only(right: 10),
                 child: _BannerCard(
                     banner: banners[i], onTap: () => _open(banners[i])),
               ),
