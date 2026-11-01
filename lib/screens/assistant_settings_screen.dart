@@ -101,7 +101,7 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
         configured,
       ].whereType<String>().firstWhere(
             (v) => offered.contains(v),
-            orElse: () => configured.isNotEmpty ? configured : 'coral',
+            orElse: () => configured.isNotEmpty ? configured : 'sage',
           );
       _rules = (r?['instructions'] as List?) ?? [];
     });
