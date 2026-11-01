@@ -93,6 +93,16 @@ jobs:
             exit 1
           fi
 
+      # The same APK for the in-app updater (tool/publish_update.sh):
+      # `gh run download <run> -n tester-apk` fetches it, so both channels
+      # ship one identical binary and nobody has to build it again locally.
+      - name: Keep the APK for the in-app updater
+        uses: actions/upload-artifact@v4
+        with:
+          name: tester-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 14
+
       - name: Send to App Distribution
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-sa.json
