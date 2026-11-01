@@ -24,14 +24,15 @@ class SplashScreen extends StatefulWidget {
   /// Starts decoding the logo's layers (main(), before runApp), so the
   /// splash has them by its first frame instead of showing black for ~1 s
   /// (measured on the owner's phone, 2026-11-01).
-  static void precache() => unawaited(_Layers.load().then<void>((_) {}, onError: (Object _) {}));
+  static void precache() => unawaited(LogoLayers.load().then<void>((_) {}, onError: (Object _) {}));
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
 /// Where things are in the 738x1600 source (printed by the layer tool).
-class _Geo {
+/// Shared with the Home header's robot (widgets/robot_badge.dart).
+class LogoGeo {
   static const size = Size(738, 1600);
   static const ringCentre = Offset(380.0, 781.7);
   static const ringAt = Offset(128, 529);
@@ -40,8 +41,10 @@ class _Geo {
   static const eyeRightAt = Offset(424, 738);
 }
 
-class _Layers {
-  _Layers(this.bg, this.ring, this.eyeLeft, this.eyeRight);
+/// The logo's layers, decoded once per app run (the splash and the Home
+/// header's robot share them).
+class LogoLayers {
+  LogoLayers(this.bg, this.ring, this.eyeLeft, this.eyeRight);
   final ui.Image bg, ring, eyeLeft, eyeRight;
 
   static Future<ui.Image> _load(String name) async {
@@ -51,12 +54,12 @@ class _Layers {
   }
 
   /// Decoded once per app run; a failed decode may be tried again.
-  static Future<_Layers>? _pending;
-  static Future<_Layers> load() => _pending ??= () async {
+  static Future<LogoLayers>? _pending;
+  static Future<LogoLayers> load() => _pending ??= () async {
         try {
           final all = await Future.wait(
               [_load('bg'), _load('ring'), _load('eye_left'), _load('eye_right')]);
-          return _Layers(all[0], all[1], all[2], all[3]);
+          return LogoLayers(all[0], all[1], all[2], all[3]);
         } catch (_) {
           _pending = null;
           rethrow;
@@ -77,7 +80,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   late final AnimationController _in =
       AnimationController(vsync: this, duration: const Duration(milliseconds: 450));
 
-  _Layers? _layers;
+  LogoLayers? _layers;
   Timer? _nextBlink;
   bool _still = false;
   final _rand = math.Random();
@@ -85,7 +88,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   @override
   void initState() {
     super.initState();
-    _Layers.load().then((l) {
+    LogoLayers.load().then((l) {
       if (!mounted) return;
       setState(() => _layers = l);
       _still ? _in.value = 1 : _in.forward();
@@ -162,7 +165,7 @@ class _LogoPainter extends CustomPainter {
   _LogoPainter(this.layers, this.spin, this.blink)
       : super(repaint: Listenable.merge([spin, blink]));
 
-  final _Layers layers;
+  final LogoLayers layers;
   final Animation<double> spin;
   final Animation<double> blink;
 
@@ -182,10 +185,10 @@ class _LogoPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     // The logo covers the screen, centred (it is a phone-shaped picture,
     // so on a phone almost nothing is cut).
-    final scale = math.max(size.width / _Geo.size.width, size.height / _Geo.size.height);
+    final scale = math.max(size.width / LogoGeo.size.width, size.height / LogoGeo.size.height);
     canvas.save();
-    canvas.translate((size.width - _Geo.size.width * scale) / 2,
-        (size.height - _Geo.size.height * scale) / 2);
+    canvas.translate((size.width - LogoGeo.size.width * scale) / 2,
+        (size.height - LogoGeo.size.height * scale) / 2);
     canvas.scale(scale);
 
     canvas.drawImage(layers.bg, Offset.zero, _plain);
@@ -193,21 +196,21 @@ class _LogoPainter extends CustomPainter {
     // THE RING, turning. Its light fades out just above the wordmark, so it
     // passes behind "My Assistant" instead of across it.
     final ringBox = Rect.fromLTWH(
-        _Geo.ringAt.dx, _Geo.ringAt.dy, layers.ring.width.toDouble(), layers.ring.height.toDouble());
+        LogoGeo.ringAt.dx, LogoGeo.ringAt.dy, layers.ring.width.toDouble(), layers.ring.height.toDouble());
     canvas.saveLayer(ringBox, _light);
     canvas.save();
-    canvas.translate(_Geo.ringCentre.dx, _Geo.ringCentre.dy);
+    canvas.translate(LogoGeo.ringCentre.dx, LogoGeo.ringCentre.dy);
     canvas.rotate(spin.value * 2 * math.pi);
-    canvas.translate(-_Geo.ringCentre.dx, -_Geo.ringCentre.dy);
-    canvas.drawImage(layers.ring, _Geo.ringAt, _plain);
+    canvas.translate(-LogoGeo.ringCentre.dx, -LogoGeo.ringCentre.dy);
+    canvas.drawImage(layers.ring, LogoGeo.ringAt, _plain);
     canvas.restore();
     canvas.drawRect(
       ringBox,
       Paint()
         ..blendMode = BlendMode.dstIn
         ..shader = ui.Gradient.linear(
-          const Offset(0, _Geo.textTop - 45),
-          const Offset(0, _Geo.textTop),
+          const Offset(0, LogoGeo.textTop - 45),
+          const Offset(0, LogoGeo.textTop),
           const [Color(0xFFFFFFFF), Color(0x00FFFFFF)],
         ),
     );
@@ -216,8 +219,8 @@ class _LogoPainter extends CustomPainter {
     // THE EYES, squashed towards their middle as they blink.
     final shut = _shut;
     for (final (img, at) in [
-      (layers.eyeLeft, _Geo.eyeLeftAt),
-      (layers.eyeRight, _Geo.eyeRightAt),
+      (layers.eyeLeft, LogoGeo.eyeLeftAt),
+      (layers.eyeRight, LogoGeo.eyeRightAt),
     ]) {
       final c = at + Offset(img.width / 2, img.height / 2);
       canvas.save();

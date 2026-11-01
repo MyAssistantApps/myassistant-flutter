@@ -8,6 +8,7 @@ import '../features/home/home_cards.dart';
 import '../features/home/quote_cards_sheet.dart';
 import '../features/home/quote_of_day.dart';
 import '../widgets/call_led.dart';
+import '../widgets/robot_badge.dart';
 import 'search_screen.dart';
 
 /// HOME TAB — what needs you now (2026-09-29).
@@ -49,6 +50,10 @@ class HomeDashboard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                // THE TINY ROBOT (owner, 2026-11-01): the splash's robot in
+                // its ring, the ring turning and the eyes blinking.
+                const RobotBadge(size: 50),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Semantics(
                     header: true,
@@ -57,27 +62,23 @@ class HomeDashboard extends StatelessWidget {
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
-                        child: ShaderMask(
-                          blendMode: BlendMode.srcIn,
-                          shaderCallback: (r) => LinearGradient(
-                            colors: [Neon.cyan, Neon.violet, Neon.pink],
-                          ).createShader(r),
-                          child: Text(
-                            'MyAssistant',
-                            style: GoogleFonts.spaceGrotesk(
-                              fontSize: NeonType.largeTitle + 6,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: -0.8,
-                              height: 1.1,
-                              color: Colors.white,
-                              // its own glow, tinted by the gradient
-                              shadows: [
-                                Shadow(
-                                    color: Colors.white.withValues(alpha: 0.55),
-                                    blurRadius: 18),
-                              ],
+                        // THE LOGO'S WORDMARK (owner, 2026-11-01: "make it
+                        // stylish"): "My" in the logo's cyan-into-violet
+                        // light, "Assistant" in white, both softly lit.
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            ShaderMask(
+                              blendMode: BlendMode.srcIn,
+                              shaderCallback: (r) => const LinearGradient(
+                                colors: [Color(0xFF3FD8FF), Color(0xFF6E7BFF), Color(0xFFB14DFF)],
+                              ).createShader(r),
+                              child: Text('My', style: _wordmark(Colors.white, glow: 0.5)),
                             ),
-                          ),
+                            Text('Assistant', style: _wordmark(Colors.white, glow: 0.35)),
+                          ],
                         ),
                       ),
                     ),
@@ -205,3 +206,15 @@ class _SearchRing extends StatelessWidget {
     );
   }
 }
+
+/// The header's wordmark type: the logo's rounded bold, softly lit.
+TextStyle _wordmark(Color color, {double glow = 0.4}) => GoogleFonts.spaceGrotesk(
+      fontSize: NeonType.largeTitle + 4,
+      fontWeight: FontWeight.w700,
+      letterSpacing: -0.6,
+      height: 1.1,
+      color: color,
+      shadows: [
+        Shadow(color: const Color(0xFF7C8CFF).withValues(alpha: glow), blurRadius: 16),
+      ],
+    );
