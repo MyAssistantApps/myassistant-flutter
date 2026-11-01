@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math' as math;
-import '../ai/types.dart' show AgentTurn, agentShortName;
 
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
@@ -708,8 +707,12 @@ class _InlineCaptionOverlayState extends State<InlineCaptionOverlay>
                     padding: EdgeInsets.only(
                         top: MediaQuery.of(context).viewPadding.top, bottom: 4),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [_MuteButton(engine: engine)],
+                      children: [
+                        // THE MANAGER, when they asked for it: slides in here.
+                        Expanded(child: ManagerPanel(engine: engine)),
+                        const SizedBox(width: 8),
+                        _MuteButton(engine: engine),
+                      ],
                     ),
                   ),
                   // ABOVE THE ORB, the room eases away for a long reply too
@@ -860,17 +863,15 @@ class _InlineCaptionOverlayState extends State<InlineCaptionOverlay>
                                                   String>(
                                                 valueListenable:
                                                     AssistantIdentity.notifier,
-                                                // WHO IS SPEAKING (2026-10-31): the assistant's
-                                                // name, or the agent the owner asked for
-                                                // ("call your manager" → Manager), or the
-                                                // specialist at work — back to the name
-                                                // when the turn is done.
+                                                // WHO IS SPEAKING: the assistant's name, or
+                                                // "Manager" while the Manager has the
+                                                // conversation (only when they asked for it).
                                                 builder: (_, name, __) =>
-                                                    ValueListenableBuilder<AgentTurn?>(
-                                                  valueListenable: engine.agentControl,
-                                                  builder: (_, turn, __) => VoiceOrb(
+                                                    ValueListenableBuilder<bool>(
+                                                  valueListenable: engine.managerOn,
+                                                  builder: (_, manager, __) => VoiceOrb(
                                                     size: _orbSize,
-                                                    label: orbLabelFor(speakerFor(turn, name)),
+                                                    label: orbLabelFor(manager ? 'Manager' : name),
                                                   ),
                                                 ),
                                               ),
@@ -2137,10 +2138,81 @@ class _AnswerAfterglowState extends State<AnswerAfterglow> {
   }
 }
 
-/// The name under the orb for [turn]: the agent answering in person, else
-/// the specialist at work, else the assistant's own [name].
-String speakerFor(AgentTurn? turn, String name) {
-  if (turn == null || turn.over) return name;
-  final who = turn.persona ?? turn.running;
-  return who == null ? name : agentShortName(who);
+/// THE MANAGER PANEL (owner, 2026-11-01): it slides in at the top of the
+/// voice screen while the Manager has the conversation — its badge, its
+/// name, and what it is doing right now (the tool at work) — and slides
+/// away when it hands back.
+class ManagerPanel extends StatelessWidget {
+  const ManagerPanel({super.key, required this.engine});
+  final AssistantEngine engine;
+
+  static const _gold = Color(0xFFFFC857);
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: engine.managerOn,
+      builder: (context, on, _) => AnimatedSlide(
+        offset: on ? Offset.zero : const Offset(0, -1.4),
+        duration: const Duration(milliseconds: 320),
+        curve: on ? Curves.easeOutBack : Curves.easeIn,
+        child: AnimatedOpacity(
+          opacity: on ? 1 : 0,
+          duration: const Duration(milliseconds: 220),
+          child: Semantics(
+            liveRegion: true,
+            label: on ? 'The Manager has the conversation' : null,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(8, 8, 14, 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: _gold.withValues(alpha: 0.55)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                          colors: [Color(0xFFFFD98A), Color(0xFFE09A2D)]),
+                      boxShadow: [BoxShadow(color: _gold.withValues(alpha: 0.45), blurRadius: 12)],
+                    ),
+                    child: const Icon(Icons.workspace_premium_rounded,
+                        size: 20, color: Color(0xFF3A2400)),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('Manager',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700)),
+                        ValueListenableBuilder<String?>(
+                          valueListenable: engine.activityLabel,
+                          builder: (_, doing, __) => Text(
+                            doing ?? 'Taking over from your assistant',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.7), fontSize: 12.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
