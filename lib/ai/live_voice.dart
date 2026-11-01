@@ -34,7 +34,6 @@
 library;
 
 import 'dart:async';
-import 'gpt_live.dart';
 import 'openai_live.dart';
 import 'dart:collection';
 import 'dart:typed_data';
@@ -260,13 +259,6 @@ abstract interface class LiveSessionPort {
 /// A session that can stop the reply being made (OpenAI Realtime).
 abstract interface class CancellableReply {
   void cancelReply();
-}
-
-/// A session that carries the microphone and her voice itself (GPT-Live
-/// over WebRTC): the engine opens and closes the mic through it, and
-/// never plays audio for it.
-abstract interface class OwnsAudio {
-  void setMicOpen(bool open);
 }
 
 /// Opens Live sessions (firebase_ai, or a test's).
@@ -775,8 +767,6 @@ class LiveVoice {
 
   final LiveConnector _connector;
 
-  /// Only the real connector builds a GPT-Live peer early (tests use fakes).
-  bool get _prepareGptLive => _connector is SwitchingLiveConnector;
   final ToolServer _server;
   final AssistantBrain _brain;
   final PcmPlayer _player;
@@ -834,11 +824,7 @@ class LiveVoice {
   /// before the mic is open: on GPT-Live the mic opens only after the
   /// connection, usually after the clip started, and opening it unheld let
   /// the model hear its own "Hello" and greet again.
-  bool _micHeld = false;
 
-  /// Thinking or a tool is on show (GPT-Live): her next words switch the
-  /// orb back to speaking.
-  bool _working = false;
   String? _shownTool;
   bool _wasPlaying = false;
 
@@ -989,12 +975,6 @@ class LiveVoice {
     var contextMs = 0;
     var openMs = 0;
     try {
-      // GPT-Live's phone side (microphone, offer, ICE: ~0.8 s) does not
-      // need this connect's config: start it now on the copy already held.
-      final held = _configs.current;
-      if (held.viaServer && held.live.transport == 'gpt-live' && _prepareGptLive) {
-        GptLiveConnector.prepare();
-      }
       // These reads are independent; doing them in parallel removes a
       // config-store and platform-channel round trip from the setup path.
       final setupReads = await Future.wait<Object?>([
@@ -1010,9 +990,6 @@ class LiveVoice {
         AppLog.add('live', 'off in the config: the cascade answers');
         return false;
       }
-      // The call's phone side is built while the context is fetched.
-      final gptLive = all.viaServer && cfg.transport == 'gpt-live';
-      if (gptLive && _prepareGptLive) GptLiveConnector.prepare();
       final contextStarted = _now();
       final ctx = await _server.context(
         text: '',
@@ -1020,7 +997,6 @@ class LiveVoice {
         sessionId: _brain.sessionId,
         device: device,
         timeout: timeouts.context,
-        transport: gptLive ? 'gpt-live' : null,
       );
       contextMs = (_now() - contextStarted) ~/ 1000;
       if (ctx == null) {
@@ -1177,7 +1153,7 @@ class LiveVoice {
     // microphone. Audio is buffered by _onMic until the session is ready.
     final configFuture = _configs.get();
     final connectedFuture = warm();
-    final config = await configFuture;
+    await configFuture;
     if (_stopped) return false;
     // The served hangover, read per conversation so a bad value can be
     // taken back from the server without a release.
@@ -1188,17 +1164,6 @@ class LiveVoice {
     _idle?.cancel();
     if (_micOn) return true;
 
-    // GPT-Live owns the WebRTC microphone track. Other live transports use
-    // our Android mic, which can come up in parallel with the connection.
-    final ownsAudio = config.viaServer && config.live.transport == 'gpt-live';
-    if (ownsAudio) {
-      if (!await connectedFuture || _stopped) return false;
-    }
-    if (_session case final OwnsAudio own) {
-      own.setMicOpen(!_micHeld);
-      _micOn = true;
-      return true;
-    }
     unawaited(_player.warm());
     _micOn = true; // collect any speech while the websocket finishes
     final micFuture = _openMic();
@@ -1232,11 +1197,7 @@ class LiveVoice {
     _turn = _LiveTurn(++_turns)..opening = true;
     final done = Completer<bool>();
     _openingGreetingDone = done;
-    if (s is GptLiveSession) {
-      // The server's line for this user ("Hello Sir" / "Hello Madam"),
-      // spoken by the session itself — the same voice as every reply.
-      if (!s.greetOpening()) s.sendText(instruction);
-    } else if (s is OpenAiLiveSession) {
+    if (s is OpenAiLiveSession) {
       s.speakFixedLine(openingLine);
     } else {
       s.sendText(instruction);
@@ -1257,32 +1218,13 @@ class LiveVoice {
     );
   }
 
-  /// HELD WHILE THE RECORDED OPENING PLAYS (2026-10-06): the loudspeaker's
-  /// "Hello Sir" must not reach her as if they had said it. Only the
-  /// microphone's track is held; the session and the turn are untouched.
-  void holdMicTrack(bool held) {
-    _micHeld = held;
-    if (!_micOn) return;
-    if (_session case final OwnsAudio own) own.setMicOpen(!held);
-  }
-
-  /// What she should know without saying it (GPT-Live: thinking context).
-  void tellSilently(String text) {
-    final s = _session;
-    if (s is GptLiveSession) s.sendThinking(text);
-  }
-
   /// The microphone is let go (typing, the camera, a cascade turn); the
   /// session stays. [resume] opens it again.
   Future<void> pause() async {
     if (!_micOn) return;
     _micOn = false;
     _micWatch?.cancel();
-    if (_session case final OwnsAudio own) {
-      own.setMicOpen(false);
-    } else {
-      await _mic.stop();
-    }
+    await _mic.stop();
     _armIdle();
   }
 
@@ -1405,19 +1347,10 @@ class LiveVoice {
       _finish(t, quiet: true);
     }
     _turn = null;
-    // A GPT-Live session is never put back on standby for the next tap
-    // (2026-10-06, measured): one that has had a conversation queued the
-    // next opening request and never said it. It closes here; the engine
-    // warms a fresh one, which answers its opening in ~1.5-2 s.
     if (_micOn) {
       _micOn = false;
-      if (_session case final OwnsAudio own) {
-        own.setMicOpen(false);
-      } else {
-        await _mic.stop();
-      }
+      await _mic.stop();
     }
-    _micHeld = false;
     await _closeSession();
     _backlog.clear();
     _cancelledIds.clear();
@@ -1764,7 +1697,6 @@ class LiveVoice {
         // the answer is being worked on.
         _watch?.cancel();
         _current().answered = true;
-        _working = true;
         _emit(const LiveThinking());
         if (tool != null && tool != _shownTool) {
           _shownTool = tool;
@@ -1824,14 +1756,6 @@ class LiveVoice {
       t
         ..said += said
         ..answered = true;
-      // Her voice plays on the call itself: her words are the sign she spoke.
-      if (_session is OwnsAudio && (!t.spoke || _working)) {
-        t.spoke = true;
-        _working = false;
-        _shownTool = null;
-        _stalls = 0;
-        _emit(const LiveSpeaking());
-      }
       _watch?.cancel();
       _heardBack();
       _emit(LiveSaid(t.said,
@@ -2259,12 +2183,6 @@ class LiveVoice {
       if (!ok) {
         _fail('the session dropped');
       } else {
-        // GPT-Live owns its mic track: the new session starts with it
-        // closed, and start() skips reopening because _micOn is still
-        // true — so after a drop she could neither hear nor be heard.
-        if (_micOn && _session is OwnsAudio) {
-          (_session as OwnsAudio).setMicOpen(!_micHeld);
-        }
         _flushBacklog();
       }
     }());

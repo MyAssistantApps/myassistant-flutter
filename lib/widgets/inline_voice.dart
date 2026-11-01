@@ -57,7 +57,7 @@ OrbMood orbMoodFor(AssistantEngine e, {bool micPaused = false}) {
   if (p == AssistantPhase.speaking) return OrbMood.speaking;
   // Until her first word (2026-10-06, the owner: "add the connecting
   // animation"): the ~1.5 s GPT-Live takes to start shows as connecting.
-  if (e.connecting || e.openingPending) return OrbMood.connecting;
+  if (e.connecting) return OrbMood.connecting;
   if (p == AssistantPhase.responding ||
       p == AssistantPhase.searching ||
       p == AssistantPhase.findingContact) {
@@ -546,7 +546,7 @@ class _InlineCaptionOverlayState extends State<InlineCaptionOverlay>
     // up; leave the status quiet for that first spoken moment.
     if (engine.greetingPlaying) return '';
     // Connecting… until her first word (2026-10-06, the owner asked for it).
-    if ((engine.connecting || engine.openingPending) && p != AssistantPhase.speaking) {
+    if (engine.connecting && p != AssistantPhase.speaking) {
       return 'Connecting…';
     }
     if (micPaused && !_waitingForVoice(p) && p != AssistantPhase.speaking) {

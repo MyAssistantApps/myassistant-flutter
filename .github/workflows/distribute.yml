@@ -3,9 +3,12 @@ name: Tester build
 # Every push builds an APK signed with the TEAM DEBUG KEY (SHA-1 39:03:80:…,
 # the "MyAssistant debug.keystore (base64)" Bitwarden note — the original
 # release key is lost) and sends it through Firebase App
-# Distribution:
-#   hardening       → the "testers" group
-#   hardening-test  → the owner only (dhanushinsit@gmail.com)
+# Distribution — TO THE OWNER ONLY for now (owner, 2026-11-01: "don't
+# push to real users, I want the app only for me now to testing"):
+#   hardening, hardening-test → dhanushinsit@gmail.com
+# To send hardening builds to the "testers" group again, set the repo
+# variable SEND_TO_TESTERS=yes (Settings → Secrets and variables →
+# Actions → Variables). Nothing else changes.
 # The build number is 200 + the run number, so each build installs as an
 # update over the last one (pubspec's +N is only for local builds).
 #
@@ -94,7 +97,7 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-sa.json
         run: |
-          if [ "$GITHUB_REF_NAME" = "hardening" ]; then
+          if [ "$GITHUB_REF_NAME" = "hardening" ] && [ "${{ vars.SEND_TO_TESTERS }}" = "yes" ]; then
             TARGET=(--groups testers)
           else
             TARGET=(--testers dhanushinsit@gmail.com)

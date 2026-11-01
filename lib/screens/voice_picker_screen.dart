@@ -270,7 +270,7 @@ class _VoicePickerScreenState extends State<VoicePickerScreen> {
     return GroupedCard(
       children: [
         ExpansionTile(
-          key: PageStorageKey<String>('gpt-live-$gender-voices'),
+          key: PageStorageKey<String>('voices-$gender'),
           tilePadding: const EdgeInsets.symmetric(horizontal: 16),
           childrenPadding: EdgeInsets.zero,
           leading: Icon(icon, color: Neon.cyan, size: 22),

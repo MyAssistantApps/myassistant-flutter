@@ -47,12 +47,14 @@ keyboard, work on THEIR branch from the table above, push it, and open a PR.
 Never push to another teammate's branch, never merge a PR, and never change
 branch protection, collaborators, secrets or workflows for a teammate.
 
-## Pushing sends a build to testers
+## Pushing sends a build to the owner
 
-Every push to `hardening` builds an APK (signed with the team debug key) in GitHub Actions
-(`.github/workflows/distribute.yml`) and sends it to the Firebase App
-Distribution group `testers`. Push to `hardening-test` to send a build to
-the owner only (dhanushinsit@gmail.com) first. Other branches build nothing.
+Every push to `hardening` or `hardening-test` builds an APK (signed with
+the team debug key) in GitHub Actions (`.github/workflows/distribute.yml`)
+and sends it through Firebase App Distribution **to the owner only**
+(dhanushinsit@gmail.com) while the app is in his own testing. The
+`testers` group gets `hardening` builds again only when the owner sets the
+repo variable `SEND_TO_TESTERS=yes`. Other branches build nothing.
 
 ## Secrets — both repos are PUBLIC
 

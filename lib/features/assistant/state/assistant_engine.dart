@@ -11,7 +11,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../ai/brain.dart';
 import '../../../ai/listen.dart';
-import '../../../ai/gpt_live.dart' show GptLiveConnector;
 import '../../../ai/live_voice.dart';
 import '../../../ai/model_port.dart';
 import '../../../ai/search_suggestions.dart';
@@ -321,9 +320,7 @@ class AssistantEngine extends ChangeNotifier {
       // A cache miss falls back to a fixed-line response from the Live voice.
       _lastGreetedAt = now;
       _openingDue = true;
-      // GPT-Live says the opening itself, in the session's voice: never a
-      // recorded clip in another voice before it (2026-10-06).
-      if (!_gptLive) _openingClip = _playOpeningGreeting();
+      _openingClip = _playOpeningGreeting();
     } else if (now.difference(_lastGreetedAt) >= _greetCooldown &&
         MissedCallsService.instance.hasUnmentioned) {
       // CALLS WERE MISSED: the greeting is the one that mentions them,
@@ -978,21 +975,9 @@ class AssistantEngine extends ChangeNotifier {
     // may still be loading.
     await AiConfigStore.instance.get();
     if (_voiceOn || !_liveWanted) return;
-    // GPT-Live bills every connected second, silence included. The phone's
-    // half of the call is always made ready (it is free: no microphone, no
-    // session). The session itself is warmed when the server allows it, and
-    // an unused one closes after the served standby (AiLive.idleCloseSec).
     // No cooldown (2026-10-06): one used to block the warm-up when the
     // previous one had just closed, so that tap connected from nothing.
     // warm() does nothing while a session is open or connecting.
-    if (_gptLive) {
-      GptLiveConnector.prepare();
-      // The recorded opening in this voice, ready before the tap.
-      unawaited(_prewarmOpeningGreeting());
-      if (!AiConfigStore.instance.current.live.prewarm) return;
-      unawaited(_live.warm().catchError((Object _) => false));
-      return;
-    }
     // Have the speaker stream ready before the user taps. Live can answer
     // the opening greeting while Android is bringing up the microphone.
     unawaited(_player.warm());
@@ -1003,44 +988,6 @@ class AssistantEngine extends ChangeNotifier {
   Future<void> _prewarmOpeningGreeting() async {
     await Future.wait([AiConfigStore.instance.get(), LiveVoicePrefs.load()]);
     await GreetingVoice.instance.prewarm(_openingLine);
-  }
-
-  /// Between the tap and the recorded opening: the orb shows connecting.
-  bool openingPending = false;
-
-  /// Plays the recorded opening 1.5 s after the tap, on the call stream
-  /// (the live voice's volume). The microphone is held only while it plays,
-  /// so the loudspeaker is not heard as them; GPT-Live is then told it was
-  /// said, so it does not greet again. Skipped when they spoke first.
-  Future<void> _recordedOpening(int epoch, DateTime tappedAt) async {
-    final line = _openingLine;
-    final wait = const Duration(milliseconds: 1500) - DateTime.now().difference(tappedAt);
-    if (wait > Duration.zero) await Future<void>.delayed(wait);
-    openingPending = false;
-    if (epoch != _voiceEpoch || !_voiceOn) {
-      notifyListeners();
-      return;
-    }
-    if (_live.turnOpen) {
-      AppLog.add('voice', 'recorded opening skipped: they spoke first');
-      notifyListeners();
-      return;
-    }
-    greetingPlaying = true;
-    _captionLine('hari', line);
-    notifyListeners();
-    _live.holdMicTrack(true);
-    final played = await GreetingVoice.instance.playOnCall(line);
-    _live.holdMicTrack(false);
-    greetingPlaying = false;
-    notifyListeners();
-    if (played) {
-      _live.tellSilently('You have just greeted them with "$line" to open this '
-          'conversation. Do not greet again; listen and answer what they say.');
-    }
-    AppLog.add('voice', played
-        ? 'recorded opening played ${DateTime.now().difference(tappedAt).inMilliseconds} ms after the tap'
-        : 'recorded opening could not play');
   }
 
   /// HER HELLO ON THE FAST VOICE: said by Live itself, in the voice she
@@ -1267,7 +1214,6 @@ class AssistantEngine extends ChangeNotifier {
     _listening = false;
     _sayEpoch++;
     greetingPlaying = false;
-    openingPending = false;
     unawaited(GreetingVoice.instance.stopOnCall());
     _notes.clear();
     if (was) {
@@ -1546,34 +1492,14 @@ class AssistantEngine extends ChangeNotifier {
       _openingClip = null;
       if (openingClip != null && await openingClip) _openingDue = false;
       if (epoch != _voiceEpoch || !_voiceOn) return;
-      if (_openingDue && _gptLive && await GreetingVoice.instance.isReady(_openingLine)) {
-        // THE RECORDED OPENING (2026-10-06, the owner's design): GPT-Live
-        // takes ~1.5-2 s to start speaking, so its own "Hello Sir", recorded
-        // once in this voice, plays 1.5 s after the tap, while the
-        // microphone is ALREADY open: what they say is heard at once.
-        _openingDue = false;
-        openingPending = true;
-        notifyListeners();
-        unawaited(_recordedOpening(epoch, wokeAt));
-        ok = await _live.start();
-      } else if (_openingDue) {
+      if (_openingDue) {
         // Connect first, then finish the greeting before opening the mic.
         // Otherwise buffered speech can arrive at the model before its hello.
         final ready = await _live.warm();
         if (epoch != _voiceEpoch || !_voiceOn) return;
         _openingDue = false;
         if (ready) {
-          var greeted = await _greetOnLive(epoch);
-          if (!greeted && _gptLive && epoch == _voiceEpoch && _voiceOn) {
-            // ONE FRESH TRY (2026-10-06): a session that does not say the
-            // opening line is broken; it is thrown away, never put back on
-            // standby for the next tap, and a new one is connected.
-            AppLog.add('voice', 'no opening from that session: connecting a new one');
-            await _live.discard();
-            if (epoch == _voiceEpoch && _voiceOn && await _live.warm()) {
-              greeted = await _greetOnLive(epoch);
-            }
-          }
+          final greeted = await _greetOnLive(epoch);
           if (epoch != _voiceEpoch || !_voiceOn) return;
           if (!greeted) {
             // If Live could not say the opener, keep the fallback greeting
@@ -2579,12 +2505,6 @@ class AssistantEngine extends ChangeNotifier {
       (gender ?? '').trim().toLowerCase() == 'female' ? 'Hello Madam.' : 'Hello Sir.';
 
   String get _openingLine => openingLine(gender: AuthService.instance.user?.gender);
-
-  /// The fast voice is GPT-Live (WebRTC, server-built agent).
-  bool get _gptLive {
-    final c = AiConfigStore.instance.current;
-    return c.viaServer && c.live.transport == 'gpt-live';
-  }
 
   static String honorific({String? name, String? gender}) {
     return (gender ?? '').trim().toLowerCase() == 'female' ? "Ma'am" : 'Sir';
@@ -4889,11 +4809,8 @@ class AssistantEngine extends ChangeNotifier {
     final name = '${picked[0].toUpperCase()}${picked.substring(1)}';
     AppLog.add('voice', 'voice changed to $picked');
     AppFeedback.toast('Voice set to $name. Tap the orb to hear it.');
-    // Connected now in the new voice (warm() replaces the old session) —
-    // only where the server lets a session connect before the tap: a
-    // connected WebRTC call records from the microphone on Android even
-    // with no track in it (owner, 2026-10-19: the mic dot before any tap).
-    if (_liveWanted && _foreground && (!_gptLive || AiConfigStore.instance.current.live.prewarm)) {
+    // Connected now in the new voice (warm() replaces the old session).
+    if (_liveWanted && _foreground) {
       unawaited(_live.warm().catchError((Object _) => false));
     }
   }
