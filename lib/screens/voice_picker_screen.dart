@@ -157,14 +157,32 @@ class _VoicePickerScreenState extends State<VoicePickerScreen> {
     await LiveVoicePrefs.setEnabled(on);
   }
 
+  /// Bumped by every play tap: a sample that was replaced or stopped does
+  /// not report on the one that took its place.
+  int _previewGen = 0;
+
+  /// THE PLAY BUTTON ALWAYS ANSWERS ITS OWN TAP (owner, 2026-11-01: "when I
+  /// click on that play button it goes back"). It used to be disabled while
+  /// any sample played, so the tap fell through to the row — "use this
+  /// voice" — which picked the voice and closed the page. Now a tap on the
+  /// playing voice stops it, and a tap on another switches to that one.
   Future<void> _preview(VoiceCatalogItem voice) async {
-    if (_previewing != null) return;
     HapticFeedback.selectionClick();
+    final gen = ++_previewGen;
+    if (_previewing != null) {
+      final was = _previewing;
+      await _player.stop();
+      if (!mounted) return;
+      if (was == voice.id) {
+        setState(() => _previewing = null);
+        return;
+      }
+    }
     setState(() => _previewing = voice.id);
     try {
       await _player.stop();
       final wav = await _fetchSample(voice.id);
-      if (!mounted) return;
+      if (!mounted || gen != _previewGen) return;
       final audio = wav == null ? null : _decodePcmWav(wav);
       if (audio == null) {
         AppFeedback.show(
@@ -178,7 +196,7 @@ class _VoicePickerScreenState extends State<VoicePickerScreen> {
       await _player.drained().timeout(const Duration(seconds: 35));
     } on TimeoutException {
       await _player.stop();
-      if (mounted) {
+      if (mounted && gen == _previewGen) {
         AppFeedback.show(
           'The voice sample took too long to play.',
           context: context,
@@ -186,7 +204,7 @@ class _VoicePickerScreenState extends State<VoicePickerScreen> {
         );
       }
     } finally {
-      if (mounted && _previewing == voice.id) {
+      if (mounted && gen == _previewGen && _previewing == voice.id) {
         setState(() => _previewing = null);
       }
     }
@@ -301,19 +319,14 @@ class _VoicePickerScreenState extends State<VoicePickerScreen> {
       leading: SizedBox.square(
         dimension: 48,
         child: IconButton(
-          onPressed: _previewing == null ? () => _preview(voice) : null,
+          // Never disabled: a disabled button let the tap through to the
+          // row, which chose the voice and closed the page.
+          onPressed: () => _preview(voice),
           tooltip: playing
-              ? 'Playing a sample of ${voice.name}'
+              ? 'Stop the sample of ${voice.name}'
               : 'Play a sample of ${voice.name}',
-          icon: playing
-              ? SizedBox.square(
-                  dimension: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Neon.cyan,
-                  ),
-                )
-              : const Icon(Icons.play_circle_outline_rounded),
+          // Playing (or fetching): a stop button, which is what a tap does.
+          icon: Icon(playing ? Icons.stop_circle_rounded : Icons.play_circle_outline_rounded),
           color: playing ? Neon.cyan : Neon.textLo,
         ),
       ),
