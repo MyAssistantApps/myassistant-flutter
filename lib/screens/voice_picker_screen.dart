@@ -12,7 +12,7 @@ import '../services/api_service.dart';
 import '../services/app_feedback.dart';
 import '../services/audio/pcm_player.dart';
 
-/// One voice supported by GPT Live, from GET /ai/voices.
+/// One voice she can speak in, from GET /ai/voices.
 class VoiceCatalogItem {
   const VoiceCatalogItem({
     required this.id,
@@ -33,7 +33,7 @@ class VoiceCatalogItem {
     final id = field('id').toLowerCase();
     final gender = field('gender').toLowerCase();
     if (id.isEmpty || (gender != 'female' && gender != 'male')) {
-      throw const FormatException('Invalid GPT Live voice entry');
+      throw const FormatException('Invalid voice entry');
     }
     return VoiceCatalogItem(
       id: id,
@@ -47,8 +47,8 @@ class VoiceCatalogItem {
   }
 }
 
-/// VOICE — compact GPT Live voice selection, reached from Settings → Voice.
-/// Voice samples come from GPT Live itself, not a separate speech provider.
+/// VOICE — the assistant's voice, reached from Settings → Voice.
+/// Each sample is spoken by the server in that voice (ai/liveVoices.js).
 class VoicePickerScreen extends StatefulWidget {
   final String selectedId;
 
@@ -132,7 +132,7 @@ class _VoicePickerScreenState extends State<VoicePickerScreen> {
           .whereType<Map>()
           .map(VoiceCatalogItem.fromJson)
           .toList(growable: false);
-      if (loaded.isEmpty) throw const FormatException('No GPT Live voices');
+      if (loaded.isEmpty) throw const FormatException('No voices');
       setState(() {
         _voices = loaded;
         _serverDefault = response?['default']?.toString();
@@ -213,12 +213,12 @@ class _VoicePickerScreenState extends State<VoicePickerScreen> {
               children: [
                 AppleRow(
                   leading: IconTile(Icons.bolt_rounded, Neon.cyan),
-                  title: 'GPT Live voice',
+                  title: 'Live voice',
                   subtitle: _fast
                       ? 'Fast, natural conversations'
                       : 'Off: conversations use the classic reply voice',
                   trailing: Semantics(
-                    label: 'GPT Live voice',
+                    label: 'Live voice',
                     child: Switch(value: _fast, onChanged: _setFast),
                   ),
                 ),
