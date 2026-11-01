@@ -40,7 +40,7 @@ void main() {
     expect(find.text('Lunch time'), findsOneWidget);
     await t.drag(find.byType(PageView), const Offset(-300, 0));
     await t.pumpAndSettle();
-    expect(find.text('In the mood for something else?'), findsOneWidget);
+    expect(find.text('Something different?'), findsOneWidget);
     expect(t.takeException(), isNull);
   });
 }

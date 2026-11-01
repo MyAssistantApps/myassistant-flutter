@@ -76,7 +76,7 @@ List<DealBanner> dealBannersFor(DateTime now, {List<String> toBuy = const []}) {
     ),
     const DealBanner(
       brand: 'Zomato',
-      title: 'In the mood for something else?',
+      title: 'Something different?',
       body: 'Browse restaurants and their deals on Zomato.',
       action: 'Open Zomato',
       color: Color(0xFFE23744),
