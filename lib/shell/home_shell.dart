@@ -990,8 +990,10 @@ class _HomeShellState extends State<HomeShell>
       ),
       ),
       bottomNavigationBar: _DockRim(child: BottomAppBar(
+        // Frosted dusk glass (2026-11-01): the lake glows through it.
         color: Neon.isDark
-            ? Color.alphaBlend(Neon.violet.withValues(alpha: 0.07), Neon.surface)
+            ? Color.alphaBlend(Neon.violet.withValues(alpha: 0.12), Neon.surface)
+                .withValues(alpha: 0.90)
             : Neon.surface,
         elevation: 0,
         height: Dock.barHeight,
@@ -1065,21 +1067,29 @@ class _HomeShellState extends State<HomeShell>
                 duration: Motion.short,
                 curve: Motion.easeMove,
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-                // At night the pill is lit (2026-09-30, the client's
-                // reference): cyan glass with its own glow.
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                // At night the pick is a lit tile (2026-11-01, the logo
+                // reference): electric blue into magenta, glowing blue.
                 decoration: BoxDecoration(
                   color: selected
-                      ? (Neon.isDark
-                          ? Neon.cyan.withValues(alpha: 0.16)
-                          : Neon.violet.withValues(alpha: 0.16))
+                      ? (Neon.isDark ? null : Neon.violet.withValues(alpha: 0.16))
                       : Colors.transparent,
-                  borderRadius: BorderRadius.circular(Neon.rPill),
+                  gradient: selected && Neon.isDark
+                      ? LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Neon.violet.withValues(alpha: 0.85),
+                            Neon.pink.withValues(alpha: 0.85),
+                          ],
+                        )
+                      : null,
+                  borderRadius: BorderRadius.circular(14),
                   border: selected && Neon.isDark
-                      ? Border.all(color: Neon.cyan.withValues(alpha: 0.55))
+                      ? Border.all(color: Colors.white.withValues(alpha: 0.35))
                       : null,
                   boxShadow: selected && Neon.isDark
-                      ? Neon.halo(Neon.cyan, strength: 0.45)
+                      ? Neon.halo(Neon.violet, strength: 0.9)
                       : null,
                 ),
                 child: AnimatedSwitcher(
@@ -1090,7 +1100,7 @@ class _HomeShellState extends State<HomeShell>
                       key: ValueKey(selected),
                       size: 22,
                       color: selected
-                          ? (Neon.isDark ? Neon.cyan : Neon.violet)
+                          ? (Neon.isDark ? Colors.white : Neon.violet)
                           : Neon.textDim),
                 ),
               ),

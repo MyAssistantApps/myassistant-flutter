@@ -26,6 +26,9 @@ class AccentController {
   // ELECTRIC (2026-09-30): the client's reference is electric blue with
   // purple and magenta light; its partner is set by hand (Neon's
   // signature pair). Anyone who picked a colour keeps it.
+  // NEON NIGHT (2026-11-01, the client's logo reference): electric blue
+  // into violet and magenta on near-black. Electric is the default again,
+  // its partner a magenta set by hand. Anyone who picked a colour keeps it.
   static const defaultSeed = Color(0xFF3D8BFF);
 
   /// Bumps whenever the accent changes; the app root rebuilds on it.
@@ -43,6 +46,7 @@ class AccentController {
   /// swatch in both themes.
   static const swatches = <(String, Color)>[
     ('Electric', Color(0xFF3D8BFF)),
+    ('Twilight', Color(0xFFC04BFF)),
     ('Indigo', Color(0xFF6E73FF)),
     ('Violet', Color(0xFFB14DFF)),
     ('Magenta', Color(0xFFFF2BD6)),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../design/gpu_programs.dart';
 import '../design/neon_tokens.dart';
+import 'twilight_scene.dart';
 
 /// THE ROOM THE APP SITS IN.
 ///
@@ -63,6 +64,8 @@ class AmbientBackground extends StatelessWidget {
             child: const AmbientLight(),
           ),
         ),
+        // Petals and breathing stars over the dusk — not while covered.
+        if (!covered) const Positioned.fill(child: PetalDrift()),
         child,
       ],
     );
@@ -78,7 +81,13 @@ class AmbientLight extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) =>
-      const IgnorePointer(child: RepaintBoundary(child: _Light()));
+      const IgnorePointer(
+          child: RepaintBoundary(
+              child: Stack(fit: StackFit.expand, children: [
+        _Light(),
+        // The dusk itself (2026-11-01): horizon, mountains, the lake.
+        TwilightScene(),
+      ])));
 }
 
 /// The three layers themselves (see [AmbientBackground]).
@@ -106,10 +115,10 @@ class _Light extends StatelessWidget {
       // At night the wash is the reference's own sky (sampled): indigo at
       // the top, navy through the middle, deep blue by the dock.
       top: dark
-          ? const Color(0xFF150D48)
+          ? const Color(0xFF080A2A)
           : Color.alphaBlend(tint.withValues(alpha: 0.07), Neon.bg),
       middle: dark
-          ? const Color(0xFF0A1352)
+          ? const Color(0xFF0A1250)
           : Color.alphaBlend(tint.withValues(alpha: 0.03), Neon.bg),
       tintA: dark ? 0.30 : 0.13,
       partnerA: dark ? 0.24 : 0.10,

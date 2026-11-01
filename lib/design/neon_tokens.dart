@@ -84,7 +84,8 @@ class Neon {
 
   /// Accents with a partner chosen by hand rather than by hue rotation.
   static const _signaturePartners = <int, Color>{
-    0xFF3D8BFF: Color(0xFFE04BF5), // Electric (the default) → magenta
+    0xFF3D8BFF: Color(0xFFD946EF), // Electric (the default) → magenta
+    0xFFC04BFF: Color(0xFFFF4FC4), // Twilight → hot pink
   };
 
   static Color get violet => _palette?.primary ?? _violet;
@@ -95,7 +96,7 @@ class Neon {
   // higher luminance, saturation kept, so black stays black and the
   // accents carry the energy.
   static Color get cyan => _palette?.secondary ??
-      (isDark ? const Color(0xFF22E4FF) : const Color(0xFF0891B2));
+      (isDark ? const Color(0xFF38D6FF) : const Color(0xFF0891B2));
   /// The gradient partner — derived from the accent so every gradient in
   /// the app (orb, mic, tiles, quote card) stays in tune with one choice.
   static Color get pink => _palette?.partner ?? _pink;
@@ -122,7 +123,9 @@ class Neon {
     // #150D48 top-left, #081353 middle, #001B4A low): one night-sky ground
     // under every accent, so the neon reads as light in the dark rather
     // than as a tinted page. The ambient pools and ribbons light it.
-    return const Color(0xFF070B2B);
+    // NEON NIGHT (2026-11-01, the client's logo reference): near-black
+    // navy, so the blue-to-magenta light carries the colour.
+    return const Color(0xFF060821);
   }
   // SURFACES CARRY THE BRAND, not a grey wash. The ground stays pure
   // black; the cards sitting on it are a violet-cast near-black, which
@@ -131,9 +134,9 @@ class Neon {
   // Navy cards on the blue-black ground (2026-09-30): lifted by a step of
   // blue, never grey.
   static Color get surface => _palette?.surface ??
-      (isDark ? const Color(0xFF0C1440) : const Color(0xFFFFFFFF));
+      (isDark ? const Color(0xFF0D1238) : const Color(0xFFFFFFFF));
   static Color get surfaceHigh => _palette?.surfaceHigh ??
-      (isDark ? const Color(0xFF121B4E) : const Color(0xFFEEEFF6));
+      (isDark ? const Color(0xFF141B4A) : const Color(0xFFEEEFF6));
   static Color get success => _palette?.success ??
       (isDark ? const Color(0xFF62F49B) : const Color(0xFF16A34A));
   static Color get warning => _palette?.warning ??
@@ -238,7 +241,7 @@ class Neon {
       final h = HSLColor.fromColor(p.secondary);
       return h.withLightness((h.lightness * 0.62).clamp(0.18, 0.40)).toColor();
     }
-    return isDark ? const Color(0xFF3FE3FD) : const Color(0xFF155E75);
+    return isDark ? const Color(0xFF38D6FF) : const Color(0xFF155E75);
   }
   static Color get warningInk =>
       isDark ? const Color(0xFFFFD03E) : const Color(0xFFA14A07);
@@ -293,7 +296,7 @@ class Neon {
       ? const Color(0xFF7FA2FF).withValues(alpha: 0.22)
       : const Color(0xFF141627).withValues(alpha: 0.08);
   static Color get lineBright => isDark
-      ? const Color(0xFF7FA2FF).withValues(alpha: 0.34)
+      ? const Color(0xFF8FB0FF).withValues(alpha: 0.36)
       : const Color(0xFF141627).withValues(alpha: 0.14);
 
   /// THE SCRIM under a dialog, a sheet or a menu (2026-09-30): the night
@@ -412,11 +415,15 @@ class Neon {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: isDark
+            // FROSTED, NOT SOLID (2026-11-01): a blue-lit pane the night
+            // shows through, so cards float IN the light rather than over it.
             ? [
                 Color.alphaBlend(
-                    const Color(0xFFB4C6FF).withValues(alpha: 0.07), surfaceHigh)
-                    .withValues(alpha: 0.94),
-                surface.withValues(alpha: 0.94),
+                    const Color(0xFFB4C6FF).withValues(alpha: 0.12), surfaceHigh)
+                    .withValues(alpha: 0.66),
+                Color.alphaBlend(
+                    const Color(0xFFB4C6FF).withValues(alpha: 0.05), surface)
+                    .withValues(alpha: 0.60),
               ]
             : [const Color(0xFFFFFFFF), const Color(0xFFF8F8FC)],
       );
@@ -425,8 +432,8 @@ class Neon {
   /// (the top), fading down the sides — 1 px, low alpha, never a neon rim.
   static List<Color> get glassEdge => isDark
       ? [
-          const Color(0xFFDCE4FF).withValues(alpha: 0.20),
-          const Color(0xFF7FA2FF).withValues(alpha: 0.07),
+          const Color(0xFFDCE4FF).withValues(alpha: 0.28),
+          const Color(0xFF7FA2FF).withValues(alpha: 0.09),
         ]
       : [
           const Color(0xFF141627).withValues(alpha: 0.10),

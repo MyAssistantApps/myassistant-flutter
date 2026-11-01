@@ -20,7 +20,6 @@ import '../../services/auth_service.dart';
 import '../../services/brief_service.dart';
 import '../../services/call_history.dart';
 import '../../services/missed_calls_service.dart';
-import '../../widgets/agent_strip.dart';
 import '../../widgets/neon_cards.dart';
 import '../../widgets/whats_new_card.dart';
 import '../assistant/state/assistant_engine.dart';
@@ -229,10 +228,10 @@ class _HomeFeedViewState extends State<HomeFeedView> {
             // PLAY MY MORNING (2026-09-30): the day, read aloud — the
             // brightest thing under the greeting.
             _playRow(now),
-            const SizedBox(height: 18),
-            // THE AGENTS (2026-10-31): all nine, ready; lit while they work.
-            const AgentStrip(),
-            const SizedBox(height: 20),
+            // THE AGENTS moved to the hexagon in the header (2026-11-01,
+            // client: the row of nine didn't look good) — hold it for all
+            // nine, tap it for the list. AgentStrip itself is unchanged.
+            const SizedBox(height: 22),
             StateSwitch(
               state: state,
               child: switch (state) {

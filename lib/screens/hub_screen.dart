@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
 
@@ -21,6 +23,7 @@ import 'stocks_screen.dart';
 import 'studio/studio_screen.dart';
 import '../features/shopping/shopping_list_screen.dart';
 import '../design/motion.dart';
+import '../widgets/neon_cards.dart';
 
 /// HUB TAB — every feature as a front door.
 ///
@@ -48,6 +51,7 @@ class _HubScreenState extends State<HubScreen> {
   @override
   Widget build(BuildContext context) {
     _foundFeature = false;
+    _rowOrder = 0;
     return SafeArea(
       bottom: false,
       child: ListView(
@@ -67,7 +71,7 @@ class _HubScreenState extends State<HubScreen> {
               decoration: InputDecoration(
                 hintText: 'Find a feature',
                 hintStyle: TextStyle(color: Neon.textDim),
-                prefixIcon: Icon(Icons.search_rounded, color: Neon.textLo),
+                prefixIcon: Icon(Icons.search_rounded, color: Neon.cyan),
                 suffixIcon: _featureQuery.text.isEmpty
                     ? null
                     : IconButton(
@@ -79,20 +83,20 @@ class _HubScreenState extends State<HubScreen> {
                         },
                       ),
                 filled: true,
-                fillColor: Neon.surface,
+                fillColor: Neon.surface.withValues(alpha: 0.62),
                 contentPadding:
                     const EdgeInsets.symmetric(vertical: 13, horizontal: 14),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: Neon.line),
+                  borderSide: BorderSide(color: Neon.lineBright),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: Neon.line),
+                  borderSide: BorderSide(color: Neon.lineBright),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: Neon.cyan.withValues(alpha: .7)),
+                  borderSide: BorderSide(color: Neon.cyan.withValues(alpha: .8)),
                 ),
               ),
             ),
@@ -263,20 +267,33 @@ class _HubScreenState extends State<HubScreen> {
             .toList();
     if (matches.isEmpty) return const SizedBox.shrink();
     _foundFeature = true;
+    // ONE FROSTED CARD PER ROW (2026-11-01, the dusk reference): each
+    // destination floats on its own pane of glass, rising in one after
+    // another the first time the tab shows.
+    final order = _rowOrder;
+    _rowOrder += matches.length;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.only(bottom: 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           GroupLabel(title),
-          GroupedCard(
-            dividerInset: 60,
-            children: [for (final r in matches) _rowTile(context, r)],
-          ),
+          for (final (i, r) in matches.indexed)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: EnterOnce(
+                delay: Duration(milliseconds: 40 * math.min(order + i, 10)),
+                rise: 14,
+                child: _rowTile(context, r),
+              ),
+            ),
         ],
       ),
     );
   }
+
+  /// Rows laid out so far this build, for the entrance's stagger.
+  int _rowOrder = 0;
 
   // THE ROW DIPS NOW (2026-09-30): the same 0.985 dip and light tick as
   // every AppleRow — a full-width row moves its edges three times as far
@@ -284,19 +301,32 @@ class _HubScreenState extends State<HubScreen> {
   // the old 0.97 pulled the row 8 dp in from its card's edges.)
   Widget _rowTile(BuildContext context, _Row r) {
     return PressScale(
-      scale: 0.985,
-      child: InkWell(
+      scale: 0.975,
+      child: GlassCard(
+        padding: EdgeInsets.zero,
+        radius: 20,
+        clip: true,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+        splashColor: Neon.cyan.withValues(alpha: 0.14),
+        highlightColor: Neon.violet.withValues(alpha: 0.08),
         onTap: () {
           HapticFeedback.selectionClick();
           Navigator.of(context).push(MaterialPageRoute(builder: r.builder));
         },
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 11, 12, 11),
+          padding: const EdgeInsets.fromLTRB(12, 12, 10, 12),
           child: Row(
             children: [
-              // The shared lit tile (2026-09-30): the brand-built gradient
-              // plus the glass sheen every other tile in the app now has.
-              IconTile(r.icon, r.color, size: 36),
+              // A bigger, brighter tile with its own glow (dusk pass).
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: Neon.halo(r.color, strength: 0.55),
+                ),
+                child: IconTile(r.icon, r.color, size: 44),
+              ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -329,9 +359,11 @@ class _HubScreenState extends State<HubScreen> {
                 const SizedBox(width: 8),
                 r.trailing!
               ],
-              Icon(Icons.chevron_right_rounded, color: Neon.textDim, size: 20),
+              Icon(Icons.chevron_right_rounded, color: Neon.textLo, size: 22),
             ],
           ),
+        ),
+      ),
         ),
       ),
     );

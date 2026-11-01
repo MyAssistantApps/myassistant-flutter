@@ -265,36 +265,57 @@ class _AssistantOrbButtonState extends State<AssistantOrbButton>
                               // round a deep-navy centre, glowing.
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                gradient: SweepGradient(colors: [
-                                  Neon.cyan,
-                                  Neon.violet,
-                                  Neon.pink,
-                                  Neon.cyan,
-                                ]),
+                                gradient: Neon.isDark
+                                    // THE LIT DISC (2026-11-01, the logo
+                                    // reference): a cyan→magenta rim of light.
+                                    ? LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          Neon.cyan,
+                                          Neon.violet,
+                                          Neon.pink,
+                                        ],
+                                      )
+                                    : SweepGradient(colors: [
+                                        Neon.cyan,
+                                        Neon.violet,
+                                        Neon.pink,
+                                        Neon.cyan,
+                                      ]),
                                 boxShadow: [
-                                  ...Neon.halo(Neon.violet, strength: 1.2),
+                                  ...Neon.halo(
+                                      Neon.violet,
+                                      strength: 1.3),
                                   BoxShadow(
-                                    color: Neon.pink.withValues(alpha: 0.30),
-                                    blurRadius: 18,
+                                    color: Neon.pink.withValues(alpha: 0.40),
+                                    blurRadius: 22,
                                     offset: const Offset(0, 2),
                                   ),
                                 ],
                               ),
-                              padding: const EdgeInsets.all(3.5),
+                              padding: const EdgeInsets.all(2.5),
                               // The deep-navy centre from the tokens (2026-09-30:
                               // it was two hard-coded navies), lit a touch by the
-                              // accent where the light falls.
+                              // accent where the light falls. At night it is
+                              // electric blue itself, cyan up top-left.
                               child: DecoratedBox(
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   gradient: RadialGradient(
                                     center: const Alignment(-0.3, -0.4),
-                                    colors: [
-                                      Color.alphaBlend(
-                                          Neon.violet.withValues(alpha: 0.16),
-                                          Neon.surfaceHigh),
-                                      Neon.surface,
-                                    ],
+                                    colors: Neon.isDark
+                                        ? [
+                                            Color.lerp(Neon.cyan, Neon.violet, 0.45)!,
+                                            Neon.violet,
+                                            Color.lerp(Neon.violet, Neon.pink, 0.6)!,
+                                          ]
+                                        : [
+                                            Color.alphaBlend(
+                                                Neon.violet.withValues(alpha: 0.16),
+                                                Neon.surfaceHigh),
+                                            Neon.surface,
+                                          ],
                                   ),
                                 ),
                                 child: Icon(Icons.mic_rounded,

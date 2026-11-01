@@ -7,7 +7,9 @@ import '../design/neon_tokens.dart';
 import '../features/home/home_cards.dart';
 import '../features/home/quote_cards_sheet.dart';
 import '../features/home/quote_of_day.dart';
+import '../widgets/agent_hive.dart';
 import '../widgets/call_led.dart';
+import '../widgets/neon_cards.dart';
 import 'search_screen.dart';
 
 /// HOME TAB — what needs you now (2026-09-29).
@@ -57,46 +59,69 @@ class HomeDashboard extends StatelessWidget {
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
-                        child: ShaderMask(
-                          blendMode: BlendMode.srcIn,
-                          shaderCallback: (r) => LinearGradient(
-                            colors: [Neon.cyan, Neon.violet, Neon.pink],
-                          ).createShader(r),
-                          child: Text(
-                            'MyAssistant',
-                            style: GoogleFonts.spaceGrotesk(
-                              fontSize: NeonType.largeTitle + 6,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: -0.8,
-                              height: 1.1,
-                              color: Colors.white,
-                              // its own glow, tinted by the gradient
-                              shadows: [
-                                Shadow(
-                                    color: Colors.white.withValues(alpha: 0.55),
-                                    blurRadius: 18),
-                              ],
-                            ),
-                          ),
-                        ),
+                        // "My" in the logo's light (cyan → violet →
+                        // magenta), "Assistant" crisp white — the client's
+                        // "AI Assistant" mark.
+                        child: Builder(builder: (context) {
+                          final style = GoogleFonts.spaceGrotesk(
+                            fontSize: NeonType.largeTitle + 6,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.8,
+                            height: 1.1,
+                            color: Colors.white,
+                          );
+                          return Row(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              ShaderMask(
+                                blendMode: BlendMode.srcIn,
+                                shaderCallback: (r) => LinearGradient(
+                                  colors: [Neon.cyan, Neon.violet, Neon.pink],
+                                ).createShader(r),
+                                child: Text('My', style: style),
+                              ),
+                              Text(
+                                'Assistant',
+                                style: style.copyWith(
+                                  color: Neon.isDark ? Colors.white : Neon.textHi,
+                                  shadows: Neon.isDark
+                                      ? [
+                                          Shadow(
+                                              color: Neon.violet
+                                                  .withValues(alpha: 0.55),
+                                              blurRadius: 18),
+                                        ]
+                                      : null,
+                                ),
+                              ),
+                            ],
+                          );
+                        }),
                       ),
                     ),
                   ),
                 ),
+                const _Sparkle(),
+                const SizedBox(width: 8),
+                // THE AGENTS, ONE HOLD AWAY (2026-11-01): the row of nine
+                // dots left the feed; hold this for the honeycomb, tap for
+                // the list.
+                const AgentHiveButton(),
+                const SizedBox(width: 10),
                 _SearchRing(
                   onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const SearchScreen())),
                 ),
               ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 10),
             // The date alone (owner, 2026-09-30: the weather chip beside
             // it "looks bad"). Rain or heat worth knowing about still gets
-            // its own card in the feed.
-            Text(
-              '${wk[now.weekday - 1]}, ${now.day} ${mo[now.month - 1]}',
-              style: TextStyle(color: Neon.textLo, fontSize: NeonType.body),
-            ),
+            // its own card in the feed. In a small glass chip (dusk pass).
+            _DateChip(
+                '${wk[now.weekday - 1]}, ${now.day} ${mo[now.month - 1]}'),
             // THE DAY'S LINE, right under the date (owner, 2026-09-30: "need
             // motivational quotes right below the date"). No card, no tint:
             // an accent rule down the left, brighter ink, a size up — it
@@ -116,18 +141,36 @@ class HomeDashboard extends StatelessWidget {
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: () => showQuoteCardsSheet(context),
-                    child: IntrinsicHeight(
+                    // THE LINE ON LIT GLASS (2026-11-01, the dusk
+                    // reference): a frosted card with a glowing pink edge
+                    // down its left and a sparkle beside the words.
+                    child: PressScale(
+                     child: GlassCard(
+                      glow: Neon.violet,
+                      padding: const EdgeInsets.fromLTRB(0, 14, 14, 14),
+                      child: IntrinsicHeight(
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Container(
                             width: 3,
+                            margin: const EdgeInsets.only(left: 0),
                             decoration: BoxDecoration(
-                              gradient: Neon.gBrand,
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [Neon.cyan, Neon.violet, Neon.pink],
+                              ),
                               borderRadius: BorderRadius.circular(2),
+                              boxShadow: Neon.halo(Neon.violet, strength: 1.2),
                             ),
                           ),
                           const SizedBox(width: 12),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2, right: 10),
+                            child: Icon(Icons.auto_awesome_rounded,
+                                size: 18, color: Neon.cyan),
+                          ),
                           Expanded(
                             child: Text(
                               QuoteOfDay.line(),
@@ -142,6 +185,8 @@ class HomeDashboard extends StatelessWidget {
                           ),
                         ],
                       ),
+                    ),
+                     ),
                     ),
                   ),
                 );
@@ -200,6 +245,99 @@ class _SearchRing extends StatelessWidget {
             onPressed: onTap,
             icon: Icon(Icons.search_rounded, color: Neon.textHi, size: 24),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The date in a small frosted chip with a calendar glyph (dusk pass).
+class _DateChip extends StatelessWidget {
+  const _DateChip(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(Neon.rPill),
+        gradient: Neon.glassFill,
+        border: Border.all(color: Neon.lineBright),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.calendar_today_rounded, size: 14, color: Neon.cyan),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: NeonType.manrope(NeonType.footnote, FontWeight.w600)
+                .copyWith(color: Neon.textHi),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A four-point star by the title that breathes and turns slowly — the
+/// sparkle in the dusk reference. Still with Remove animations.
+class _Sparkle extends StatefulWidget {
+  const _Sparkle();
+
+  @override
+  State<_Sparkle> createState() => _SparkleState();
+}
+
+class _SparkleState extends State<_Sparkle>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 2600));
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (Motion.reduced(context)) {
+      _c.stop();
+      _c.value = 0.5;
+    } else if (!_c.isAnimating) {
+      _c.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ExcludeSemantics(
+      child: RepaintBoundary(
+        child: AnimatedBuilder(
+          animation: _c,
+          builder: (_, __) {
+            final v = Curves.easeInOut.transform(_c.value);
+            return Transform.rotate(
+              angle: v * 0.6,
+              child: Transform.scale(
+                scale: 0.75 + v * 0.35,
+                child: Icon(
+                  Icons.auto_awesome,
+                  size: 22,
+                  color: Color.lerp(Neon.cyan, Neon.pink, v),
+                  shadows: [
+                    Shadow(
+                        color: Color.lerp(Neon.cyan, Neon.pink, v)!
+                            .withValues(alpha: 0.4 + v * 0.5),
+                        blurRadius: 14),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
