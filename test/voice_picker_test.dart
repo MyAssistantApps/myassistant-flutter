@@ -1,7 +1,6 @@
 // Owner, 2026-11-01: tapping play while a sample played went BACK — the
 // disabled play button let the tap through to the row, which chose the
 // voice and closed the page.
-import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
