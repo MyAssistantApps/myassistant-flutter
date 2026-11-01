@@ -3,6 +3,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:myassistant/ai/speech_markup.dart';
 
 void main() {
+  test('a tone note or closing tag at the END is never shown (2026-11-01)', () {
+    for (final raw in [
+      'Hello Sir! What can I do for you?</tone: warm and reassuring>',
+      'My name is Maya.</tone:>',
+      '<tone: warm> Hello Sir! What can I do for you? <tone: bright>',
+    ]) {
+      final shown = SpeechMarkup.parse(raw).display;
+      expect(shown.contains('<'), isFalse, reason: shown);
+      expect(shown.contains('>'), isFalse, reason: shown);
+    }
+    expect(SpeechMarkup.stripPartial('What can I do for you?</tone: warm an'),
+        'What can I do for you?', reason: 'not even while it streams in');
+    expect(SpeechMarkup.strip('x < 5 and y > 2'), 'x < 5 and y > 2');
+  });
+
   test('the documented form: tone kept aside, expressions spoken only', () {
     final r = SpeechMarkup.parse('<tone: warm and calm> Sure <sigh> I can help.');
     expect(r.tone, 'warm and calm');

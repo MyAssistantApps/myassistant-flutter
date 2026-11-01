@@ -45,9 +45,10 @@ abstract final class SpeechMarkup {
   // tone note written "<tone>informative</tone>", and closing tags.
   static final _toneXml = RegExp(r'<\s*tone\s*>\s*([^<>\n]{1,80}?)\s*<\s*/\s*tone\s*>',
       caseSensitive: false);
-  // "</tone:>" too, and an empty "<tone:>" (2026-11-01, seen in review).
+  // ANY closing tag, whatever is inside: "</tone:>" and "</tone: warm and
+  // reassuring>" ended replies on screen (2026-11-01); and an empty "<tone:>".
   static final _closing =
-      RegExp(r'<\s*/\s*[a-zA-Z][a-zA-Z \-]{0,30}\s*:?\s*>|<\s*tone\s*:\s*>', caseSensitive: false);
+      RegExp(r'<\s*/[^<>\n]{0,100}>|<\s*tone\s*:\s*>', caseSensitive: false);
 
   /// The model's variants in the one form the rest reads.
   static String _normal(String raw) => raw
@@ -96,6 +97,8 @@ abstract final class SpeechMarkup {
     if (r.length > 90 || rest.contains('\n')) return false;
     if (RegExp(r'^t(o(n(e ?(:.*)?)?)?)?$').hasMatch(r)) return true;
     if (RegExp(r'^p(r(o(m(p(t ?(:.*)?)?)?)?)?)?$').hasMatch(r)) return true;
+    // Any closing tag, whatever is inside, is removed once it closes.
+    if (RegExp(r'^/[^<>\n]{0,90}$').hasMatch(r)) return true;
     // Any word tag, opening or closing, is removed once it closes.
     return RegExp(r'^/?\s*[a-z][a-z \-]{0,30}$').hasMatch(r) || r.isEmpty || r == '/';
   }
