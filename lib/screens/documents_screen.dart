@@ -18,9 +18,10 @@ import 'pro_assistant_screen.dart';
 final documentUploading = ValueNotifier<bool>(false);
 
 /// Picks a photo or file and saves it to My documents (the same flow a case
-/// file uses, without the client). Shared by Home's documents section.
-Future<void> uploadMyDocument(BuildContext context) async {
-  if (documentUploading.value) return;
+/// file uses, without the client). Shared by Home's documents section and
+/// the assistant chats. Returns the saved document, or null if nothing was.
+Future<UserDocument?> uploadMyDocument(BuildContext context) async {
+  if (documentUploading.value) return null;
   final source = await showAppSheet<String>(
     context: context,
     builder: (ctx) => SafeArea(
@@ -49,7 +50,7 @@ Future<void> uploadMyDocument(BuildContext context) async {
       ),
     ),
   );
-  if (source == null || !context.mounted) return;
+  if (source == null || !context.mounted) return null;
 
   List<int> bytes;
   String filename;
@@ -65,7 +66,7 @@ Future<void> uploadMyDocument(BuildContext context) async {
       final f = (picked != null && picked.files.isNotEmpty)
           ? picked.files.first
           : null;
-      if (f?.bytes == null) return;
+      if (f?.bytes == null) return null;
       bytes = f!.bytes!;
       filename = f.name;
       mime = mimeForFilename(f.name);
@@ -76,7 +77,7 @@ Future<void> uploadMyDocument(BuildContext context) async {
         maxHeight: 1920,
         imageQuality: 82,
       );
-      if (shot == null) return;
+      if (shot == null) return null;
       bytes = await shot.readAsBytes();
       filename = 'doc_${DateTime.now().millisecondsSinceEpoch}.jpg';
     }
@@ -85,19 +86,21 @@ Future<void> uploadMyDocument(BuildContext context) async {
       AppFeedback.show("Couldn't open that. Check the app's permissions.",
           context: context, tone: FeedbackTone.error);
     }
-    return;
+    return null;
   }
 
-  if (!context.mounted || documentUploading.value) return;
+  if (!context.mounted || documentUploading.value) return null;
   documentUploading.value = true;
   try {
     // DocumentEvents.bump() inside refreshes any open My documents list.
     final r = await ApiService.uploadDocumentDetailed(
         bytes: bytes, filename: filename, mimeType: mime);
-    if (!context.mounted) return;
-    AppFeedback.show(
-        r.notice ?? '"${r.document.title}" saved. Ask me about it any time.',
-        context: context);
+    if (context.mounted) {
+      AppFeedback.show(
+          r.notice ?? '"${r.document.title}" saved. Ask me about it any time.',
+          context: context);
+    }
+    return r.document;
   } on DocumentUploadException catch (e) {
     if (context.mounted) {
       AppFeedback.show(
@@ -117,6 +120,7 @@ Future<void> uploadMyDocument(BuildContext context) async {
   } finally {
     documentUploading.value = false;
   }
+  return null;
 }
 
 /// A chat for questions about saved documents. The assistant already

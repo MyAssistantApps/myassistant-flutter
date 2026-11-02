@@ -599,29 +599,23 @@ class GlowCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // A RAISED CARD (light premium, 2026-11-02; was a neon gradient rim):
+    // the tone tints the surface and a faint edge, the tactile shadow lifts
+    // it. [rimWidth] no longer draws; [halo] sets how high it sits.
     final rim = tone.rim;
-    Widget card = DecoratedBox(
+    Widget card = Container(
+      constraints: BoxConstraints(minHeight: minHeight),
+      padding: padding,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: rim,
-        ),
+        color: tone.fill,
         borderRadius: BorderRadius.circular(radius),
-        boxShadow: halo > 0 ? Neon.halo(rim.first, strength: halo) : null,
+        border: Border.all(
+            color: Neon.isDark
+                ? Neon.glassEdge.first
+                : rim.first.withValues(alpha: 0.12)),
+        boxShadow: Neon.halo(rim.first, strength: halo > 0 ? halo : 0.4),
       ),
-      child: Padding(
-        padding: EdgeInsets.all(rimWidth),
-        child: Container(
-          constraints: BoxConstraints(minHeight: minHeight),
-          padding: padding,
-          decoration: BoxDecoration(
-            color: tone.fill,
-            borderRadius: BorderRadius.circular(radius - rimWidth),
-          ),
-          child: child,
-        ),
-      ),
+      child: child,
     );
     final tag = heroTag;
     if (tag != null && !Motion.reduced(context)) {
@@ -693,25 +687,21 @@ class NeonPill extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
         child: Center(
           widthFactor: 1,
+          // A SOFT FILLED PILL (light premium, 2026-11-02; was a lit
+          // gradient rim): the tone as a wash, its ink as the label.
           child: DecoratedBox(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                  colors: quiet
-                      ? [for (final c in rim) c.withValues(alpha: 0.38)]
-                      : rim),
               borderRadius: BorderRadius.circular(Neon.rPill),
-              boxShadow: quiet ? null : Neon.halo(rim.first, strength: 0.8),
+              boxShadow: quiet ? null : Neon.halo(rim.first, strength: 0.3),
             ),
             child: Padding(
-              padding: EdgeInsets.all(quiet ? 1 : 1.8),
+              padding: EdgeInsets.zero,
               child: Container(
-                padding: EdgeInsets.symmetric(
-                    horizontal: quiet ? 14 : 13, vertical: quiet ? 8 : 7),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: quiet
-                      ? Color.alphaBlend(
-                          rim.first.withValues(alpha: 0.10), Neon.surface)
-                      : tone.fill,
+                  color: Color.alphaBlend(
+                      rim.first.withValues(alpha: quiet ? 0.10 : 0.16),
+                      Neon.surface),
                   borderRadius: BorderRadius.circular(Neon.rPill),
                 ),
                 child: Row(

@@ -259,46 +259,25 @@ class _AssistantOrbButtonState extends State<AssistantOrbButton>
                               // single biggest piece of "this looks unfinished"
                               // on every screen — it now wears the brand
                               // gradient and throws its own light.
-                              // A RING OF LIGHT (2026-09-30, the client's
-                              // reference): cyan through the accent into magenta
-                              // round a deep-navy centre, glowing.
+                              // A RAISED VIOLET DISC (light premium,
+                              // 2026-11-02; was a neon ring): lit from the
+                              // top-left, deep enough for a white mic.
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                gradient: SweepGradient(colors: [
-                                  Neon.cyan,
-                                  Neon.violet,
-                                  Neon.pink,
-                                  Neon.cyan,
-                                ]),
-                                boxShadow: [
-                                  ...Neon.halo(Neon.violet, strength: 1.2),
-                                  BoxShadow(
-                                    color: Neon.pink.withValues(alpha: 0.30),
-                                    blurRadius: 18,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              padding: const EdgeInsets.all(3.5),
-                              // The deep-navy centre from the tokens (2026-09-30:
-                              // it was two hard-coded navies), lit a touch by the
-                              // accent where the light falls.
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: RadialGradient(
-                                    center: const Alignment(-0.3, -0.4),
-                                    colors: [
-                                      Color.alphaBlend(
-                                          Neon.violet.withValues(alpha: 0.16),
-                                          Neon.surfaceHigh),
-                                      Neon.surface,
-                                    ],
-                                  ),
+                                gradient: RadialGradient(
+                                  center: const Alignment(-0.4, -0.5),
+                                  radius: 1.1,
+                                  colors: [
+                                    Color.lerp(Neon.accentFill, Colors.white, 0.10)!,
+                                    Color.lerp(Neon.accentFill, Colors.black, 0.18)!,
+                                  ],
                                 ),
-                                child: Icon(Icons.mic_rounded,
-                                    color: Neon.textHi, size: 30),
+                                border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.18)),
+                                boxShadow: Neon.halo(Neon.violet, strength: 1.2),
                               ),
+                              child: const Icon(Icons.mic_rounded,
+                                  color: Colors.white, size: 30),
                             ),
                     ),
                   ],
@@ -1222,7 +1201,7 @@ abstract final class _VoiceType {
   /// 24 pt w700 spotlight was. One style per size, made once.
   static final Map<double, TextStyle> _spoken = {};
   static TextStyle spoken(double size) =>
-      _spoken[size] ??= GoogleFonts.spaceGrotesk(
+      _spoken[size] ??= GoogleFonts.interTight(
         fontSize: size,
         height: 1.34,
         fontWeight: FontWeight.w600,

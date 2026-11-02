@@ -125,7 +125,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       const SizedBox(height: 22),
                       Text(
                         _isSignUp ? 'Create your account' : 'Welcome back',
-                        style: GoogleFonts.spaceGrotesk(
+                        style: GoogleFonts.interTight(
                           fontSize: 26,
                           fontWeight: FontWeight.w700,
                           color: Neon.textHi,

@@ -14,10 +14,9 @@ import 'package:google_fonts/google_fonts.dart';
 /// the package looks them up (Manrope-SemiBold.ttf …). With all of them
 /// bundled, fetching is switched off: no network, no swap.
 const bundledFontFamilies = <String, List<String>>{
-  'Manrope': [
-    'ExtraLight', 'Light', 'Regular', 'Medium', 'SemiBold', 'Bold', 'ExtraBold',
-  ],
-  'SpaceGrotesk': ['Light', 'Regular', 'Medium', 'SemiBold', 'Bold'],
+  // Inter Tight (2026-11-02, the light premium redesign) replaced Manrope
+  // and Space Grotesk everywhere.
+  'InterTight': ['Light', 'Regular', 'Medium', 'SemiBold', 'Bold', 'ExtraBold'],
 };
 
 void useBundledFonts() {

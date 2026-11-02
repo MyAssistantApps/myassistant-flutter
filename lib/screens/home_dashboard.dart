@@ -88,21 +88,10 @@ class HomeDashboard extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.baseline,
                               textBaseline: TextBaseline.alphabetic,
                               children: [
-                                ShaderMask(
-                                  blendMode: BlendMode.srcIn,
-                                  shaderCallback: (r) => const LinearGradient(
-                                    colors: [
-                                      Color(0xFF3FD8FF),
-                                      Color(0xFF6E7BFF),
-                                      Color(0xFFB14DFF)
-                                    ],
-                                  ).createShader(r),
-                                  child: Text('My',
-                                      style:
-                                          _wordmark(Colors.white, glow: 0.5)),
-                                ),
-                                Text('Assistant',
-                                    style: _wordmark(Colors.white, glow: 0.35)),
+                                // Light premium (2026-11-02): solid ink, the
+                                // brand violet on "My"; readable in both themes.
+                                Text('My', style: _wordmark(Neon.violet)),
+                                Text('Assistant', style: _wordmark(Neon.textHi)),
                               ],
                             ),
                             // The date, under the name, beside the robot.
@@ -216,12 +205,8 @@ class _SearchRing extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          // A hairline of the app's light, no halo (premium pass).
-          colors: [for (final c in Neon.rim) c.withValues(alpha: 0.45)],
-        ),
+        // A raised button on the page (light premium, 2026-11-02).
+        color: Neon.glassEdge.first,
         boxShadow: Neon.lift,
       ),
       child: Padding(
@@ -241,16 +226,10 @@ class _SearchRing extends StatelessWidget {
 }
 
 /// The header's wordmark type: the logo's rounded bold, softly lit.
-TextStyle _wordmark(Color color, {double glow = 0.4}) =>
-    GoogleFonts.spaceGrotesk(
+TextStyle _wordmark(Color color) => GoogleFonts.interTight(
       fontSize: NeonType.largeTitle - 2,
-      fontWeight: FontWeight.w700,
-      letterSpacing: -0.6,
+      fontWeight: FontWeight.w800,
+      letterSpacing: -1.0,
       height: 1.1,
       color: color,
-      shadows: [
-        Shadow(
-            color: const Color(0xFF7C8CFF).withValues(alpha: glow),
-            blurRadius: 16),
-      ],
     );

@@ -259,7 +259,7 @@ class _AssistantActivityPillState extends State<AssistantActivityPill>
                             control,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.spaceGrotesk(
+                            style: GoogleFonts.interTight(
                               color: Neon.violet,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -270,7 +270,7 @@ class _AssistantActivityPillState extends State<AssistantActivityPill>
                           tool ? _text : (control ?? ''),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.spaceGrotesk(
+                          style: GoogleFonts.interTight(
                             color: Neon.textHi,
                             fontSize: 15,
                             fontWeight: FontWeight.w600,

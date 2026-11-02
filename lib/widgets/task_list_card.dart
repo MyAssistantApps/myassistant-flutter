@@ -244,7 +244,7 @@ class _TaskListCardState extends State<TaskListCard> {
                         l.title.isNotEmpty ? l.title : 'Task list',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.spaceGrotesk(
+                        style: GoogleFonts.interTight(
                             color: Neon.textHi, fontWeight: FontWeight.w700, fontSize: 15),
                       ),
                     ),
@@ -339,7 +339,7 @@ class _TaskListSheetState extends State<TaskListSheet> {
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
             children: [
               Text(l.title.isNotEmpty ? l.title : 'Task list',
-                  style: GoogleFonts.spaceGrotesk(
+                  style: GoogleFonts.interTight(
                       color: Neon.textHi, fontWeight: FontWeight.w700, fontSize: 20)),
               const SizedBox(height: 2),
               Text('${l.doneCount} of ${l.items.length} done · anyone in the group can tick or reopen',
@@ -449,7 +449,7 @@ class _NewTaskListSheetState extends State<NewTaskListSheet> {
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
             children: [
               Text('New task list',
-                  style: GoogleFonts.spaceGrotesk(
+                  style: GoogleFonts.interTight(
                       color: Neon.textHi, fontWeight: FontWeight.w700, fontSize: 20)),
               TextField(
                 controller: _title,

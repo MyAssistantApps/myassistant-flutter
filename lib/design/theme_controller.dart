@@ -42,11 +42,10 @@ class ThemeController {
   static final ValueNotifier<bool> dark = ValueNotifier(false);
 
   /// The chosen mode, for settings to render.
-  // DARK UNLESS CHOSEN (2026-09-30): the product is a night-sky design
-  // (the client's reference). Adaptive and Light stay one tap away in
-  // You → Appearance; a saved choice is kept.
+  // LIGHT UNLESS CHOSEN (2026-11-02, the light premium redesign). Dark and
+  // Adaptive stay one tap away in You → Appearance.
   static final ValueNotifier<ThemeMode3> mode =
-      ValueNotifier(ThemeMode3.dark);
+      ValueNotifier(ThemeMode3.light); // light premium (2026-11-02); a saved choice is kept
 
   static Timer? _clock;
 

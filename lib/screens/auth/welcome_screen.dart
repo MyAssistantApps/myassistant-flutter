@@ -129,7 +129,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                             ? 'Welcome aboard!'
                                             : 'You\'re all set, $who!',
                                         textAlign: TextAlign.center,
-                                        style: GoogleFonts.spaceGrotesk(
+                                        style: GoogleFonts.interTight(
                                           fontSize: 30,
                                           fontWeight: FontWeight.w700,
                                           color: Neon.textHi,

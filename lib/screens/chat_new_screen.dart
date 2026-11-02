@@ -219,7 +219,7 @@ class _ChatNewScreenState extends State<ChatNewScreen> with WidgetsBindingObserv
       appBar: AppBar(
         title: Text(
           widget.pickForGroup ? 'Add people' : 'New chat',
-          style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700),
+          style: GoogleFonts.interTight(fontWeight: FontWeight.w700),
         ),
       ),
       floatingActionButton: widget.pickForGroup && _picked.isNotEmpty

@@ -174,7 +174,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 // (cyan into magenta at night); it was the one plain white
                 // tab name.
                 _litTitle(Text('Chat',
-                    style: GoogleFonts.spaceGrotesk(
+                    style: GoogleFonts.interTight(
                         fontSize: 32,
                         fontWeight: FontWeight.w700,
                         letterSpacing: -0.6,

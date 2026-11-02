@@ -9,6 +9,7 @@ import '../design/neon_tokens.dart';
 import '../features/assistant/state/assistant_engine.dart';
 import '../features/assistant/state/assistant_state.dart';
 import 'clients_screen.dart';
+import 'documents_screen.dart';
 import 'finance_screen.dart';
 
 /// THE PROFESSIONAL ASSISTANTS (client, 2026-11-01: "in that place you can
@@ -525,6 +526,16 @@ class _ProChatScreenState extends State<ProChatScreen> {
     }
   }
 
+  /// Saves a photo or file, then starts the question about it — the title
+  /// is how the assistant finds the document among the user's saved ones.
+  Future<void> _attach() async {
+    final doc = await uploadMyDocument(context);
+    if (doc == null || !mounted) return;
+    final about = 'About "${doc.title}": ';
+    _input.value = TextEditingValue(
+        text: about, selection: TextSelection.collapsed(offset: about.length));
+  }
+
   List<TranscriptEntry> get _lines {
     final all = _engine.transcript;
     final from = _from.clamp(0, all.length);
@@ -618,17 +629,18 @@ class _ProChatScreenState extends State<ProChatScreen> {
             bottomLeft: Radius.circular(mine ? 18 : 4),
             bottomRight: Radius.circular(mine ? 4 : 18),
           ),
-          color: mine
-              ? tint.withValues(alpha: 0.22)
-              : Colors.white.withValues(alpha: 0.07),
-          border: Border.all(
-              color: mine
-                  ? tint.withValues(alpha: 0.45)
-                  : Colors.white.withValues(alpha: 0.10)),
+          // Light premium (2026-11-02): yours in solid violet, the
+          // assistant's on a raised card — both themes.
+          color: mine ? Neon.accentFill : Neon.surface,
+          border: mine ? null : Border.all(color: Neon.glassEdge.first),
+          boxShadow: mine ? null : Neon.halo(Neon.violet, strength: 0.5),
         ),
         child: SelectableText(
           e.text,
-          style: TextStyle(color: Neon.textHi, fontSize: 15, height: 1.4),
+          style: TextStyle(
+              color: mine ? Colors.white : Neon.textHi,
+              fontSize: NeonType.rowTitle,
+              height: 1.45),
         ),
       ),
     );
@@ -639,8 +651,9 @@ class _ProChatScreenState extends State<ProChatScreen> {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
-          color: Colors.white.withValues(alpha: 0.06),
-          border: Border.all(color: tint.withValues(alpha: 0.5)),
+          color: Neon.surface,
+          border: Border.all(color: Neon.violet.withValues(alpha: 0.35)),
+          boxShadow: Neon.halo(Neon.violet, strength: 0.6),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -665,44 +678,85 @@ class _ProChatScreenState extends State<ProChatScreen> {
         ),
       );
 
-  Widget _composer(Color tint) => Container(
-        padding: EdgeInsets.fromLTRB(
-            12, 8, 8, 8 + MediaQuery.viewInsetsOf(context).bottom * 0),
-        decoration: BoxDecoration(
-          color: Color.lerp(Neon.bg, Colors.black, 0.25),
-          border: Border(
-              top: BorderSide(color: Colors.white.withValues(alpha: 0.08))),
-        ),
+  /// Raised round controls on the page (light premium, 2026-11-02).
+  BoxDecoration get _raised => BoxDecoration(
+        shape: BoxShape.circle,
+        color: Neon.surface,
+        border: Border.all(color: Neon.glassEdge.first),
+        boxShadow: Neon.halo(Neon.violet, strength: 0.6),
+      );
+
+  Widget _composer(Color tint) => Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Expanded(
-              child: TextField(
-                key: const ValueKey('pro-chat-input'),
-                controller: _input,
-                minLines: 1,
-                maxLines: 4,
-                textInputAction: TextInputAction.send,
-                onSubmitted: _send,
-                style: TextStyle(color: Neon.textHi),
-                decoration: InputDecoration(
-                  hintText: 'Type a message',
-                  hintStyle: TextStyle(color: Neon.textDim),
-                  filled: true,
-                  fillColor: Colors.white.withValues(alpha: 0.06),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(22),
-                      borderSide: BorderSide.none),
+            // A photo or file to ask about (owner, 2026-11-02): saved to My
+            // documents, then the question box names it for the assistant.
+            DecoratedBox(
+              decoration: _raised,
+              child: ValueListenableBuilder<bool>(
+                valueListenable: documentUploading,
+                builder: (context, busy, _) => IconButton(
+                  tooltip: busy ? 'Uploading' : 'Attach a photo or file',
+                  constraints: const BoxConstraints.tightFor(width: 50, height: 50),
+                  onPressed: busy ? null : _attach,
+                  icon: busy
+                      ? const NeonLoader.inline(semanticLabel: 'Uploading')
+                      : Icon(Icons.attach_file_rounded, color: Neon.violet),
                 ),
               ),
             ),
             const SizedBox(width: 8),
-            IconButton.filled(
-              tooltip: 'Send',
-              onPressed: () => _send(_input.text),
-              style: IconButton.styleFrom(backgroundColor: tint),
-              icon: const Icon(Icons.arrow_upward_rounded, color: Colors.black),
+            Expanded(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Neon.surface,
+                  borderRadius: BorderRadius.circular(25),
+                  border: Border.all(color: Neon.glassEdge.first),
+                  boxShadow: Neon.halo(Neon.violet, strength: 0.6),
+                ),
+                child: TextField(
+                  key: const ValueKey('pro-chat-input'),
+                  controller: _input,
+                  minLines: 1,
+                  maxLines: 4,
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: _send,
+                  style: TextStyle(color: Neon.textHi, fontSize: NeonType.rowTitle),
+                  decoration: InputDecoration(
+                    hintText: 'Type a message',
+                    hintStyle: TextStyle(color: Neon.textDim),
+                    filled: false,
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  center: const Alignment(-0.4, -0.5),
+                  radius: 1.1,
+                  colors: [
+                    Color.lerp(Neon.accentFill, Colors.white, 0.10)!,
+                    Color.lerp(Neon.accentFill, Colors.black, 0.18)!,
+                  ],
+                ),
+                boxShadow: Neon.halo(Neon.violet, strength: 0.9),
+              ),
+              child: IconButton(
+                tooltip: 'Send',
+                constraints: const BoxConstraints.tightFor(width: 50, height: 50),
+                onPressed: () => _send(_input.text),
+                icon: const Icon(Icons.arrow_upward_rounded, color: Colors.white),
+              ),
             ),
           ],
         ),

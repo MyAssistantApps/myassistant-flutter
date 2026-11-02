@@ -179,7 +179,7 @@ class _QuickTaskScreenState extends State<QuickTaskScreen> {
                       'Assign a task',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.spaceGrotesk(
+                      style: GoogleFonts.interTight(
                         color: Neon.textHi,
                         fontSize: 19,
                         fontWeight: FontWeight.w700,
@@ -254,7 +254,7 @@ class _QuickTaskScreenState extends State<QuickTaskScreen> {
                   _caption,
                   key: ValueKey(_caption),
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.spaceGrotesk(
+                  style: GoogleFonts.interTight(
                     color: _stage == _Stage.failed
                         ? Neon.errorInk
                         : _stage == _Stage.sent

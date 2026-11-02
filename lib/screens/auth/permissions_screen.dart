@@ -233,7 +233,7 @@ class _PermissionsScreenState extends State<PermissionsScreen>
                   const SizedBox(height: 22),
                   Text(
                     'Give it its senses',
-                    style: GoogleFonts.spaceGrotesk(
+                    style: GoogleFonts.interTight(
                       fontSize: 26,
                       fontWeight: FontWeight.w700,
                       color: Neon.textHi,

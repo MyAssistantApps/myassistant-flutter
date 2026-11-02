@@ -250,7 +250,7 @@ class _NewsPanelState extends State<NewsPanel> {
               title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.spaceGrotesk(
+              style: GoogleFonts.interTight(
                 color: Neon.textHi,
                 fontSize: 19,
                 fontWeight: FontWeight.w700,

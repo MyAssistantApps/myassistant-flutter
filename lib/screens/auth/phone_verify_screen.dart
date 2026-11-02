@@ -146,7 +146,7 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
                   const SizedBox(height: 22),
                   Text(
                     'Verify your number',
-                    style: GoogleFonts.spaceGrotesk(
+                    style: GoogleFonts.interTight(
                       fontSize: 26,
                       fontWeight: FontWeight.w700,
                       color: Neon.textHi,

@@ -1,5 +1,16 @@
 # Design system
 
+**Light premium (2026-11-02, owner):** light by default (Dark and Adaptive in
+You → Appearance). Paper ground #F3F2F7 / white cards by day, #0E0D14 /
+#1A1822 by night; ONE accent, deep violet (default seed #8466FF, drawn in its
+deep ink by day); type is Inter Tight (bundled), big and tight for headings.
+Cards are tactile: a raised surface with a top-lit 1 px edge and a two-layer
+neutral shadow (`Neon.halo` / `Neon.lift` / `Neon.cardShadow`) — no coloured
+glow, no neon rims, no night-sky background. `GlowCard` is a raised tinted
+card; `NeonPill` is a soft filled pill. Home: the violet Next card, the day in
+numbers, one mixed "Later today" feed with Play my day, Assistants tiles.
+The neon notes below are history.
+
 One neon system for the whole app: the client's night-sky reference. Tokens
 live in `lib/design/neon_tokens.dart` (`Neon.*`), widgets in
 `lib/design/neon_widgets.dart`, motion in `lib/design/motion.dart`, and the

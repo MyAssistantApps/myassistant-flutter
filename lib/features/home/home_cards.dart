@@ -30,7 +30,6 @@ import '../meeting_prep/meeting_prep_sheet.dart';
 import '../shopping/shopping_list_screen.dart';
 import '../shopping/shopping_service.dart';
 import 'deal_banners.dart';
-import 'pro_banners.dart';
 import 'home_extras.dart';
 import 'home_redesign.dart';
 import 'home_feed.dart';
@@ -226,12 +225,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
             // Kept alive: scrolled away and back, it must not replay its
             // entrance.
             _KeepAlive(child: widget.leading),
-            const SizedBox(height: 16),
-            // PLAY MY MORNING (2026-09-30): the day, read aloud — the
-            // brightest thing under the greeting.
-            _playRow(now),
-            const SizedBox(height: 18),
-            const SizedBox(height: 2),
+            const SizedBox(height: 20),
             StateSwitch(
               state: state,
               child: switch (state) {
@@ -240,11 +234,13 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                     onRetry: () => svc.refresh(force: true),
                   ),
                 'loading' => const _Skeleton(),
-                _ => _body(feed),
+                _ => _body(feed, svc.brief, now),
               },
             ),
             if (state == 'partial' || (state == 'loaded' && svc.stale))
               _status(svc),
+            const SizedBox(height: 28),
+            Reveal(delayMs: 130, child: _assistants()),
             if (extras.isNotEmpty) ...[
               const SizedBox(height: 24),
               Reveal(
@@ -268,20 +264,8 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                     a,
               ]),
             ),
-            const SizedBox(height: 8),
-            // THE PROFESSIONAL ASSISTANTS (client, 2026-11-01; owner,
-            // 2026-11-02: "sliding banner like that, with a photo of that
-            // profession"): Doctor's, Advocate's and Business, sliding.
-            const SizedBox(height: 12),
-            Reveal(
-              delayMs: 180,
-              child: ProBanners(
-                  onOpen: (k) =>
-                      _do.open(context, ProAssistantScreen(kind: k))),
-            ),
-            const SizedBox(height: 20),
-            // MY DOCUMENTS: upload, keep, and ask about them.
-            Reveal(delayMs: 190, child: _documents()),
+            // The professions' photo banners and the documents box became
+            // the Assistants tiles above (light premium, 2026-11-02).
             const SizedBox(height: 20),
             // ORDER AND SHOP (owner, 2026-11-01): food and shopping apps,
             // suggested for the time of day and the shopping list, sliding.
@@ -296,109 +280,20 @@ class _HomeFeedViewState extends State<HomeFeedView> {
     );
   }
 
-  // ── my documents ─────────────────────────────────────────────────────
-
-  Widget _documents() {
-    Widget action(IconData icon, String label, VoidCallback onTap) => Expanded(
-          child: Semantics(
-            button: true,
-            label: label,
-            excludeSemantics: true,
-            child: Tappable(
-              onTap: onTap,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 72),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(icon, color: Neon.cyan, size: 26),
-                    const SizedBox(height: 6),
-                    Text(label,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                            color: Neon.textHi,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600)),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Text('Your documents',
-              style: NeonType.eyebrow.copyWith(color: Neon.textLo)),
-        ),
-        GlowCard(
-          radius: Neon.rMd,
-          rimWidth: 1.2,
-          halo: 0.3,
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-          child: Row(children: [
-            ValueListenableBuilder<bool>(
-              valueListenable: documentUploading,
-              builder: (context, busy, _) => action(
-                  Icons.upload_file_rounded,
-                  busy ? 'Uploading…' : 'Upload',
-                  () => uploadMyDocument(context)),
-            ),
-            action(Icons.folder_rounded, 'My documents',
-                () => _do.open(context, const DocumentsScreen())),
-            action(Icons.forum_rounded, 'Ask about them',
-                () => askAboutDocuments(context)),
-          ]),
-        ),
-      ],
-    );
-  }
-
-  // ── play my morning ──────────────────────────────────────────────────
-
-  /// The Play button: "Play my morning" before noon, "Play my day" after;
-  /// while it plays, the same button pauses and resumes it.
-  Widget _playRow(DateTime now) {
-    final p = _do.brief;
-    final morning = now.hour < 12;
-    final (label, icon, hint) = switch (p.state) {
-      BriefPlayState.loading => (
-          morning ? 'Getting your morning…' : 'Getting your day…',
-          Icons.play_arrow_rounded,
-          'This takes a few seconds',
-        ),
-      BriefPlayState.playing => ('Pause', Icons.pause_rounded, 'Playing now'),
-      BriefPlayState.paused => ('Resume', Icons.play_arrow_rounded, 'Paused'),
-      _ => (
-          morning ? 'Play my morning' : 'Play my day',
-          Icons.play_arrow_rounded,
-          'Hear your day in about a minute',
-        ),
-    };
-    return BriefingBar(
-      title: label,
-      hint: hint,
-      icon: icon,
-      playing: p.state == BriefPlayState.playing,
-      busy: p.state == BriefPlayState.loading,
-      onPressed: () => _do.playBrief(context),
-    );
-  }
-
   // ── the feed ─────────────────────────────────────────────────────────
 
-  Widget _body(HomeFeed feed) {
+  Widget _body(HomeFeed feed, TodayBrief b, DateTime clock) {
     // NO "GET STARTED" CARD (client, 2026-11-01: "remove unnecessary
     // elements"): "Ask me anything / Talk to me" repeated the mic in the
     // dock and the suggestion row below; an empty day shows "all clear".
     final now = feed.now?.kind == HomeCardKind.getStarted ? null : feed.now;
+    // LIGHT PREMIUM HOME (owner, 2026-11-02): the Next card, the day in
+    // numbers, then ONE mixed feed — what else needs you, then the day.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // A new Now card replaces the last one: it fades and rises in.
+        // A new Next card replaces the last one: it fades and rises in.
         Reveal(
           delayMs: 40,
           child: StateSwitch(
@@ -408,6 +303,11 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                 : _nowCard(now),
           ),
         ),
+        const SizedBox(height: 14),
+        Reveal(delayMs: 70, child: _numbers(b)),
+        const SizedBox(height: 26),
+        Reveal(delayMs: 100, child: _laterHeader(feed, clock)),
+        const SizedBox(height: 10),
         // Rows leaving or arriving: the space opens and closes, it does
         // not jump.
         AnimatedSize(
@@ -418,16 +318,153 @@ class _HomeFeedViewState extends State<HomeFeedView> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (feed.also.isNotEmpty) const SizedBox(height: 12),
               for (final c in feed.also)
                 KeyedSubtree(key: ValueKey(c.id), child: _alsoRow(c)),
             ],
           ),
         ),
-        if (feed.day.isNotEmpty) ...[
-          const SizedBox(height: 24),
-          Reveal(delayMs: 100, child: _day(feed)),
-        ],
+        if (feed.day.isNotEmpty)
+          Reveal(delayMs: 120, child: _day(feed)),
+        if (feed.also.isEmpty && feed.day.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(left: Neon.s1, top: 2),
+            child: Text('Nothing else on your list.',
+                style: TextStyle(color: Neon.textLo, fontSize: NeonType.body)),
+          ),
+      ],
+    );
+  }
+
+  /// THE DAY IN NUMBERS: meetings and reminders today, bills due today —
+  /// counted from the brief, each opening its page.
+  Widget _numbers(TodayBrief b) {
+    final meetings = b.agenda.where((a) => a.kind == 'meeting').length;
+    final reminders = b.agenda.where((a) => a.kind == 'reminder').length;
+    final bills =
+        b.dates.where((d) => d.kind == 'payment' && d.when == 'today').length;
+    Widget cell(int n, String one, String many, Widget page) => Expanded(
+          child: Tappable(
+            onTap: () => _do.open(context, page),
+            semanticLabel: '$n ${n == 1 ? one : many} today',
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 64),
+              child: ExcludeSemantics(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('$n',
+                        style: NeonType.manrope(30, FontWeight.w800).copyWith(
+                            color: Neon.textHi,
+                            letterSpacing: -1.2,
+                            height: 1.1,
+                            fontFeatures: NeonType.figures)),
+                    Text(n == 1 ? one : many,
+                        style: NeonType.manrope(NeonType.body, FontWeight.w500)
+                            .copyWith(color: Neon.textLo)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+    return GlassCard(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+      child: Row(children: [
+        cell(meetings, 'Meeting', 'Meetings', const CalendarScreen()),
+        cell(reminders, 'Reminder', 'Reminders', const RemindersScreen()),
+        cell(bills, 'Bill due', 'Bills due', const FinanceScreen()),
+      ]),
+    );
+  }
+
+  /// "Later today" (or "Tomorrow"), with Play my day beside it: the day,
+  /// read aloud; while it plays the same button pauses and resumes.
+  Widget _laterHeader(HomeFeed feed, DateTime clock) {
+    final p = _do.brief;
+    final morning = clock.hour < 12;
+    final (label, icon) = switch (p.state) {
+      BriefPlayState.loading => ('Getting it…', Icons.play_arrow_rounded),
+      BriefPlayState.playing => ('Pause', Icons.pause_rounded),
+      BriefPlayState.paused => ('Resume', Icons.play_arrow_rounded),
+      _ => (morning ? 'Play my morning' : 'Play my day', Icons.play_arrow_rounded),
+    };
+    return Row(
+      children: [
+        Expanded(
+          child: Semantics(
+            header: true,
+            child: Padding(
+              padding: const EdgeInsets.only(left: Neon.s1),
+              child: Text(
+                  feed.dayLabel == 'Today' ? 'Later today' : feed.dayLabel,
+                  style: NeonType.manrope(21, FontWeight.w800)
+                      .copyWith(color: Neon.textHi, letterSpacing: -0.6)),
+            ),
+          ),
+        ),
+        NeonPill(
+          label: label,
+          icon: icon,
+          busy: p.state == BriefPlayState.loading,
+          onPressed: () => _do.playBrief(context),
+        ),
+      ],
+    );
+  }
+
+  /// THE ASSISTANTS (light premium, 2026-11-02): four raised tiles in one
+  /// row — the three professions and Documents (upload, keep, ask).
+  Widget _assistants() {
+    Widget tile(IconData icon, String label, VoidCallback onTap) => Expanded(
+          child: Tappable(
+            onTap: onTap,
+            semanticLabel: label == 'Documents' ? 'Documents' : '$label Assistant',
+            child: Container(
+              height: 92,
+              decoration: BoxDecoration(
+                color: Neon.surface,
+                borderRadius: BorderRadius.circular(Neon.rLg),
+                border: Border.all(color: Neon.glassEdge.first),
+                boxShadow: Neon.halo(Neon.violet, strength: 0.6),
+              ),
+              child: ExcludeSemantics(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(icon, color: Neon.violet, size: 26),
+                    const SizedBox(height: 8),
+                    Text(label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: NeonType.manrope(NeonType.body, FontWeight.w700)
+                            .copyWith(color: Neon.textHi)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          header: true,
+          child: Padding(
+            padding: const EdgeInsets.only(left: Neon.s1, bottom: 10),
+            child: Text('Assistants',
+                style: NeonType.manrope(21, FontWeight.w800)
+                    .copyWith(color: Neon.textHi, letterSpacing: -0.6)),
+          ),
+        ),
+        Row(children: [
+          for (final k in ProKind.values) ...[
+            tile(ProProfile.of(k).icon, ProProfile.of(k).name,
+                () => _do.open(context, ProAssistantScreen(kind: k))),
+            const SizedBox(width: 10),
+          ],
+          tile(Icons.description_rounded, 'Documents',
+              () => _do.open(context, const DocumentsScreen())),
+        ]),
       ],
     );
   }
@@ -436,15 +473,30 @@ class _HomeFeedViewState extends State<HomeFeedView> {
     final (primary, secondary) = _buttons(c);
     final busy = _busy.contains(c.id);
     final open = _pageFor(c);
+    const ink = Colors.white;
     return Semantics(
       container: true,
       label: _spoken(c),
       child: _Tap(
         onTap: open == null ? null : () => _do.open(context, open),
-        // The one lit card on Home: its kind's light, softly.
-        child: GlassCard(
-          glow: _look(c.kind).$2,
-          padding: const EdgeInsets.fromLTRB(Neon.s5, Neon.s5, Neon.s5, Neon.s3),
+        // THE NEXT CARD (light premium, 2026-11-02): the one raised violet
+        // thing on Home. Its violet is the deep fill white words pass on
+        // (4.5:1) in both themes, lit a little from the top-left.
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(22, 20, 22, 18),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color.lerp(Neon.accentFill, Colors.white, 0.06)!,
+                Color.lerp(Neon.accentFill, Colors.black, 0.18)!,
+              ],
+            ),
+            borderRadius: BorderRadius.circular(Neon.rXl),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+            boxShadow: Neon.halo(Neon.violet),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -455,12 +507,26 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                   children: [
                     Row(
                       children: [
-                        _tile(c.kind, 36),
-                        const SizedBox(width: Neon.s3),
-                        Text(_kindName(c.kind),
-                            style: NeonType.eyebrow.copyWith(color: Neon.textLo)),
-                        const Spacer(),
-                        Flexible(flex: 3, child: _pill(c.reason)),
+                        Expanded(
+                          child: Text(
+                            c.reason,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: NeonType.manrope(NeonType.callout, FontWeight.w600)
+                                .copyWith(color: ink, fontFeatures: NeonType.figures),
+                          ),
+                        ),
+                        const SizedBox(width: Neon.s2),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: ink.withValues(alpha: 0.16),
+                            borderRadius: BorderRadius.circular(Neon.rPill),
+                          ),
+                          child: Text(_kindName(c.kind),
+                              style: NeonType.manrope(NeonType.footnote, FontWeight.w700)
+                                  .copyWith(color: ink)),
+                        ),
                       ],
                     ),
                     const SizedBox(height: Neon.s4),
@@ -468,30 +534,29 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                       c.title,
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
-                      style: NeonType.glassTitle.copyWith(color: Neon.textHi),
+                      style: NeonType.manrope(28, FontWeight.w800)
+                          .copyWith(color: ink, letterSpacing: -0.9, height: 1.1),
                     ),
                     if (c.detail != null) ...[
-                      const SizedBox(height: Neon.s1),
+                      const SizedBox(height: 6),
                       Text(
                         c.detail!,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            color: Neon.textLo,
-                            fontSize: NeonType.body,
-                            height: 1.3),
+                        style: const TextStyle(color: ink, fontSize: NeonType.rowTitle, height: 1.4),
                       ),
                     ],
                   ],
                 ),
               ),
-              const SizedBox(height: Neon.s3),
+              const SizedBox(height: 18),
               Wrap(
-                spacing: Neon.s2,
+                spacing: 10,
+                runSpacing: 8,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  if (primary != null) _primary(c.id, primary, busy),
-                  if (secondary != null) _secondary(c.id, secondary, busy),
+                  if (primary != null) _primary(c.id, primary, busy, onBrand: true),
+                  if (secondary != null) _secondary(c.id, secondary, busy, onBrand: true),
                 ],
               ),
             ],
@@ -555,53 +620,18 @@ class _HomeFeedViewState extends State<HomeFeedView> {
     );
   }
 
+  /// THE DAY AS A TIMELINE (redesign, 2026-11-01): times down the left, a
+  /// rail with a dot per thing. Its heading is "Later today" above the
+  /// mixed feed; the month is in the Meetings number and Hub → Calendar.
   Widget _day(HomeFeed feed) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Semantics(
-                header: true,
-                child: Padding(
-                  padding: const EdgeInsets.only(left: Neon.s1),
-                  child: Text(feed.dayLabel,
-                      style: NeonType.eyebrow.copyWith(color: Neon.textLo)),
-                ),
-              ),
-            ),
-            // The month moved to its own page (Hub → Calendar): the word
-            // flies into that page's title, as a Hub row's does.
-            TextButton(
-              style: TextButton.styleFrom(
-                foregroundColor: Neon.violet,
-                minimumSize: const Size(48, 48),
-              ),
-              onPressed: () => _do.open(context, const CalendarScreen()),
-              child: Hero(
-                tag: titleHeroTag('Calendar'),
-                flightShuttleBuilder: titleFlight,
-                child: Text('Calendar',
-                    style: NeonType.manrope(NeonType.footnote, FontWeight.w700)
-                        .copyWith(color: Neon.violet)),
-              ),
-            ),
-          ],
-        ),
-        // THE DAY AS A TIMELINE (redesign, 2026-11-01): times down the
-        // left, a rail with a dot per thing — it is a sequence, so it reads
-        // as one.
-        GlassCard(
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-          child: Column(
-            children: [
-              for (var i = 0; i < feed.day.length; i++)
-                _line(feed.day[i], first: i == 0, last: i == feed.day.length - 1),
-            ],
-          ),
-        ),
-      ],
+    return GlassCard(
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+      child: Column(
+        children: [
+          for (var i = 0; i < feed.day.length; i++)
+            _line(feed.day[i], first: i == 0, last: i == feed.day.length - 1),
+        ],
+      ),
     );
   }
 
@@ -1071,38 +1101,41 @@ class _HomeFeedViewState extends State<HomeFeedView> {
     setState(() => _busy.remove(id));
   }
 
-  Widget _primary(String id, _Act a, bool busy) => FilledButton.icon(
-        onPressed: busy ? null : () => _run(id, a.run),
-        icon: busy
-            ? SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2, color: Neon.onAccent),
-              )
-            : Icon(a.icon ?? Icons.arrow_forward_rounded, size: 18),
-        label: Text(a.label),
-        style: FilledButton.styleFrom(
-          backgroundColor: Neon.accentFill,
-          foregroundColor: Neon.onAccent,
-          disabledBackgroundColor: Neon.accentFill.withValues(alpha: 0.6),
-          disabledForegroundColor: Neon.onAccent,
-          minimumSize: const Size(48, 48),
-          elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 18),
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(Neon.rTile)),
-          textStyle: NeonType.manrope(NeonType.body, FontWeight.w700),
-        ),
-      );
+  /// [onBrand]: on the violet Next card — a white pill with violet words.
+  Widget _primary(String id, _Act a, bool busy, {bool onBrand = false}) {
+    final bg = onBrand ? Colors.white : Neon.accentFill;
+    final fg = onBrand ? Neon.accentFill : Neon.onAccent;
+    return FilledButton.icon(
+      onPressed: busy ? null : () => _run(id, a.run),
+      icon: busy
+          ? const NeonLoader.inline(size: 16, semanticLabel: 'Working')
+          : Icon(a.icon ?? Icons.arrow_forward_rounded, size: 18),
+      label: Text(a.label),
+      style: FilledButton.styleFrom(
+        backgroundColor: bg,
+        foregroundColor: fg,
+        disabledBackgroundColor: bg.withValues(alpha: 0.6),
+        disabledForegroundColor: fg,
+        minimumSize: const Size(48, 50),
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        shape: const StadiumBorder(),
+        textStyle: NeonType.manrope(NeonType.rowTitle, FontWeight.w800),
+      ),
+    );
+  }
 
-  Widget _secondary(String id, _Act a, bool busy) => TextButton(
+  /// [onBrand]: on the violet Next card — white words on a white wash.
+  Widget _secondary(String id, _Act a, bool busy, {bool onBrand = false}) =>
+      TextButton(
         onPressed: busy ? null : () => _run(id, a.run),
         style: TextButton.styleFrom(
-          foregroundColor: Neon.textHi,
-          minimumSize: const Size(48, 48),
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          textStyle: NeonType.manrope(NeonType.body, FontWeight.w600),
+          foregroundColor: onBrand ? Colors.white : Neon.textHi,
+          backgroundColor: onBrand ? Colors.white.withValues(alpha: 0.16) : null,
+          minimumSize: const Size(48, 50),
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          shape: const StadiumBorder(),
+          textStyle: NeonType.manrope(NeonType.rowTitle, FontWeight.w700),
         ),
         child: Text(a.label),
       );
@@ -1175,25 +1208,6 @@ class _HomeFeedViewState extends State<HomeFeedView> {
     return GlassTile(icon, tint, size: size);
   }
 
-  /// When it is ("In 25 min"): a small glass chip, figures aligned.
-  static Widget _pill(String text) => Align(
-        alignment: Alignment.centerRight,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          decoration: BoxDecoration(
-            color: Neon.textHi.withValues(alpha: 0.06),
-            borderRadius: BorderRadius.circular(Neon.rPill),
-            border: Border.all(color: Neon.hairline),
-          ),
-          child: Text(
-            text,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: NeonType.manrope(NeonType.caption, FontWeight.w700)
-                .copyWith(color: Neon.textHi, fontFeatures: NeonType.figures),
-          ),
-        ),
-      );
 }
 
 /// A button: what it says, its icon, and what it does (true when done).

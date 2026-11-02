@@ -990,9 +990,7 @@ class _HomeShellState extends State<HomeShell>
       ),
       ),
       bottomNavigationBar: _DockRim(child: BottomAppBar(
-        color: Neon.isDark
-            ? Color.alphaBlend(Neon.violet.withValues(alpha: 0.07), Neon.surface)
-            : Neon.surface,
+        color: Neon.surface,
         elevation: 0,
         height: Dock.barHeight,
         shape: const CircularNotchedRectangle(),
@@ -1068,19 +1066,13 @@ class _HomeShellState extends State<HomeShell>
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
                 // At night the pill is lit (2026-09-30, the client's
                 // reference): cyan glass with its own glow.
+                // Light premium (2026-11-02): a soft violet pill in both
+                // themes; no glow.
                 decoration: BoxDecoration(
                   color: selected
-                      ? (Neon.isDark
-                          ? Neon.cyan.withValues(alpha: 0.16)
-                          : Neon.violet.withValues(alpha: 0.16))
+                      ? Neon.violet.withValues(alpha: Neon.isDark ? 0.20 : 0.12)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(Neon.rPill),
-                  border: selected && Neon.isDark
-                      ? Border.all(color: Neon.cyan.withValues(alpha: 0.55))
-                      : null,
-                  boxShadow: selected && Neon.isDark
-                      ? Neon.halo(Neon.cyan, strength: 0.45)
-                      : null,
                 ),
                 child: AnimatedSwitcher(
                   duration: Motion.micro,
@@ -1089,9 +1081,7 @@ class _HomeShellState extends State<HomeShell>
                   child: Icon(selected ? active : icon,
                       key: ValueKey(selected),
                       size: 22,
-                      color: selected
-                          ? (Neon.isDark ? Neon.cyan : Neon.violet)
-                          : Neon.textDim),
+                      color: selected ? Neon.violet : Neon.textDim),
                 ),
               ),
             ),
@@ -1105,9 +1095,7 @@ class _HomeShellState extends State<HomeShell>
               maxScaleFactor: 1.3,
               child: TweenAnimationBuilder<Color?>(
                 tween: ColorTween(
-                    end: selected
-                        ? (Neon.isDark ? Neon.cyan : Neon.violet)
-                        : Neon.textDim),
+                    end: selected ? Neon.violet : Neon.textDim),
                 duration: Motion.micro,
                 curve: Motion.easeMove,
                 builder: (_, color, __) => Text(label,
@@ -1226,13 +1214,14 @@ class _DockRim extends StatelessWidget {
   const _DockRim({required this.child});
   final Widget child;
 
+  // LIGHT PREMIUM (2026-11-02): no neon trace — a soft shadow and a fine
+  // edge along the same notched outline, so the bar sits raised on the page.
   @override
   Widget build(BuildContext context) {
-    if (!Neon.isDark) return child;
     return CustomPaint(
       foregroundPainter: _DockRimPainter(
         geometry: Scaffold.geometryOf(context),
-        colors: [Neon.cyan, Neon.violet, Neon.pink],
+        colors: [Neon.lineBright, Neon.lineBright],
       ),
       child: child,
     );
