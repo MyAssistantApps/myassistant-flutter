@@ -159,6 +159,7 @@ flutter:
   shaders:
     - shaders/voice_backdrop.frag
     - shaders/siri_orb.frag
+    - shaders/ambient.frag
 
   assets:
     - assets/icon/

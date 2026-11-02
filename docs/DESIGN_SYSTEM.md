@@ -1,12 +1,6 @@
 # Design system
 
-**Calm (2026-11-02, minimal restyle):** a flat neutral graphite ground (no
-night sky), flat cards with 1 px tone hairlines, quieter accents, and no
-coloured glow (`Neon.halo` is now a soft neutral shadow). The default blue
-pairs with its analogous neighbour, not magenta. Only token values and the
-card/pill edges changed; the rules below still hold, read "glow" as "lift".
-
-Originally one neon system for the whole app: the client's night-sky reference. Tokens
+One neon system for the whole app: the client's night-sky reference. Tokens
 live in `lib/design/neon_tokens.dart` (`Neon.*`), widgets in
 `lib/design/neon_widgets.dart`, motion in `lib/design/motion.dart`, and the
 theme in `lib/theme/app_theme.dart`.

@@ -599,9 +599,7 @@ class GlowCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Minimal restyle (2026-11-02): a hairline in the tone, not a neon rim.
-    final rim = [for (final c in tone.rim) c.withValues(alpha: 0.45)];
-    final edge = rimWidth.clamp(0.0, 1.0);
+    final rim = tone.rim;
     Widget card = DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -613,13 +611,13 @@ class GlowCard extends StatelessWidget {
         boxShadow: halo > 0 ? Neon.halo(rim.first, strength: halo) : null,
       ),
       child: Padding(
-        padding: EdgeInsets.all(edge),
+        padding: EdgeInsets.all(rimWidth),
         child: Container(
           constraints: BoxConstraints(minHeight: minHeight),
           padding: padding,
           decoration: BoxDecoration(
             color: tone.fill,
-            borderRadius: BorderRadius.circular(radius - edge),
+            borderRadius: BorderRadius.circular(radius - rimWidth),
           ),
           child: child,
         ),
@@ -698,14 +696,14 @@ class NeonPill extends StatelessWidget {
           child: DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                  colors: [
-                for (final c in rim) c.withValues(alpha: quiet ? 0.38 : 0.75)
-              ]),
+                  colors: quiet
+                      ? [for (final c in rim) c.withValues(alpha: 0.38)]
+                      : rim),
               borderRadius: BorderRadius.circular(Neon.rPill),
               boxShadow: quiet ? null : Neon.halo(rim.first, strength: 0.8),
             ),
             child: Padding(
-              padding: EdgeInsets.all(quiet ? 1 : 1.2),
+              padding: EdgeInsets.all(quiet ? 1 : 1.8),
               child: Container(
                 padding: EdgeInsets.symmetric(
                     horizontal: quiet ? 14 : 13, vertical: quiet ? 8 : 7),
