@@ -169,6 +169,8 @@ flutter:
     - assets/splash/eye_left.png
     - assets/splash/eye_right.png
     - assets/sounds/
+    # Doctor's, Advocate's and Business banners (Pexels licence, CREDITS.md).
+    - assets/pro/
     # Manrope + Space Grotesk, every weight, so text never starts in a
     # fallback font and swaps (lib/core/bundled_fonts.dart).
     - assets/google_fonts/

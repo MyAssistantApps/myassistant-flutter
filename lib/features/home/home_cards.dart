@@ -29,6 +29,7 @@ import '../meeting_prep/meeting_prep_sheet.dart';
 import '../shopping/shopping_list_screen.dart';
 import '../shopping/shopping_service.dart';
 import 'deal_banners.dart';
+import 'pro_banners.dart';
 import 'home_extras.dart';
 import 'home_redesign.dart';
 import 'home_feed.dart';
@@ -267,18 +268,20 @@ class _HomeFeedViewState extends State<HomeFeedView> {
               ]),
             ),
             const SizedBox(height: 8),
-            // ORDER AND SHOP (owner, 2026-11-01): food and shopping apps,
-            // suggested for the time of day and the shopping list, sliding.
+            // THE PROFESSIONAL ASSISTANTS (client, 2026-11-01; owner,
+            // 2026-11-02: "sliding banner like that, with a photo of that
+            // profession"): Doctor's, Advocate's and Business, sliding.
             const SizedBox(height: 12),
-            DealBanners(banners: dealBannersFor(now, toBuy: toBuy)),
-            const SizedBox(height: 20),
-            // THE PROFESSIONAL ASSISTANTS (client, 2026-11-01: "Open a tool
-            // is not required there; add Doctor's, Advocates & Business,
-            // below write 'Assistant'").
             Reveal(
               delayMs: 180,
-              child: _proAssistants(),
+              child: ProBanners(
+                  onOpen: (k) =>
+                      _do.open(context, ProAssistantScreen(kind: k))),
             ),
+            const SizedBox(height: 20),
+            // ORDER AND SHOP (owner, 2026-11-01): food and shopping apps,
+            // suggested for the time of day and the shopping list, sliding.
+            DealBanners(banners: dealBannersFor(now, toBuy: toBuy)),
             const SizedBox(height: 20),
             // Once per release: what just got better. Below the day, never
             // above what needs the user.
@@ -577,70 +580,6 @@ class _HomeFeedViewState extends State<HomeFeedView> {
             ),
           ),
       ],
-    );
-  }
-
-  /// Doctor's, Advocate's and Business assistants: one page each
-  /// (screens/pro_assistant_screen.dart).
-  Widget _proAssistants() {
-    return Row(
-      children: [
-        for (final k in ProKind.values) ...[
-          if (k != ProKind.values.first) const SizedBox(width: 10),
-          Expanded(child: _proTile(ProProfile.of(k))),
-        ],
-      ],
-    );
-  }
-
-  Widget _proTile(ProProfile p) {
-    final tint = p.tint();
-    return Semantics(
-      button: true,
-      label: '${p.name} Assistant',
-      excludeSemantics: true,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: () {
-            HapticFeedback.selectionClick();
-            _do.open(context, ProAssistantScreen(kind: p.kind));
-          },
-          child: Ink(
-            padding: const EdgeInsets.fromLTRB(10, 16, 10, 14),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              // Solid underneath, so the aurora's bright wave behind it
-              // cannot wash the label out.
-              color: Color.alphaBlend(tint.withValues(alpha: 0.12), Color.lerp(Neon.bg, Colors.black, 0.25)!),
-              border: Border.all(color: tint.withValues(alpha: 0.38)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: tint.withValues(alpha: 0.18),
-                    boxShadow: [BoxShadow(color: tint.withValues(alpha: 0.30), blurRadius: 14)],
-                  ),
-                  child: Icon(p.icon, color: tint, size: 26),
-                ),
-                const SizedBox(height: 10),
-                Text(p.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: NeonType.manrope(14, FontWeight.w800).copyWith(color: Neon.textHi)),
-                Text('Assistant',
-                    style: NeonType.manrope(12.5, FontWeight.w600).copyWith(color: Neon.textLo)),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 
