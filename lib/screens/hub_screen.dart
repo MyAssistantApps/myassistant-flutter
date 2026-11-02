@@ -1,3 +1,4 @@
+import '../features/games/games.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
 
@@ -139,6 +140,31 @@ class _HubScreenState extends State<HubScreen> {
               Icons.near_me_rounded,
               Neon.accentB,
               (c) => const NearbyScreen(),
+            ),
+          ]),
+          // THE GAMES HUB (client, 2026-11-01): short games of our own,
+          // offline (features/games/games.dart).
+          _group(context, 'Games', [
+            _Row(
+              'Memory pairs',
+              'Flip the cards and find every pair',
+              Icons.grid_view_rounded,
+              Neon.accentB,
+              (c) => const MemoryPairsScreen(),
+            ),
+            _Row(
+              'Quick maths',
+              'As many sums as you can in 60 seconds',
+              Icons.calculate_rounded,
+              Neon.accentA,
+              (c) => const QuickMathsScreen(),
+            ),
+            _Row(
+              'Tic-tac-toe with Maya',
+              'Three in a row — she plays to win',
+              Icons.tag_rounded,
+              Neon.accentD,
+              (c) => const TicTacToeScreen(),
             ),
           ]),
           // News as cards, by topic (2026-09-25).
