@@ -14,6 +14,7 @@ import '../../screens/calendar_screen.dart';
 import '../../screens/finance_screen.dart';
 import '../../screens/news_screen.dart';
 import '../../screens/news_story_screen.dart';
+import '../../screens/pro_assistant_screen.dart';
 import '../../screens/reminders_screen.dart';
 import '../../services/app_feedback.dart';
 import '../../services/auth_service.dart';
@@ -267,9 +268,12 @@ class _HomeFeedViewState extends State<HomeFeedView> {
             const SizedBox(height: 12),
             DealBanners(banners: dealBannersFor(now, toBuy: toBuy)),
             const SizedBox(height: 20),
+            // THE PROFESSIONAL ASSISTANTS (client, 2026-11-01: "Open a tool
+            // is not required there; add Doctor's, Advocates & Business,
+            // below write 'Assistant'").
             Reveal(
               delayMs: 180,
-              child: _toolShortcuts(),
+              child: _proAssistants(),
             ),
             const SizedBox(height: 20),
             // Once per release: what just got better. Below the day, never
@@ -569,49 +573,65 @@ class _HomeFeedViewState extends State<HomeFeedView> {
     );
   }
 
-  /// Direct routes to common tools. Unlike the suggestion chips above,
-  /// these open the feature immediately and never send a model request.
-  Widget _toolShortcuts() {
-    final shortcuts = <(String, IconData, NeonTone, Widget)>[
-      ('Calendar', Icons.calendar_month_rounded, NeonTone.info,
-          const CalendarScreen()),
-      ('Reminders', Icons.notifications_active_rounded, NeonTone.action,
-          const RemindersScreen()),
-      ('Shopping', Icons.shopping_basket_rounded, NeonTone.discovery,
-          const ShoppingListScreen()),
-      ('Finance', Icons.account_balance_wallet_rounded, NeonTone.tip,
-          const FinanceScreen()),
-      ('News', Icons.newspaper_rounded, NeonTone.info, const NewsScreen()),
-    ];
-    Color tint(NeonTone t) => switch (t) {
-          NeonTone.action => Neon.pink,
-          NeonTone.discovery => Neon.violet,
-          NeonTone.tip => Neon.cyan,
-          _ => Neon.cyan,
-        };
-    // TOOLS AS TILES (redesign, 2026-11-01): five tappable tiles in a row,
-    // not five small pills.
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  /// Doctor's, Advocate's and Business assistants: one page each
+  /// (screens/pro_assistant_screen.dart).
+  Widget _proAssistants() {
+    return Row(
       children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 4),
-          child: Text('Open a tool', style: NeonType.eyebrow.copyWith(color: Neon.textLo)),
-        ),
-        Row(
-          children: [
-            for (final shortcut in shortcuts)
-              Expanded(
-                child: ToolTile(
-                  label: shortcut.$1,
-                  icon: shortcut.$2,
-                  tint: tint(shortcut.$3),
-                  onTap: () => _do.open(context, shortcut.$4),
-                ),
-              ),
-          ],
-        ),
+        for (final k in ProKind.values) ...[
+          if (k != ProKind.values.first) const SizedBox(width: 10),
+          Expanded(child: _proTile(ProProfile.of(k))),
+        ],
       ],
+    );
+  }
+
+  Widget _proTile(ProProfile p) {
+    final tint = p.tint();
+    return Semantics(
+      button: true,
+      label: '${p.name} Assistant',
+      excludeSemantics: true,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () {
+            HapticFeedback.selectionClick();
+            _do.open(context, ProAssistantScreen(kind: p.kind));
+          },
+          child: Ink(
+            padding: const EdgeInsets.fromLTRB(10, 16, 10, 14),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: tint.withValues(alpha: 0.10),
+              border: Border.all(color: tint.withValues(alpha: 0.38)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: tint.withValues(alpha: 0.18),
+                    boxShadow: [BoxShadow(color: tint.withValues(alpha: 0.30), blurRadius: 14)],
+                  ),
+                  child: Icon(p.icon, color: tint, size: 26),
+                ),
+                const SizedBox(height: 10),
+                Text(p.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: NeonType.manrope(14, FontWeight.w800).copyWith(color: Neon.textHi)),
+                Text('Assistant',
+                    style: NeonType.manrope(12.5, FontWeight.w600).copyWith(color: Neon.textLo)),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
