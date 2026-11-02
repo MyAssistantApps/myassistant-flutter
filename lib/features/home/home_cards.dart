@@ -141,6 +141,8 @@ class _HomeFeedViewState extends State<HomeFeedView> {
     super.initState();
     unawaited(HomeMemory.instance.load());
     unawaited(HomeNews.instance.load());
+    // Play my day's words, fetched ahead so the tap speaks at once.
+    unawaited(BriefPlayer.instance.prewarm());
     ShoppingService.instance.ensureLoaded();
     _tick = Timer.periodic(const Duration(minutes: 1), (_) {
       if (!mounted) return;

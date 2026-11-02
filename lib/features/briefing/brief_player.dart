@@ -249,13 +249,52 @@ class BriefPlayer extends ChangeNotifier {
   /// fetched. [overlay] is where the now-playing strip goes (the root one).
   /// [fromVoice]: asked for in a conversation — its own short answer is
   /// let finish before the conversation is let go.
+  /// THE SCRIPT, FETCHED AHEAD (client, 2026-11-01: "when I click Play my
+  /// day it's too slow"). Measured on the server: a fresh script takes the
+  /// model 4.6-6 s to write, a cached one under 0.3 s. Home asks for it as
+  /// it opens, so the tap starts speaking instead of waiting in silence.
+  BriefScript? _ready;
+  DateTime? _readyAt;
+  Future<void>? _warming;
+  static const _readyFor = Duration(minutes: 15);
+
+  /// Fetches today's script in the background; safe to call often.
+  Future<void> prewarm() {
+    final at = _readyAt;
+    if (_ready != null && at != null && DateTime.now().difference(at) < _readyFor) {
+      return Future.value();
+    }
+    return _warming ??= () async {
+      try {
+        final s = await _host.fetch();
+        if (s != null) {
+          _ready = s;
+          _readyAt = DateTime.now();
+        }
+      } catch (_) {
+        // The tap fetches it then, as before.
+      } finally {
+        _warming = null;
+      }
+    }();
+  }
+
+  /// The fetched-ahead script while it is fresh (used once).
+  BriefScript? _takeReady() {
+    final s = _ready, at = _readyAt;
+    _ready = null;
+    _readyAt = null;
+    if (s == null || at == null || DateTime.now().difference(at) >= _readyFor) return null;
+    return s;
+  }
+
   Future<void> play({BriefScript? given, OverlayState? overlay, bool fromVoice = false}) async {
     if (state == BriefPlayState.loading) return;
     await _halt();
     final gen = ++_gen;
     if (overlay != null) BriefStripOverlay.show(overlay);
     _set(BriefPlayState.loading);
-    final s = given ?? await _host.fetch();
+    final s = given ?? _takeReady() ?? await _host.fetch();
     if (gen != _gen) return;
     if (s == null) {
       error = "Couldn't get your day. Check your connection.";
