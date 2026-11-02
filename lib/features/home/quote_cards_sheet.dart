@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import '../../design/neon_widgets.dart';
 import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -350,11 +351,7 @@ class _Making extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(
-              width: 22,
-              height: 22,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Neon.violet),
-            ),
+            const NeonLoader.inline(size: 22, semanticLabel: 'Creating image'),
             const SizedBox(height: 10),
             Text('Creating image',
                 style: TextStyle(color: Neon.textLo, fontSize: NeonType.footnote)),

@@ -6,6 +6,7 @@ import 'package:convert/convert.dart' show AccumulatorSink;
 import 'package:crypto/crypto.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
+import '../design/neon_widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:open_filex/open_filex.dart';
@@ -528,12 +529,7 @@ class _UpdateSheetState extends State<_UpdateSheet> {
               if (_installing) ...[
                 Row(
                   children: [
-                    SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2.4, color: Neon.violet),
-                    ),
+                    const NeonLoader.inline(size: 20, semanticLabel: 'Downloading the update'),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(

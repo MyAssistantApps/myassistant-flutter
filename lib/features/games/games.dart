@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import '../../design/neon_scaffold.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -200,8 +201,7 @@ class _MemoryPairsScreenState extends State<MemoryPairsScreen> {
     final won = _done.length == _cards.length;
     final secs = _clock.elapsed.inSeconds;
     final colors = [Neon.cyan, Neon.violet, Neon.pink];
-    return Scaffold(
-      backgroundColor: Neon.bg,
+    return NeonScaffold(
       appBar: appleAppBar(context, 'Memory pairs'),
       body: SafeArea(
         child: Padding(
@@ -399,8 +399,7 @@ class _QuickMathsScreenState extends State<QuickMathsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Neon.bg,
+    return NeonScaffold(
       appBar: appleAppBar(context, 'Quick maths'),
       body: SafeArea(
         child: Padding(
@@ -586,8 +585,7 @@ class _TicTacToeScreenState extends State<TicTacToeScreen> {
       'draw' => "A draw. Nobody's giving in.",
       _ => _thinking ? 'Maya is thinking…' : 'Your move. You are X.',
     };
-    return Scaffold(
-      backgroundColor: Neon.bg,
+    return NeonScaffold(
       appBar: appleAppBar(context, 'Tic-tac-toe with Maya'),
       body: SafeArea(
         child: Padding(

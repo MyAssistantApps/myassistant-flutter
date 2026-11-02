@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../design/neon_widgets.dart';
 import 'package:flutter/services.dart';
 
 import '../design/apple_kit.dart';
@@ -541,8 +542,7 @@ class _ProChatScreenState extends State<ProChatScreen> {
     final working = _sending || _engine.phase.busy;
     final doing = _engine.activityLabel.value;
     final ask = _engine.pendingConfirmation;
-    return Scaffold(
-      backgroundColor: Neon.bg,
+    return NeonScaffold(
       appBar: appleAppBar(context, '${p.name} Assistant'),
       body: SafeArea(
         top: false,
@@ -580,11 +580,7 @@ class _ProChatScreenState extends State<ProChatScreen> {
                             padding: const EdgeInsets.only(top: 6, left: 4),
                             child: Row(
                               children: [
-                                SizedBox.square(
-                                  dimension: 14,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2, color: tint),
-                                ),
+                                const NeonLoader.inline(size: 14, semanticLabel: 'Working'),
                                 const SizedBox(width: 10),
                                 Text(doing ?? 'Working on it…',
                                     style: TextStyle(

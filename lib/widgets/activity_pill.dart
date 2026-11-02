@@ -261,7 +261,7 @@ class _AssistantActivityPillState extends State<AssistantActivityPill>
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.spaceGrotesk(
                               color: Neon.violet,
-                              fontSize: 11.5,
+                              fontSize: 12,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 0.1,
                             ),

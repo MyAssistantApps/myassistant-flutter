@@ -289,7 +289,7 @@ class _TaskListCardState extends State<TaskListCard> {
                   const Spacer(),
                   if (widget.at > 0)
                     Text(ChatBubble.clock(widget.at),
-                        style: TextStyle(color: Neon.textDim, fontSize: 11)),
+                        style: TextStyle(color: Neon.textDim, fontSize: 12)),
                 ]),
               ]),
             ),

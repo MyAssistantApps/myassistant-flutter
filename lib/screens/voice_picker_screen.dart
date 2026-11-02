@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import '../design/neon_widgets.dart';
 import 'package:flutter/services.dart';
 
 import '../ai/config.dart';
@@ -218,8 +219,7 @@ class _VoicePickerScreenState extends State<VoicePickerScreen> {
   @override
   Widget build(BuildContext context) {
     final live = AiConfigStore.instance.current.live;
-    return Scaffold(
-      backgroundColor: Neon.bg,
+    return NeonScaffold(
       appBar: appleAppBar(context, 'Assistant voice'),
       body: ListView(
         padding: EdgeInsets.fromLTRB(
@@ -252,10 +252,10 @@ class _VoicePickerScreenState extends State<VoicePickerScreen> {
             ),
           ),
           if (_loading)
-            Padding(
-              padding: const EdgeInsets.all(32),
+            const Padding(
+              padding: EdgeInsets.all(32),
               child: Center(
-                child: CircularProgressIndicator(color: Neon.cyan),
+                child: NeonLoader(semanticLabel: 'Loading voices'),
               ),
             )
           else if (_loadFailed)

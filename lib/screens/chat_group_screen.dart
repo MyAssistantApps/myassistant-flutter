@@ -433,7 +433,7 @@ class _ChatGroupScreenState extends State<ChatGroupScreen> {
                         'In this group, members’ assistants may answer for '
                         'them while they are away.',
                         style: TextStyle(
-                            color: Neon.textLo, fontSize: 11.5, height: 1.3),
+                            color: Neon.textLo, fontSize: 12, height: 1.3),
                       ),
                     ],
                   ),
