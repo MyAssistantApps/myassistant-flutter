@@ -15,7 +15,6 @@ import 'phone/call_notes_screen.dart';
 import 'reminders_screen.dart';
 import 'shortcuts_screen.dart';
 import 'news_screen.dart';
-import 'nearby_screen.dart';
 import 'email_setup_screen.dart';
 import 'features_screen.dart';
 import 'stocks_screen.dart';
@@ -132,14 +131,6 @@ class _HubScreenState extends State<HubScreen> {
               Neon.accentE,
               (c) => const ShoppingListScreen(),
               trailing: const ShoppingCountBadge(),
-            ),
-            // Chats took Nearby's dock tab (owner, 2026-10-04).
-            _Row(
-              'Nearby',
-              'People around you and what they do',
-              Icons.near_me_rounded,
-              Neon.accentB,
-              (c) => const NearbyScreen(),
             ),
           ]),
           // THE GAMES HUB (client, 2026-11-01): short games of our own,

@@ -27,7 +27,6 @@ import 'bills_email_screen.dart';
 import '../models/mail_inbox.dart';
 import '../services/mail_inbox_service.dart';
 import '../services/app_feedback.dart';
-import '../services/location_service.dart';
 import '../services/tester_feedback.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
@@ -50,9 +49,6 @@ class AssistantSettingsScreen extends StatefulWidget {
 class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
   String _voice = 'gleam';
   List<dynamic> _rules = [];
-  // Nearby (2026-10-01): what I share with people around me.
-  String _profession = '';
-  bool _shared = false;
   final _newRule = TextEditingController();
   bool _loading = true;
 
@@ -77,16 +73,12 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
     final results = await Future.wait([
       ApiService.getJson('/profile/full'),
       ApiService.getJson('/profile/instructions'),
-      ApiService.nearbyMe(),
     ]);
     final p = results[0];
     final r = results[1];
-    final n = results[2];
     if (!mounted) return;
     setState(() {
       _loading = false;
-      _profession = (n?['profession'] ?? '').toString();
-      _shared = n?['shared'] == true;
       final a = (p?['assistant'] as Map?) ?? {};
       final offered = AiConfigStore.instance.current.live.voices
           .map((v) => v.toLowerCase())
@@ -101,59 +93,10 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
         configured,
       ].whereType<String>().firstWhere(
             (v) => offered.contains(v),
-            orElse: () => configured.isNotEmpty ? configured : 'sage',
+            orElse: () => configured.isNotEmpty ? configured : 'marin',
           );
       _rules = (r?['instructions'] as List?) ?? [];
     });
-  }
-
-  Future<void> _editProfession() async {
-    final c = TextEditingController(text: _profession);
-    final saved = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('What do you do?'),
-        content: TextField(
-          controller: c,
-          autofocus: true,
-          textCapitalization: TextCapitalization.words,
-          decoration:
-              const InputDecoration(hintText: 'Lawyer, electrician, teacher…'),
-          onSubmitted: (v) => Navigator.of(ctx).pop(v),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel')),
-          FilledButton(
-              onPressed: () => Navigator.of(ctx).pop(c.text),
-              child: const Text('Save')),
-        ],
-      ),
-    );
-    if (saved == null) return;
-    final me = await ApiService.setNearbyMe(profession: saved.trim());
-    if (!mounted) return;
-    setState(
-        () => _profession = (me?['profession'] ?? saved.trim()).toString());
-  }
-
-  Future<void> _setShared(bool v) async {
-    HapticFeedback.selectionClick();
-    if (v && (ApiService.geoLat == null || ApiService.geoLng == null)) {
-      await LocationService.instance.refresh();
-      if (ApiService.geoLat == null) {
-        if (!mounted) return;
-        AppFeedback.show(
-            'Turn on location first so people nearby can find you.',
-            context: context,
-            tone: FeedbackTone.error);
-        return;
-      }
-    }
-    final me = await ApiService.setNearbyMe(shared: v);
-    if (!mounted) return;
-    setState(() => _shared = me?['shared'] == true);
   }
 
   String _voiceName(String id) {
@@ -279,37 +222,6 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                 // OVER OTHER APPS (2026-10-19): notification pop-ups and the
                 // floating mic.
                 const OverlaySection(),
-
-                // NEARBY (2026-10-01): the same two choices the Nearby tab
-                // shows, here where every other preference lives.
-                const GroupLabel('Nearby'),
-                GroupedCard(
-                  dividerInset: 60,
-                  children: [
-                    AppleRow(
-                      leading: IconTile(Icons.badge_rounded, AppleColors.teal),
-                      title:
-                          _profession.isEmpty ? 'Your profession' : _profession,
-                      subtitle: _profession.isEmpty
-                          ? 'Tell people nearby what you do — tap to add'
-                          : 'Tap to change',
-                      onTap: _editProfession,
-                    ),
-                    AppleRow(
-                      leading:
-                          IconTile(Icons.near_me_rounded, AppleColors.green),
-                      title: 'Be found by people nearby',
-                      subtitle: _shared
-                          ? 'Your profession and area are shown — never your exact location or number'
-                          : 'Off — only you can see your profession',
-                      trailing: Switch.adaptive(
-                        value: _shared,
-                        onChanged: _profession.isEmpty ? null : _setShared,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
 
                 const GroupLabel('Appearance'),
                 ValueListenableBuilder<ThemeMode3>(

@@ -28,7 +28,6 @@ import '../../../screens/phone/call_notes_screen.dart';
 import '../../../screens/reminders_screen.dart';
 import '../../../screens/business_card_flow.dart';
 import '../../../screens/meetings/meeting_recorder_screen.dart';
-import '../../../screens/nearby_screen.dart';
 import '../../../screens/clients_screen.dart';
 import '../../../screens/finance_screen.dart';
 import '../../../screens/stocks_screen.dart';
@@ -4683,7 +4682,6 @@ class AssistantEngine extends ChangeNotifier {
   WidgetBuilder? _appScreenBuilder(String screen,
           [Map<String, dynamic> e = const {}]) =>
       switch (screen) {
-        'nearby' => (_) => const NearbyScreen(),
         // "Record this meeting" — straight into recording.
         'meeting_recorder' => (_) => MeetingRecorderScreen(
               autoStart: true,
