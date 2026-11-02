@@ -286,7 +286,7 @@ class _Badge extends StatelessWidget {
       ),
       child: Text(
         '$count',
-        style: GoogleFonts.spaceGrotesk(
+        style: GoogleFonts.interTight(
           color: Colors.white,
           fontSize: 10.5,
           fontWeight: FontWeight.w700,
@@ -695,7 +695,7 @@ class _HexCell extends StatelessWidget {
                     child: Text(
                       agent.chip,
                       maxLines: 1,
-                      style: GoogleFonts.spaceGrotesk(
+                      style: GoogleFonts.interTight(
                         color: Colors.white,
                         fontSize: centre ? 12.5 : 11,
                         fontWeight: FontWeight.w700,
@@ -879,7 +879,7 @@ class _Heading extends StatelessWidget {
         Text(
           'Your agents',
           textAlign: TextAlign.center,
-          style: GoogleFonts.spaceGrotesk(
+          style: GoogleFonts.interTight(
             color: Colors.white,
             fontSize: 24,
             fontWeight: FontWeight.w700,

@@ -18,6 +18,7 @@ import '../services/app_feedback.dart';
 import '../services/assistant_identity.dart';
 import '../services/auth_service.dart';
 import 'caption_scroll.dart';
+import 'neuron_orb.dart';
 import 'streaming_caption.dart';
 import 'voice_orb.dart';
 
@@ -679,7 +680,29 @@ class _InlineCaptionOverlayState extends State<InlineCaptionOverlay>
               // The bottom padding clears the dock; while typing the dock is
               // hidden and the bar sits just above the keyboard.
               padding: EdgeInsets.fromLTRB(28, 14, 28, bottomPad),
-              child: Column(
+              child: Stack(
+                fit: StackFit.expand,
+                clipBehavior: Clip.none,
+                children: [
+                  // THE LIVING SKY behind everything (2026-11-02): aurora
+                  // and a quiet neural net in the orb's colours. Never
+                  // takes a tap.
+                  Positioned(
+                    left: -28,
+                    right: -28,
+                    top: -14,
+                    bottom: -bottomPad,
+                    child: IgnorePointer(
+                      child: NeuronSky(
+                        mood: _mood(micPaused),
+                        levelListenable:
+                            micPaused ? null : engine.micLevelListenable,
+                        speakerLevel: engine.speakerLevelNow,
+                        active: show,
+                      ),
+                    ),
+                  ),
+                  Column(
                 children: [
                   // MUTE — read the answer instead of hearing it.
                   Padding(
@@ -688,7 +711,18 @@ class _InlineCaptionOverlayState extends State<InlineCaptionOverlay>
                     child: Row(
                       children: [
                         // THE MANAGER, when they asked for it: slides in here.
-                        Expanded(child: ManagerPanel(engine: engine)),
+                        // HER NAME AS THE HEADING (2026-11-02, Karthik: not
+                        // in the middle of the ball). The Manager's card
+                        // slides in over it when they have the conversation.
+                        Expanded(
+                          child: Stack(
+                            alignment: Alignment.centerLeft,
+                            children: [
+                              _SessionTitle(engine: engine),
+                              ManagerPanel(engine: engine),
+                            ],
+                          ),
+                        ),
                         const SizedBox(width: 8),
                         _MuteButton(engine: engine),
                       ],
@@ -788,12 +822,16 @@ class _InlineCaptionOverlayState extends State<InlineCaptionOverlay>
                                       right: -28,
                                       top: 0,
                                       bottom: 0,
-                                      child: VoiceOrbBackdrop(
-                                        orbSize: _orbSize * scale,
+                                      // THE NEURON ORB (2026-11-02): a ball of
+                                      // connected neurons that swells with the
+                                      // voice, twists into a ring while thinking
+                                      // and turns into waves while she speaks.
+                                      child: NeuronOrb(
+                                        radius: _orbSize * scale * 0.6,
                                         mood: mood,
                                         levelListenable: level,
                                         // Her voice's loudness as it comes out of the
-                                        // speaker: the rings move with what is heard.
+                                        // speaker: the ball moves with what is heard.
                                         speakerLevel: engine.speakerLevelNow,
                                         active: show,
                                       ),
@@ -838,21 +876,12 @@ class _InlineCaptionOverlayState extends State<InlineCaptionOverlay>
                                                 unawaited(engine
                                                     .endInlineConversation());
                                               },
-                                              child: ValueListenableBuilder<
-                                                  String>(
-                                                valueListenable:
-                                                    AssistantIdentity.notifier,
-                                                // WHO IS SPEAKING: the assistant's name, or
-                                                // "Manager" while the Manager has the
-                                                // conversation (only when they asked for it).
-                                                builder: (_, name, __) =>
-                                                    ValueListenableBuilder<bool>(
-                                                  valueListenable: engine.managerOn,
-                                                  builder: (_, manager, __) => VoiceOrb(
-                                                    size: _orbSize,
-                                                    label: orbLabelFor(manager ? 'Manager' : name),
-                                                  ),
-                                                ),
+                                              // The ball itself is the tap
+                                              // target; her name is the
+                                              // page's heading now (2026-11-02).
+                                              child: const SizedBox(
+                                                width: _orbSize,
+                                                height: _orbSize,
                                               ),
                                             ),
                                           ),
@@ -936,6 +965,8 @@ class _InlineCaptionOverlayState extends State<InlineCaptionOverlay>
                   // sat under "Try again / Close" and made the screen ambiguous.
                   if (engine.phase != AssistantPhase.error)
                     _TypeBar(engine: engine),
+                ],
+              ),
                 ],
               ),
             );
@@ -2188,6 +2219,68 @@ class ManagerPanel extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The assistant's name at the top of the talking page, lit in the orb's
+/// time-of-day colours, with a small glowing dot beside it. It fades away
+/// while the Manager's card has the spot.
+class _SessionTitle extends StatelessWidget {
+  const _SessionTitle({required this.engine});
+  final AssistantEngine engine;
+
+  @override
+  Widget build(BuildContext context) {
+    final pal = NeuronPalette.at(DateTime.now());
+    return ValueListenableBuilder<bool>(
+      valueListenable: engine.managerOn,
+      builder: (_, manager, __) => AnimatedOpacity(
+        opacity: manager ? 0 : 1,
+        duration: const Duration(milliseconds: 220),
+        child: ValueListenableBuilder<String>(
+          valueListenable: AssistantIdentity.notifier,
+          builder: (_, name, __) => Semantics(
+            header: true,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 9,
+                  height: 9,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: pal.a,
+                    boxShadow: [
+                      BoxShadow(
+                          color: pal.a.withValues(alpha: 0.8), blurRadius: 10),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Flexible(
+                  child: ShaderMask(
+                    blendMode: BlendMode.srcIn,
+                    shaderCallback: (r) => LinearGradient(
+                      colors: [
+                        Color.lerp(pal.a, Colors.white, 0.55)!,
+                        Color.lerp(pal.b, Colors.white, 0.35)!,
+                      ],
+                    ).createShader(r),
+                    child: Text(
+                      orbLabelFor(name),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: NeonType.manrope(26, FontWeight.w700)
+                          .copyWith(letterSpacing: 0.3, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),

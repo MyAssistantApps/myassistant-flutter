@@ -178,7 +178,7 @@ class _AgentStripState extends State<AgentStrip> with TickerProviderStateMixin {
                         key: ValueKey(_caption),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.spaceGrotesk(
+                        style: GoogleFonts.interTight(
                           color: _working ? Neon.violet : Neon.textLo,
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
@@ -370,7 +370,7 @@ Future<void> showAgentSheet(BuildContext context) {
           children: [
             Text(
               'Your agents',
-              style: GoogleFonts.spaceGrotesk(
+              style: GoogleFonts.interTight(
                 color: Neon.textHi,
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
@@ -485,7 +485,7 @@ class _HandoffChip extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 agent.chip,
-                style: GoogleFonts.spaceGrotesk(
+                style: GoogleFonts.interTight(
                   color: state == _ChipState.waiting ? Neon.textLo : Neon.textHi,
                   fontSize: 11.5,
                   fontWeight: working ? FontWeight.w700 : FontWeight.w600,
