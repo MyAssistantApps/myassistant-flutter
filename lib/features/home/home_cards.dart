@@ -11,6 +11,7 @@ import '../../design/neon_widgets.dart';
 import '../../models/brief.dart';
 import '../../models/news_item.dart';
 import '../../screens/calendar_screen.dart';
+import '../../screens/documents_screen.dart';
 import '../../screens/finance_screen.dart';
 import '../../screens/news_screen.dart';
 import '../../screens/news_story_screen.dart';
@@ -279,6 +280,9 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                       _do.open(context, ProAssistantScreen(kind: k))),
             ),
             const SizedBox(height: 20),
+            // MY DOCUMENTS: upload, keep, and ask about them.
+            Reveal(delayMs: 190, child: _documents()),
+            const SizedBox(height: 20),
             // ORDER AND SHOP (owner, 2026-11-01): food and shopping apps,
             // suggested for the time of day and the shopping list, sliding.
             DealBanners(banners: dealBannersFor(now, toBuy: toBuy)),
@@ -289,6 +293,66 @@ class _HomeFeedViewState extends State<HomeFeedView> {
           ],
         );
       },
+    );
+  }
+
+  // ── my documents ─────────────────────────────────────────────────────
+
+  Widget _documents() {
+    Widget action(IconData icon, String label, VoidCallback onTap) => Expanded(
+          child: Semantics(
+            button: true,
+            label: label,
+            excludeSemantics: true,
+            child: Tappable(
+              onTap: onTap,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 72),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(icon, color: Neon.cyan, size: 26),
+                    const SizedBox(height: 6),
+                    Text(label,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            color: Neon.textHi,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text('Your documents',
+              style: NeonType.eyebrow.copyWith(color: Neon.textLo)),
+        ),
+        GlowCard(
+          radius: Neon.rMd,
+          rimWidth: 1.2,
+          halo: 0.3,
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          child: Row(children: [
+            ValueListenableBuilder<bool>(
+              valueListenable: documentUploading,
+              builder: (context, busy, _) => action(
+                  Icons.upload_file_rounded,
+                  busy ? 'Uploading…' : 'Upload',
+                  () => uploadMyDocument(context)),
+            ),
+            action(Icons.folder_rounded, 'My documents',
+                () => _do.open(context, const DocumentsScreen())),
+            action(Icons.forum_rounded, 'Ask about them',
+                () => askAboutDocuments(context)),
+          ]),
+        ),
+      ],
     );
   }
 
