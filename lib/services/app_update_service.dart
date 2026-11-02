@@ -6,13 +6,13 @@ import 'package:convert/convert.dart' show AccumulatorSink;
 import 'package:crypto/crypto.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
+import '../design/neon_widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:open_filex/open_filex.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/log.dart';
 import '../design/motion.dart';
@@ -54,46 +54,59 @@ class AppUpdateService {
   /// or cancel — Android is already replacing the app.
   bool _installStarted = false;
 
-  static const _snoozePrefix = 'update_snooze_';
-  static const _snoozeMs = 12 * 60 * 60 * 1000; // 12 hours
+  /// "LATER" LASTS UNTIL THE NEXT OPEN (owner, 2026-11-01: "the in-app
+  /// update should pop up every time the user opens the app if he is on an
+  /// old version"). It used to be a 12-hour snooze saved on the phone. Now
+  /// it is held in memory only: a restart forgets it, and so does coming
+  /// back after at least [_awayResets] in the background. A quick return
+  /// (the camera, a permission dialog) does not bring the sheet back.
+  final Map<int, int> _snoozes = {};
+  static const _awayResets = Duration(minutes: 1);
+  DateTime? _backgroundedAt;
+  bool _watching = false;
 
-  /// "Later" has to mean something. It used to live only in memory, so
-  /// the next return to the foreground — two minutes later — reopened the
-  /// sheet and restarted the download from zero. A declined build is now
-  /// left alone for half a day; a NEWER build is a different key and is
-  /// offered immediately.
+  void _watchLifecycle() {
+    if (_watching) return;
+    _watching = true;
+    WidgetsBinding.instance.addObserver(_UpdateLifecycle(this));
+  }
+
+  void _onLifecycle(AppLifecycleState s, {DateTime? now}) {
+    final t = now ?? DateTime.now();
+    if (s == AppLifecycleState.paused || s == AppLifecycleState.hidden) {
+      _backgroundedAt ??= t;
+    } else if (s == AppLifecycleState.resumed) {
+      final away = _backgroundedAt;
+      _backgroundedAt = null;
+      if (away != null && t.difference(away) >= _awayResets && _snoozes.isNotEmpty) {
+        _snoozes.clear();
+        _lastCheckMs = 0; // the sheet may come straight back
+        AppLog.add('update', 'opened again: "Later" forgotten');
+      }
+    }
+  }
+
+  /// Test seam: a lifecycle change at [now].
+  @visibleForTesting
+  void debugLifecycle(AppLifecycleState s, DateTime now) => _onLifecycle(s, now: now);
+
   Future<void> snooze(int versionCode) async {
-    try {
-      final p = await SharedPreferences.getInstance();
-      await p.setInt(
-          '$_snoozePrefix$versionCode', DateTime.now().millisecondsSinceEpoch);
-      AppLog.add('update', 'build $versionCode snoozed for 12h');
-    } catch (_) {}
+    _watchLifecycle();
+    _snoozes[versionCode] = DateTime.now().millisecondsSinceEpoch;
+    AppLog.add('update', 'build $versionCode: later (until the app is opened again)');
   }
 
   /// Forget a snooze — the user asked for this update by name.
   Future<void> _unsnooze(int versionCode) async {
-    try {
-      final p = await SharedPreferences.getInstance();
-      if (p.containsKey('$_snoozePrefix$versionCode')) {
-        await p.remove('$_snoozePrefix$versionCode');
-        AppLog.add('update', 'build $versionCode un-snoozed (asked for)');
-      }
-    } catch (_) {}
-  }
-
-  Future<bool> _snoozed(int versionCode) async {
-    try {
-      final p = await SharedPreferences.getInstance();
-      final at = p.getInt('$_snoozePrefix$versionCode') ?? 0;
-      if (at == 0) return false;
-      if (DateTime.now().millisecondsSinceEpoch - at < _snoozeMs) return true;
-      await p.remove('$_snoozePrefix$versionCode');
-      return false;
-    } catch (_) {
-      return false;
+    if (_snoozes.remove(versionCode) != null) {
+      AppLog.add('update', 'build $versionCode un-snoozed (asked for)');
     }
   }
+
+  @visibleForTesting
+  Future<bool> debugSnoozed(int versionCode) => _snoozed(versionCode);
+
+  Future<bool> _snoozed(int versionCode) async => _snoozes.containsKey(versionCode);
 
   /// True when the active connection is metered (mobile data, a metered
   /// hotspot) — or when we cannot tell. Guessing "unmetered" spends the
@@ -516,12 +529,7 @@ class _UpdateSheetState extends State<_UpdateSheet> {
               if (_installing) ...[
                 Row(
                   children: [
-                    SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2.4, color: Neon.violet),
-                    ),
+                    const NeonLoader.inline(size: 20, semanticLabel: 'Downloading the update'),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
@@ -603,4 +611,12 @@ class _UpdateSheetState extends State<_UpdateSheet> {
       ),
     );
   }
+}
+
+class _UpdateLifecycle with WidgetsBindingObserver {
+  _UpdateLifecycle(this.service);
+  final AppUpdateService service;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) => service._onLifecycle(state);
 }

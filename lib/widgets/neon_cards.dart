@@ -327,35 +327,6 @@ class GlassTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final r = size >= 36 ? Neon.rTile : size * 0.32;
-    if (Neon.isDark) {
-      // VIVID AT DUSK (2026-11-01, the twilight reference): a lit gradient
-      // tile with a glass sheen and a soft glow of its own colour.
-      return ExcludeSemantics(
-        child: Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(r),
-            gradient: Neon.tile(color),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
-            boxShadow: Neon.halo(color, strength: 0.5),
-          ),
-          foregroundDecoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(r),
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.white.withValues(alpha: 0.22),
-                Colors.white.withValues(alpha: 0),
-              ],
-              stops: const [0, 0.55],
-            ),
-          ),
-          child: Icon(icon, size: size * 0.52, color: Neon.onTile(color)),
-        ),
-      );
-    }
     return ExcludeSemantics(
       child: Container(
         width: size,

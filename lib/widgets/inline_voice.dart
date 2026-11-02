@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math' as math;
-import '../ai/types.dart' show AgentTurn, agentShortName;
 
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
@@ -57,7 +56,7 @@ OrbMood orbMoodFor(AssistantEngine e, {bool micPaused = false}) {
   if (p == AssistantPhase.speaking) return OrbMood.speaking;
   // Until her first word (2026-10-06, the owner: "add the connecting
   // animation"): the ~1.5 s GPT-Live takes to start shows as connecting.
-  if (e.connecting || e.openingPending) return OrbMood.connecting;
+  if (e.connecting) return OrbMood.connecting;
   if (p == AssistantPhase.responding ||
       p == AssistantPhase.searching ||
       p == AssistantPhase.findingContact) {
@@ -260,67 +259,25 @@ class _AssistantOrbButtonState extends State<AssistantOrbButton>
                               // single biggest piece of "this looks unfinished"
                               // on every screen — it now wears the brand
                               // gradient and throws its own light.
-                              // A RING OF LIGHT (2026-09-30, the client's
-                              // reference): cyan through the accent into magenta
-                              // round a deep-navy centre, glowing.
+                              // A RAISED VIOLET DISC (light premium,
+                              // 2026-11-02; was a neon ring): lit from the
+                              // top-left, deep enough for a white mic.
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                gradient: Neon.isDark
-                                    // THE LIT DISC (2026-11-01, the logo
-                                    // reference): a cyan→magenta rim of light.
-                                    ? LinearGradient(
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                        colors: [
-                                          Neon.cyan,
-                                          Neon.violet,
-                                          Neon.pink,
-                                        ],
-                                      )
-                                    : SweepGradient(colors: [
-                                        Neon.cyan,
-                                        Neon.violet,
-                                        Neon.pink,
-                                        Neon.cyan,
-                                      ]),
-                                boxShadow: [
-                                  ...Neon.halo(
-                                      Neon.violet,
-                                      strength: 1.3),
-                                  BoxShadow(
-                                    color: Neon.pink.withValues(alpha: 0.40),
-                                    blurRadius: 22,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              padding: const EdgeInsets.all(2.5),
-                              // The deep-navy centre from the tokens (2026-09-30:
-                              // it was two hard-coded navies), lit a touch by the
-                              // accent where the light falls. At night it is
-                              // electric blue itself, cyan up top-left.
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: RadialGradient(
-                                    center: const Alignment(-0.3, -0.4),
-                                    colors: Neon.isDark
-                                        ? [
-                                            Color.lerp(Neon.cyan, Neon.violet, 0.45)!,
-                                            Neon.violet,
-                                            Color.lerp(Neon.violet, Neon.pink, 0.6)!,
-                                          ]
-                                        : [
-                                            Color.alphaBlend(
-                                                Neon.violet.withValues(alpha: 0.16),
-                                                Neon.surfaceHigh),
-                                            Neon.surface,
-                                          ],
-                                  ),
+                                gradient: RadialGradient(
+                                  center: const Alignment(-0.4, -0.5),
+                                  radius: 1.1,
+                                  colors: [
+                                    Color.lerp(Neon.accentFill, Colors.white, 0.10)!,
+                                    Color.lerp(Neon.accentFill, Colors.black, 0.18)!,
+                                  ],
                                 ),
-                                child: Icon(Icons.mic_rounded,
-                                    color: Neon.textHi, size: 30),
+                                border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.18)),
+                                boxShadow: Neon.halo(Neon.violet, strength: 1.2),
                               ),
+                              child: const Icon(Icons.mic_rounded,
+                                  color: Colors.white, size: 30),
                             ),
                     ),
                   ],
@@ -567,7 +524,7 @@ class _InlineCaptionOverlayState extends State<InlineCaptionOverlay>
     // up; leave the status quiet for that first spoken moment.
     if (engine.greetingPlaying) return '';
     // Connecting… until her first word (2026-10-06, the owner asked for it).
-    if ((engine.connecting || engine.openingPending) && p != AssistantPhase.speaking) {
+    if (engine.connecting && p != AssistantPhase.speaking) {
       return 'Connecting…';
     }
     if (micPaused && !_waitingForVoice(p) && p != AssistantPhase.speaking) {
@@ -729,8 +686,12 @@ class _InlineCaptionOverlayState extends State<InlineCaptionOverlay>
                     padding: EdgeInsets.only(
                         top: MediaQuery.of(context).viewPadding.top, bottom: 4),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [_MuteButton(engine: engine)],
+                      children: [
+                        // THE MANAGER, when they asked for it: slides in here.
+                        Expanded(child: ManagerPanel(engine: engine)),
+                        const SizedBox(width: 8),
+                        _MuteButton(engine: engine),
+                      ],
                     ),
                   ),
                   // ABOVE THE ORB, the room eases away for a long reply too
@@ -881,17 +842,15 @@ class _InlineCaptionOverlayState extends State<InlineCaptionOverlay>
                                                   String>(
                                                 valueListenable:
                                                     AssistantIdentity.notifier,
-                                                // WHO IS SPEAKING (2026-10-31): the assistant's
-                                                // name, or the agent the owner asked for
-                                                // ("call your manager" → Manager), or the
-                                                // specialist at work — back to the name
-                                                // when the turn is done.
+                                                // WHO IS SPEAKING: the assistant's name, or
+                                                // "Manager" while the Manager has the
+                                                // conversation (only when they asked for it).
                                                 builder: (_, name, __) =>
-                                                    ValueListenableBuilder<AgentTurn?>(
-                                                  valueListenable: engine.agentControl,
-                                                  builder: (_, turn, __) => VoiceOrb(
+                                                    ValueListenableBuilder<bool>(
+                                                  valueListenable: engine.managerOn,
+                                                  builder: (_, manager, __) => VoiceOrb(
                                                     size: _orbSize,
-                                                    label: orbLabelFor(speakerFor(turn, name)),
+                                                    label: orbLabelFor(manager ? 'Manager' : name),
                                                   ),
                                                 ),
                                               ),
@@ -1242,7 +1201,7 @@ abstract final class _VoiceType {
   /// 24 pt w700 spotlight was. One style per size, made once.
   static final Map<double, TextStyle> _spoken = {};
   static TextStyle spoken(double size) =>
-      _spoken[size] ??= GoogleFonts.spaceGrotesk(
+      _spoken[size] ??= GoogleFonts.interTight(
         fontSize: size,
         height: 1.34,
         fontWeight: FontWeight.w600,
@@ -2158,10 +2117,81 @@ class _AnswerAfterglowState extends State<AnswerAfterglow> {
   }
 }
 
-/// The name under the orb for [turn]: the agent answering in person, else
-/// the specialist at work, else the assistant's own [name].
-String speakerFor(AgentTurn? turn, String name) {
-  if (turn == null || turn.over) return name;
-  final who = turn.persona ?? turn.running;
-  return who == null ? name : agentShortName(who);
+/// THE MANAGER PANEL (owner, 2026-11-01): it slides in at the top of the
+/// voice screen while the Manager has the conversation — its badge, its
+/// name, and what it is doing right now (the tool at work) — and slides
+/// away when it hands back.
+class ManagerPanel extends StatelessWidget {
+  const ManagerPanel({super.key, required this.engine});
+  final AssistantEngine engine;
+
+  static const _gold = Color(0xFFFFC857);
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: engine.managerOn,
+      builder: (context, on, _) => AnimatedSlide(
+        offset: on ? Offset.zero : const Offset(0, -1.4),
+        duration: const Duration(milliseconds: 320),
+        curve: on ? Curves.easeOutBack : Curves.easeIn,
+        child: AnimatedOpacity(
+          opacity: on ? 1 : 0,
+          duration: const Duration(milliseconds: 220),
+          child: Semantics(
+            liveRegion: true,
+            label: on ? 'The Manager has the conversation' : null,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(8, 8, 14, 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: _gold.withValues(alpha: 0.55)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                          colors: [Color(0xFFFFD98A), Color(0xFFE09A2D)]),
+                      boxShadow: [BoxShadow(color: _gold.withValues(alpha: 0.45), blurRadius: 12)],
+                    ),
+                    child: const Icon(Icons.workspace_premium_rounded,
+                        size: 20, color: Color(0xFF3A2400)),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('Manager',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700)),
+                        ValueListenableBuilder<String?>(
+                          valueListenable: engine.activityLabel,
+                          builder: (_, doing, __) => Text(
+                            doing ?? 'Taking over from your assistant',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.7), fontSize: 12.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

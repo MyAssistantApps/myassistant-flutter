@@ -1,7 +1,9 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../design/apple_kit.dart';
-import '../design/motion.dart' show StateSwitch, Tappable;
+import '../design/motion.dart' show StateSwitch, Tappable, showAppSheet;
 import '../design/neon_tokens.dart';
 import '../design/neon_widgets.dart';
 import '../models/user_document.dart';
@@ -9,6 +11,133 @@ import '../services/api_service.dart';
 import '../services/document_events.dart';
 import '../widgets/document_tile.dart';
 import '../services/app_feedback.dart';
+import 'pro_assistant_screen.dart';
+
+/// True while [uploadMyDocument] is sending; its buttons show it and a
+/// second tap is ignored, so one file is never saved twice.
+final documentUploading = ValueNotifier<bool>(false);
+
+/// Picks a photo or file and saves it to My documents (the same flow a case
+/// file uses, without the client). Shared by Home's documents section and
+/// the assistant chats. Returns the saved document, or null if nothing was.
+Future<UserDocument?> uploadMyDocument(BuildContext context) async {
+  if (documentUploading.value) return null;
+  final source = await showAppSheet<String>(
+    context: context,
+    builder: (ctx) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: GroupedCard(
+          dividerInset: 60,
+          children: [
+            AppleRow(
+              leading: IconTile(Icons.photo_camera_rounded, AppleColors.blue),
+              title: 'Take a photo',
+              onTap: () => Navigator.pop(ctx, 'camera'),
+            ),
+            AppleRow(
+              leading: IconTile(Icons.photo_library_rounded, AppleColors.blue),
+              title: 'Pick from gallery',
+              onTap: () => Navigator.pop(ctx, 'gallery'),
+            ),
+            AppleRow(
+              leading: IconTile(Icons.description_rounded, AppleColors.red),
+              title: 'Pick a file (PDF, Word, Excel…)',
+              onTap: () => Navigator.pop(ctx, 'file'),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+  if (source == null || !context.mounted) return null;
+
+  List<int> bytes;
+  String filename;
+  String mime = 'image/jpeg';
+  try {
+    if (source == 'file') {
+      final picked = await FilePicker.platform.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: const [
+            'pdf', 'docx', 'xlsx', 'pptx', 'csv', 'txt', 'md', 'rtf'
+          ],
+          withData: true);
+      final f = (picked != null && picked.files.isNotEmpty)
+          ? picked.files.first
+          : null;
+      if (f?.bytes == null) return null;
+      bytes = f!.bytes!;
+      filename = f.name;
+      mime = mimeForFilename(f.name);
+    } else {
+      final shot = await ImagePicker().pickImage(
+        source: source == 'camera' ? ImageSource.camera : ImageSource.gallery,
+        maxWidth: 1920,
+        maxHeight: 1920,
+        imageQuality: 82,
+      );
+      if (shot == null) return null;
+      bytes = await shot.readAsBytes();
+      filename = 'doc_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    }
+  } catch (_) {
+    if (context.mounted) {
+      AppFeedback.show("Couldn't open that. Check the app's permissions.",
+          context: context, tone: FeedbackTone.error);
+    }
+    return null;
+  }
+
+  if (!context.mounted || documentUploading.value) return null;
+  documentUploading.value = true;
+  try {
+    // DocumentEvents.bump() inside refreshes any open My documents list.
+    final r = await ApiService.uploadDocumentDetailed(
+        bytes: bytes, filename: filename, mimeType: mime);
+    if (context.mounted) {
+      AppFeedback.show(
+          r.notice ?? '"${r.document.title}" saved. Ask me about it any time.',
+          context: context);
+    }
+    return r.document;
+  } on DocumentUploadException catch (e) {
+    if (context.mounted) {
+      AppFeedback.show(
+          e.message.isNotEmpty
+              ? "Couldn't upload that: ${e.message}"
+              : "Couldn't upload that. Nothing was saved.",
+          context: context,
+          tone: FeedbackTone.error);
+    }
+  } catch (_) {
+    if (context.mounted) {
+      AppFeedback.show(
+          "Couldn't upload that. Check your connection and try again.",
+          context: context,
+          tone: FeedbackTone.error);
+    }
+  } finally {
+    documentUploading.value = false;
+  }
+  return null;
+}
+
+/// A chat for questions about saved documents. The assistant already
+/// searches the user's documents when a question is about them.
+void askAboutDocuments(BuildContext context) {
+  Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => ProChatScreen(
+            // kind only picks a banner photo, which the chat never shows.
+            profile: ProProfile(
+                ProKind.business,
+                'Documents',
+                Icons.description_rounded,
+                () => Neon.cyan,
+                'Ask anything about the documents you saved.',
+                const []),
+          )));
+}
 
 /// MY DOCUMENTS — the user's OWN documents: scans, shared-in files, IDs,
 /// receipts. Strictly the personal area: anything filed under a client or
@@ -94,8 +223,24 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     // 2026-09-30: under the app's sky; loading, empty and the grid
     // replace one another softly.
     return NeonScaffold(
-      appBar: appleAppBar(context, 'My documents'),
+      appBar: appleAppBar(context, 'My documents', actions: [
+        IconButton(
+          tooltip: 'Ask about my documents',
+          icon: const Icon(Icons.forum_rounded),
+          onPressed: () => askAboutDocuments(context),
+        ),
+      ]),
       body: StateSwitch.of(_body(docs)),
+      floatingActionButton: ValueListenableBuilder<bool>(
+        valueListenable: documentUploading,
+        builder: (context, busy, _) => FloatingActionButton.extended(
+          onPressed: busy ? null : () => uploadMyDocument(context),
+          icon: busy
+              ? const NeonLoader.inline(semanticLabel: 'Uploading')
+              : const Icon(Icons.upload_file_rounded),
+          label: Text(busy ? 'Uploading…' : 'Upload'),
+        ),
+      ),
     );
   }
 
@@ -190,7 +335,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
               child: const NeonEmptyState(
                 icon: Icons.description_outlined,
                 title: 'No documents yet',
-                body: 'Scan from the Home tab, share a photo or PDF into '
+                body: 'Tap Upload to add a photo or file, share one into '
                     'the app, or ask your assistant to save something. '
                     'Documents filed under a client or patient appear in '
                     'their case file instead.',

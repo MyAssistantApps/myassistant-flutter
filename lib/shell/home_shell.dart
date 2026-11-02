@@ -990,11 +990,7 @@ class _HomeShellState extends State<HomeShell>
       ),
       ),
       bottomNavigationBar: _DockRim(child: BottomAppBar(
-        // Frosted dusk glass (2026-11-01): the lake glows through it.
-        color: Neon.isDark
-            ? Color.alphaBlend(Neon.violet.withValues(alpha: 0.12), Neon.surface)
-                .withValues(alpha: 0.90)
-            : Neon.surface,
+        color: Neon.surface,
         elevation: 0,
         height: Dock.barHeight,
         shape: const CircularNotchedRectangle(),
@@ -1067,30 +1063,16 @@ class _HomeShellState extends State<HomeShell>
                 duration: Motion.short,
                 curve: Motion.easeMove,
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                // At night the pick is a lit tile (2026-11-01, the logo
-                // reference): electric blue into magenta, glowing blue.
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                // At night the pill is lit (2026-09-30, the client's
+                // reference): cyan glass with its own glow.
+                // Light premium (2026-11-02): a soft violet pill in both
+                // themes; no glow.
                 decoration: BoxDecoration(
                   color: selected
-                      ? (Neon.isDark ? null : Neon.violet.withValues(alpha: 0.16))
+                      ? Neon.violet.withValues(alpha: Neon.isDark ? 0.20 : 0.12)
                       : Colors.transparent,
-                  gradient: selected && Neon.isDark
-                      ? LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Neon.violet.withValues(alpha: 0.85),
-                            Neon.pink.withValues(alpha: 0.85),
-                          ],
-                        )
-                      : null,
-                  borderRadius: BorderRadius.circular(14),
-                  border: selected && Neon.isDark
-                      ? Border.all(color: Colors.white.withValues(alpha: 0.35))
-                      : null,
-                  boxShadow: selected && Neon.isDark
-                      ? Neon.halo(Neon.violet, strength: 0.9)
-                      : null,
+                  borderRadius: BorderRadius.circular(Neon.rPill),
                 ),
                 child: AnimatedSwitcher(
                   duration: Motion.micro,
@@ -1099,9 +1081,7 @@ class _HomeShellState extends State<HomeShell>
                   child: Icon(selected ? active : icon,
                       key: ValueKey(selected),
                       size: 22,
-                      color: selected
-                          ? (Neon.isDark ? Colors.white : Neon.violet)
-                          : Neon.textDim),
+                      color: selected ? Neon.violet : Neon.textDim),
                 ),
               ),
             ),
@@ -1115,9 +1095,7 @@ class _HomeShellState extends State<HomeShell>
               maxScaleFactor: 1.3,
               child: TweenAnimationBuilder<Color?>(
                 tween: ColorTween(
-                    end: selected
-                        ? (Neon.isDark ? Neon.cyan : Neon.violet)
-                        : Neon.textDim),
+                    end: selected ? Neon.violet : Neon.textDim),
                 duration: Motion.micro,
                 curve: Motion.easeMove,
                 builder: (_, color, __) => Text(label,
@@ -1236,13 +1214,14 @@ class _DockRim extends StatelessWidget {
   const _DockRim({required this.child});
   final Widget child;
 
+  // LIGHT PREMIUM (2026-11-02): no neon trace — a soft shadow and a fine
+  // edge along the same notched outline, so the bar sits raised on the page.
   @override
   Widget build(BuildContext context) {
-    if (!Neon.isDark) return child;
     return CustomPaint(
       foregroundPainter: _DockRimPainter(
         geometry: Scaffold.geometryOf(context),
-        colors: [Neon.cyan, Neon.violet, Neon.pink],
+        colors: [Neon.lineBright, Neon.lineBright],
       ),
       child: child,
     );

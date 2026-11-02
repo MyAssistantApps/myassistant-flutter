@@ -28,7 +28,6 @@ class GpuProgram extends ChangeNotifier {
   static final GpuProgram voiceBackdrop =
       GpuProgram._('shaders/voice_backdrop.frag', warmUp: true);
   static final GpuProgram siriOrb = GpuProgram._('shaders/siri_orb.frag');
-  static final GpuProgram ambient = GpuProgram._('shaders/ambient.frag');
 
   /// Off: every widget draws with its Canvas painter. For tests that pin
   /// the old path, and a switch to reach for if a phone ever draws a

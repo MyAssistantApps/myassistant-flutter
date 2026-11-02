@@ -7,7 +7,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../design/motion.dart';
 import '../design/neon_tokens.dart';
 import '../features/assistant/state/assistant_engine.dart';
-import 'agent_strip.dart' show AgentHandoffLane;
 
 /// WHAT THE USER SEES WHILE A TOOL IS RUNNING.
 ///
@@ -260,9 +259,9 @@ class _AssistantActivityPillState extends State<AssistantActivityPill>
                             control,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.spaceGrotesk(
+                            style: GoogleFonts.interTight(
                               color: Neon.violet,
-                              fontSize: 11.5,
+                              fontSize: 12,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 0.1,
                             ),
@@ -271,7 +270,7 @@ class _AssistantActivityPillState extends State<AssistantActivityPill>
                           tool ? _text : (control ?? ''),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.spaceGrotesk(
+                          style: GoogleFonts.interTight(
                             color: Neon.textHi,
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
@@ -291,11 +290,6 @@ class _AssistantActivityPillState extends State<AssistantActivityPill>
                 ),
               ],
             ),
-            // The hand-off: manager → each specialist, waiting/working/done.
-            if (engine.agentControl.value case final turn?) ...[
-              const SizedBox(height: 8),
-              AgentHandoffLane(turn: turn, pulse: _spin),
-            ],
               ],
             ),
           ),

@@ -116,7 +116,7 @@ class _CallNotesScreenState extends State<CallNotesScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('One more step — on your phone',
-                style: GoogleFonts.spaceGrotesk(
+                style: GoogleFonts.interTight(
                     color: Neon.textHi,
                     fontSize: 17,
                     fontWeight: FontWeight.w700)),

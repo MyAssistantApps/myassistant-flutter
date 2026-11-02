@@ -35,6 +35,8 @@ import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // The splash's logo layers decode while startup runs (screens/splash_screen.dart).
+  SplashScreen.precache();
   useBundledFonts();
   // Background call-recording scans (WorkManager) — cheap registration;
   // the periodic task itself only exists while AI call analysis is on.

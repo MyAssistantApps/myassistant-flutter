@@ -44,63 +44,25 @@ class LargeTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     final title = Text(
       text,
-      style: GoogleFonts.spaceGrotesk(
+      style: GoogleFonts.interTight(
         fontSize: 32,
         fontWeight: FontWeight.w700,
         letterSpacing: -0.6,
         color: Neon.isDark ? Colors.white : Neon.textHi,
       ),
     );
-    if (!Neon.isDark) {
-      return Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 20), child: title);
-    }
-    // A TAB'S NAME UNDER DUSK LIGHT (2026-11-01, the twilight reference):
-    // white, softly glowing, with a short lit pink bar beneath that draws
-    // itself in when the tab first shows.
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          title,
-          const SizedBox(height: 6),
-          const TitleBar(),
-        ],
-      ),
-    );
-  }
-}
-
-/// The short lit bar under a tab's title: orchid into hot pink, glowing,
-/// drawn in from the left once when it first appears.
-class TitleBar extends StatelessWidget {
-  const TitleBar({super.key, this.width = 44});
-  final double width;
-
-  @override
-  Widget build(BuildContext context) {
-    final bar = Container(
-      width: width,
-      height: 4,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(2),
-        gradient: LinearGradient(colors: [Neon.cyan, Neon.violet, Neon.pink]),
-        boxShadow: Neon.halo(Neon.violet, strength: 0.9),
-      ),
-    );
-    if (Motion.reduced(context)) return bar;
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 700),
-      curve: Curves.easeOutCubic,
-      builder: (_, v, child) => Align(
-        alignment: Alignment.centerLeft,
-        widthFactor: 1,
-        child: SizedBox(width: width * v, child: child),
-      ),
-      child: bar,
+      // A TAB'S NAME IN THE APP'S LIGHT at night (2026-09-30, the client's
+      // neon reference): cyan into magenta, as Home's greeting name.
+      child: Neon.isDark
+          ? ShaderMask(
+              blendMode: BlendMode.srcIn,
+              shaderCallback: (r) =>
+                  LinearGradient(colors: [Neon.cyan, Neon.pink]).createShader(r),
+              child: title,
+            )
+          : title,
     );
   }
 }
@@ -120,7 +82,7 @@ PreferredSizeWidget appleAppBar(BuildContext context, String title,
     // A BARE TextStyle, ON PURPOSE (2026-09-24). This is the one place
     // where the "bare fontWeight draws the regular file" rule does not
     // hold: AppBar wraps its title in the theme's titleTextStyle, which is
-    // GoogleFonts.spaceGrotesk(w700), so this title inherits the family
+    // GoogleFonts.interTight(w700), so this title inherits the family
     // "SpaceGrotesk_700" and already draws from the bold file. Only size,
     // colour and spacing are set here, so all 20 detail bars keep the one
     // app-bar face the plain AppBars and LargeTitle use. (The clarity pass
@@ -160,9 +122,7 @@ class GroupLabel extends StatelessWidget {
       padding: const EdgeInsets.only(left: 16, bottom: 7, top: 4),
       child: Text(
         text.toUpperCase(),
-        // In the logo's cyan light at night (2026-11-01), tracked wide.
-        style: NeonType.sectionLabel.copyWith(
-            color: Neon.isDark ? Neon.cyan : Neon.textLo, letterSpacing: 1.4),
+        style: NeonType.sectionLabel.copyWith(color: Neon.textLo),
       ),
     );
   }

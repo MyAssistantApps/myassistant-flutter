@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import '../design/neon_widgets.dart';
 import 'package:flutter/services.dart';
 
 import '../ai/config.dart';
@@ -12,7 +13,7 @@ import '../services/api_service.dart';
 import '../services/app_feedback.dart';
 import '../services/audio/pcm_player.dart';
 
-/// One voice supported by GPT Live, from GET /ai/voices.
+/// One voice she can speak in, from GET /ai/voices.
 class VoiceCatalogItem {
   const VoiceCatalogItem({
     required this.id,
@@ -33,7 +34,7 @@ class VoiceCatalogItem {
     final id = field('id').toLowerCase();
     final gender = field('gender').toLowerCase();
     if (id.isEmpty || (gender != 'female' && gender != 'male')) {
-      throw const FormatException('Invalid GPT Live voice entry');
+      throw const FormatException('Invalid voice entry');
     }
     return VoiceCatalogItem(
       id: id,
@@ -47,8 +48,8 @@ class VoiceCatalogItem {
   }
 }
 
-/// VOICE — compact GPT Live voice selection, reached from Settings → Voice.
-/// Voice samples come from GPT Live itself, not a separate speech provider.
+/// VOICE — the assistant's voice, reached from Settings → Voice.
+/// Each sample is spoken by the server in that voice (ai/liveVoices.js).
 class VoicePickerScreen extends StatefulWidget {
   final String selectedId;
 
@@ -132,7 +133,7 @@ class _VoicePickerScreenState extends State<VoicePickerScreen> {
           .whereType<Map>()
           .map(VoiceCatalogItem.fromJson)
           .toList(growable: false);
-      if (loaded.isEmpty) throw const FormatException('No GPT Live voices');
+      if (loaded.isEmpty) throw const FormatException('No voices');
       setState(() {
         _voices = loaded;
         _serverDefault = response?['default']?.toString();
@@ -157,14 +158,32 @@ class _VoicePickerScreenState extends State<VoicePickerScreen> {
     await LiveVoicePrefs.setEnabled(on);
   }
 
+  /// Bumped by every play tap: a sample that was replaced or stopped does
+  /// not report on the one that took its place.
+  int _previewGen = 0;
+
+  /// THE PLAY BUTTON ALWAYS ANSWERS ITS OWN TAP (owner, 2026-11-01: "when I
+  /// click on that play button it goes back"). It used to be disabled while
+  /// any sample played, so the tap fell through to the row — "use this
+  /// voice" — which picked the voice and closed the page. Now a tap on the
+  /// playing voice stops it, and a tap on another switches to that one.
   Future<void> _preview(VoiceCatalogItem voice) async {
-    if (_previewing != null) return;
     HapticFeedback.selectionClick();
+    final gen = ++_previewGen;
+    if (_previewing != null) {
+      final was = _previewing;
+      await _player.stop();
+      if (!mounted) return;
+      if (was == voice.id) {
+        setState(() => _previewing = null);
+        return;
+      }
+    }
     setState(() => _previewing = voice.id);
     try {
       await _player.stop();
       final wav = await _fetchSample(voice.id);
-      if (!mounted) return;
+      if (!mounted || gen != _previewGen) return;
       final audio = wav == null ? null : _decodePcmWav(wav);
       if (audio == null) {
         AppFeedback.show(
@@ -178,7 +197,7 @@ class _VoicePickerScreenState extends State<VoicePickerScreen> {
       await _player.drained().timeout(const Duration(seconds: 35));
     } on TimeoutException {
       await _player.stop();
-      if (mounted) {
+      if (mounted && gen == _previewGen) {
         AppFeedback.show(
           'The voice sample took too long to play.',
           context: context,
@@ -186,7 +205,7 @@ class _VoicePickerScreenState extends State<VoicePickerScreen> {
         );
       }
     } finally {
-      if (mounted && _previewing == voice.id) {
+      if (mounted && gen == _previewGen && _previewing == voice.id) {
         setState(() => _previewing = null);
       }
     }
@@ -200,8 +219,7 @@ class _VoicePickerScreenState extends State<VoicePickerScreen> {
   @override
   Widget build(BuildContext context) {
     final live = AiConfigStore.instance.current.live;
-    return Scaffold(
-      backgroundColor: Neon.bg,
+    return NeonScaffold(
       appBar: appleAppBar(context, 'Assistant voice'),
       body: ListView(
         padding: EdgeInsets.fromLTRB(
@@ -213,12 +231,12 @@ class _VoicePickerScreenState extends State<VoicePickerScreen> {
               children: [
                 AppleRow(
                   leading: IconTile(Icons.bolt_rounded, Neon.cyan),
-                  title: 'GPT Live voice',
+                  title: 'Live voice',
                   subtitle: _fast
                       ? 'Fast, natural conversations'
                       : 'Off: conversations use the classic reply voice',
                   trailing: Semantics(
-                    label: 'GPT Live voice',
+                    label: 'Live voice',
                     child: Switch(value: _fast, onChanged: _setFast),
                   ),
                 ),
@@ -234,10 +252,10 @@ class _VoicePickerScreenState extends State<VoicePickerScreen> {
             ),
           ),
           if (_loading)
-            Padding(
-              padding: const EdgeInsets.all(32),
+            const Padding(
+              padding: EdgeInsets.all(32),
               child: Center(
-                child: CircularProgressIndicator(color: Neon.cyan),
+                child: NeonLoader(semanticLabel: 'Loading voices'),
               ),
             )
           else if (_loadFailed)
@@ -245,7 +263,7 @@ class _VoicePickerScreenState extends State<VoicePickerScreen> {
               children: [
                 AppleRow(
                   leading: IconTile(Icons.wifi_off_rounded, Neon.textLo),
-                  title: "Couldn't load GPT Live voices",
+                  title: "Couldn't load the voices",
                   subtitle: 'Check your connection and try again.',
                   trailing: TextButton(
                     onPressed: _loadVoices,
@@ -270,7 +288,7 @@ class _VoicePickerScreenState extends State<VoicePickerScreen> {
     return GroupedCard(
       children: [
         ExpansionTile(
-          key: PageStorageKey<String>('gpt-live-$gender-voices'),
+          key: PageStorageKey<String>('voices-$gender'),
           tilePadding: const EdgeInsets.symmetric(horizontal: 16),
           childrenPadding: EdgeInsets.zero,
           leading: Icon(icon, color: Neon.cyan, size: 22),
@@ -301,19 +319,14 @@ class _VoicePickerScreenState extends State<VoicePickerScreen> {
       leading: SizedBox.square(
         dimension: 48,
         child: IconButton(
-          onPressed: _previewing == null ? () => _preview(voice) : null,
+          // Never disabled: a disabled button let the tap through to the
+          // row, which chose the voice and closed the page.
+          onPressed: () => _preview(voice),
           tooltip: playing
-              ? 'Playing a sample of ${voice.name}'
+              ? 'Stop the sample of ${voice.name}'
               : 'Play a sample of ${voice.name}',
-          icon: playing
-              ? SizedBox.square(
-                  dimension: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Neon.cyan,
-                  ),
-                )
-              : const Icon(Icons.play_circle_outline_rounded),
+          // Playing (or fetching): a stop button, which is what a tap does.
+          icon: Icon(playing ? Icons.stop_circle_rounded : Icons.play_circle_outline_rounded),
           color: playing ? Neon.cyan : Neon.textLo,
         ),
       ),

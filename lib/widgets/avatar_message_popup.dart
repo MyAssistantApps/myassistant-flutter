@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import '../design/neon_widgets.dart';
 import 'package:video_player/video_player.dart';
 
 import '../design/neon_tokens.dart';
@@ -239,6 +240,7 @@ class _AvatarMessageDialogState extends State<_AvatarMessageDialog> {
                   ),
                 ),
                 IconButton(
+                  tooltip: _muted ? 'Unmute' : 'Mute',
                   icon: Icon(_muted
                       ? Icons.volume_off_rounded
                       : Icons.volume_up_rounded),
@@ -267,7 +269,7 @@ class _AvatarMessageDialogState extends State<_AvatarMessageDialog> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 48),
                 child: Column(children: [
-                  const Center(child: CircularProgressIndicator()),
+                  const Center(child: NeonLoader()),
                   if (widget.fetch != null && _wantsMedia) ...[
                     const SizedBox(height: 14),
                     Text(
@@ -300,6 +302,7 @@ class _AvatarMessageDialogState extends State<_AvatarMessageDialog> {
                           Container(
                             color: Colors.black38,
                             child: IconButton(
+                              tooltip: 'Play again',
                               iconSize: 56,
                               color: Colors.white,
                               icon: const Icon(Icons.replay_rounded),

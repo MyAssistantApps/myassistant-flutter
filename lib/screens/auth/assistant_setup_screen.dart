@@ -227,7 +227,7 @@ class _AssistantSetupScreenState extends State<AssistantSetupScreen> {
                   const SizedBox(height: 22),
                   Text(
                     'Name your assistant',
-                    style: GoogleFonts.spaceGrotesk(
+                    style: GoogleFonts.interTight(
                       fontSize: 26,
                       fontWeight: FontWeight.w700,
                       color: Neon.textHi,

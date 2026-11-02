@@ -99,6 +99,9 @@ class DeviceCapabilities {
       'osVersion': osVersion,
       'granted': granted,
       'denied': denied,
+      // Opt-in features the server offers tools for only when said here
+      // (backend tools/capabilities.js device_feature).
+      'capabilities': const {'screen_task': true},
       'diag': {
         ...diag,
         if (mic.isNotEmpty) ...mic,

@@ -714,6 +714,25 @@ class MainActivity : FlutterFragmentActivity() {
                         applicationContext,
                         call.argument<ByteArray>("bytes") ?: ByteArray(0),
                         call.argument<String>("name") ?: "card.png"))
+                    // AN INSTALLED APP'S OWN ICON, as PNG (Home's "Order and
+                    // shop" banners show each platform's real logo from the
+                    // phone itself; null when the app is not installed).
+                    "appIcon" -> {
+                        val pkg = call.argument<String>("pkg") ?: ""
+                        val size = (call.argument<Int>("size") ?: 144).coerceIn(48, 256)
+                        try {
+                            val d = packageManager.getApplicationIcon(pkg)
+                            val bmp = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888)
+                            val c = android.graphics.Canvas(bmp)
+                            d.setBounds(0, 0, size, size)
+                            d.draw(c)
+                            val out = java.io.ByteArrayOutputStream()
+                            bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
+                            result.success(out.toByteArray())
+                        } catch (_: Exception) {
+                            result.success(null)
+                        }
+                    }
                     "launchApp" -> {
                         val want = (call.argument<String>("name") ?: "")
                             .lowercase().replace(Regex("[^a-z0-9]"), "")
@@ -775,6 +794,41 @@ class MainActivity : FlutterFragmentActivity() {
                                 result.success(bestLabel)
                             }
                         }
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+
+        // TASKS INSIDE OTHER APPS (ScreenAgentService.kt; the loop is
+        // lib/services/screen_agent.dart).
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "hari/screen")
+            .setMethodCallHandler { call, result ->
+                val agent = ScreenAgentService.instance
+                when (call.method) {
+                    "enabled" -> result.success(agent != null)
+                    "openSettings" -> {
+                        openAccessibilitySettings(applicationContext)
+                        result.success(true)
+                    }
+                    "dump" -> result.success(agent?.dump())
+                    "act" -> result.success(agent?.act(
+                        call.argument<String>("action") ?: "",
+                        call.argument<Int>("node"),
+                        call.argument<String>("text"),
+                        call.argument<String>("direction"),
+                    ) ?: "screen control is off")
+                    "status" -> {
+                        agent?.status(call.argument<String>("say") ?: "")
+                        result.success(agent != null)
+                    }
+                    "confirm" -> {
+                        if (agent == null) result.success(false)
+                        else agent.confirm(call.argument<String>("question") ?: "Continue?") { result.success(it) }
+                    }
+                    "stopRequested" -> result.success(agent?.stopRequested ?: true)
+                    "hide" -> {
+                        agent?.hide()
+                        result.success(true)
                     }
                     else -> result.notImplemented()
                 }

@@ -9,7 +9,7 @@ import '../features/home/quote_cards_sheet.dart';
 import '../features/home/quote_of_day.dart';
 import '../widgets/agent_hive.dart';
 import '../widgets/call_led.dart';
-import '../widgets/neon_cards.dart';
+import '../widgets/robot_badge.dart';
 import 'search_screen.dart';
 
 /// HOME TAB — what needs you now (2026-09-29).
@@ -27,20 +27,34 @@ class HomeDashboard extends StatelessWidget {
   Widget build(BuildContext context) {
     final now = clock();
     const wk = [
-      'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
       'Sunday'
     ];
     const mo = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
     ];
     // THE HEADER SCROLLS WITH THE FEED (2026-09-24, home2.png). Pinned, it
     // took ~250 dp of the screen, and the feed scrolled up under the quote
     // with no gap or ground — the suggestion chips looked like they slid
     // beneath its text. Now greeting, date and quote are simply the top of
     // the list; only the call light stays put.
-    final header = Reveal(
-        child: Builder(
+    final header = Reveal(child: Builder(
       builder: (context) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -51,6 +65,10 @@ class HomeDashboard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                // THE TINY ROBOT (owner, 2026-11-01): the splash's robot in
+                // its ring, the ring turning and the eyes blinking.
+                const RobotBadge(size: 60),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Semantics(
                     header: true,
@@ -59,55 +77,40 @@ class HomeDashboard extends StatelessWidget {
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
-                        // "My" in the logo's light (cyan → violet →
-                        // magenta), "Assistant" crisp white — the client's
-                        // "AI Assistant" mark.
-                        child: Builder(builder: (context) {
-                          final style = GoogleFonts.spaceGrotesk(
-                            fontSize: NeonType.largeTitle + 6,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.8,
-                            height: 1.1,
-                            color: Colors.white,
-                          );
-                          return Row(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.baseline,
-                            textBaseline: TextBaseline.alphabetic,
-                            children: [
-                              ShaderMask(
-                                blendMode: BlendMode.srcIn,
-                                shaderCallback: (r) => LinearGradient(
-                                  colors: [Neon.cyan, Neon.violet, Neon.pink],
-                                ).createShader(r),
-                                child: Text('My', style: style),
-                              ),
-                              Text(
-                                'Assistant',
-                                style: style.copyWith(
-                                  color: Neon.isDark ? Colors.white : Neon.textHi,
-                                  shadows: Neon.isDark
-                                      ? [
-                                          Shadow(
-                                              color: Neon.violet
-                                                  .withValues(alpha: 0.55),
-                                              blurRadius: 18),
-                                        ]
-                                      : null,
-                                ),
-                              ),
-                            ],
-                          );
-                        }),
+                        // THE LOGO'S WORDMARK (owner, 2026-11-01: "make it
+                        // stylish"): "My" in the logo's cyan-into-violet
+                        // light, "Assistant" in white, both softly lit.
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
+                              children: [
+                                // Light premium (2026-11-02): solid ink, the
+                                // brand violet on "My"; readable in both themes.
+                                Text('My', style: _wordmark(Neon.violet)),
+                                Text('Assistant', style: _wordmark(Neon.textHi)),
+                              ],
+                            ),
+                            // The date, under the name, beside the robot.
+                            Text(
+                              '${wk[now.weekday - 1]}, ${now.day} ${mo[now.month - 1]}',
+                              style: TextStyle(
+                                  color: Neon.textLo,
+                                  fontSize: NeonType.body,
+                                  height: 1.4),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-                const _Sparkle(),
-                const SizedBox(width: 8),
-                // THE AGENTS, ONE HOLD AWAY (2026-11-01): the row of nine
-                // dots left the feed; hold this for the honeycomb, tap for
-                // the list.
+                // THE AGENTS, ONE HOLD AWAY (2026-11-01): hold this for the
+                // honeycomb of all nine, tap for the list.
                 const AgentHiveButton(),
                 const SizedBox(width: 10),
                 _SearchRing(
@@ -116,12 +119,7 @@ class HomeDashboard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            // The date alone (owner, 2026-09-30: the weather chip beside
-            // it "looks bad"). Rain or heat worth knowing about still gets
-            // its own card in the feed. In a small glass chip (dusk pass).
-            _DateChip(
-                '${wk[now.weekday - 1]}, ${now.day} ${mo[now.month - 1]}'),
+            // The date sits under the name now (redesign, 2026-11-01).
             // THE DAY'S LINE, right under the date (owner, 2026-09-30: "need
             // motivational quotes right below the date"). No card, no tint:
             // an accent rule down the left, brighter ink, a size up — it
@@ -141,52 +139,37 @@ class HomeDashboard extends StatelessWidget {
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: () => showQuoteCardsSheet(context),
-                    // THE LINE ON LIT GLASS (2026-11-01, the dusk
-                    // reference): a frosted card with a glowing pink edge
-                    // down its left and a sparkle beside the words.
-                    child: PressScale(
-                     child: GlassCard(
-                      glow: Neon.violet,
-                      padding: const EdgeInsets.fromLTRB(0, 14, 14, 14),
-                      child: IntrinsicHeight(
+                    child: IntrinsicHeight(
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Container(
                             width: 3,
-                            margin: const EdgeInsets.only(left: 0),
                             decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [Neon.cyan, Neon.violet, Neon.pink],
-                              ),
+                              gradient: Neon.gBrand,
                               borderRadius: BorderRadius.circular(2),
-                              boxShadow: Neon.halo(Neon.violet, strength: 1.2),
                             ),
                           ),
                           const SizedBox(width: 12),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2, right: 10),
-                            child: Icon(Icons.auto_awesome_rounded,
-                                size: 18, color: Neon.cyan),
-                          ),
                           Expanded(
                             child: Text(
                               QuoteOfDay.line(),
-                              style: NeonType.manrope(NeonType.rowTitle, FontWeight.w500)
-                                  .copyWith(color: Neon.textHi, height: 1.4, letterSpacing: 0.1),
+                              style: NeonType.manrope(
+                                      NeonType.rowTitle, FontWeight.w500)
+                                  .copyWith(
+                                      color: Neon.textHi,
+                                      height: 1.4,
+                                      letterSpacing: 0.1),
                             ),
                           ),
                           const SizedBox(width: 8),
                           Align(
                             alignment: Alignment.bottomCenter,
-                            child: Icon(Icons.image_outlined, size: 18, color: Neon.textLo),
+                            child: Icon(Icons.image_outlined,
+                                size: 18, color: Neon.textLo),
                           ),
                         ],
                       ),
-                    ),
-                     ),
                     ),
                   ),
                 );
@@ -227,12 +210,8 @@ class _SearchRing extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          // A hairline of the app's light, no halo (premium pass).
-          colors: [for (final c in Neon.rim) c.withValues(alpha: 0.45)],
-        ),
+        // A raised button on the page (light premium, 2026-11-02).
+        color: Neon.glassEdge.first,
         boxShadow: Neon.lift,
       ),
       child: Padding(
@@ -251,95 +230,11 @@ class _SearchRing extends StatelessWidget {
   }
 }
 
-/// The date in a small frosted chip with a calendar glyph (dusk pass).
-class _DateChip extends StatelessWidget {
-  const _DateChip(this.text);
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(Neon.rPill),
-        gradient: Neon.glassFill,
-        border: Border.all(color: Neon.lineBright),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.calendar_today_rounded, size: 14, color: Neon.cyan),
-          const SizedBox(width: 6),
-          Text(
-            text,
-            style: NeonType.manrope(NeonType.footnote, FontWeight.w600)
-                .copyWith(color: Neon.textHi),
-          ),
-        ],
-      ),
+/// The header's wordmark type: the logo's rounded bold, softly lit.
+TextStyle _wordmark(Color color) => GoogleFonts.interTight(
+      fontSize: NeonType.largeTitle - 2,
+      fontWeight: FontWeight.w800,
+      letterSpacing: -1.0,
+      height: 1.1,
+      color: color,
     );
-  }
-}
-
-/// A four-point star by the title that breathes and turns slowly — the
-/// sparkle in the dusk reference. Still with Remove animations.
-class _Sparkle extends StatefulWidget {
-  const _Sparkle();
-
-  @override
-  State<_Sparkle> createState() => _SparkleState();
-}
-
-class _SparkleState extends State<_Sparkle>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 2600));
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (Motion.reduced(context)) {
-      _c.stop();
-      _c.value = 0.5;
-    } else if (!_c.isAnimating) {
-      _c.repeat(reverse: true);
-    }
-  }
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ExcludeSemantics(
-      child: RepaintBoundary(
-        child: AnimatedBuilder(
-          animation: _c,
-          builder: (_, __) {
-            final v = Curves.easeInOut.transform(_c.value);
-            return Transform.rotate(
-              angle: v * 0.6,
-              child: Transform.scale(
-                scale: 0.75 + v * 0.35,
-                child: Icon(
-                  Icons.auto_awesome,
-                  size: 22,
-                  color: Color.lerp(Neon.cyan, Neon.pink, v),
-                  shadows: [
-                    Shadow(
-                        color: Color.lerp(Neon.cyan, Neon.pink, v)!
-                            .withValues(alpha: 0.4 + v * 0.5),
-                        blurRadius: 14),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../ai/config.dart';
 import '../ai/live_voice.dart';
 import '../features/assistant/state/assistant_engine.dart';
 import 'api_service.dart';
@@ -28,6 +29,12 @@ class VoiceChoice {
       unawaited(GreetingVoice.instance.prewarm(openingLine()));
       return (r?['message'] ?? "Couldn't save the voice.").toString();
     }
+    // The server now reads replies in the new voice too: fetch the config
+    // again so spoken replies stop using the old one (owner, 2026-10-31:
+    // "not even changing the voice").
+    try {
+      await AiConfigStore.instance.refresh();
+    } catch (_) {/* the held config stays; the next fetch catches up */}
     // The recorded opening in the NEW voice, fetched now: the next tap is
     // greeted in it at once (owner, 2026-10-06: "update instantly").
     unawaited(GreetingVoice.instance.prewarm(openingLine()));

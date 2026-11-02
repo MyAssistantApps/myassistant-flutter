@@ -126,7 +126,7 @@ class ChatBubble extends StatelessWidget {
                 Align(alignment: Alignment.centerLeft, widthFactor: 1, child: child),
                 const SizedBox(height: 3),
                 Text(clock(at),
-                    style: TextStyle(color: quietInk(mine), fontSize: 11, height: 1)),
+                    style: TextStyle(color: quietInk(mine), fontSize: 12, height: 1)),
               ],
             ),
     );

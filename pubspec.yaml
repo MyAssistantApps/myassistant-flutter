@@ -118,7 +118,6 @@ dependencies:
   firebase_crashlytics: ^5.4.0
   firebase_performance: ^0.11.6
   firebase_analytics: ^12.6.0
-  flutter_webrtc: ^1.6.2+hotfix.3
   simple_icons: ^16.23.0
 
 dev_dependencies:
@@ -148,7 +147,7 @@ flutter_launcher_icons:
   android: true
   ios: true
   image_path: assets/icon/icon.png
-  adaptive_icon_background: "#000000"
+  adaptive_icon_background: "#06061E"
   adaptive_icon_foreground: assets/icon/icon_fg.png
 
 flutter:
@@ -160,11 +159,17 @@ flutter:
   shaders:
     - shaders/voice_backdrop.frag
     - shaders/siri_orb.frag
-    - shaders/ambient.frag
 
   assets:
     - assets/icon/
+    # The splash's layers (tool/make_splash_layers.py); not the source jpg.
+    - assets/splash/bg.png
+    - assets/splash/ring.png
+    - assets/splash/eye_left.png
+    - assets/splash/eye_right.png
     - assets/sounds/
+    # Doctor's, Advocate's and Business banners (Pexels licence, CREDITS.md).
+    - assets/pro/
     # Manrope + Space Grotesk, every weight, so text never starts in a
     # fallback font and swaps (lib/core/bundled_fonts.dart).
     - assets/google_fonts/

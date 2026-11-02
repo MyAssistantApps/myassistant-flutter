@@ -34,11 +34,11 @@ class AppTheme {
   /// `base.apply(fontFamily: 'Manrope', …)` and `ThemeData(fontFamily:
   /// 'Manrope')` here, and let NeonType.manrope return a plain TextStyle.
   static TextTheme _text(TextTheme base) {
-    final body = GoogleFonts.manropeTextTheme(base).apply(
+    final body = GoogleFonts.interTightTextTheme(base).apply(
       bodyColor: Neon.textHi,
       displayColor: Neon.textHi,
     );
-    TextStyle display(TextStyle? s, {double? spacing}) => GoogleFonts.spaceGrotesk(
+    TextStyle display(TextStyle? s, {double? spacing}) => GoogleFonts.interTight(
         textStyle: s, fontWeight: FontWeight.w700, letterSpacing: spacing);
     return body.copyWith(
       displayLarge: display(body.displayLarge, spacing: -1),
@@ -48,7 +48,7 @@ class AppTheme {
       headlineMedium: display(body.headlineMedium),
       headlineSmall: display(body.headlineSmall),
       titleLarge: display(body.titleLarge),
-      labelLarge: GoogleFonts.manrope(
+      labelLarge: GoogleFonts.interTight(
           textStyle: body.labelLarge, fontWeight: FontWeight.w600),
     );
   }
@@ -89,7 +89,7 @@ class AppTheme {
     );
     TextStyle body(double size,
             [FontWeight weight = FontWeight.w400, Color? color]) =>
-        GoogleFonts.manrope(
+        GoogleFonts.interTight(
             fontSize: size, fontWeight: weight, color: color ?? Neon.textHi);
     final pickerButton = TextButton.styleFrom(
       foregroundColor: Neon.cyanInk,
@@ -169,7 +169,7 @@ class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.spaceGrotesk(
+        titleTextStyle: GoogleFonts.interTight(
           fontSize: NeonType.title3,
           fontWeight: FontWeight.w700,
           color: Neon.textHi,
@@ -200,7 +200,7 @@ class AppTheme {
           elevation: dark ? 8 : 0,
           shadowColor: Neon.violet,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
-          textStyle: GoogleFonts.manrope(
+          textStyle: GoogleFonts.interTight(
               fontWeight: FontWeight.w600, fontSize: NeonType.callout),
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14)),
@@ -229,7 +229,7 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: Neon.textHi,
           side: BorderSide(color: Neon.cyan.withValues(alpha: 0.35)),
-          textStyle: GoogleFonts.manrope(fontWeight: FontWeight.w600),
+          textStyle: GoogleFonts.interTight(fontWeight: FontWeight.w600),
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14)),
         ),
@@ -240,7 +240,7 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: Neon.cyanInk,
-          textStyle: GoogleFonts.manrope(fontWeight: FontWeight.w600),
+          textStyle: GoogleFonts.interTight(fontWeight: FontWeight.w600),
         ),
       ),
       iconButtonTheme: IconButtonThemeData(
@@ -283,7 +283,7 @@ class AppTheme {
           ),
         ),
         labelTextStyle: WidgetStateProperty.resolveWith(
-          (states) => GoogleFonts.manrope(
+          (states) => GoogleFonts.interTight(
             fontSize: NeonType.caption,
             fontWeight: FontWeight.w600,
             color: on(states) ? Neon.textHi : Neon.textDim,
@@ -296,14 +296,14 @@ class AppTheme {
           selectedForegroundColor: Neon.cyanInk,
           foregroundColor: Neon.textLo,
           side: BorderSide(color: Neon.line),
-          textStyle: GoogleFonts.manrope(fontWeight: FontWeight.w600),
+          textStyle: GoogleFonts.interTight(fontWeight: FontWeight.w600),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Neon.surfaceHigh,
-        hintStyle: GoogleFonts.manrope(color: Neon.textDim),
-        labelStyle: GoogleFonts.manrope(color: Neon.textLo),
+        hintStyle: GoogleFonts.interTight(color: Neon.textDim),
+        labelStyle: GoogleFonts.interTight(color: Neon.textLo),
         prefixIconColor: Neon.textLo,
         suffixIconColor: Neon.textLo,
         contentPadding:
@@ -343,11 +343,11 @@ class AppTheme {
           borderRadius: BorderRadius.circular(Neon.rXl),
           side: rim,
         ),
-        titleTextStyle: GoogleFonts.spaceGrotesk(
+        titleTextStyle: GoogleFonts.interTight(
             fontSize: NeonType.title3,
             fontWeight: FontWeight.w700,
             color: Neon.textHi),
-        contentTextStyle: GoogleFonts.manrope(
+        contentTextStyle: GoogleFonts.interTight(
             fontSize: NeonType.callout, color: Neon.textLo, height: 1.45),
       ),
       bottomSheetTheme: BottomSheetThemeData(
@@ -396,7 +396,7 @@ class AppTheme {
             borderRadius: BorderRadius.circular(Neon.rXl), side: rim),
         headerBackgroundColor: Neon.surfaceHigh,
         headerForegroundColor: Neon.textHi,
-        headerHeadlineStyle: GoogleFonts.spaceGrotesk(
+        headerHeadlineStyle: GoogleFonts.interTight(
             fontSize: NeonType.title2, fontWeight: FontWeight.w700),
         headerHelpStyle: body(NeonType.footnote, FontWeight.w600),
         weekdayStyle: body(NeonType.caption, FontWeight.w600, Neon.textDim),
@@ -503,7 +503,7 @@ class AppTheme {
       // a swipe either way closes it.
       snackBarTheme: SnackBarThemeData(
         backgroundColor: Neon.surfaceHigh,
-        contentTextStyle: GoogleFonts.manrope(color: Neon.textHi),
+        contentTextStyle: GoogleFonts.interTight(color: Neon.textHi),
         behavior: SnackBarBehavior.floating,
         elevation: 8,
         showCloseIcon: true,

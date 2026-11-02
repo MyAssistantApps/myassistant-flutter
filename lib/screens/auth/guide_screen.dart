@@ -121,7 +121,7 @@ class _GuideScreenState extends State<GuideScreen> {
                               const SizedBox(height: 26),
                               Text(
                                 p.title,
-                                style: GoogleFonts.spaceGrotesk(
+                                style: GoogleFonts.interTight(
                                   fontSize: 26,
                                   fontWeight: FontWeight.w700,
                                   color: Neon.textHi,

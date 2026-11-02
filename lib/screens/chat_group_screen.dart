@@ -346,7 +346,7 @@ class _ChatGroupScreenState extends State<ChatGroupScreen> {
                 Text(widget.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.spaceGrotesk(
+                    style: GoogleFonts.interTight(
                         fontWeight: FontWeight.w700, fontSize: 17)),
                 Text(
                   _members > 0 ? '$_members members' : 'Group',
@@ -433,7 +433,7 @@ class _ChatGroupScreenState extends State<ChatGroupScreen> {
                         'In this group, members’ assistants may answer for '
                         'them while they are away.',
                         style: TextStyle(
-                            color: Neon.textLo, fontSize: 11.5, height: 1.3),
+                            color: Neon.textLo, fontSize: 12, height: 1.3),
                       ),
                     ],
                   ),
@@ -477,7 +477,7 @@ class _ChatGroupScreenState extends State<ChatGroupScreen> {
               padding: const EdgeInsets.only(bottom: 3),
               child: Text(
                 m.name.split(' ').first,
-                style: GoogleFonts.spaceGrotesk(
+                style: GoogleFonts.interTight(
                   color: Neon.cyanInk,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,

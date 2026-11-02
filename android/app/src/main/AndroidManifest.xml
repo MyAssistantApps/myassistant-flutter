@@ -345,6 +345,20 @@
                 <data android:scheme="com.myassistant.myassistant" android:host="connected"/>
             </intent-filter>
         </activity>
+        <!-- Tasks inside other apps (ScreenAgentService.kt): runs only once
+             the owner switches it on in Settings → Accessibility. -->
+        <service
+            android:name=".ScreenAgentService"
+            android:exported="false"
+            android:label="@string/screen_agent_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/screen_agent"/>
+        </service>
         <!-- Every new notification, sorted (HariNotificationListener). Runs
              only once the owner grants Notification access. -->
         <service
