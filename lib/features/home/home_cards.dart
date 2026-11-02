@@ -202,6 +202,8 @@ class _HomeFeedViewState extends State<HomeFeedView> {
         ];
         // "Born today" was here (2026-10-19 to 2026-11-01): removed at the
         // owner's request; its slot goes back to the other extras.
+        // Tips ("Try asking") are gone from Home: they said what the one
+        // suggestion row below says (client, 2026-11-01).
         final extras = state == 'loading'
             ? const <HomeExtra>[]
             : HomeExtras.pick(
@@ -213,7 +215,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                 news: HomeNews.instance.itemsWith(svc.brief.headlines),
                 newsOn: memory.newsOn.value,
                 hidden: memory.hiddenAt(now),
-              );
+              ).where((e) => e.tip == null).toList();
         return ListView(
           padding: widget.padding,
           children: [
@@ -319,7 +321,10 @@ class _HomeFeedViewState extends State<HomeFeedView> {
   // ── the feed ─────────────────────────────────────────────────────────
 
   Widget _body(HomeFeed feed) {
-    final now = feed.now;
+    // NO "GET STARTED" CARD (client, 2026-11-01: "remove unnecessary
+    // elements"): "Ask me anything / Talk to me" repeated the mic in the
+    // dock and the suggestion row below; an empty day shows "all clear".
+    final now = feed.now?.kind == HomeCardKind.getStarted ? null : feed.now;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
@@ -549,27 +554,27 @@ class _HomeFeedViewState extends State<HomeFeedView> {
   /// finger, 34 to the eye; not clipped at the page edge (a sliced chip
   /// read as a fault, not as "scroll for more").
   Widget _asks(List<HomeAsk> asks) {
-    return SizedBox(
-      height: 52,
-      child: ListView.separated(
-        clipBehavior: Clip.none,
-        scrollDirection: Axis.horizontal,
-        itemCount: asks.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
-        itemBuilder: (_, i) => PressScale(
-          child: NeonPill(
-            label: asks[i].label,
-            icon: Icons.graphic_eq_rounded,
-            tone: i.isEven ? NeonTone.tip : NeonTone.discovery,
-            inkOverride: Neon.textHi,
-            quiet: true,
-            onPressed: () {
-              HapticFeedback.selectionClick();
-              _do.ask(asks[i].request);
-            },
+    // ONE ROW OF SUGGESTIONS, wrapped (client, 2026-11-01): the sideways
+    // list cut its last chip off at the screen's edge.
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: [
+        for (var i = 0; i < asks.length && i < 4; i++)
+          PressScale(
+            child: NeonPill(
+              label: asks[i].label,
+              icon: Icons.graphic_eq_rounded,
+              tone: i.isEven ? NeonTone.tip : NeonTone.discovery,
+              inkOverride: Neon.textHi,
+              quiet: true,
+              onPressed: () {
+                HapticFeedback.selectionClick();
+                _do.ask(asks[i].request);
+              },
+            ),
           ),
-        ),
-      ),
+      ],
     );
   }
 
@@ -604,7 +609,9 @@ class _HomeFeedViewState extends State<HomeFeedView> {
             padding: const EdgeInsets.fromLTRB(10, 16, 10, 14),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
-              color: tint.withValues(alpha: 0.10),
+              // Solid underneath, so the aurora's bright wave behind it
+              // cannot wash the label out.
+              color: Color.alphaBlend(tint.withValues(alpha: 0.12), Color.lerp(Neon.bg, Colors.black, 0.25)!),
               border: Border.all(color: tint.withValues(alpha: 0.38)),
             ),
             child: Column(
