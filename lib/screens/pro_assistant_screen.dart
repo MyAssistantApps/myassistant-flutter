@@ -4,10 +4,12 @@ import 'package:flutter/material.dart';
 import '../design/neon_widgets.dart';
 import 'package:flutter/services.dart';
 
+import '../ai/assistant_role.dart';
 import '../design/apple_kit.dart';
 import '../design/neon_tokens.dart';
 import '../features/assistant/state/assistant_engine.dart';
 import '../features/assistant/state/assistant_state.dart';
+import '../widgets/role_mic_orb.dart';
 import 'clients_screen.dart';
 import 'documents_screen.dart';
 import 'finance_screen.dart';
@@ -47,6 +49,21 @@ class ProProfile {
 
   /// The profession's photo (assets/pro/, Pexels licence — see CREDITS.md).
   String get photo => 'assets/pro/${kind.name}.jpg';
+
+  /// Who the mic orb on the page talks as.
+  AssistantRole get role => AssistantRole(
+      "the $name Assistant",
+      switch (kind) {
+        ProKind.doctor => 'You help a doctor run their practice: patients\' '
+            'files, notes and reports, follow-up visits, and payments and '
+            'dues.',
+        ProKind.advocate => 'You help an advocate in India: clients\' case '
+            'files, hearings, Indian acts and sections, and drafting legal '
+            'notices and letters.',
+        ProKind.business => 'You help a business owner: customers and their '
+            'files, income and spending, the record book, and messages to '
+            'customers.',
+      });
 
   static ProProfile of(ProKind k) => switch (k) {
         ProKind.doctor => ProProfile(
@@ -240,12 +257,27 @@ class ProAssistantScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 10),
-                          Text(p.name,
-                              style: NeonType.manrope(34, FontWeight.w800)
-                                  .copyWith(
-                                      color: Colors.white,
-                                      letterSpacing: -0.6,
-                                      height: 1.05)),
+                          // The name, and in front of it the mic orb
+                          // that talks as this assistant (owner,
+                          // 2026-11-02).
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Flexible(
+                                child: Text(p.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: NeonType.manrope(
+                                            34, FontWeight.w800)
+                                        .copyWith(
+                                            color: Colors.white,
+                                            letterSpacing: -0.6,
+                                            height: 1.05)),
+                              ),
+                              const SizedBox(width: 16),
+                              RoleMicOrb(role: p.role, tint: tint, size: 56),
+                            ],
+                          ),
                           const SizedBox(height: 6),
                           Text(p.lead,
                               style: NeonType.manrope(15, FontWeight.w600)

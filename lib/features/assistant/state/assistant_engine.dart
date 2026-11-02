@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../ai/assistant_role.dart';
 import '../../../ai/brain.dart';
 import '../../../ai/listen.dart';
 import '../../../ai/live_voice.dart';
@@ -445,6 +446,17 @@ class AssistantEngine extends ChangeNotifier {
     if (_starting) _startCancelled = true;
     inlineVoice = false;
     await leaveConversation();
+  }
+
+  /// Which professional assistant answers (Doctor's, Advocate's, …); null
+  /// is the everyday one. A voice session warmed as the other assistant
+  /// carries the old instruction, so it is let go and the next tap
+  /// connects as this one.
+  Future<void> useRole(AssistantRole? role) async {
+    if (AssistantRole.current.value == role) return;
+    AssistantRole.current.value = role;
+    AppLog.add('role', role?.name ?? 'everyday assistant');
+    if (!_starting && !inlineVoice && !_voiceOn) await _live.discard();
   }
 
   final List<TranscriptEntry> transcript = [];

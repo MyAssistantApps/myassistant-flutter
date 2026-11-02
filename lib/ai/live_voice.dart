@@ -34,6 +34,7 @@
 library;
 
 import 'dart:async';
+import 'assistant_role.dart';
 import 'openai_live.dart';
 import 'dart:collection';
 import 'dart:typed_data';
@@ -1042,7 +1043,7 @@ class LiveVoice {
   /// The server's instruction, with what a live voice needs, and the
   /// conversation so far (a fresh Live session knows none of it).
   static String systemFor(AiContext ctx) {
-    final b = StringBuffer(ctx.system.trim())
+    final b = StringBuffer(AssistantRole.apply(ctx.system.trim()))
       ..write(
           '\n\nYOU ARE SPEAKING OUT LOUD in a live voice conversation: short, natural '
           'sentences; no lists, links or formatting. When you use a tool, say what '

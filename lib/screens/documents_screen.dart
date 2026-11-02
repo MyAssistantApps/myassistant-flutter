@@ -12,6 +12,8 @@ import '../services/document_events.dart';
 import '../widgets/document_tile.dart';
 import '../services/app_feedback.dart';
 import 'pro_assistant_screen.dart';
+import '../ai/assistant_role.dart';
+import '../widgets/role_mic_orb.dart';
 
 /// True while [uploadMyDocument] is sending; its buttons show it and a
 /// second tap is ignored, so one file is never saved twice.
@@ -224,6 +226,15 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     // replace one another softly.
     return NeonScaffold(
       appBar: appleAppBar(context, 'My documents', actions: [
+        // The Documents Assistant's own mic (owner, 2026-11-02).
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: RoleMicOrb(
+              role: documentsRole,
+              tint: Neon.violet,
+              size: 34,
+              labelColor: Neon.textLo),
+        ),
         IconButton(
           tooltip: 'Ask about my documents',
           icon: const Icon(Icons.forum_rounded),
@@ -403,3 +414,9 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     );
   }
 }
+
+/// Who the mic orb on My documents talks as.
+const documentsRole = AssistantRole(
+    'the Documents Assistant',
+    'You help the owner with their saved documents: finding, reading and '
+        'explaining them, and the renewals coming up.');

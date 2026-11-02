@@ -59,6 +59,7 @@
 library;
 
 import 'dart:async';
+import 'assistant_role.dart';
 import '../services/telemetry.dart';
 import 'dart:convert';
 import 'dart:io' show File, SocketException;
@@ -782,7 +783,7 @@ class AssistantBrain {
     CloudRequest request(String model) => CloudRequest(
           model: model,
           text: words,
-          system: ctx.system,
+          system: AssistantRole.apply(ctx.system),
           history: history,
           attachments: attachments,
           tools: [...serverTools, ...local],
@@ -1015,7 +1016,7 @@ class AssistantBrain {
       (model) => _cloud.search(CloudRequest(
         model: model,
         text: words,
-        system: ctx.system,
+        system: AssistantRole.apply(ctx.system),
         history: history,
         attachments: attachments,
         roundTimeout: timeouts.cloudRound,
