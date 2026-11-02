@@ -6,7 +6,11 @@ import 'neon_palette.dart';
 export 'neon_palette.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
-///  MYASSISTANT · Design System — "Night sky neon" (2026-09-30)
+///  MYASSISTANT · Design System — CALM (2026-11-02, the minimal restyle):
+///  a neutral graphite ground, flat cards with hairline edges, quieter
+///  accents and no coloured glow — depth comes from a soft shadow only.
+///  It replaced "Night sky neon" (2026-09-30), described below; the token
+///  API is unchanged, only values moved.
 ///  The client's reference: a deep navy ground, cyan / electric blue /
 ///  violet / magenta light, luminous rims, and glow used for HIERARCHY
 ///  (the primary action glows, a secondary one has a rim, content sits on
@@ -61,17 +65,13 @@ class Neon {
     // Derived here rather than at every call site: these run inside
     // build() thousands of times a second on a scrolling list.
     final h = HSLColor.fromColor(c);
-    // THE SIGNATURE PAIR (2026-09-30, the client's neon direction): the
-    // default electric blue goes with a purple-magenta — the blue-to-
-    // magenta light the reference is made of — not its analogous
-    // neighbour. Every other accent keeps the rule below.
-    final signature = _signaturePartners[c.toARGB32()];
-    // 22 DEGREES, NOT 42. A wide rotation turned warm accents into a
+    // 22 DEGREES, NOT 42. (The default blue's hand-picked magenta partner
+    // went with the minimal restyle: every accent now pairs with its
+    // analogous neighbour.) A wide rotation turned warm accents into a
     // clashing second hue — amber paired with lime, which looked like a
     // mistake rather than a theme. A short analogous step keeps every
     // gradient in the same family whatever colour is chosen.
-    _accentPartner = signature ??
-        h
+    _accentPartner = h
             .withHue((h.hue + 22) % 360)
             .withSaturation((h.saturation * 1.02).clamp(0.35, 1.0))
             .withLightness((h.lightness + 0.04).clamp(0.35, 0.80))
@@ -82,11 +82,6 @@ class Neon {
         .toColor();
   }
 
-  /// Accents with a partner chosen by hand rather than by hue rotation.
-  static const _signaturePartners = <int, Color>{
-    0xFF3D8BFF: Color(0xFFE04BF5), // Electric (the default) → magenta
-  };
-
   static Color get violet => _palette?.primary ?? _violet;
   static Color get _violet => _accent != null
       ? (isDark ? _accent! : _accentInk!)
@@ -95,7 +90,7 @@ class Neon {
   // higher luminance, saturation kept, so black stays black and the
   // accents carry the energy.
   static Color get cyan => _palette?.secondary ??
-      (isDark ? const Color(0xFF22E4FF) : const Color(0xFF0891B2));
+      (isDark ? const Color(0xFF5BC6E8) : const Color(0xFF0891B2));
   /// The gradient partner — derived from the accent so every gradient in
   /// the app (orb, mic, tiles, quote card) stays in tune with one choice.
   static Color get pink => _palette?.partner ?? _pink;
@@ -109,7 +104,7 @@ class Neon {
               .toColor())
       : (isDark ? const Color(0xFFFF8AC8) : const Color(0xFFDB2777));
   static Color get lime => _palette?.tertiary ??
-      (isDark ? const Color(0xFFBDF64B) : const Color(0xFF65A30D));
+      (isDark ? const Color(0xFF9FD86B) : const Color(0xFF65A30D));
   /// The page ground. In the dark it is a near-black carrying a trace of
   /// the theme colour rather than #000000 — flat black made every screen
   /// read as empty (2026-09-19). AmbientBackground lays the soft pools of
@@ -118,11 +113,8 @@ class Neon {
     final p = _palette;
     if (p != null) return p.bg;
     if (!isDark) return const Color(0xFFF7F7FB);
-    // DEEP INDIGO-NAVY (2026-09-30, sampled from the client's reference:
-    // #150D48 top-left, #081353 middle, #001B4A low): one night-sky ground
-    // under every accent, so the neon reads as light in the dark rather
-    // than as a tinted page. The ambient pools and ribbons light it.
-    return const Color(0xFF070B2B);
+    // NEUTRAL GRAPHITE (2026-11-02, minimal restyle; was navy #070B2B).
+    return const Color(0xFF0E0F13);
   }
   // SURFACES CARRY THE BRAND, not a grey wash. The ground stays pure
   // black; the cards sitting on it are a violet-cast near-black, which
@@ -131,27 +123,27 @@ class Neon {
   // Navy cards on the blue-black ground (2026-09-30): lifted by a step of
   // blue, never grey.
   static Color get surface => _palette?.surface ??
-      (isDark ? const Color(0xFF0C1440) : const Color(0xFFFFFFFF));
+      (isDark ? const Color(0xFF17181D) : const Color(0xFFFFFFFF));
   static Color get surfaceHigh => _palette?.surfaceHigh ??
-      (isDark ? const Color(0xFF121B4E) : const Color(0xFFEEEFF6));
+      (isDark ? const Color(0xFF202228) : const Color(0xFFEEEFF6));
   static Color get success => _palette?.success ??
-      (isDark ? const Color(0xFF62F49B) : const Color(0xFF16A34A));
+      (isDark ? const Color(0xFF4ADE80) : const Color(0xFF16A34A));
   static Color get warning => _palette?.warning ??
-      (isDark ? const Color(0xFFFFD03E) : const Color(0xFFD97706));
+      (isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706));
   static Color get error => _palette?.error ??
-      (isDark ? const Color(0xFFFF8585) : const Color(0xFFEF4444));
+      (isDark ? const Color(0xFFF87171) : const Color(0xFFEF4444));
 
   // Text — ink on paper; on pure black, brighter steps so secondary text
   // still reads instead of sinking into gray mud.
   // Blue-white words on the night ground (2026-09-30).
   static Color get textHi => _palette?.textHi ??
-      (isDark ? const Color(0xFFF3F6FF) : const Color(0xFF1B1D28));
+      (isDark ? const Color(0xFFF2F3F5) : const Color(0xFF1B1D28));
   static Color get textLo => _palette?.textLo ??
-      (isDark ? const Color(0xFFBAC4E3) : const Color(0xFF585E70));
+      (isDark ? const Color(0xFFB6BAC3) : const Color(0xFF585E70));
   // Light mode was #9BA0B0 — 2.4:1 on the page, unreadable for the
   // timestamps, hints and footnotes it is used for. Now 4.5:1.
   static Color get textDim => _palette?.textDim ??
-      (isDark ? const Color(0xFF8E9AC2) : const Color(0xFF6B7185));
+      (isDark ? const Color(0xFF8F94A0) : const Color(0xFF6B7185));
 
   /// The GROUND color for things painted in [textHi] — icon-on-ink tiles,
   /// text on the primary button. Tracks the theme so "white on ink" in
@@ -238,14 +230,14 @@ class Neon {
       final h = HSLColor.fromColor(p.secondary);
       return h.withLightness((h.lightness * 0.62).clamp(0.18, 0.40)).toColor();
     }
-    return isDark ? const Color(0xFF3FE3FD) : const Color(0xFF155E75);
+    return isDark ? const Color(0xFF6CCDEB) : const Color(0xFF155E75);
   }
   static Color get warningInk =>
-      isDark ? const Color(0xFFFFD03E) : const Color(0xFFA14A07);
+      isDark ? const Color(0xFFFBBF24) : const Color(0xFFA14A07);
   static Color get errorInk =>
-      isDark ? const Color(0xFFFF8585) : const Color(0xFFC62828);
+      isDark ? const Color(0xFFF87171) : const Color(0xFFC62828);
   static Color get successInk =>
-      isDark ? const Color(0xFF62F49B) : const Color(0xFF137333);
+      isDark ? const Color(0xFF4ADE80) : const Color(0xFF137333);
 
   static const Color _nightInk = Color(0xFF14121C);
 
@@ -289,18 +281,19 @@ class Neon {
   // their edges entirely.
   // Blue-lit edges in the dark (2026-09-30): a card's rim catches the
   // ground's light instead of drawing a grey pencil line.
+  // Neutral hairlines (2026-11-02, minimal restyle).
   static Color get line => isDark
-      ? const Color(0xFF7FA2FF).withValues(alpha: 0.22)
+      ? const Color(0xFFFFFFFF).withValues(alpha: 0.09)
       : const Color(0xFF141627).withValues(alpha: 0.08);
   static Color get lineBright => isDark
-      ? const Color(0xFF7FA2FF).withValues(alpha: 0.34)
+      ? const Color(0xFFFFFFFF).withValues(alpha: 0.16)
       : const Color(0xFF141627).withValues(alpha: 0.14);
 
   /// THE SCRIM under a dialog, a sheet or a menu (2026-09-30): the night
   /// ground, deepened — not the SDK's grey-black, which turned the navy
   /// page under a dialog into a muddy slate.
   static Color get scrim => isDark
-      ? const Color(0xFF02041A).withValues(alpha: 0.66)
+      ? const Color(0xFF000000).withValues(alpha: 0.62)
       : const Color(0xFF141627).withValues(alpha: 0.40);
 
   /// HALO (2026-09-30, the client's neon direction): the light a lit edge
@@ -309,16 +302,16 @@ class Neon {
   /// HIERARCHY DECIDES WHO GLOWS: the Now card, the primary button, the
   /// selected tab, the mic. Not every row — a screen where everything
   /// glows has no focus.
+  ///
+  /// MINIMAL RESTYLE (2026-11-02): no coloured light in the dark any more —
+  /// a soft neutral shadow, so the lit thing still sits a step forward.
   static List<BoxShadow> halo(Color c, {double strength = 1}) => isDark
       ? [
           BoxShadow(
-              color: c.withValues(alpha: 0.34 * strength),
-              blurRadius: 18,
-              spreadRadius: -4),
-          BoxShadow(
-              color: c.withValues(alpha: 0.18 * strength),
-              blurRadius: 44,
-              spreadRadius: -10),
+              color: Colors.black.withValues(alpha: 0.32 * strength),
+              blurRadius: 16,
+              spreadRadius: -6,
+              offset: const Offset(0, 6)),
         ]
       : [
           BoxShadow(
@@ -411,13 +404,9 @@ class Neon {
   static LinearGradient get glassFill => LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
+        // Flat in the dark (minimal restyle): one surface, top to bottom.
         colors: isDark
-            ? [
-                Color.alphaBlend(
-                    const Color(0xFFB4C6FF).withValues(alpha: 0.07), surfaceHigh)
-                    .withValues(alpha: 0.94),
-                surface.withValues(alpha: 0.94),
-              ]
+            ? [surface, surface]
             : [const Color(0xFFFFFFFF), const Color(0xFFF8F8FC)],
       );
 
@@ -425,8 +414,8 @@ class Neon {
   /// (the top), fading down the sides — 1 px, low alpha, never a neon rim.
   static List<Color> get glassEdge => isDark
       ? [
-          const Color(0xFFDCE4FF).withValues(alpha: 0.20),
-          const Color(0xFF7FA2FF).withValues(alpha: 0.07),
+          const Color(0xFFFFFFFF).withValues(alpha: 0.10),
+          const Color(0xFFFFFFFF).withValues(alpha: 0.05),
         ]
       : [
           const Color(0xFF141627).withValues(alpha: 0.10),
@@ -435,7 +424,7 @@ class Neon {
 
   /// A hairline between rows inside a glass card.
   static Color get hairline => isDark
-      ? const Color(0xFFB4C6FF).withValues(alpha: 0.10)
+      ? const Color(0xFFFFFFFF).withValues(alpha: 0.07)
       : const Color(0xFF141627).withValues(alpha: 0.07);
 
   /// THE LIFT under a glass card: a soft, low drop shadow that sets it on
@@ -623,9 +612,12 @@ extension NeonToneLight on NeonTone {
   /// 2026-09-30 visual QA: amber is navy's opposite, so at 20% it mixed to
   /// a muddy brown-grey panel (the confirmation card, Documents' renewal
   /// card). Warning keeps a lighter tint; its rim and halo carry the light.
+  ///
+  /// Minimal restyle (2026-11-02): a faint tint only (was 0.20 / 0.09), so
+  /// cards read as one family and the edge and words carry the meaning.
   Color get fill => Color.alphaBlend(
       rim.first.withValues(
-          alpha: Neon.isDark ? (this == NeonTone.warning ? 0.09 : 0.20) : 0.05),
+          alpha: Neon.isDark ? (this == NeonTone.warning ? 0.05 : 0.07) : 0.05),
       Neon.surface);
 
   /// Words and icons drawn in the tone (a pill's label): the rim's first
