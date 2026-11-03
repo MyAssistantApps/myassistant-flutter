@@ -300,13 +300,23 @@ class _StudioLookScreenState extends State<StudioLookScreen> {
             ],
             if (r.acceptsGarment) ...[
               const SizedBox(height: 22),
-              _label(r.id == 'outfit'
-                  ? 'Have a photo of the actual item?'
-                  : 'Have a photo of the actual piece?'),
+              _label(switch (r.id) {
+                'outfit' => 'Have a photo of the actual item?',
+                'hair' => 'Have a photo of the haircut you want?',
+                'custom' => 'Add a reference photo',
+                _ => 'Have a photo of the actual piece?',
+              }),
               const SizedBox(height: 4),
               Text(
-                'A photo of the real thing keeps its exact colour, print and '
-                'texture. Without one it is made from your description.',
+                switch (r.id) {
+                  'hair' => 'A photo of the cut — a salon picture, a celebrity '
+                      '— is copied onto your own face and hair.',
+                  'custom' => 'Anything you want taken from it — an outfit, '
+                      'an accessory, a setting. Tell me below what to use.',
+                  _ => 'A photo of the real thing keeps its exact colour, '
+                      'print and texture. Without one it is made from your '
+                      'description.',
+                },
                 style: TextStyle(color: Neon.textLo, fontSize: 13, height: 1.4),
               ),
               const SizedBox(height: 12),

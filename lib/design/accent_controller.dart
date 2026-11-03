@@ -26,9 +26,10 @@ class AccentController {
   // ELECTRIC (2026-09-30): the client's reference is electric blue with
   // purple and magenta light; its partner is set by hand (Neon's
   // signature pair). Anyone who picked a colour keeps it.
-  // DEEP VIOLET (2026-11-02, the light premium redesign). By day it is
-  // drawn in its deep ink (Neon.violet); at night as itself.
-  static const defaultSeed = Color(0xFF8466FF);
+  // VIOLET (2026-11-03): the 'Violet' swatch below is the default; it
+  // replaced Deep violet (0xFF8466FF). In the light theme it is drawn in
+  // its deeper ink (Neon.violet).
+  static const defaultSeed = Color(0xFFB14DFF);
 
   /// Bumps whenever the accent changes; the app root rebuilds on it.
   static final ValueNotifier<Color> seed = ValueNotifier(defaultSeed);

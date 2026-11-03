@@ -3,6 +3,7 @@ import 'dart:async';
 import 'features/draft/draft_pad.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 
 import 'ai/identity.dart';
@@ -35,6 +36,10 @@ import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // PORTRAIT ONLY: the app's layouts are built for an upright phone, so
+  // turning it sideways must not rotate the UI.
+  unawaited(SystemChrome.setPreferredOrientations(
+      [DeviceOrientation.portraitUp]));
   // The splash's logo layers decode while startup runs (screens/splash_screen.dart).
   SplashScreen.precache();
   useBundledFonts();

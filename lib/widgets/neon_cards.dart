@@ -266,7 +266,7 @@ class GlassCard extends StatelessWidget {
           borderRadius: r,
           gradient: Neon.glassFill,
           boxShadow: [
-            ...Neon.lift,
+            ...Neon.glassShadow,
             if (g != null) ...Neon.halo(g, strength: 0.45),
           ],
         ),

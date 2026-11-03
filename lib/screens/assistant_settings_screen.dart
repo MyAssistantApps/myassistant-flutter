@@ -229,9 +229,31 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                   builder: (_, mode, __) => GroupedCard(
                     dividerInset: 60,
                     children: [
-                      // Adaptive, Light and Dark came out (2026-09-30): the
-                      // app has one design, the night-sky neon, in every
-                      // theme (owner's word).
+                      // LIGHT / DARK (2026-11-03): one switch, applied at
+                      // once and remembered. Adaptive was removed.
+                      AppleRow(
+                        leading: IconTile(
+                            mode == ThemeMode3.dark
+                                ? Icons.dark_mode_rounded
+                                : Icons.light_mode_rounded,
+                            AppleColors.indigo),
+                        title: 'Dark mode',
+                        subtitle: mode == ThemeMode3.dark
+                            ? 'On — the app is dark'
+                            : 'Off — the app is light',
+                        trailing: Switch(
+                          value: mode == ThemeMode3.dark,
+                          onChanged: (v) {
+                            HapticFeedback.selectionClick();
+                            ThemeController.setMode(
+                                v ? ThemeMode3.dark : ThemeMode3.light);
+                          },
+                        ),
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          ThemeController.toggle();
+                        },
+                      ),
                       // In the Appearance card (2026-09-24): it floated
                       // 10 dp under it as a card with no label of its own.
                       AppleRow(

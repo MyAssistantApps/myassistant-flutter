@@ -5,6 +5,11 @@ import '../design/neon_widgets.dart';
 import 'package:flutter/services.dart';
 
 import '../ai/assistant_role.dart';
+import '../ai/listen.dart';
+import '../ai/model_port.dart';
+import '../models/user_document.dart';
+import '../services/api_service.dart';
+import '../services/app_feedback.dart';
 import '../design/apple_kit.dart';
 import '../design/neon_tokens.dart';
 import '../features/assistant/state/assistant_engine.dart';
@@ -38,17 +43,25 @@ class ProAction {
 }
 
 class ProProfile {
-  const ProProfile(
-      this.kind, this.name, this.icon, this.tint, this.lead, this.actions);
+  const ProProfile(this.kind, this.name, this.icon, this.lead, this.actions);
   final ProKind kind;
   final String name;
   final IconData icon;
-  final Color Function() tint;
   final String lead;
+
+  /// THE APP'S OWN COLOUR (2026-11-03): every assistant page is drawn in
+  /// the theme accent, like the rest of the app — no per-profession tint.
+  Color tint() => Neon.violet;
   final List<ProAction> actions;
 
   /// The profession's photo (assets/pro/, Pexels licence — see CREDITS.md).
   String get photo => 'assets/pro/${kind.name}.jpg';
+
+  /// Where the photo is anchored in the hero: the advocate's (2026-11-03,
+  /// supplied by the owner) is framed tight, so it keeps its very top.
+  Alignment get photoAlign => kind == ProKind.advocate
+      ? const Alignment(0, -1)
+      : const Alignment(0, -0.7);
 
   /// Who the mic orb on the page talks as.
   AssistantRole get role => AssistantRole(
@@ -70,7 +83,6 @@ class ProProfile {
             k,
             "Doctor's",
             Icons.medical_services_rounded,
-            () => Neon.cyan,
             'Your patients, their visits and dues, kept for you.',
             [
               ProAction('Patients', 'Each patient\'s file, notes and reports',
@@ -91,7 +103,6 @@ class ProProfile {
             k,
             "Advocate's",
             Icons.gavel_rounded,
-            () => Neon.violet,
             'Your cases, hearings and the law, at hand.',
             [
               ProAction('Case files', 'Each client\'s case, notes and papers',
@@ -116,7 +127,6 @@ class ProProfile {
             k,
             'Business',
             Icons.storefront_rounded,
-            () => Neon.pink,
             'Your clients, money and records in one place.',
             [
               ProAction('Clients', 'Each customer\'s file, notes and documents',
@@ -156,6 +166,18 @@ class ProAssistantScreen extends StatelessWidget {
             ProChatScreen(profile: ProProfile.of(kind), first: ask)));
   }
 
+  /// Camera or gallery → saved to My documents → a NEW chat with this
+  /// assistant, the photo at the top and the assistant asking what to do
+  /// with it (owner, 2026-11-03).
+  Future<void> _photo(BuildContext context) async {
+    HapticFeedback.selectionClick();
+    final doc = await uploadMyDocument(context, photosOnly: true);
+    if (doc == null || !context.mounted) return;
+    Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) =>
+            ProChatScreen(profile: ProProfile.of(kind), photo: doc)));
+  }
+
   void _chat(BuildContext context) {
     HapticFeedback.selectionClick();
     Navigator.of(context).push(MaterialPageRoute<void>(
@@ -167,6 +189,10 @@ class ProAssistantScreen extends StatelessWidget {
     final p = ProProfile.of(kind);
     final tint = p.tint();
     final top = MediaQuery.paddingOf(context).top;
+    // The hero shows the face whole: tall enough that the name and the
+    // lead sit on the shoulders, below the chin, never over the face.
+    final heroHeight =
+        (MediaQuery.sizeOf(context).height * 0.46).clamp(340.0, 420.0);
     return Scaffold(
       backgroundColor: Neon.bg,
       body: CustomScrollView(
@@ -176,7 +202,7 @@ class ProAssistantScreen extends StatelessWidget {
           SliverAppBar(
             pinned: true,
             stretch: true,
-            expandedHeight: 330,
+            expandedHeight: heroHeight,
             backgroundColor: Neon.bg,
             surfaceTintColor: Colors.transparent,
             foregroundColor: Colors.white,
@@ -192,138 +218,188 @@ class ProAssistantScreen extends StatelessWidget {
             flexibleSpace: LayoutBuilder(builder: (context, box) {
               // The small title shows only once the hero has scrolled away.
               final open = box.maxHeight > kToolbarHeight + top + 40;
-              return FlexibleSpaceBar(
-                collapseMode: CollapseMode.parallax,
-                stretchModes: const [StretchMode.zoomBackground],
-                expandedTitleScale: 1,
-                titlePadding: const EdgeInsetsDirectional.only(
-                    start: 64, bottom: 16, end: 16),
-                title: open
-                    ? null
-                    : Text('${p.name} Assistant',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: NeonType.manrope(17, FontWeight.w800)
-                            .copyWith(color: Neon.textHi)),
-                background: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Image.asset(p.photo,
-                        fit: BoxFit.cover,
-                        alignment: const Alignment(0, -0.6)),
-                    DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          stops: const [0, 0.3, 0.72, 1],
-                          colors: [
-                            Colors.black.withValues(alpha: 0.45),
-                            Colors.transparent,
-                            Neon.bg.withValues(alpha: 0.75),
-                            Neon.bg,
-                          ],
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      left: 20,
-                      right: 20,
-                      bottom: 18,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: tint.withValues(alpha: 0.22),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                  color: tint.withValues(alpha: 0.6)),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(p.icon, size: 14, color: tint),
-                                const SizedBox(width: 6),
-                                Text('ASSISTANT',
-                                    style: NeonType.manrope(
-                                            11, FontWeight.w800)
-                                        .copyWith(
-                                            color: Colors.white,
-                                            letterSpacing: 1.4)),
+              // How open the hero is, 1 = fully. The name, lead and orb
+              // ride up with the hero's bottom edge and fade out as it
+              // closes, instead of being sliced by it.
+              final t = ((box.maxHeight - kToolbarHeight - top) /
+                      (heroHeight - kToolbarHeight))
+                  .clamp(0.0, 1.0);
+              final textOpacity = ((t - 0.55) / 0.35).clamp(0.0, 1.0);
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  FlexibleSpaceBar(
+                    collapseMode: CollapseMode.parallax,
+                    stretchModes: const [StretchMode.zoomBackground],
+                    expandedTitleScale: 1,
+                    titlePadding: const EdgeInsetsDirectional.only(
+                        start: 64, bottom: 16, end: 16),
+                    title: open
+                        ? null
+                        : Text('${p.name} Assistant',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: NeonType.manrope(17, FontWeight.w800)
+                                .copyWith(color: Neon.textHi)),
+                    background: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.asset(p.photo,
+                            fit: BoxFit.cover,
+                            alignment: p.photoAlign,
+                            filterQuality: FilterQuality.medium),
+                        // Clear over the face (the top ~55%), then into the
+                        // page's own ground where the words sit; a light
+                        // dark band at the very top keeps the back button
+                        // legible.
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              stops: const [0, 0.22, 0.55, 0.8, 1],
+                              colors: [
+                                Colors.black.withValues(alpha: 0.35),
+                                Colors.transparent,
+                                Colors.transparent,
+                                Neon.bg.withValues(alpha: 0.88),
+                                Neon.bg,
                               ],
                             ),
                           ),
-                          const SizedBox(height: 10),
-                          // The name, and in front of it the mic orb
-                          // that talks as this assistant (owner,
-                          // 2026-11-02).
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (textOpacity > 0)
+                    Positioned(
+                      left: 20,
+                      right: 16,
+                      bottom: 14,
+                      child: Opacity(
+                        opacity: textOpacity,
+                        child: IgnorePointer(
+                          ignoring: textOpacity < 0.5,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Flexible(
-                                child: Text(p.name,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: NeonType.manrope(
-                                            34, FontWeight.w800)
-                                        .copyWith(
-                                            color: Colors.white,
-                                            letterSpacing: -0.6,
-                                            height: 1.05)),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: Color.alphaBlend(
+                                      tint.withValues(alpha: 0.22),
+                                      Neon.surface),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                      color: tint.withValues(alpha: 0.6)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(p.icon, size: 14, color: tint),
+                                    const SizedBox(width: 6),
+                                    Text('ASSISTANT',
+                                        style: NeonType.manrope(
+                                                11, FontWeight.w800)
+                                            .copyWith(
+                                                color: Neon.textHi,
+                                                letterSpacing: 1.4)),
+                                  ],
+                                ),
                               ),
-                              const SizedBox(width: 16),
-                              RoleMicOrb(role: p.role, tint: tint, size: 56),
+                              const SizedBox(height: 10),
+                              // The name and its lead on the left; the mic orb
+                              // that talks as this assistant (owner,
+                              // 2026-11-02) at the right edge, clear of the
+                              // face.
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(p.name,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: NeonType.manrope(
+                                                    34, FontWeight.w800)
+                                                .copyWith(
+                                                    color: Neon.textHi,
+                                                    letterSpacing: -0.6,
+                                                    height: 1.05)),
+                                        const SizedBox(height: 6),
+                                        Text(p.lead,
+                                            style: NeonType.manrope(
+                                                    15, FontWeight.w600)
+                                                .copyWith(
+                                                    color: Neon.textLo,
+                                                    height: 1.35)),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  // A PHOTO FOR THE ASSISTANT (2026-11-03):
+                                  // beside the mic — camera or gallery, then
+                                  // a new chat about it opens.
+                                  _PhotoButton(
+                                      tint: tint, onTap: () => _photo(context)),
+                                  const SizedBox(width: 12),
+                                  RoleMicOrb(
+                                      role: p.role, tint: tint, size: 56),
+                                ],
+                              ),
                             ],
                           ),
-                          const SizedBox(height: 6),
-                          Text(p.lead,
-                              style: NeonType.manrope(15, FontWeight.w600)
-                                  .copyWith(
-                                      color: Colors.white
-                                          .withValues(alpha: 0.82),
-                                      height: 1.35)),
-                        ],
+                        ),
                       ),
                     ),
-                  ],
-                ),
+                ],
               );
             }),
           ),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             sliver: SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.only(left: 4, bottom: 10),
+                padding: const EdgeInsets.only(left: 4, bottom: 12),
                 child: Text('WHAT I CAN DO',
                     style: NeonType.eyebrow.copyWith(color: Neon.textLo)),
               ),
             ),
           ),
+          // Two cards a row, each row as tall as its longer card — no
+          // fixed height leaving short cards half empty.
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                mainAxisExtent: 148,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                (_, i) => _ActionCard(
-                    action: p.actions[i],
-                    tint: tint,
-                    onTap: () => _run(context, p.actions[i])),
-                childCount: p.actions.length,
-              ),
+            sliver: SliverList.separated(
+              itemCount: (p.actions.length + 1) ~/ 2,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (_, row) {
+                Widget card(int i) => i < p.actions.length
+                    ? _ActionCard(
+                        action: p.actions[i],
+                        tint: tint,
+                        onTap: () => _run(context, p.actions[i]))
+                    : const SizedBox.shrink();
+                return IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(child: card(row * 2)),
+                      const SizedBox(width: 12),
+                      Expanded(child: card(row * 2 + 1)),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
           SliverPadding(
             padding: EdgeInsets.fromLTRB(
-                16, 20, 16, 40 + MediaQuery.paddingOf(context).bottom),
+                16, 20, 16, 24 + MediaQuery.paddingOf(context).bottom),
             sliver: SliverToBoxAdapter(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -348,6 +424,57 @@ class ProAssistantScreen extends StatelessWidget {
   }
 }
 
+/// The camera beside the mic orb: the same size and the same caption
+/// line, so the two read as a pair.
+class _PhotoButton extends StatelessWidget {
+  const _PhotoButton({required this.tint, required this.onTap});
+  final Color tint;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'Add a photo — take one or choose from gallery',
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ValueListenableBuilder<bool>(
+              valueListenable: documentUploading,
+              builder: (_, busy, __) => Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: Neon.glassFill,
+                  border: Border.all(
+                      color: tint.withValues(alpha: 0.7), width: 1.4),
+                  boxShadow: Neon.halo(tint, strength: 0.5),
+                ),
+                child: busy
+                    ? const Center(
+                        child: NeonLoader.inline(semanticLabel: 'Uploading'))
+                    : Icon(Icons.photo_camera_rounded,
+                        color: Neon.textHi, size: 24),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text('Add photo',
+                style: TextStyle(
+                    color: Neon.textHi,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// One thing the assistant does: a tinted card, the icon in a disc, the
 /// name and a line under it; a chat bubble when it asks, an arrow when it
 /// opens a page.
@@ -362,7 +489,6 @@ class _ActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final a = action;
     final r = BorderRadius.circular(20);
-    final night = Color.lerp(Neon.bg, Colors.black, 0.25)!;
     return Semantics(
       button: true,
       label: '${a.title}. ${a.detail}',
@@ -374,17 +500,23 @@ class _ActionCard extends StatelessWidget {
           onTap: onTap,
           child: Ink(
             padding: const EdgeInsets.fromLTRB(14, 14, 12, 12),
+            // On the theme's own card surface, washed with the accent —
+            // right in both the light and the dark theme.
             decoration: BoxDecoration(
               borderRadius: r,
+              // Glass, like Home's cards (2026-11-03): the sky shows
+              // through, with a touch of the accent in the corner.
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color.alphaBlend(tint.withValues(alpha: 0.16), night),
-                  night,
+                  Color.alphaBlend(tint.withValues(alpha: 0.10),
+                      Neon.glassFill.colors.first),
+                  Neon.glassFill.colors.last,
                 ],
               ),
-              border: Border.all(color: tint.withValues(alpha: 0.30)),
+              border: Border.all(color: Neon.glassEdge.first),
+              boxShadow: Neon.glassShadow,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -414,7 +546,9 @@ class _ActionCard extends StatelessWidget {
                         size: 18),
                   ],
                 ),
-                const Spacer(),
+                // Every title starts at the same height, however many
+                // lines it takes.
+                const SizedBox(height: 12),
                 Text(a.title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -453,11 +587,13 @@ class _ChatButton extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: r,
-          gradient: LinearGradient(
-              colors: [tint, Color.lerp(tint, Neon.violet, 0.6)!]),
+          gradient: LinearGradient(colors: [
+            Color.lerp(Neon.accentFill, Colors.white, 0.12)!,
+            Neon.accentFill,
+          ]),
           boxShadow: [
             BoxShadow(
-                color: tint.withValues(alpha: 0.4),
+                color: Neon.accentFill.withValues(alpha: 0.4),
                 blurRadius: 20,
                 spreadRadius: -6)
           ],
@@ -499,9 +635,13 @@ class _ChatButton extends StatelessWidget {
 /// sendTypedMessage) — shown as bubbles from when this chat opened. The
 /// first message is the action's question; the owner types the rest.
 class ProChatScreen extends StatefulWidget {
-  const ProChatScreen({super.key, required this.profile, this.first});
+  const ProChatScreen(
+      {super.key, required this.profile, this.first, this.photo});
   final ProProfile profile;
   final String? first;
+
+  /// A photo the user just added: the chat opens on it, asking what to do.
+  final UserDocument? photo;
 
   @override
   State<ProChatScreen> createState() => _ProChatScreenState();
@@ -514,10 +654,20 @@ class _ProChatScreenState extends State<ProChatScreen> {
   late final int _from = _engine.transcript.length;
   bool _sending = false;
 
+  /// VOICE TYPING (2026-11-03): the mic in the message box writes what is
+  /// said into it, live; nothing is sent until the user taps send. The
+  /// same listener as the rest of the app (on-device recogniser first).
+  VoiceListener? _listener;
+  VoiceListener get _voice =>
+      _listener ??= VoiceListener.standard(ModelPorts.cloud());
+  bool _dictating = false;
+  final _level = ValueNotifier<double>(0);
+
   @override
   void initState() {
     super.initState();
     _engine.addListener(_changed);
+    _photo = widget.photo;
     final first = widget.first;
     if (first != null && first.trim().isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _send(first));
@@ -527,6 +677,9 @@ class _ProChatScreenState extends State<ProChatScreen> {
   @override
   void dispose() {
     _engine.removeListener(_changed);
+    unawaited(_listener?.cancel().catchError((_) {}));
+    _level.dispose();
+    _inputFocus.dispose();
     _input.dispose();
     _scroll.dispose();
     super.dispose();
@@ -543,9 +696,75 @@ class _ProChatScreenState extends State<ProChatScreen> {
     });
   }
 
+  /// Tap to start: what is said is added after whatever is already typed.
+  /// Tap again to stop early; a pause in speech also ends it.
+  Future<void> _toggleDictation() async {
+    if (_dictating) {
+      HapticFeedback.selectionClick();
+      await _voice.stop();
+      return;
+    }
+    HapticFeedback.mediumImpact();
+    final before = _input.text.trimRight();
+    final lead = before.isEmpty ? '' : '$before ';
+    void show(String words) {
+      final t = '$lead${words.trim()}';
+      _input.value = TextEditingValue(
+          text: t, selection: TextSelection.collapsed(offset: t.length));
+    }
+
+    setState(() => _dictating = true);
+    var failed = '';
+    try {
+      // Dictation, not a command: longer pauses are allowed mid-thought.
+      await for (final e in _voice.listen(
+          listenFor: const Duration(seconds: 60),
+          pauseFor: const Duration(milliseconds: 2500))) {
+        if (!mounted) break;
+        switch (e) {
+          case HearPartial(:final text):
+            show(text);
+          case HearFinal(:final text):
+            if (text.trim().isNotEmpty) show(text);
+          case HearLevel(:final level):
+            _level.value = level;
+          case HearError(:final code):
+            failed = code;
+          case HearEndOfSpeech():
+            break;
+        }
+      }
+    } catch (e) {
+      failed = '$e';
+    }
+    if (!mounted) return;
+    _level.value = 0;
+    setState(() => _dictating = false);
+    if (failed.isNotEmpty) {
+      AppFeedback.toast(failed == 'permission'
+          ? 'Allow the microphone to use voice typing.'
+          : "Couldn't hear that — try again, or type it.");
+    }
+  }
+
+  /// The photo this chat is about (shown at the top, with the assistant's
+  /// question under it).
+  UserDocument? _photo;
+
+  /// True until the user has said something about [_photo]: their first
+  /// message carries its title, which is how the assistant finds it.
+  bool _photoPending = true;
+  final _inputFocus = FocusNode();
+
   Future<void> _send(String text) async {
-    final t = text.trim();
+    var t = text.trim();
     if (t.isEmpty || _sending) return;
+    final photo = _photo;
+    if (photo != null && _photoPending) {
+      t = 'About the photo I just added ("${photo.title}"): $t';
+      _photoPending = false;
+    }
+    if (_dictating) unawaited(_voice.cancel().catchError((_) {}));
     HapticFeedback.selectionClick();
     _input.clear();
     setState(() => _sending = true);
@@ -563,9 +782,11 @@ class _ProChatScreenState extends State<ProChatScreen> {
   Future<void> _attach() async {
     final doc = await uploadMyDocument(context);
     if (doc == null || !mounted) return;
-    final about = 'About "${doc.title}": ';
-    _input.value = TextEditingValue(
-        text: about, selection: TextSelection.collapsed(offset: about.length));
+    setState(() {
+      _photo = doc;
+      _photoPending = true;
+    });
+    _inputFocus.requestFocus();
   }
 
   List<TranscriptEntry> get _lines {
@@ -592,7 +813,7 @@ class _ProChatScreenState extends State<ProChatScreen> {
         child: Column(
           children: [
             Expanded(
-              child: lines.isEmpty && !working
+              child: lines.isEmpty && !working && _photo == null
                   ? Center(
                       child: Padding(
                         padding: const EdgeInsets.all(32),
@@ -617,13 +838,15 @@ class _ProChatScreenState extends State<ProChatScreen> {
                       controller: _scroll,
                       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                       children: [
+                        if (_photo != null) ..._photoHeader(_photo!),
                         for (final e in lines) _bubble(e, tint),
                         if (working)
                           Padding(
                             padding: const EdgeInsets.only(top: 6, left: 4),
                             child: Row(
                               children: [
-                                const NeonLoader.inline(size: 14, semanticLabel: 'Working'),
+                                const NeonLoader.inline(
+                                    size: 14, semanticLabel: 'Working'),
                                 const SizedBox(width: 10),
                                 Text(doing ?? 'Working on it…',
                                     style: TextStyle(
@@ -644,6 +867,62 @@ class _ProChatScreenState extends State<ProChatScreen> {
       ),
     );
   }
+
+  /// The photo, as the user's own message, and the assistant asking what
+  /// to do with it — the start of a chat about a picture.
+  List<Widget> _photoHeader(UserDocument d) => [
+        Align(
+          alignment: Alignment.centerRight,
+          child: Container(
+            margin: const EdgeInsets.symmetric(vertical: 4),
+            constraints: BoxConstraints(
+                maxWidth: MediaQuery.sizeOf(context).width * 0.62,
+                maxHeight: 260),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: Neon.accentFill, width: 2),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: d.mime.startsWith('image/')
+                  ? Image.network(ApiService.documentFileUrl(d.id),
+                      headers: ApiService.imageHeaders,
+                      fit: BoxFit.cover,
+                      cacheWidth: 700)
+                  : Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Text(d.title,
+                          style: TextStyle(color: Neon.textHi))),
+            ),
+          ),
+        ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Container(
+            margin: const EdgeInsets.symmetric(vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            constraints: BoxConstraints(
+                maxWidth: MediaQuery.sizeOf(context).width * 0.8),
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(18),
+                topRight: Radius.circular(18),
+                bottomLeft: Radius.circular(4),
+                bottomRight: Radius.circular(18),
+              ),
+              color: Neon.surface,
+              border: Border.all(color: Neon.glassEdge.first),
+            ),
+            child: Text(
+                'Got your photo. What would you like me to do with it? '
+                'Ask me to read it, explain it, or file it.',
+                style: TextStyle(
+                    color: Neon.textHi,
+                    fontSize: NeonType.rowTitle,
+                    height: 1.45)),
+          ),
+        ),
+      ];
 
   Widget _bubble(TranscriptEntry e, Color tint) {
     final mine = e.role == TranscriptRole.user;
@@ -710,6 +989,43 @@ class _ProChatScreenState extends State<ProChatScreen> {
         ),
       );
 
+  /// The mic inside the message box: violet when idle, a pulsing stop
+  /// while it is writing down what is said.
+  Widget _dictateButton() => ValueListenableBuilder<double>(
+        valueListenable: _level,
+        builder: (_, level, __) => Padding(
+          padding: const EdgeInsets.only(right: 4),
+          child: IconButton(
+            key: const ValueKey('pro-chat-dictate'),
+            tooltip: _dictating ? 'Stop voice typing' : 'Voice typing',
+            onPressed: _sending ? null : _toggleDictation,
+            icon: AnimatedContainer(
+              duration: const Duration(milliseconds: 120),
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _dictating
+                    ? Neon.accentFill
+                    : Neon.violet.withValues(alpha: 0.12),
+                boxShadow: _dictating
+                    ? [
+                        BoxShadow(
+                            color: Neon.accentFill.withValues(alpha: 0.55),
+                            blurRadius: 6 + 18 * level,
+                            spreadRadius: 1 + 5 * level)
+                      ]
+                    : null,
+              ),
+              child: Icon(
+                  _dictating ? Icons.stop_rounded : Icons.mic_rounded,
+                  size: 20,
+                  color: _dictating ? Colors.white : Neon.violet),
+            ),
+          ),
+        ),
+      );
+
   /// Raised round controls on the page (light premium, 2026-11-02).
   BoxDecoration get _raised => BoxDecoration(
         shape: BoxShape.circle,
@@ -731,7 +1047,8 @@ class _ProChatScreenState extends State<ProChatScreen> {
                 valueListenable: documentUploading,
                 builder: (context, busy, _) => IconButton(
                   tooltip: busy ? 'Uploading' : 'Attach a photo or file',
-                  constraints: const BoxConstraints.tightFor(width: 50, height: 50),
+                  constraints:
+                      const BoxConstraints.tightFor(width: 50, height: 50),
                   onPressed: busy ? null : _attach,
                   icon: busy
                       ? const NeonLoader.inline(semanticLabel: 'Uploading')
@@ -751,17 +1068,21 @@ class _ProChatScreenState extends State<ProChatScreen> {
                 child: TextField(
                   key: const ValueKey('pro-chat-input'),
                   controller: _input,
+                  focusNode: _inputFocus,
+                  // A chat opened on a photo waits for the user's words.
+                  autofocus: widget.photo != null,
                   minLines: 1,
                   maxLines: 4,
                   textInputAction: TextInputAction.send,
                   onSubmitted: _send,
-                  style: TextStyle(color: Neon.textHi, fontSize: NeonType.rowTitle),
+                  style: TextStyle(
+                      color: Neon.textHi, fontSize: NeonType.rowTitle),
                   decoration: InputDecoration(
-                    hintText: 'Type a message',
+                    hintText: _dictating ? 'Listening…' : 'Type or speak',
                     hintStyle: TextStyle(color: Neon.textDim),
                     filled: false,
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                    contentPadding: const EdgeInsets.fromLTRB(18, 14, 4, 14),
+                    suffixIcon: _dictateButton(),
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
                     focusedBorder: InputBorder.none,
@@ -785,9 +1106,11 @@ class _ProChatScreenState extends State<ProChatScreen> {
               ),
               child: IconButton(
                 tooltip: 'Send',
-                constraints: const BoxConstraints.tightFor(width: 50, height: 50),
+                constraints:
+                    const BoxConstraints.tightFor(width: 50, height: 50),
                 onPressed: () => _send(_input.text),
-                icon: const Icon(Icons.arrow_upward_rounded, color: Colors.white),
+                icon:
+                    const Icon(Icons.arrow_upward_rounded, color: Colors.white),
               ),
             ),
           ],

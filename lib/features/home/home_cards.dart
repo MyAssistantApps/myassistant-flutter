@@ -32,6 +32,7 @@ import '../shopping/shopping_service.dart';
 import 'deal_banners.dart';
 import 'home_extras.dart';
 import 'home_redesign.dart';
+import 'try_now_cards.dart';
 import 'home_feed.dart';
 import 'home_memory.dart';
 
@@ -241,6 +242,12 @@ class _HomeFeedViewState extends State<HomeFeedView> {
               _status(svc),
             const SizedBox(height: 28),
             Reveal(delayMs: 130, child: _assistants()),
+            // TRY NOW (2026-11-03): Style Studio's try-ons, sliding.
+            const SizedBox(height: 26),
+            Reveal(
+              delayMs: 135,
+              child: TryNowSection(onOpen: (page) => _do.open(context, page)),
+            ),
             if (extras.isNotEmpty) ...[
               const SizedBox(height: 24),
               Reveal(
@@ -421,12 +428,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
             semanticLabel: label == 'Documents' ? 'Documents' : '$label Assistant',
             child: Container(
               height: 92,
-              decoration: BoxDecoration(
-                color: Neon.surface,
-                borderRadius: BorderRadius.circular(Neon.rLg),
-                border: Border.all(color: Neon.glassEdge.first),
-                boxShadow: Neon.halo(Neon.violet, strength: 0.6),
-              ),
+              decoration: Neon.glassBox(Neon.rLg),
               child: ExcludeSemantics(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,

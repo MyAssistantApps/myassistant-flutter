@@ -21,7 +21,8 @@ import 'agent_strip.dart';
 ///   * HOLD it: a ring of light traces round the hexagon; when it closes,
 ///     the nine agents fly out of the button into a honeycomb — the
 ///     manager in the middle, the eight specialists around it.
-///   * TAP it: the same "Your agents" list the row opened (showAgentSheet).
+///   * TAP it: nothing (2026-11-03, owner: "when we click it should show
+///     nothing, only when we hold it"). The list it used to open is gone.
 ///
 ///  Live, as the row was: while a turn runs the button glows and pulses,
 ///  and in the honeycomb the manager and the chosen agents light up, the
@@ -182,15 +183,14 @@ class _AgentHiveButtonState extends State<AgentHiveButton>
       label: working
           ? 'Your agents. $count working.'
           : 'Your agents. ${agentRoster.length} ready.',
-      hint: 'Hold to see all nine. Tap for what each one does.',
+      hint: 'Hold to see all nine.',
       onLongPress: _openHive,
       child: Tooltip(
         message: 'Hold to see your agents',
         triggerMode: TooltipTriggerMode.manual,
         // The ring follows the finger itself (down → charge, up → let go),
         // so it starts the instant the finger lands; a drag past the touch
-        // slop is a scroll, not a hold, and lets go. The tap is a plain
-        // tap, ignored if the hold already opened the honeycomb.
+        // slop is a scroll, not a hold, and lets go. A tap does nothing.
         child: Listener(
           onPointerDown: (e) {
             _downAt = e.position;
@@ -213,9 +213,6 @@ class _AgentHiveButtonState extends State<AgentHiveButton>
           },
           child: GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTap: () {
-            if (!_opened) showAgentSheet(context);
-          },
           child: RepaintBoundary(
             child: AnimatedBuilder(
               animation: Listenable.merge([_hold, _glow]),

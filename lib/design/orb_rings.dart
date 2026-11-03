@@ -451,7 +451,9 @@ class OrbPalette {
   static OrbPalette get current => of(AccentController.seed.value);
 
   static Color Function(Color) _shiftFor(Color seed) {
-    if (seed.toARGB32() == AccentController.defaultSeed.toARGB32()) {
+    // The orb's own colours are drawn as-is for Deep violet (the default
+    // until 2026-11-03); every other accent, Violet included, shifts them.
+    if (seed.toARGB32() == 0xFF8466FF) {
       return (c) => c;
     }
     final s = _Hsl.of(seed);

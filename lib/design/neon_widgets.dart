@@ -698,12 +698,27 @@ class NeonPill extends StatelessWidget {
               padding: EdgeInsets.zero,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Color.alphaBlend(
-                      rim.first.withValues(alpha: quiet ? 0.10 : 0.16),
-                      Neon.surface),
-                  borderRadius: BorderRadius.circular(Neon.rPill),
-                ),
+                // A quiet pill is glass (2026-11-03): the sky shows
+                // through, its tone a faint tint and a lit hairline edge.
+                decoration: quiet
+                    ? BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Color.alphaBlend(rim.first.withValues(alpha: 0.10),
+                                Neon.glassFill.colors.first),
+                            Neon.glassFill.colors.last,
+                          ],
+                        ),
+                        border: Border.all(color: Neon.glassEdge.first),
+                        borderRadius: BorderRadius.circular(Neon.rPill),
+                      )
+                    : BoxDecoration(
+                        color: Color.alphaBlend(
+                            rim.first.withValues(alpha: 0.16), Neon.surface),
+                        borderRadius: BorderRadius.circular(Neon.rPill),
+                      ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [

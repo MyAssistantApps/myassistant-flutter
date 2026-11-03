@@ -1,17 +1,11 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'neon_tokens.dart';
 
-/// The three choices a user has.
+/// The two choices a user has. Dark is the default.
 enum ThemeMode3 {
-  /// Follows the clock: light through the day, dark in the evening and
-  /// night. The default, and what most people mean by "just do the right
-  /// thing".
-  adaptive,
   light,
   dark,
 }
@@ -23,10 +17,9 @@ enum ThemeMode3 {
 ///  controller owns that flag, persists the choice, keeps the status-bar
 ///  icons in step, and notifies the root so the entire tree rebuilds.
 ///
-///  ADAPTIVE mode turns the app dark at dusk and light again in the
-///  morning, on its own, and re-checks as the hours pass — including
-///  while the app sits open across sunset. Choosing Light or Dark
-///  explicitly pins it; nothing overrides the user's own choice.
+///  Two themes only, Light and Dark, switched by the user (You → Appearance
+///  → Dark mode, or by voice). Dark is the default (2026-11-03). Adaptive
+///  (follow the clock) was removed; a phone that had it saved starts dark.
 /// ─────────────────────────────────────────────────────────────────────────
 class ThemeController {
   ThemeController._();
@@ -34,26 +27,12 @@ class ThemeController {
   static const _prefsKey = 'theme_dark_v1'; // legacy boolean, still honoured
   static const _modeKey = 'theme_mode_v1';
 
-  /// Evening starts at 19:00 and morning at 06:00 local time.
-  static const _darkFromHour = 19;
-  static const _lightFromHour = 6;
-
   /// Bumps on every switch; the app root listens and rebuilds.
-  static final ValueNotifier<bool> dark = ValueNotifier(false);
+  static final ValueNotifier<bool> dark = ValueNotifier(true);
 
-  /// The chosen mode, for settings to render.
-  // LIGHT UNLESS CHOSEN (2026-11-02, the light premium redesign). Dark and
-  // Adaptive stay one tap away in You → Appearance.
+  /// The chosen mode, for settings to render. Dark unless chosen.
   static final ValueNotifier<ThemeMode3> mode =
-      ValueNotifier(ThemeMode3.light); // light premium (2026-11-02); a saved choice is kept
-
-  static Timer? _clock;
-
-  /// True when the clock says it is evening or night.
-  static bool darkHourNow([DateTime? now]) {
-    final h = (now ?? DateTime.now()).hour;
-    return h >= _darkFromHour || h < _lightFromHour;
-  }
+      ValueNotifier(ThemeMode3.dark);
 
   /// Called in main() BEFORE runApp, so the first frame is already right.
   static Future<void> load() async {
@@ -61,28 +40,24 @@ class ThemeController {
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getString(_modeKey);
       if (saved != null) {
+        // An unknown value (including the removed 'adaptive') means Dark.
         mode.value = ThemeMode3.values.firstWhere(
           (m) => m.name == saved,
-          orElse: () => ThemeMode3.adaptive,
+          orElse: () => ThemeMode3.dark,
         );
       } else if (prefs.containsKey(_prefsKey)) {
-        // Someone who already chose a theme before adaptive existed keeps
-        // exactly what they chose.
         mode.value =
-            (prefs.getBool(_prefsKey) ?? false) ? ThemeMode3.dark : ThemeMode3.light;
-        await prefs.setString(_modeKey, mode.value.name);
+            (prefs.getBool(_prefsKey) ?? true) ? ThemeMode3.dark : ThemeMode3.light;
       }
+      await prefs.setString(_modeKey, mode.value.name);
     } catch (_) {}
-    _applyForMode();
-    _startClock();
+    _apply(mode.value == ThemeMode3.dark);
   }
 
-  /// Pick a mode. Light and Dark pin the app; adaptive hands it back to
-  /// the clock and takes effect immediately.
+  /// Pick a theme. It is applied at once and remembered.
   static Future<void> setMode(ThemeMode3 m) async {
     mode.value = m;
-    _applyForMode();
-    _startClock();
+    _apply(m == ThemeMode3.dark);
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_modeKey, m.name);
@@ -91,36 +66,9 @@ class ThemeController {
     } catch (_) {}
   }
 
-  /// The old one-tap switch: flips to the opposite fixed theme (leaving
-  /// adaptive, because the user has just made an explicit choice).
+  /// Flip between Light and Dark.
   static Future<void> toggle() =>
       setMode(dark.value ? ThemeMode3.light : ThemeMode3.dark);
-
-  /// Re-evaluate now — called by the hourly tick and on app resume, so an
-  /// app left open through sunset does not stay bright.
-  static void refresh() {
-    if (mode.value == ThemeMode3.adaptive) _applyForMode();
-  }
-
-  /// ONE DESIGN (owner, 2026-09-30: "need exact same design even in light
-  /// and dark theme"). The product is the client's night-sky neon; there
-  /// is no pale version of it, so every mode draws it.
-  static void _applyForMode() => _apply(true);
-
-  /// In adaptive mode the theme must change AT dusk and dawn even if
-  /// nobody touches the phone, so tick at the top of each hour.
-  static void _startClock() {
-    _clock?.cancel();
-    _clock = null;
-    if (mode.value != ThemeMode3.adaptive) return;
-    final now = DateTime.now();
-    final nextHour = DateTime(now.year, now.month, now.day, now.hour)
-        .add(const Duration(hours: 1));
-    _clock = Timer(nextHour.difference(now) + const Duration(seconds: 2), () {
-      refresh();
-      _startClock();
-    });
-  }
 
   static void _apply(bool v) {
     Neon.setDark(v);

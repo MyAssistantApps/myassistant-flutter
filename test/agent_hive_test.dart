@@ -41,16 +41,16 @@ void main() {
     expect(find.text(agentRoster.firstWhere((a) => a.id == 'planner').blurb), findsOneWidget);
   });
 
-  testWidgets('tap: the list of who does what', (tester) async {
+  // A TAP DOES NOTHING (owner, 2026-11-03): only a hold opens the agents.
+  testWidgets('tap: nothing opens', (tester) async {
     tester.view.physicalSize = const Size(1080, 2340);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(_host());
     await tester.tap(find.byType(AgentHiveButton));
     await tester.pump(const Duration(milliseconds: 600));
-    expect(find.text('Your agents'), findsOneWidget);
-    expect(find.text('Manager'), findsOneWidget);
-    expect(find.text('Working'), findsNothing);
+    expect(find.text('Your agents'), findsNothing);
+    expect(find.text('Manager'), findsNothing);
   });
 
   testWidgets('working: the badge counts the agents on it', (tester) async {

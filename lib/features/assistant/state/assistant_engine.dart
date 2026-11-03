@@ -2944,7 +2944,6 @@ class AssistantEngine extends ChangeNotifier {
           final target = switch (mode) {
             'dark' => ThemeMode3.dark,
             'light' => ThemeMode3.light,
-            'adaptive' => ThemeMode3.adaptive,
             _ => null,
           };
           if (target != null) {

@@ -22,7 +22,8 @@ final documentUploading = ValueNotifier<bool>(false);
 /// Picks a photo or file and saves it to My documents (the same flow a case
 /// file uses, without the client). Shared by Home's documents section and
 /// the assistant chats. Returns the saved document, or null if nothing was.
-Future<UserDocument?> uploadMyDocument(BuildContext context) async {
+Future<UserDocument?> uploadMyDocument(BuildContext context,
+    {bool photosOnly = false}) async {
   if (documentUploading.value) return null;
   final source = await showAppSheet<String>(
     context: context,
@@ -42,11 +43,12 @@ Future<UserDocument?> uploadMyDocument(BuildContext context) async {
               title: 'Pick from gallery',
               onTap: () => Navigator.pop(ctx, 'gallery'),
             ),
-            AppleRow(
-              leading: IconTile(Icons.description_rounded, AppleColors.red),
-              title: 'Pick a file (PDF, Word, Excel…)',
-              onTap: () => Navigator.pop(ctx, 'file'),
-            ),
+            if (!photosOnly)
+              AppleRow(
+                leading: IconTile(Icons.description_rounded, AppleColors.red),
+                title: 'Pick a file (PDF, Word, Excel…)',
+                onTap: () => Navigator.pop(ctx, 'file'),
+              ),
           ],
         ),
       ),
@@ -129,15 +131,14 @@ Future<UserDocument?> uploadMyDocument(BuildContext context) async {
 /// searches the user's documents when a question is about them.
 void askAboutDocuments(BuildContext context) {
   Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (_) => ProChatScreen(
+      builder: (_) => const ProChatScreen(
             // kind only picks a banner photo, which the chat never shows.
             profile: ProProfile(
                 ProKind.business,
                 'Documents',
                 Icons.description_rounded,
-                () => Neon.cyan,
                 'Ask anything about the documents you saved.',
-                const []),
+                []),
           )));
 }
 

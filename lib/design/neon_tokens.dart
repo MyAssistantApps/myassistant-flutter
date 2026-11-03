@@ -21,7 +21,7 @@ class Neon {
   /// THEME SWITCH. The token API stays the same everywhere; flipping this
   /// swaps every value below. Set ONLY through ThemeController, which
   /// persists the choice and rebuilds the app.
-  static bool isDark = false;
+  static bool isDark = true; // dark is the default (2026-11-03)
 
   static void setDark(bool v) => isDark = v;
 
@@ -403,27 +403,52 @@ class Neon {
   // stay concentric instead of each card picking its own.
   static const rCard = 24.0, rInner = 16.0, rTile = 12.0;
 
-  /// A GLASS CARD'S FILL: lit a touch from above, deepening downwards. A
-  /// quiet vertical gradient — not a tone wash — so the words carry the
-  /// colour, not the panel.
+  /// A GLASS CARD'S FILL (2026-11-03, real glass): see-through, so the
+  /// aurora behind ([AmbientLight]) glows through every card — frosted
+  /// white, brighter at the top where the light falls, clearer below. On
+  /// the light theme, milk glass. (No backdrop blur: the sky behind is
+  /// already soft, and a blur per card would cost every scrolled frame.)
   static LinearGradient get glassFill => LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
         colors: isDark
             ? [
-                Color.alphaBlend(
-                    const Color(0xFFFFFFFF).withValues(alpha: 0.03), surface),
-                surface,
+                const Color(0xFFFFFFFF).withValues(alpha: 0.11),
+                const Color(0xFFFFFFFF).withValues(alpha: 0.04),
               ]
-            : [const Color(0xFFFFFFFF), const Color(0xFFFCFBFE)],
+            : [
+                const Color(0xFFFFFFFF).withValues(alpha: 0.80),
+                const Color(0xFFFFFFFF).withValues(alpha: 0.58),
+              ],
       );
 
+  /// A glass panel as a plain decoration, for cards that are not a
+  /// GlassCard (tiles, chips): the same fill, lit edge and lift.
+  static BoxDecoration glassBox(double radius, {bool lift = true}) =>
+      BoxDecoration(
+        borderRadius: BorderRadius.circular(radius),
+        gradient: glassFill,
+        border: Border.all(color: glassEdge.first),
+        boxShadow: lift ? glassShadow : null,
+      );
+
+  /// Glass casts a soft dark shadow, not a coloured halo.
+  static List<BoxShadow> get glassShadow => [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: isDark ? 0.28 : 0.08),
+          blurRadius: 24,
+          offset: const Offset(0, 10),
+          spreadRadius: -6,
+        ),
+      ];
+
   /// THE TOP-LIT EDGE of a raised card: brightest where the light falls
-  /// (the top), fading down the sides — 1 px, low alpha.
+  /// (the top), fading down the sides — 1 px. Brighter on glass, so the
+  /// card's rim catches the light.
   static List<Color> get glassEdge => isDark
       ? [
-          const Color(0xFFFFFFFF).withValues(alpha: 0.09),
-          const Color(0xFFFFFFFF).withValues(alpha: 0.03),
+          const Color(0xFFFFFFFF).withValues(alpha: 0.16),
+          const Color(0xFFFFFFFF).withValues(alpha: 0.04),
         ]
       : [
           const Color(0xFF141627).withValues(alpha: 0.10),

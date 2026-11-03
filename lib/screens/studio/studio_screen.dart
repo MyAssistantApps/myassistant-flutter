@@ -27,7 +27,12 @@ import '../../design/motion.dart';
 ///  groups it and gets out of the way.
 /// ─────────────────────────────────────────────────────────────────────────
 class StudioScreen extends StatefulWidget {
-  const StudioScreen({super.key});
+  const StudioScreen({super.key, this.openRecipe});
+
+  /// Go straight into this look once the studio is ready (Home's "Try
+  /// now" cards, 2026-11-03): consent and the user's own photo are still
+  /// asked for first when missing.
+  final String? openRecipe;
 
   @override
   State<StudioScreen> createState() => _StudioScreenState();
@@ -38,6 +43,7 @@ class _StudioScreenState extends State<StudioScreen> {
   String _error = '';
   bool _loading = true;
   bool _busy = false;
+  bool _autoOpened = false;
 
   @override
   void initState() {
@@ -65,6 +71,7 @@ class _StudioScreenState extends State<StudioScreen> {
         _state = s;
         _loading = false;
       });
+      _maybeAutoOpen();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -247,6 +254,20 @@ class _StudioScreenState extends State<StudioScreen> {
   }
 
   /* ---------------------------------------------------------------- */
+
+  /// The look a "Try now" card asked for, opened once — as soon as the
+  /// user has agreed to the studio (now, or after the consent screen).
+  void _maybeAutoOpen() {
+    final want = widget.openRecipe;
+    final s = _state;
+    if (_autoOpened || want == null || s == null || !s.consented) return;
+    final match = s.recipes.where((r) => r.id == want);
+    if (match.isEmpty) return;
+    _autoOpened = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _openRecipe(match.first);
+    });
+  }
 
   Future<void> _openRecipe(StudioRecipe r) async {
     final s = _state;
