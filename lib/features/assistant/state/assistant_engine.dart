@@ -3342,7 +3342,12 @@ class AssistantEngine extends ChangeNotifier {
         // is the only one an engine method can reach.
         {
           final ctx = AvatarMessageService.navigatorKey.currentContext;
-          if (ctx != null) {
+          if (!AppUpdateService.enabled) {
+            // Self-update is off (owner, 2026-11-03): nothing to open.
+            await _tellModel(
+                '[SYSTEM] In-app updates are switched off on this phone; '
+                'nothing is being checked or installed. Say so plainly.');
+          } else if (ctx != null) {
             unawaited(AppUpdateService.instance.check(ctx, force: true));
           } else {
             // NEVER LET "opening the installer" STAND WHEN NOTHING OPENED.

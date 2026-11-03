@@ -31,6 +31,12 @@ import 'api_service.dart';
 ///  latestVersionCode + apkUrl + apkSha256; GET /app/latest.apk serves.
 /// ─────────────────────────────────────────────────────────────────────────
 class AppUpdateService {
+  /// SELF-UPDATE IS OFF (owner, 2026-11-03: "turn off auto update features
+  /// completely"). No check, no sheet, no download, no install — at
+  /// launch, on resume, from a push or when asked by voice. Builds are
+  /// installed separately. Flip to true to bring the whole flow back.
+  static const bool enabled = false;
+
   /// Set per check(): the sheet starts the update on its own. Only ever
   /// true on a connection the user is not paying for by the megabyte —
   /// a ~200 MB download that begins without being asked is not a feature
@@ -158,6 +164,7 @@ class AppUpdateService {
   /// to never see new releases. Throttled to once per 30 minutes; silent
   /// on any failure — a check must never get in the way of using the app.
   Future<bool> check(BuildContext context, {bool force = false}) async {
+    if (!enabled) return false;
     final now = DateTime.now().millisecondsSinceEpoch;
     if (_sheetShowing) return false;
     // Short throttle: back-to-back releases used to hide behind a 30-min

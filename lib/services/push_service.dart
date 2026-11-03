@@ -403,6 +403,11 @@ class PushService {
   /// Runs the update flow over whatever screen is up. Small delay so a
   /// cold start has a navigator before the sheet tries to show.
   void _checkForUpdateNow() {
+    // Self-update is off: an "update published" push does nothing.
+    if (!AppUpdateService.enabled) {
+      AppLog.add('push', 'update push ignored — in-app updates are off');
+      return;
+    }
     Future.delayed(const Duration(seconds: 2), () {
       final ctx = AvatarMessageService.navigatorKey.currentContext;
       if (ctx != null && ctx.mounted) {
