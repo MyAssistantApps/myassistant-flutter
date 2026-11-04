@@ -91,6 +91,17 @@ class _TryNowSectionState extends State<TryNowSection> {
     _restart();
   }
 
+  /// THE USER TOOK OVER (owner, 2026-11-04: "when the user taps or swipes
+  /// a card, the auto-sliding should stop instantly"): the timer is
+  /// cancelled for good and a slide already under way halts where it is.
+  void _stopAuto() {
+    _held = true;
+    _timer?.cancel();
+    if (_pages.hasClients && _pages.position.isScrollingNotifier.value) {
+      _pages.jumpTo(_pages.offset);
+    }
+  }
+
   @override
   void dispose() {
     _timer?.cancel();
@@ -100,6 +111,7 @@ class _TryNowSectionState extends State<TryNowSection> {
 
   void _restart() {
     _timer?.cancel();
+    if (_held) return;
     _timer = Timer.periodic(_every, (_) => _advance());
   }
 
@@ -153,15 +165,7 @@ class _TryNowSectionState extends State<TryNowSection> {
         ),
         // The cards run to the screen's edges, so the next one peeks in.
         Listener(
-          onPointerDown: (_) => _held = true,
-          onPointerUp: (_) {
-            _held = false;
-            _restart();
-          },
-          onPointerCancel: (_) {
-            _held = false;
-            _restart();
-          },
+          onPointerDown: (_) => _stopAuto(),
           child: SizedBox(
             height: 176,
             child: OverflowBox(

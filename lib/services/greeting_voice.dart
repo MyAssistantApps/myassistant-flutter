@@ -72,7 +72,7 @@ class GreetingVoice {
     final live = _liveVoice();
     final key = sha1
         .convert(utf8.encode(live != null
-            ? 'gptlive-v5|$live|$text'
+            ? 'gptlive-v6|$live|$text' // v6: the faster hello (2026-11-04)
             : '${m.tts}|${m.ttsVoice}|${m.ttsLanguage}|$text'))
         .toString()
         .substring(0, 16);
@@ -90,7 +90,7 @@ class GreetingVoice {
       final live = _liveVoice();
       if (live != null) {
         final wav = await ApiService.getBytes(
-            '/ai/voices/$live/greeting-v5?line=${Uri.encodeQueryComponent(line)}');
+            '/ai/voices/$live/greeting-v6?line=${Uri.encodeQueryComponent(line)}');
         if (wav == null ||
             wav.length < 2044 ||
             utf8.decode(wav.sublist(0, 4), allowMalformed: true) != 'RIFF') {

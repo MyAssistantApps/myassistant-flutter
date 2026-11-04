@@ -662,6 +662,10 @@ class _NeuronPainter extends CustomPainter {
 ///  Painted on its own layer; still with "Remove animations", while
 ///  paused or hidden.
 /// ─────────────────────────────────────────────────────────────────────
+/// Whether the sky draws its neural net of specks and lines (off since
+/// 2026-11-04; the aurora stays).
+const bool _drawNet = false;
+
 class NeuronSky extends StatefulWidget {
   const NeuronSky({
     super.key,
@@ -817,6 +821,10 @@ class _SkyPainter extends CustomPainter {
     glow(0.30 + 0.08 * math.sin(t * 0.07 + 1), 0.95 + 0.03 * math.cos(t * 0.1),
         big * 0.5, Color.lerp(pal.a, pal.b, 0.5)!, 0.14 + 0.05 * e);
 
+    // THE NEURAL NET came out (owner, 2026-11-04: "keep the centre design,
+    // remove the neuron design in the background"): only the aurora above
+    // is drawn behind the orb now.
+    if (!_drawNet) return;
     // THE NEURAL NET: specks rising slowly, swaying, twinkling.
     for (var i = 0; i < _n; i++) {
       var y = (_by[i] - t * _sp[i]) % 1.0;

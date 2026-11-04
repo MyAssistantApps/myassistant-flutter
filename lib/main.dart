@@ -19,6 +19,7 @@ import 'screens/auth/phone_verify_screen.dart';
 import 'screens/lock_screen.dart';
 import 'screens/splash_screen.dart';
 import 'services/api_service.dart';
+import 'services/screen_awake.dart';
 import 'services/self_check.dart';
 import 'widgets/net_banner.dart';
 import 'services/app_feedback.dart';
@@ -118,6 +119,8 @@ Future<void> main() async {
   AvatarMessageService.wireSignOut();
   // …and the photo cards: the card, its photo and his signature on this
   // phone (review, 2026-09-26: they met the next account on a shared phone).
+  // The screen stays on while the assistant talks (owner, 2026-11-04).
+  ScreenAwake.instance.watch();
   runApp(const MyAssistantApp());
 }
 
