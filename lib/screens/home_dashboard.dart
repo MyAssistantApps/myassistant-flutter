@@ -7,7 +7,6 @@ import '../design/neon_tokens.dart';
 import '../features/home/home_cards.dart';
 import '../features/home/quote_cards_sheet.dart';
 import '../features/home/quote_of_day.dart';
-import '../widgets/agent_hive.dart';
 import '../widgets/call_led.dart';
 import '../widgets/robot_badge.dart';
 import 'search_screen.dart';
@@ -109,10 +108,6 @@ class HomeDashboard extends StatelessWidget {
                     ),
                   ),
                 ),
-                // THE AGENTS, ONE HOLD AWAY (2026-11-01): hold this for the
-                // honeycomb of all nine, tap for the list.
-                const AgentHiveButton(),
-                const SizedBox(width: 10),
                 _SearchRing(
                   onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const SearchScreen())),
