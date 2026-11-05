@@ -25,17 +25,26 @@ class _App {
   _App(Map<String, dynamic> j)
       : id = '${j['id']}',
         name = '${j['name']}',
-        category = '${j['category']}';
+        // The server's Home group ("Daily needs" for Porter, Urban
+        // Company…), else the partner's own category.
+        category = '${j['homeGroup'] ?? j['category']}';
   final String id;
   final String name;
   final String category;
 }
 
-const _order = ['Food & groceries', 'Rides', 'Shopping'];
+// Taxis first (client, 2026-11-05: "put Taxis on top and inside Uber,
+// Ola, Rapido, auto and the others, in one square").
+const _order = ['Rides', 'Food & groceries', 'Daily needs'];
+const _titles = <String, String>{
+  'Rides': 'Taxis & autos',
+  'Food & groceries': 'Food & groceries',
+  'Daily needs': 'Daily needs',
+};
 const _icons = <String, IconData>{
   'Food & groceries': Icons.fastfood_rounded,
   'Rides': Icons.local_taxi_rounded,
-  'Shopping': Icons.shopping_bag_rounded,
+  'Daily needs': Icons.home_repair_service_rounded,
 };
 
 class _PopularAppsSectionState extends State<PopularAppsSection> {
@@ -86,40 +95,40 @@ class _PopularAppsSectionState extends State<PopularAppsSection> {
             ],
           ),
         ),
-        Container(
-          padding: const EdgeInsets.fromLTRB(12, 14, 12, 6),
-          decoration: Neon.glassBox(Neon.rCard),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (final c in _order)
-                if (_apps.any((a) => a.category == c)) ...[
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4, bottom: 10),
-                    child: Row(children: [
-                      Icon(_icons[c], size: 15, color: Neon.violet),
-                      const SizedBox(width: 6),
-                      Text(c.toUpperCase(),
-                          style:
-                              NeonType.eyebrow.copyWith(color: Neon.textLo)),
-                    ]),
-                  ),
-                  // Five to a row, each row exactly as tall as its icons
-                  // (a grid's fixed aspect left a gap under every row).
-                  LayoutBuilder(
-                    builder: (context, box) => Wrap(
-                      runSpacing: 10,
-                      children: [
-                        for (final a in _apps.where((a) => a.category == c))
-                          SizedBox(width: box.maxWidth / 5, child: _tile(a)),
-                      ],
+        // ONE SQUARE PER KIND: Taxis & autos, then food, then shopping.
+        for (final c in _order)
+          if (_apps.any((a) => a.category == c))
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(12, 14, 12, 8),
+                decoration: Neon.glassBox(Neon.rCard),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 12),
+                      child: Row(children: [
+                        Icon(_icons[c], size: 17, color: Neon.violet),
+                        const SizedBox(width: 6),
+                        Text(_titles[c] ?? c,
+                            style: NeonType.manrope(15, FontWeight.w800)
+                                .copyWith(color: Neon.textHi)),
+                      ]),
                     ),
-                  ),
-                  const SizedBox(height: 14),
-                ],
-            ],
-          ),
-        ),
+                    LayoutBuilder(
+                      builder: (context, box) => Wrap(
+                        runSpacing: 10,
+                        children: [
+                          for (final a in _apps.where((a) => a.category == c))
+                            SizedBox(width: box.maxWidth / 5, child: _tile(a)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
       ],
     );
   }

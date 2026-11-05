@@ -227,28 +227,10 @@ class ProBannerCard extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      width: 26,
-                                      height: 26,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: c.withValues(alpha: 0.22),
-                                      ),
-                                      child: Icon(p.icon, size: 15, color: c),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text('ASSISTANT',
-                                        style: NeonType.manrope(
-                                                11, FontWeight.w800)
-                                            .copyWith(
-                                                color: Color.lerp(
-                                                    c, Colors.white, 0.3),
-                                                letterSpacing: 1.4)),
-                                  ],
-                                ),
-                                const SizedBox(height: 10),
+                                // The "ASSISTANT" label came out (client,
+                                // 2026-11-05: "remove Assistant from there,
+                                // in all the three"); the name says it.
+                                const SizedBox(height: 6),
                                 // "Doctor's Assistant" (owner, 2026-11-04).
                                 Text("${p.name}\nAssistant",
                                     maxLines: 2,
