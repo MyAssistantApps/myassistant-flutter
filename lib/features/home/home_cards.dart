@@ -34,7 +34,7 @@ import 'home_extras.dart';
 import 'home_redesign.dart';
 import 'pro_banners.dart';
 import 'quick_tools.dart';
-import 'try_now_cards.dart';
+import 'popular_apps.dart';
 import 'home_feed.dart';
 import 'home_memory.dart';
 
@@ -251,11 +251,13 @@ class _HomeFeedViewState extends State<HomeFeedView> {
             ),
             const SizedBox(height: 26),
             Reveal(delayMs: 130, child: _assistants()),
-            // TRY NOW (2026-11-03): Style Studio's try-ons, sliding.
+            // POPULAR APPS where Try now was (client, 2026-11-05): Swiggy,
+            // Zomato, Blinkit…, Uber, Ola, Rapido…; Try now moved to Hub.
             const SizedBox(height: 26),
             Reveal(
               delayMs: 135,
-              child: TryNowSection(onOpen: (page) => _do.open(context, page)),
+              child:
+                  PopularAppsSection(onOpen: (page) => _do.open(context, page)),
             ),
             if (extras.isNotEmpty) ...[
               const SizedBox(height: 24),

@@ -8,6 +8,7 @@ import '../../design/neon_tokens.dart';
 import '../../design/neon_widgets.dart';
 import 'buses_screen.dart';
 import 'flights_screen.dart';
+import 'hotels_screen.dart';
 import 'services_screen.dart';
 import '../shop/shop_api.dart';
 import '../shop/shop_screens.dart';
@@ -37,6 +38,8 @@ const quickTools = <QuickTool>[
       Icons.flight_takeoff_rounded, -58),
   QuickTool('buses', 'Buses', 'Find buses and seats for your next trip.',
       Icons.directions_bus_rounded, 52),
+  QuickTool('hotels', 'Hotels', 'Hotels and resorts, at the best prices.',
+      Icons.hotel_rounded, 70),
   QuickTool('groceries', 'Groceries', 'Order from stores near you, pay in the app.',
       Icons.shopping_basket_rounded, -86),
   QuickTool('food', 'Food', 'Order from restaurants near you, in the app.',
@@ -105,6 +108,7 @@ class _QuickToolsSectionState extends State<QuickToolsSection> {
     widget.onOpen(switch (t.id) {
       'flights' => const FlightsScreen(),
       'buses' => const BusesScreen(),
+      'hotels' => const HotelsScreen(),
       'groceries' => const ShopHomeScreen(domain: ShopDomain.grocery),
       'food' => const ShopHomeScreen(domain: ShopDomain.food),
       'misc' => const ServicesScreen(),
