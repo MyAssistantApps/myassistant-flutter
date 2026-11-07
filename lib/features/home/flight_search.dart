@@ -6,6 +6,8 @@ import '../../design/motion.dart';
 import '../../design/neon_tokens.dart';
 import '../../design/neon_widgets.dart';
 import '../../services/api_service.dart';
+import '../pricecompare/flight_results_screen.dart' as pcr;
+import '../pricecompare/flight_trip.dart' as pc;
 import 'flights_screen.dart' show FlightKind;
 
 /// ─────────────────────────────────────────────────────────────────────────
@@ -173,9 +175,20 @@ class _FlightSearchScreenState extends State<FlightSearchScreen> {
       return;
     }
     HapticFeedback.mediumImpact();
-    Navigator.of(context).push(MaterialPageRoute<void>(
-        builder: (_) => FlightResultsScreen(
-            from: f, to: t, date: _date, adults: _adults, cabin: _cabin)));
+    // 2026-11-07 (Manish): Quick tools' flights open the same results
+    // page as Flight compare — each flight with every site's fare.
+    pc.Airport conv(Airport a) => pc.Airport(a.code, a.city, a.name, country: a.country);
+    final trip = pc.FlightTrip(
+      legs: [pc.FlightLeg(from: conv(f), to: conv(t), date: _date)],
+      adults: _adults,
+      cabin: switch (_cabin) {
+        Cabin.economy => pc.CabinClass.economy,
+        Cabin.premiumEconomy => pc.CabinClass.premiumEconomy,
+        Cabin.business => pc.CabinClass.business,
+        Cabin.first => pc.CabinClass.first,
+      },
+    );
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => pcr.FlightResultsScreen(trip: trip)));
   }
 
   @override

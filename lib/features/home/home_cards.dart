@@ -27,6 +27,7 @@ import '../../widgets/whats_new_card.dart';
 import '../assistant/state/assistant_engine.dart';
 import '../briefing/brief_player.dart';
 import '../meeting_prep/meeting_prep_sheet.dart';
+import '../pricecompare/price_compare_section.dart';
 import '../shopping/shopping_list_screen.dart';
 import '../shopping/shopping_service.dart';
 import 'deal_banners.dart';
@@ -258,6 +259,13 @@ class _HomeFeedViewState extends State<HomeFeedView> {
               delayMs: 135,
               child:
                   PopularAppsSection(onOpen: (page) => _do.open(context, page)),
+            ),
+            // PRICE COMPARE (owner, 2026-11-04): under Try now, BuyHatke's
+            // layout in the app's glass.
+            const SizedBox(height: 26),
+            Reveal(
+              delayMs: 138,
+              child: PriceCompareSection(onOpen: (page) => _do.open(context, page)),
             ),
             if (extras.isNotEmpty) ...[
               const SizedBox(height: 24),

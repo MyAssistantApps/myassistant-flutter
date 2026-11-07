@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../design/neon_tokens.dart';
 import '../../services/api_service.dart';
+import '../pricecompare/shop_browser.dart';
 import 'services_screen.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
@@ -67,7 +68,12 @@ class _PopularAppsSectionState extends State<PopularAppsSection> {
     HapticFeedback.selectionClick();
     final j = await ApiService.getJson('/go/${a.id}');
     final url = j?['url'] as String?;
-    if (url != null) {
+    if (url == null || !mounted) return;
+    // 2026-11-07 (Manish): opens inside the app (the shop browser).
+    final u = Uri.tryParse(url);
+    if (u != null && (u.scheme == 'https' || u.scheme == 'http')) {
+      openInShopBrowser(context, url);
+    } else {
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     }
   }
@@ -83,14 +89,11 @@ class _PopularAppsSectionState extends State<PopularAppsSection> {
           child: Row(
             children: [
               Text('Popular apps',
-                  style: NeonType.manrope(21, FontWeight.w800)
-                      .copyWith(color: Neon.textHi, letterSpacing: -0.6)),
+                  style: NeonType.manrope(21, FontWeight.w800).copyWith(color: Neon.textHi, letterSpacing: -0.6)),
               const Spacer(),
               TextButton(
                 onPressed: () => widget.onOpen(const ServicesScreen()),
-                child: Text('See all',
-                    style: TextStyle(
-                        color: Neon.violet, fontWeight: FontWeight.w700)),
+                child: Text('See all', style: TextStyle(color: Neon.violet, fontWeight: FontWeight.w700)),
               ),
             ],
           ),
@@ -112,8 +115,7 @@ class _PopularAppsSectionState extends State<PopularAppsSection> {
                         Icon(_icons[c], size: 17, color: Neon.violet),
                         const SizedBox(width: 6),
                         Text(_titles[c] ?? c,
-                            style: NeonType.manrope(15, FontWeight.w800)
-                                .copyWith(color: Neon.textHi)),
+                            style: NeonType.manrope(15, FontWeight.w800).copyWith(color: Neon.textHi)),
                       ]),
                     ),
                     LayoutBuilder(
@@ -163,19 +165,14 @@ class _PopularAppsSectionState extends State<PopularAppsSection> {
                         color: Neon.violet,
                         alignment: Alignment.center,
                         child: Text(a.name.substring(0, 1),
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w800)))),
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)))),
               ),
               const SizedBox(height: 5),
               Text(a.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                      color: Neon.textHi,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600)),
+                  style: TextStyle(color: Neon.textHi, fontSize: 11, fontWeight: FontWeight.w600)),
             ],
           ),
         ),

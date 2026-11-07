@@ -119,6 +119,7 @@ dependencies:
   firebase_performance: ^0.11.6
   firebase_analytics: ^12.6.0
   simple_icons: ^16.23.0
+  webview_flutter: ^4.14.1
 
 dev_dependencies:
   flutter_test:
@@ -175,6 +176,11 @@ flutter:
     - assets/flights/
     - assets/buses/
     - assets/brands/
+    # Price compare photos (Wikimedia Commons; credited in the app and in
+    # assets/pricecompare/CREDITS.md).
+    - assets/pricecompare/
+    - assets/pricecompare/airlines/
+    - assets/pricecompare/airlines/gallery/
     # Manrope + Space Grotesk, every weight, so text never starts in a
     # fallback font and swaps (lib/core/bundled_fonts.dart).
     - assets/google_fonts/
