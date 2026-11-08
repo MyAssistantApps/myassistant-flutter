@@ -108,6 +108,7 @@ class HomeDashboard extends StatelessWidget {
                     ),
                   ),
                 ),
+                // The agents' hexagon was removed (owner, 2026-11-04).
                 _SearchRing(
                   onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const SearchScreen())),

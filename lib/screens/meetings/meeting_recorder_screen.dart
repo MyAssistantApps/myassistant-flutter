@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+import '../../services/screen_awake.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 
@@ -58,7 +60,6 @@ enum _Stage { ready, recording, paused, uploading, failed }
 
 class _MeetingRecorderScreenState extends State<MeetingRecorderScreen> {
   static const _maxLength = Duration(hours: 3);
-  static const _device = MethodChannel('hari/device');
 
   late final AudioRecorder _rec;
   late final ValueListenable<bool> _call;
@@ -98,7 +99,7 @@ class _MeetingRecorderScreenState extends State<MeetingRecorderScreen> {
     _rec.dispose();
     _title.dispose();
     _people.dispose();
-    _device.invokeMethod('keepScreenOn', {'on': false}).catchError((_) => null);
+    ScreenAwake.instance.release('meeting');
     RecordingGuard.release(this);
     super.dispose();
   }
@@ -139,7 +140,7 @@ class _MeetingRecorderScreenState extends State<MeetingRecorderScreen> {
     );
     _state = _rec.onStateChanged().listen(_onRecorderState);
     HapticFeedback.mediumImpact();
-    _device.invokeMethod('keepScreenOn', {'on': true}).catchError((_) => null);
+    ScreenAwake.instance.hold('meeting');
     // A video note arriving now waits: its popup would cover this screen
     // and its sound would be in the recording (2026-09-26).
     RecordingGuard.hold(this);
@@ -232,7 +233,7 @@ class _MeetingRecorderScreenState extends State<MeetingRecorderScreen> {
     _state = null;
     _pausedBecause = null;
     final path = await _rec.stop() ?? _path;
-    _device.invokeMethod('keepScreenOn', {'on': false}).catchError((_) => null);
+    ScreenAwake.instance.release('meeting');
     RecordingGuard.release(this);
     if (path == null) return;
     if (_elapsed.inSeconds < 10) {

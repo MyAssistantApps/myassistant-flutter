@@ -19,6 +19,7 @@ import 'email_setup_screen.dart';
 import 'features_screen.dart';
 import 'stocks_screen.dart';
 import 'studio/studio_screen.dart';
+import '../features/home/try_now_cards.dart';
 import '../features/shopping/shopping_list_screen.dart';
 import '../design/motion.dart';
 
@@ -59,6 +60,15 @@ class _HubScreenState extends State<HubScreen> {
         children: [
           // The same large title every tab uses.
           const LargeTitle('Hub'),
+          // TRY NOW, moved here from Home (client, 2026-11-05): clothes,
+          // haircut, jewellery and custom try-ons.
+          if (_featureQuery.text.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8, bottom: 6),
+              child: TryNowSection(
+                  onOpen: (page) => Navigator.of(context).push(
+                      MaterialPageRoute<void>(builder: (_) => page))),
+            ),
           Padding(
             padding: const EdgeInsets.only(bottom: 20, top: 8),
             child: TextField(

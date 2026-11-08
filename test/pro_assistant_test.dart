@@ -42,12 +42,12 @@ void main() {
     await t.pumpWidget(MaterialApp(
         home: Scaffold(body: ListView(children: [ProBanners(onOpen: (k) => opened = k)]))));
     await t.pump();
-    expect(find.text("Doctor's"), findsOneWidget);
-    await t.tap(find.text("Doctor's"));
+    expect(find.text("Doctor's\nAssistant"), findsOneWidget);
+    await t.tap(find.text("Doctor's\nAssistant"));
     expect(opened, ProKind.doctor);
     await t.drag(find.byType(PageView), const Offset(-400, 0));
     await t.pumpAndSettle();
-    expect(find.text("Advocate's"), findsOneWidget);
+    expect(find.text("Advocate's\nAssistant"), findsOneWidget);
     expect(t.takeException(), isNull);
     await t.pumpWidget(const SizedBox());
   });

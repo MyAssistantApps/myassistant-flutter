@@ -308,6 +308,9 @@ class AssistantEngine extends ChangeNotifier {
     wokeAt = DateTime.now();
     wake.value++;
     _starting = true;
+    // Every new conversation tries the fast voice again, whatever an
+    // earlier one gave up on.
+    _liveGaveUp = false;
     unawaited(ListeningChime.warm()); // decoded before it is needed
     // THE FAST VOICE CONNECTS AS THE ORB OPENS: the instruction, tools and
     // session are warmed in parallel so the microphone can open promptly.
@@ -1934,6 +1937,17 @@ class AssistantEngine extends ChangeNotifier {
   }
 
   void _onLiveFallback(LiveFallback f) {
+    // NO CONVERSATION, NOTHING TO FALL BACK FROM (2026-11-05, tester: "the
+    // response is very very slow" and "after I start the mic, if I stop it,
+    // it will not stop"). The warmed session sitting idle after a stop
+    // drops on its own; that used to set _liveGaveUp, so the NEXT tap ran
+    // the slow classic voice. Idle, it is only closed: the next tap warms
+    // a fresh one.
+    if (!_voiceOn && !inlineVoice && !_starting) {
+      AppLog.add('voice', 'fast voice: ${f.reason} while idle — closed, not given up');
+      unawaited(_live.discard().catchError((Object _) {}));
+      return;
+    }
     AppLog.add('voice',
         'fast voice: ${f.reason}${f.keepLive ? '' : ' — the classic voice from here'}');
     // The server keeps the reason (2026-10-01: "why did Live drop for the

@@ -366,6 +366,11 @@ class _InlineCaptionOverlayState extends State<InlineCaptionOverlay>
   String _text = '';
   bool _fromUser = false;
 
+  /// WHAT THEY ASKED (client, 2026-11-05: "when we ask something it has to
+  /// be typed on the screen, only then will we know what we have asked"):
+  /// their last words stay above her answer instead of being replaced by it.
+  String _asked = '';
+
   /// Counts turns (bumped where the paced release restarts): a new turn is
   /// a new passage, which cross-fades in over the last one.
   int _turn = 0;
@@ -493,6 +498,7 @@ class _InlineCaptionOverlayState extends State<InlineCaptionOverlay>
       }
       _text = t;
       _fromUser = fromUser;
+      if (fromUser) _asked = t;
     });
     _ensurePacer();
   }
@@ -509,6 +515,7 @@ class _InlineCaptionOverlayState extends State<InlineCaptionOverlay>
     // Session over → the words leave with it, and the page underneath is
     // painted again before the fade-out starts to show it.
     if (!_active) {
+      _asked = '';
       if (_text.isNotEmpty) _text = '';
       InlineCaptionOverlay.covering.value = false;
     }
@@ -556,6 +563,48 @@ class _InlineCaptionOverlayState extends State<InlineCaptionOverlay>
   int _roomyTurn = -1;
 
   bool get _roomy => _roomyTurn == _turn;
+
+  /// "You asked: …" — their question, kept above her answer.
+  Widget _askedLine(bool typing) => Padding(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            color: Colors.white.withValues(alpha: 0.07),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Icon(Icons.person_rounded,
+                    size: 15, color: Neon.textHi.withValues(alpha: 0.6)),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text.rich(
+                  TextSpan(children: [
+                    TextSpan(
+                        text: 'You asked: ',
+                        style: TextStyle(
+                            color: Neon.textHi.withValues(alpha: 0.55),
+                            fontWeight: FontWeight.w700)),
+                    TextSpan(text: _asked),
+                  ]),
+                  maxLines: typing ? 2 : 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      color: Neon.textHi.withValues(alpha: 0.85),
+                      fontSize: typing ? 13.5 : 15,
+                      height: 1.35),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
 
   /// This turn's words, streaming in (see StreamingCaption). The newest
   /// line stays in view as they arrive, and the whole reply can be scrolled
@@ -954,7 +1003,17 @@ class _InlineCaptionOverlayState extends State<InlineCaptionOverlay>
                               )
                             : KeyedSubtree(
                                 key: ValueKey('turn|$_fromUser|$_turn'),
-                                child: _passage(words, typing),
+                                child: !_fromUser && _asked.isNotEmpty
+                                    ? Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
+                                        children: [
+                                          _askedLine(typing),
+                                          Expanded(
+                                              child: _passage(words, typing)),
+                                        ],
+                                      )
+                                    : _passage(words, typing),
                               ),
                       ),
                     ),

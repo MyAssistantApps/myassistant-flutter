@@ -171,6 +171,10 @@ flutter:
     # Doctor's, Advocate's and Business banners (Pexels licence, CREDITS.md).
     - assets/pro/
     - assets/tryon/
+    - assets/quick/
+    - assets/flights/
+    - assets/buses/
+    - assets/brands/
     # Manrope + Space Grotesk, every weight, so text never starts in a
     # fallback font and swaps (lib/core/bundled_fonts.dart).
     - assets/google_fonts/

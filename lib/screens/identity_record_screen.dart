@@ -5,6 +5,8 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart' show Ticker;
 import 'package:flutter/services.dart';
+
+import '../services/screen_awake.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:video_player/video_player.dart';
 
@@ -123,7 +125,6 @@ class IdentityRecordScreen extends StatefulWidget {
 
 class _IdentityRecordScreenState extends State<IdentityRecordScreen>
     with WidgetsBindingObserver, SingleTickerProviderStateMixin {
-  static const _device = MethodChannel('hari/device');
 
   /// Kept for the rest of the app run: a Retake, or coming back later,
   /// reads at the pace the user picked.
@@ -659,9 +660,9 @@ class _IdentityRecordScreenState extends State<IdentityRecordScreen>
 
   /* ------------------------------ helpers ----------------------------- */
 
-  void _screenOn(bool on) {
-    _device.invokeMethod('keepScreenOn', {'on': on}).catchError((_) => null);
-  }
+  void _screenOn(bool on) => on
+      ? ScreenAwake.instance.hold('id-video')
+      : ScreenAwake.instance.release('id-video');
 
   void _deleteTake() {
     final t = _take;

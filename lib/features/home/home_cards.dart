@@ -32,7 +32,9 @@ import '../shopping/shopping_service.dart';
 import 'deal_banners.dart';
 import 'home_extras.dart';
 import 'home_redesign.dart';
-import 'try_now_cards.dart';
+import 'pro_banners.dart';
+import 'quick_tools.dart';
+import 'popular_apps.dart';
 import 'home_feed.dart';
 import 'home_memory.dart';
 
@@ -241,12 +243,21 @@ class _HomeFeedViewState extends State<HomeFeedView> {
             if (state == 'partial' || (state == 'loaded' && svc.stale))
               _status(svc),
             const SizedBox(height: 28),
+            // QUICK TOOLS first (owner, 2026-11-04), then the assistants.
+            Reveal(
+              delayMs: 125,
+              child:
+                  QuickToolsSection(onOpen: (page) => _do.open(context, page)),
+            ),
+            const SizedBox(height: 26),
             Reveal(delayMs: 130, child: _assistants()),
-            // TRY NOW (2026-11-03): Style Studio's try-ons, sliding.
+            // POPULAR APPS where Try now was (client, 2026-11-05): Swiggy,
+            // Zomato, Blinkit…, Uber, Ola, Rapido…; Try now moved to Hub.
             const SizedBox(height: 26),
             Reveal(
               delayMs: 135,
-              child: TryNowSection(onOpen: (page) => _do.open(context, page)),
+              child:
+                  PopularAppsSection(onOpen: (page) => _do.open(context, page)),
             ),
             if (extras.isNotEmpty) ...[
               const SizedBox(height: 24),
@@ -301,20 +312,41 @@ class _HomeFeedViewState extends State<HomeFeedView> {
       mainAxisSize: MainAxisSize.min,
       children: [
         // A new Next card replaces the last one: it fades and rises in.
+        // ONE COMPACT CARD (owner, 2026-11-04: "compress this and save
+        // space"): all-clear and the day's numbers together when nothing
+        // needs you; otherwise the Next card with a slim numbers row.
         Reveal(
           delayMs: 40,
           child: StateSwitch(
             state: now?.id ?? 'clear',
             child: now == null
-                ? _AllClear(later: feed.day.isNotEmpty)
+                ? GlassCard(
+                    padding: const EdgeInsets.fromLTRB(14, 12, 8, 6),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _clearLine(later: feed.day.isNotEmpty),
+                        const SizedBox(height: 4),
+                        Divider(height: 1, color: Neon.hairline),
+                        _numbers(b),
+                      ],
+                    ),
+                  )
                 : _nowCard(now),
           ),
         ),
-        const SizedBox(height: 14),
-        Reveal(delayMs: 70, child: _numbers(b)),
-        const SizedBox(height: 26),
-        Reveal(delayMs: 100, child: _laterHeader(feed, clock)),
-        const SizedBox(height: 10),
+        if (now != null) ...[
+          const SizedBox(height: 10),
+          Reveal(
+              delayMs: 70,
+              child: GlassCard(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: _numbers(b))),
+        ],
+        // "Later today", Play my day and "Nothing else on your list"
+        // came out (owner, 2026-11-04); the day's own rows still show.
+        if (feed.also.isNotEmpty || feed.day.isNotEmpty)
+          const SizedBox(height: 14),
         // Rows leaving or arriving: the space opens and closes, it does
         // not jump.
         AnimatedSize(
@@ -332,12 +364,6 @@ class _HomeFeedViewState extends State<HomeFeedView> {
         ),
         if (feed.day.isNotEmpty)
           Reveal(delayMs: 120, child: _day(feed)),
-        if (feed.also.isEmpty && feed.day.isEmpty)
-          Padding(
-            padding: const EdgeInsets.only(left: Neon.s1, top: 2),
-            child: Text('Nothing else on your list.',
-                style: TextStyle(color: Neon.textLo, fontSize: NeonType.body)),
-          ),
       ],
     );
   }
@@ -354,66 +380,68 @@ class _HomeFeedViewState extends State<HomeFeedView> {
             onTap: () => _do.open(context, page),
             semanticLabel: '$n ${n == 1 ? one : many} today',
             child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 64),
+              constraints: const BoxConstraints(minHeight: 44),
               child: ExcludeSemantics(
-                child: Column(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
                   children: [
                     Text('$n',
-                        style: NeonType.manrope(30, FontWeight.w800).copyWith(
-                            color: Neon.textHi,
-                            letterSpacing: -1.2,
-                            height: 1.1,
+                        style: NeonType.manrope(20, FontWeight.w800).copyWith(
+                            color: n > 0 ? Neon.violet : Neon.textHi,
                             fontFeatures: NeonType.figures)),
-                    Text(n == 1 ? one : many,
-                        style: NeonType.manrope(NeonType.body, FontWeight.w500)
-                            .copyWith(color: Neon.textLo)),
+                    const SizedBox(width: 5),
+                    Flexible(
+                      child: Text(n == 1 ? one : many,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: NeonType.manrope(12.5, FontWeight.w600)
+                              .copyWith(color: Neon.textLo)),
+                    ),
                   ],
                 ),
               ),
             ),
           ),
         );
-    return GlassCard(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
-      child: Row(children: [
-        cell(meetings, 'Meeting', 'Meetings', const CalendarScreen()),
-        cell(reminders, 'Reminder', 'Reminders', const RemindersScreen()),
-        cell(bills, 'Bill due', 'Bills due', const FinanceScreen()),
-      ]),
-    );
+    return Row(children: [
+      cell(meetings, 'Meeting', 'Meetings', const CalendarScreen()),
+      cell(reminders, 'Reminder', 'Reminders', const RemindersScreen()),
+      cell(bills, 'Bill due', 'Bills due', const FinanceScreen()),
+    ]);
   }
 
-  /// "Later today" (or "Tomorrow"), with Play my day beside it: the day,
-  /// read aloud; while it plays the same button pauses and resumes.
-  Widget _laterHeader(HomeFeed feed, DateTime clock) {
-    final p = _do.brief;
-    final morning = clock.hour < 12;
-    final (label, icon) = switch (p.state) {
-      BriefPlayState.loading => ('Getting it…', Icons.play_arrow_rounded),
-      BriefPlayState.playing => ('Pause', Icons.pause_rounded),
-      BriefPlayState.paused => ('Resume', Icons.play_arrow_rounded),
-      _ => (morning ? 'Play my morning' : 'Play my day', Icons.play_arrow_rounded),
-    };
+  /// The all-clear, in one line: a small tick, the words, the reason.
+  Widget _clearLine({required bool later}) {
+    final ink = NeonTone.success.ink;
     return Row(
       children: [
-        Expanded(
-          child: Semantics(
-            header: true,
-            child: Padding(
-              padding: const EdgeInsets.only(left: Neon.s1),
-              child: Text(
-                  feed.dayLabel == 'Today' ? 'Later today' : feed.dayLabel,
-                  style: NeonType.manrope(21, FontWeight.w800)
-                      .copyWith(color: Neon.textHi, letterSpacing: -0.6)),
-            ),
+        Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: ink.withValues(alpha: 0.12),
+            border: Border.all(color: ink.withValues(alpha: 0.35)),
           ),
+          child: Icon(Icons.check_rounded, size: 16, color: ink),
         ),
-        NeonPill(
-          label: label,
-          icon: icon,
-          busy: p.state == BriefPlayState.loading,
-          onPressed: () => _do.playBrief(context),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text.rich(
+            TextSpan(children: [
+              TextSpan(
+                  text: "You're all clear",
+                  style: NeonType.manrope(15.5, FontWeight.w800)
+                      .copyWith(color: Neon.textHi)),
+              TextSpan(
+                  text: later ? '  ·  nothing right now' : '  ·  nothing today',
+                  style: TextStyle(color: Neon.textLo, fontSize: 13)),
+            ]),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       ],
     );
@@ -421,33 +449,12 @@ class _HomeFeedViewState extends State<HomeFeedView> {
 
   /// THE ASSISTANTS (light premium, 2026-11-02): four raised tiles in one
   /// row — the three professions and Documents (upload, keep, ask).
+  /// THE ASSISTANTS AS A SLIDING BANNER (owner, 2026-11-04: "a sliding
+  /// banner, not the buttons"): Doctor's, Advocate's and Business, each
+  /// with its own photo. My documents stays one slim row under it.
   Widget _assistants() {
-    Widget tile(IconData icon, String label, VoidCallback onTap) => Expanded(
-          child: Tappable(
-            onTap: onTap,
-            semanticLabel: label == 'Documents' ? 'Documents' : '$label Assistant',
-            child: Container(
-              height: 92,
-              decoration: Neon.glassBox(Neon.rLg),
-              child: ExcludeSemantics(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(icon, color: Neon.violet, size: 26),
-                    const SizedBox(height: 8),
-                    Text(label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: NeonType.manrope(NeonType.body, FontWeight.w700)
-                            .copyWith(color: Neon.textHi)),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Semantics(
           header: true,
@@ -458,15 +465,34 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                     .copyWith(color: Neon.textHi, letterSpacing: -0.6)),
           ),
         ),
-        Row(children: [
-          for (final k in ProKind.values) ...[
-            tile(ProProfile.of(k).icon, ProProfile.of(k).name,
-                () => _do.open(context, ProAssistantScreen(kind: k))),
-            const SizedBox(width: 10),
-          ],
-          tile(Icons.description_rounded, 'Documents',
-              () => _do.open(context, const DocumentsScreen())),
-        ]),
+        ProBanners(
+            onOpen: (k) => _do.open(context, ProAssistantScreen(kind: k))),
+        const SizedBox(height: 12),
+        Tappable(
+          onTap: () => _do.open(context, const DocumentsScreen()),
+          semanticLabel: 'My documents',
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: Neon.glassBox(Neon.rLg),
+            child: ExcludeSemantics(
+              child: Row(
+                children: [
+                  Icon(Icons.description_rounded,
+                      color: Neon.violet, size: 22),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text('My documents',
+                        style: NeonType.manrope(
+                                NeonType.body, FontWeight.w700)
+                            .copyWith(color: Neon.textHi)),
+                  ),
+                  Icon(Icons.chevron_right_rounded,
+                      color: Neon.textDim, size: 22),
+                ],
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -1238,59 +1264,6 @@ class _Tap extends StatelessWidget {
           onTap: onTap,
           child: child,
         ),
-      ),
-    );
-  }
-}
-
-/// Nothing needs the user: says so, briefly — what is useful instead
-/// follows it (home_extras.dart).
-class _AllClear extends StatelessWidget {
-  const _AllClear({required this.later});
-
-  /// Something is still on today's list, just not now.
-  final bool later;
-
-  @override
-  Widget build(BuildContext context) {
-    final ink = NeonTone.success.ink;
-    // CALM, NOT LOUD (2026-09-30, premium pass): glass with a faint green
-    // light in its corner and a small ring — done and well, felt rather
-    // than announced. No neon rim, no halo, no second icon.
-    return GlassCard(
-      wash: ink,
-      padding: const EdgeInsets.fromLTRB(Neon.s5, Neon.s5, Neon.s5, Neon.s5),
-      child: Row(
-        children: [
-          ExcludeSemantics(
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: ink.withValues(alpha: 0.10),
-                border: Border.all(color: ink.withValues(alpha: 0.32)),
-              ),
-              child: Icon(Icons.check_rounded, size: 22, color: ink),
-            ),
-          ),
-          const SizedBox(width: Neon.s4),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text("You're all clear",
-                    style: NeonType.glassTitle.copyWith(color: Neon.textHi)),
-                const SizedBox(height: 2),
-                Text(
-                  later ? 'Nothing needs you right now.' : 'Nothing needs you today.',
-                  style: TextStyle(color: Neon.textLo, fontSize: NeonType.body, height: 1.35),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
