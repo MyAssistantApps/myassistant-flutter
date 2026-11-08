@@ -42,6 +42,20 @@ void main() {
     expect(PageProduct.read('not json'), isNull);
   });
 
+  test("a store's slogan on a product URL is not a product (page not shown yet)", () {
+    // Flipkart's home <head> left behind when it opened a product in place.
+    const url = 'https://www.flipkart.com/boat-airdopes-supreme/p/itm0ff5ec72d937f';
+    for (final name in [
+      'Online Shopping India Mobile, Cameras, Lifestyle & more Online @ Flipkart.com',
+      'Online Shopping Site for Mobiles, Electronics, Furniture, Grocery, Lifestyle, Books & More. Best Offers!',
+      'Boat Airdopes- Buy Products Online at Best Price in India - All Categories | Flipkart.com',
+    ]) {
+      expect(PageProduct.read(page({'name': name, 'price': '5990', 'product': false, 'url': url})), isNull, reason: name);
+    }
+    expect(PageProduct.read(page({'name': 'boAt Airdopes Supreme w/ 4 Mics', 'price': '5990', 'product': false, 'url': url}))!.name,
+        'boAt Airdopes Supreme w/ 4 Mics');
+  });
+
   test('an insecure image is dropped', () {
     final p = PageProduct.read(jsonEncode({
       'name': 'Milk 1L',

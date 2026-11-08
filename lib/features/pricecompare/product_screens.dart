@@ -599,7 +599,27 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         _suggestions = a.suggestions;
       });
     } catch (e) {
-      if (mounted) setState(() => _error = e is PriceCompareException ? e.message : 'Something went wrong.');
+      if (!mounted) return;
+      // Nothing found on the web, but the store page the user came from
+      // showed its price (often a brand sold on one store only): show that
+      // store's price rather than an error (2026-11-08).
+      final h = widget.hit;
+      if (h != null && h.price > 0) {
+        setState(() {
+          _r = PriceResult(
+            category: PriceCategory.shopping,
+            query: widget.query,
+            product: h.name,
+            offers: [PriceOffer(store: h.store, price: h.price, title: h.name, url: h.url)],
+            bestPick: h.store,
+            advice: "Couldn't find this on other stores right now — this is ${h.store}'s price.",
+            at: DateTime.now(),
+            facts: {if (h.image.isNotEmpty) 'image': h.image},
+          );
+        });
+      } else {
+        setState(() => _error = e is PriceCompareException ? e.message : 'Something went wrong.');
+      }
     } finally {
       _tick?.cancel();
       if (mounted) setState(() => _busy = false);
@@ -675,7 +695,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ),
               ),
               _topButtons(),
-              Positioned(left: 0, right: 0, bottom: 0, child: _bottomBar(r)),
+              // No prices and a failed look-up: nothing to alert on or buy,
+              // so no bar of two dead buttons (the error box says Retry).
+              if (r != null || _error.isEmpty)
+                Positioned(left: 0, right: 0, bottom: 0, child: _bottomBar(r)),
             ],
           ),
         ),
@@ -1277,7 +1300,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 onPressed: r == null ? null : () => _setAlert(r),
                 style: FilledButton.styleFrom(
                   backgroundColor: Neon.violet.withValues(alpha: Neon.isDark ? 0.18 : 0.10),
-                  foregroundColor: _accent,
+                  // Violet ink on a violet tint in the dark read as grey on
+                  // grey: lift it toward white there.
+                  foregroundColor: Neon.isDark ? Colors.white : _accent,
+                  disabledBackgroundColor: Neon.surfaceHigh,
+                  disabledForegroundColor: Neon.textLo,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
                 child: const Text('Set Alert', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500)),
@@ -1293,6 +1320,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 style: FilledButton.styleFrom(
                   backgroundColor: _accent,
                   foregroundColor: Colors.white,
+                  // While prices load: a plain, legible "not yet", not a
+                  // faded violet that looks broken.
+                  disabledBackgroundColor: Neon.surfaceHigh,
+                  disabledForegroundColor: Neon.textLo,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
                 child: Text(low == null ? 'Buy Now' : 'Buy Now · ${rupees(low.price)}',

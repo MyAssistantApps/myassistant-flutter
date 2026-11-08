@@ -100,23 +100,70 @@ class _Tab {
 }
 
 class _ShopBrowserScreenState extends State<ShopBrowserScreen> {
-  final List<_Tab> _tabs = [];
-  int _i = 0;
+  // ONE BROWSER (2026-11-08): every store tap used to push a new browser
+  // screen with one tab, and Back threw its tabs away. The tabs now live
+  // here, outside any one screen: opening a store again comes back to its
+  // tab, a new store is a new tab, and leaving the browser keeps them.
+  static final List<_Tab> _session = [];
+  static int _sessionI = 0;
+
+  /// The browser screen on show, if any; page events report to it.
+  static _ShopBrowserScreenState? _live;
+
+  /// Most tabs kept open at once; the oldest goes first.
+  static const _maxTabs = 6;
+
+  List<_Tab> get _tabs => _session;
+  int get _i => _sessionI.clamp(0, _session.isEmpty ? 0 : _session.length - 1);
+  set _i(int v) => _sessionI = v;
 
   _Tab get _tab => _tabs[_i];
 
   @override
   void initState() {
     super.initState();
-    _open(widget.url, widget.category, select: true);
+    _live = this;
+    _openOrSelect(widget.url, widget.category);
   }
 
   @override
   void dispose() {
+    if (identical(_live, this)) _live = null;
     for (final t in _tabs) {
       t.probe?.cancel();
     }
     super.dispose();
+  }
+
+  /// Shows [url]: the tab already on it, or on that store's home page
+  /// when [url] is the store's home too; otherwise a new tab.
+  void _openOrSelect(String url, PriceCategory category) {
+    final host = Uri.tryParse(url)?.host.replaceFirst('www.', '') ?? '';
+    final path = Uri.tryParse(url)?.path ?? '';
+    final home = path.isEmpty || path == '/' || path == '/instamart';
+    for (var k = 0; k < _tabs.length; k++) {
+      final t = _tabs[k];
+      if (t.url == url || (home && t.host == host)) {
+        if (mounted) {
+          setState(() => _i = k);
+        } else {
+          _i = k;
+        }
+        return;
+      }
+    }
+    _open(url, category);
+  }
+
+  /// A page event: redraw the browser on show (none: nothing to draw).
+  static void _changed(VoidCallback f) {
+    final s = _live;
+    if (s != null && s.mounted) {
+      // ignore: invalid_use_of_protected_member
+      s.setState(f);
+    } else {
+      f();
+    }
   }
 
   // ── tabs ─────────────────────────────────────────────────────────────
@@ -127,33 +174,27 @@ class _ShopBrowserScreenState extends State<ShopBrowserScreen> {
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.white)
       ..setNavigationDelegate(NavigationDelegate(
-        onProgress: (p) {
-          if (!mounted) return;
-          setState(() {
-            t.progress = p;
-            if (p >= 60) t.loaded = true;
-          });
-        },
-        onPageStarted: (u) {
-          if (!mounted) return;
-          setState(() {
-            t.url = u;
-            t.product = null;
-          });
-        },
+        onProgress: (p) => _changed(() {
+          t.progress = p;
+          if (p >= 60) t.loaded = true;
+        }),
+        onPageStarted: (u) => _changed(() {
+          t.url = u;
+          t.product = null;
+        }),
         onPageFinished: (_) {
-          if (mounted) setState(() => t.loaded = true);
-          _afterChange(t);
+          _changed(() => t.loaded = true);
+          _live?._afterChange(t);
         },
         // Amazon and Flipkart change pages without loading a new one.
         onUrlChange: (c) {
           final u = c.url;
-          if (u == null || u == t.url || !mounted) return;
-          setState(() {
+          if (u == null || u == t.url) return;
+          _changed(() {
             t.url = u;
             t.product = null;
           });
-          _afterChange(t);
+          _live?._afterChange(t);
         },
         onNavigationRequest: (r) {
           final u = Uri.tryParse(r.url);
@@ -169,15 +210,23 @@ class _ShopBrowserScreenState extends State<ShopBrowserScreen> {
         },
       ))
       ..loadRequest(Uri.parse(url));
-    setState(() {
+    void add() {
       _tabs.add(t);
+      while (_tabs.length > _maxTabs) {
+        _tabs.removeAt(0).probe?.cancel();
+      }
       if (select) _i = _tabs.length - 1;
-    });
+    }
+
+    mounted ? setState(add) : add();
   }
 
   void _close(int i) {
     HapticFeedback.selectionClick();
     if (_tabs.length == 1) {
+      // The last tab closed: the browser goes, and starts afresh next time.
+      _tabs.removeAt(0).probe?.cancel();
+      _i = 0;
       Navigator.of(context).pop();
       return;
     }
@@ -237,7 +286,7 @@ class _ShopBrowserScreenState extends State<ShopBrowserScreen> {
         ),
       ),
     );
-    if (pick != null) _open(pick.$3, pick.$2);
+    if (pick != null) _openOrSelect(pick.$3, pick.$2);
   }
 
   // ── reading the page ─────────────────────────────────────────────────
@@ -250,7 +299,10 @@ class _ShopBrowserScreenState extends State<ShopBrowserScreen> {
     _read(t);
     t.probe = Timer.periodic(const Duration(milliseconds: 1200), (timer) {
       // Product pages often fill in a few seconds after loading: ~12 s.
-      if (++tries >= 10 || t.product != null) {
+      // Not stopping at the first name found: the first read after a tap
+      // can still see the page being left (Flipkart's "For You"), so the
+      // name keeps being read while the page settles (2026-11-08).
+      if (++tries >= 10) {
         timer.cancel();
         return;
       }
@@ -276,9 +328,12 @@ class _ShopBrowserScreenState extends State<ShopBrowserScreen> {
     try {
       final raw = await t.web.runJavaScriptReturningResult(_readProduct);
       final p = PageProduct.read(raw);
-      if (p != null && t.product == null) AppLog.add('shop', 'product on ${t.host}: ${p.name}');
+      if (p != null && t.product?.name != p.name) AppLog.add('shop', 'product on ${t.host}: ${p.name}');
       if (!mounted) return;
-      if (p != null && t.product?.name != p.name && identical(t, _tab)) HapticFeedback.selectionClick();
+      // A read that finds nothing keeps what an earlier one found (a page
+      // mid-render); a new page clears it in onPageStarted / onUrlChange.
+      if (p == null || (p.name == t.product?.name && p.price == t.product?.price)) return;
+      if (t.product == null && identical(t, _tab)) HapticFeedback.selectionClick();
       setState(() => t.product = p);
     } catch (e) {
       // A page mid-navigation refuses scripts; the next try will do.
@@ -288,8 +343,12 @@ class _ShopBrowserScreenState extends State<ShopBrowserScreen> {
 
   // ── actions ──────────────────────────────────────────────────────────
 
-  void _compare(_Tab t, PageProduct p) {
+  Future<void> _compare(_Tab t, PageProduct shown) async {
     HapticFeedback.mediumImpact();
+    // Compare what the page says NOW, not what an early read saw.
+    await _read(t);
+    if (!mounted) return;
+    final p = t.product ?? shown;
     final seen = p.price == null ? '' : ' (seen at ${rupees(p.price!)} on ${t.name})';
     Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => t.category == PriceCategory.shopping
@@ -1109,6 +1168,9 @@ class PageProduct {
     // Open Graph product, Amazon's product title) or a store's product URL.
     // A price alone is not enough — home and deal pages show many.
     if (name.isEmpty || !looksLikeProduct) return null;
+    // A store's own slogan is never a product (a page read before its
+    // product had shown); null keeps the page being read until it has.
+    if (_storeSlogan.hasMatch(name)) return null;
     // Drop the shop's name tacked on the title ("… : Amazon.in", "| Flipkart").
     name = name.replaceAll(RegExp(r'\s*[:|\-–]\s*(Buy .*|Amazon\.in.*|Flipkart.*|Croma.*|Reliance Digital.*)$'), '');
     if (name.length > 140) name = '${name.substring(0, 140).trim()}…';
@@ -1120,6 +1182,13 @@ class PageProduct {
       url: url,
     );
   }
+
+  /// The titles of the stores' home, search and category pages.
+  static final _storeSlogan = RegExp(
+    r'^online shopping|online shopping (site|india)|buy products online at best price|'
+    r'^amazon\.in\s*[:|]|shop online for|best offers!?$',
+    caseSensitive: false,
+  );
 
   /// Product pages on the stores we cover.
   static final _productUrl = RegExp(
@@ -1139,8 +1208,17 @@ void openInShopBrowser(BuildContext context, String url, [PriceCategory? categor
     return;
   }
   HapticFeedback.selectionClick();
-  Navigator.of(context)
-      .push(MaterialPageRoute(builder: (_) => ShopBrowserScreen(url: url, category: category ?? categoryForUrl(url))));
+  final cat = category ?? categoryForUrl(url);
+  // A browser already open under this screen: go back to it and show the
+  // site there, rather than stacking a second browser on top.
+  final live = _ShopBrowserScreenState._live;
+  final route = live != null && live.mounted ? ModalRoute.of(live.context) : null;
+  if (live != null && route != null && route.isActive) {
+    Navigator.of(context).popUntil((r) => r == route);
+    live._openOrSelect(url, cat);
+    return;
+  }
+  Navigator.of(context).push(MaterialPageRoute(builder: (_) => ShopBrowserScreen(url: url, category: cat)));
 }
 
 /// The web page an Android `intent://` link names for browsers
@@ -1178,8 +1256,60 @@ const _readProduct = r'''
     var e = document.querySelector(sel);
     return e ? (e.textContent || '').trim() : '';
   }
+  // THE PRICE AS A PERSON SEES IT (2026-11-08): Flipkart's class names
+  // change all the time; its selling price is the biggest "₹12,446" near
+  // the top of the page that is not struck through (that one is the MRP).
+  function mainPrice() {
+    var best = '', size = 0, all = document.querySelectorAll('div,span');
+    var top = 2 * (window.innerHeight || 800);
+    for (var i = 0; i < all.length; i++) {
+      var e = all[i];
+      if (e.children.length) continue;
+      var t = (e.textContent || '').trim();
+      if (!/^₹\s?[\d,]+(\.\d+)?$/.test(t)) continue;
+      var r = e.getBoundingClientRect();
+      if (r.width < 1 || r.top + window.scrollY > top) continue;
+      var st = getComputedStyle(e);
+      if (st.textDecorationLine.indexOf('line-through') >= 0) continue;
+      var fs = parseFloat(st.fontSize) || 0;
+      if (fs > size) { size = fs; best = t; }
+    }
+    return best;
+  }
+  // The longest of [sel] that is on screen. Flipkart keeps the page it
+  // came from in the document, hidden: its first <h1> was the home's
+  // "For You", read as the product's name (2026-11-08).
+  function shown(sel) {
+    var best = '', all = document.querySelectorAll(sel);
+    for (var i = 0; i < all.length; i++) {
+      var e = all[i], r = e.getBoundingClientRect();
+      if (r.width < 1 || r.height < 1) continue;
+      var st = getComputedStyle(e);
+      if (st.visibility === 'hidden' || st.display === 'none' || st.opacity === '0') continue;
+      var t = (e.textContent || '').replace(/\s+/g, ' ').trim();
+      if (t.length > best.length) best = t;
+    }
+    return best;
+  }
   var name = '', price = '', image = '', product = false;
-  var blocks = document.querySelectorAll('script[type="application/ld+json"]');
+  // STALE HEAD (2026-11-08): Flipkart and Amazon change pages without
+  // loading a new one, and leave the <head> (og:title, ld+json) of the
+  // page they started on. Opened from Flipkart's home, a product page
+  // still said "Online Shopping India Mobile, Cameras…", and that was
+  // compared. The canonical link tells whose head it is: when it names
+  // another page, trust only what is on screen.
+  var fresh = true;
+  var canon = document.querySelector('link[rel="canonical"]');
+  var cu = (canon && canon.href) || meta('og:url');
+  if (cu) {
+    try {
+      var cp = new URL(cu, location.href).pathname.replace(/\/+$/, '');
+      var lp = location.pathname.replace(/\/+$/, '');
+      var last = cp.split('/').pop();
+      fresh = cp === lp || (last !== '' && lp.indexOf(last) >= 0);
+    } catch (e) {}
+  }
+  var blocks = fresh ? document.querySelectorAll('script[type="application/ld+json"]') : [];
   for (var i = 0; i < blocks.length; i++) {
     try {
       var j = JSON.parse(blocks[i].textContent);
@@ -1218,13 +1348,22 @@ const _readProduct = r'''
       price = '';
     }
   } else if (host.indexOf('flipkart.') >= 0) {
-    name = name || text('h1 span') || text('h1');
-    price = price || text('div.Nx9bqj') || text('div._30jeq3') || text('div._16Jk6d');
+    // The phone site cuts a long title short with "...more".
+    name = name || shown('h1').replace(/\s*(\.\.\.|…)\s*more$/i, '');
+    // Flipkart names the product in the tab's title once it has opened.
+    if (!name || name.length < 12) {
+      var dt = (document.title || '').replace(/\s+Price in India.*$/i, '').replace(/\s*[-|:]\s*Buy .*$/i, '').trim();
+      if (dt.length > name.length && !/online shopping|best offers|flipkart\.com$/i.test(dt)) name = dt;
+    }
+    price = price || text('div.Nx9bqj') || text('div._30jeq3') || text('div._16Jk6d') || mainPrice();
   }
-  if (meta('og:type') === 'product' || meta('og:type') === 'og:product') product = true;
-  name = name || meta('og:title') || text('h1');
-  price = price || meta('product:price:amount') || meta('og:price:amount') || meta('price');
-  image = image || meta('og:image');
+  if (fresh) {
+    if (meta('og:type') === 'product' || meta('og:type') === 'og:product') product = true;
+    name = name || meta('og:title');
+    price = price || meta('product:price:amount') || meta('og:price:amount') || meta('price');
+    image = image || meta('og:image');
+  }
+  name = name || shown('h1');
   return JSON.stringify({ name: name, price: String(price || ''), image: String(image || ''), product: product,
     url: location.href });
 })();
