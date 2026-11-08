@@ -1,10 +1,8 @@
 package com.myassistant.myassistant
 
-import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
-import android.content.Intent
 import android.widget.RemoteViews
 
 /**
@@ -35,21 +33,10 @@ class TaskWidgetProvider : AppWidgetProvider() {
         for (id in ids) {
             val views = RemoteViews(context.packageName, R.layout.widget_task)
 
-            val intent = Intent(context, MainActivity::class.java).apply {
-                action = ACTION_QUICK_TASK
-                // A widget tap must land on the capture even when the app
-                // is already open behind it — without CLEAR_TOP the
-                // existing task comes forward on whatever screen it was
-                // last on and the tap appears to do nothing.
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                putExtra(EXTRA_QUICK_TASK, true)
-            }
-            val pending = PendingIntent.getActivity(
-                context,
-                REQUEST_CODE,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
+            // THE ORB, NOT A FORM (2026-11-08, Manish: "when I click the
+            // single mic widget it opens 'Assign a task' — open the orb page
+            // itself"). The tap opens the app talking, as the Ask bar does.
+            val pending = HomeWidgets.open(context, "talk", REQUEST_CODE)
             views.setOnClickPendingIntent(R.id.widget_root, pending)
             manager.updateAppWidget(id, views)
         }

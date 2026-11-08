@@ -47,6 +47,11 @@ import '../services/app_feedback.dart';
 import '../services/app_update_service.dart';
 import '../services/assistant_identity.dart';
 import '../services/brief_service.dart';
+import '../services/home_widgets.dart';
+import '../features/widgets/widget_picker.dart';
+import '../features/pricecompare/price_compare_screen.dart';
+import '../features/pricecompare/flight_search_screen.dart';
+import '../screens/reminders_screen.dart';
 import '../services/location_service.dart';
 import '../services/share_intake_service.dart';
 import '../services/usage_service.dart';
@@ -162,6 +167,7 @@ class _HomeShellState extends State<HomeShell>
       AssistantEngine.instance.onAppResumed();
       // A widget tap while the app was already running arrives here.
       _checkQuickTaskLaunch();
+      _checkWidgetRoute();
       // …and a tap on the floating mic; the session copy kept current.
       _checkTalkLaunch();
       unawaited(OverlayBridge.syncAuth());
@@ -216,6 +222,7 @@ class _HomeShellState extends State<HomeShell>
   @override
   void dispose() {
     _newsWarm?.cancel();
+    BriefService.instance.removeListener(_syncDayWidget);
     HomeShell.requestedTab.removeListener(_onTabRequested);
     AssistantEngine.instance.removeListener(_onEngineForPicker);
     AssistantEngine.instance.removeListener(_onEngineForToast);
@@ -422,6 +429,39 @@ class _HomeShellState extends State<HomeShell>
     }
   }
 
+  /// My day on the home screen shows what Home shows.
+  void _syncDayWidget() {
+    final b = BriefService.instance;
+    if (b.loaded) unawaited(HomeWidgetsService.instance.syncDay(b.brief));
+  }
+
+  /// A home-screen Shortcuts tap ("price", "flights"); talk and quick task
+  /// arrive through their own checks above.
+  Future<void> _checkWidgetRoute() async {
+    final route = await HomeWidgetsService.instance.takeRoute();
+    if (route == null || !mounted) return;
+    final page = switch (route) {
+      'price' => const PriceCompareScreen(),
+      'flights' => const FlightSearchScreen(),
+      'reminders' => const RemindersScreen(),
+      _ => null,
+    };
+    if (page == null) return;
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+  }
+
+  /// "Add widgets to your home screen?" — once, a few seconds in, never
+  /// over a conversation or another screen.
+  Future<void> _offerWidgets() async {
+    await Future<void>.delayed(const Duration(seconds: 3));
+    if (!mounted) return;
+    final engine = AssistantEngine.instance;
+    if (engine.starting || engine.liveActive || engine.inlineVoice) return;
+    if (!(ModalRoute.of(context)?.isCurrent ?? false)) return;
+    if (!await HomeWidgetsService.instance.shouldAsk() || !mounted) return;
+    await showWidgetPicker(context);
+  }
+
   /// The bubble shows a live conversation started from it, and the owner's
   /// turn to speak: the orb's listening mood with the microphone actually
   /// open — the moment the voice screen says "Listening…".
@@ -474,6 +514,12 @@ class _HomeShellState extends State<HomeShell>
     AssistantEngine.instance.addListener(_onEngineForToast);
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkQuickTaskLaunch());
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkTalkLaunch());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkWidgetRoute());
+    // HOME-SCREEN WIDGETS (2026-11-08): My day follows the brief, and the
+    // app offers the widgets once, a few seconds after it opens.
+    BriefService.instance.addListener(_syncDayWidget);
+    _syncDayWidget();
+    unawaited(_offerWidgets());
     // The floating mic talks through the running app, in the background.
     OverlayBridge.onBubbleTap = AssistantEngine.instance.bubbleTap;
     OverlayBridge.onStopAll = AssistantEngine.instance.endInlineConversation;

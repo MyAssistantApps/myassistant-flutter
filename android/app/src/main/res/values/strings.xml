@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="widget_task_label">Assign a task</string>
-    <string name="widget_task_description">Tap the orb, give the assistant a job, and get on with your day — it works on it in the background and tells you when it is done.</string>
+    <string name="widget_task_label">Talk</string>
+    <string name="widget_task_description">One tap on the orb and your assistant is listening.</string>
     <!-- The line above the "Send feedback" form (TesterFeedbackBridge). The
          form's own picture is always of the You tab, where the row is, so
          it asks which screen it was, and "Gallery" is the form's button
@@ -10,4 +10,20 @@
     <!-- Settings → Accessibility (ScreenAgentService). -->
     <string name="screen_agent_label">MyAssistant screen control</string>
     <string name="screen_agent_description">Lets your assistant do tasks you ask for inside other apps — open a chat, type a message, add to a cart — by reading the screen and tapping for you. It only acts while a task you asked for is running, shows a Stop button the whole time, and asks you before anything that sends, pays, orders or deletes. It never reads or types passwords or codes.</string>
+    <!-- Home-screen widgets (2026-11-08): HomeWidgets.kt. -->
+    <string name="widget_talk_title">Ask MyAssistant</string>
+    <string name="widget_talk_line">Tap and speak — I\'ll take care of it</string>
+    <string name="widget_talk_description">A wide bar: one tap and your assistant is listening.</string>
+    <string name="widget_day_title">My day</string>
+    <string name="widget_day_meetings">Meetings</string>
+    <string name="widget_day_reminders">Reminders</string>
+    <string name="widget_day_bills">Bills due</string>
+    <string name="widget_day_clear">You\'re all clear today</string>
+    <string name="widget_day_stale">Open MyAssistant to refresh your day</string>
+    <string name="widget_day_description">Today at a glance: meetings, reminders, bills and what\'s next.</string>
+    <string name="widget_sc_talk">Talk</string>
+    <string name="widget_sc_price">Compare</string>
+    <string name="widget_sc_flights">Flights</string>
+    <string name="widget_sc_task">Reminders</string>
+    <string name="widget_shortcuts_description">Talk, price compare, flights and reminders, one tap each.</string>
 </resources>

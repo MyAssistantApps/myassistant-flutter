@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Ask bar: the price-compare hero's gradient, violet to warm orange. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <gradient android:angle="0" android:startColor="#5B2EFF" android:centerColor="#B026E0" android:endColor="#FF7A45" />
+    <corners android:radius="32dp" />
+</shape>

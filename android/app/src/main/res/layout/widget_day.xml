@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- MY DAY (2026-11-08): the date, today's three numbers and what is next.
+     Filled from what the app last saw (DayWidgetProvider). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_card_bg"
+    android:orientation="vertical"
+    android:padding="14dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+            <TextView
+                android:id="@+id/day_greeting"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:text="@string/widget_day_title"
+                android:textColor="#B9A8E8"
+                android:textSize="12sp" />
+            <TextView
+                android:id="@+id/day_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+        <FrameLayout
+            android:id="@+id/day_talk"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/widget_icon_circle">
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_gravity="center"
+                android:contentDescription="@string/widget_talk_title"
+                android:src="@drawable/ic_widget_mic_white" />
+        </FrameLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="10dp"
+        android:layout_weight="1"
+        android:orientation="horizontal">
+        <LinearLayout style="@style/WidgetCount">
+            <TextView android:id="@+id/day_meetings" style="@style/WidgetCountNumber" />
+            <TextView style="@style/WidgetCountLabel" android:text="@string/widget_day_meetings" />
+        </LinearLayout>
+        <LinearLayout style="@style/WidgetCount" android:layout_marginStart="8dp">
+            <TextView android:id="@+id/day_reminders" style="@style/WidgetCountNumber" />
+            <TextView style="@style/WidgetCountLabel" android:text="@string/widget_day_reminders" />
+        </LinearLayout>
+        <LinearLayout style="@style/WidgetCount" android:layout_marginStart="8dp">
+            <TextView android:id="@+id/day_bills" style="@style/WidgetCountNumber" />
+            <TextView style="@style/WidgetCountLabel" android:text="@string/widget_day_bills" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/day_next"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="#E6FFFFFF"
+        android:textSize="13sp" />
+</LinearLayout>
