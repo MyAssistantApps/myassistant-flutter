@@ -223,6 +223,11 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                 newsOn: memory.newsOn.value,
                 hidden: memory.hiddenAt(now),
               ).where((e) => e.tip == null).toList();
+        final asks = [
+          for (final a in feed.asks)
+            if (!extras.any((e) => e.tip != null && (e.tip!.ask == a.request || e.tip!.say == a.label)))
+              a,
+        ];
         return ListView(
           padding: widget.padding,
           children: [
@@ -280,16 +285,12 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                 ),
               ),
             ],
-            const SizedBox(height: 20),
-            // A chip that says what today's tip card says is dropped.
-            Reveal(
-              delayMs: 160,
-              child: _asks([
-                for (final a in feed.asks)
-                  if (!extras.any((e) => e.tip != null && (e.tip!.ask == a.request || e.tip!.say == a.label)))
-                    a,
-              ]),
-            ),
+            // A chip that says what today's tip card says is dropped; with
+            // no chips left, no empty gap is left either.
+            if (asks.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              Reveal(delayMs: 160, child: _asks(asks)),
+            ],
             // The professions' photo banners and the documents box became
             // the Assistants tiles above (light premium, 2026-11-02).
             const SizedBox(height: 20),
