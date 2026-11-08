@@ -95,25 +95,9 @@ class _PriceCompareSectionState extends State<PriceCompareSection> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // The banner, with the search bar riding its bottom edge.
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 30),
-                    child: PriceHeroBanner(
-                        height: 236, bottomInset: 34, onTap: () => _open(category: PriceCategory.flights, focus: true)),
-                  ),
-                  Positioned(
-                    left: 12,
-                    right: 12,
-                    bottom: 0,
-                    child: PriceSearchBar(onTap: () => _open(focus: true), onPaste: () => _open(paste: true)),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 22),
-              PriceCategoryGrid(onTap: (c) => _open(category: c, focus: true)),
+              PriceHeroBanner(onSearch: () => _open(focus: true), onPaste: () => _open(paste: true)),
+              const SizedBox(height: 16),
+              PriceCategoryShowcase(onTap: (c) => _open(category: c, focus: true)),
               const SizedBox(height: 14),
               _insights(hit),
             ],

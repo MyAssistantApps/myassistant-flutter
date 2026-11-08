@@ -85,7 +85,7 @@ void main() {
     }
   });
 
-  testWidgets('the Home section draws its banner, search and six photo tiles', (t) async {
+  testWidgets('the Home section draws its hero, search and five photo cards', (t) async {
     SharedPreferences.setMockInitialValues({});
     t.view.physicalSize = const Size(1080, 2400);
     t.view.devicePixelRatio = 3;
@@ -97,9 +97,10 @@ void main() {
     ));
     await t.pump();
     expect(find.text('Price compare'), findsOneWidget);
-    expect(find.text('Search or paste a link for the best price'), findsOneWidget);
-    for (final c in PriceCategory.values) {
-      expect(find.text(c.tileTitle), findsOneWidget);
+    expect(find.text('Same product.\nLower price.'), findsOneWidget);
+    expect(find.text('Search or paste a link'), findsOneWidget);
+    for (final title in ['Product compare', 'Flights', 'Hotels', 'Rides', 'Grocery']) {
+      expect(find.text(title), findsOneWidget, reason: title);
     }
     expect(find.text('🔥 HOT'), findsOneWidget);
     // No overflow at a large text size either (the tiles overflowed once).

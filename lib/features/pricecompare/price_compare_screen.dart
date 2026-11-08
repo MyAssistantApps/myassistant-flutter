@@ -487,7 +487,7 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
     if (v != null && mounted) setState(() => _budget.text = v);
   }
 
-  Widget _categories() => PriceCategoryGrid(
+  Widget _categories() => PriceCategoryShowcase(
         selected: _cat,
         onTap: (c) {
           setState(() => _cat = c);

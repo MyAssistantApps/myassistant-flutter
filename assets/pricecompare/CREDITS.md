@@ -6,12 +6,11 @@ same credits under "Photo credits" on the Price compare page.
 
 | File | Photo | Author | Licence |
 |------|-------|--------|---------|
-| hero.jpg | [EC-MLR Gulfstream G650 SCQ 03](https://commons.wikimedia.org/wiki/File:EC-MLR_Gulfstream_G650_SCQ_03.jpg) | Bene Riobó | CC BY-SA 4.0 |
-| flights.jpg | [Gulfstream G650 'LX-DLF'](https://commons.wikimedia.org/wiki/File:Gulfstream_G650_%E2%80%98LX-DLF%E2%80%99.jpg) | Alan Wilson | CC BY-SA 2.0 |
-| hotels.jpg | [Canopy bed of Amantaka Suite, Luang Prabang](https://commons.wikimedia.org/wiki/File:Canopy_bed_of_Amantaka_Suite_in_Amantaka_luxury_Resort_%26_Hotel_in_Luang_Prabang_Laos.jpg) | Basile Morin | CC BY-SA 4.0 |
-| cabs.jpg | [Toyota Innova Crysta 2.4 Z front right](https://commons.wikimedia.org/wiki/File:Toyota_Innova_Crysta_2.4_Z_front_right.jpg) | Premnath Kudva | CC BY-SA 4.0 |
-| shopping.jpg | [Watch Collection](https://commons.wikimedia.org/wiki/File:Watch_Collection.jpg) | Abhijeet Singh Aulakh | CC BY-SA 4.0 |
-| grocery.jpg | [Exotic Fruit Gift Basket](https://commons.wikimedia.org/wiki/File:Exotic_Fruit_Gift_Basket_(4461109309).jpg) | Vegan Feast Catering | CC BY 2.0 |
+| flights.jpg | [Airbus A350-941 F-WWCF MSN002 ILA Berlin 2016 17](https://commons.wikimedia.org/wiki/File:Airbus_A350-941_F-WWCF_MSN002_ILA_Berlin_2016_17.jpg) | Julian Herzog | CC BY 4.0 |
+| hotels.jpg | [Infinity Pool Lopesan Costa Meloneras](https://commons.wikimedia.org/wiki/File:Infinity_Pool_Lopesan_Costa_Meloneras,_May_2018.jpg) | Martin Falbisoner | CC BY-SA 4.0 |
+| cabs.jpg | [BMW, IAA 2017 (1Y7A2712)](https://commons.wikimedia.org/wiki/File:BMW,_IAA_2017_(1Y7A2712).jpg) | MB-one | CC BY-SA 4.0 |
+| shopping.jpg | [Large interior view of Plaza Singapura Shopping mall](https://commons.wikimedia.org/wiki/File:Large_interior_view_of_Plaza_Singapura_Shopping_mall_Orchard_Road_Singapore.jpg) | Basile Morin | CC BY-SA 4.0 |
+| grocery.jpg | [Municipal Market of São Paulo city](https://commons.wikimedia.org/wiki/File:Municipal_Market_of_S%C3%A3o_Paulo_city.jpg) | Wilfredor | CC BY-SA 4.0 |
 | fuel.jpg | [Petrol pump mp3h0355](https://commons.wikimedia.org/wiki/File:Petrol_pump_mp3h0355.jpg) | Rama | CC BY-SA 2.0 FR |
 
 ## Airlines (assets/pricecompare/airlines/, cropped)

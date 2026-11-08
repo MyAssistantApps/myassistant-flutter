@@ -117,12 +117,11 @@ enum PriceCategory {
 
 /// Who took the photos (Wikimedia Commons; the licences ask for credit).
 const photoCredits = <(String, String, String)>[
-  ('Private jet banner', 'Bene Riobó', 'CC BY-SA 4.0'),
-  ('Flights', 'Alan Wilson', 'CC BY-SA 2.0'),
-  ('Hotels', 'Basile Morin', 'CC BY-SA 4.0'),
-  ('Rides', 'Premnath Kudva', 'CC BY-SA 4.0'),
-  ('Shopping', 'Abhijeet Singh Aulakh', 'CC BY-SA 4.0'),
-  ('Grocery', 'Vegan Feast Catering', 'CC BY 2.0'),
+  ('Flights', 'Julian Herzog', 'CC BY 4.0'),
+  ('Hotels', 'Martin Falbisoner', 'CC BY-SA 4.0'),
+  ('Rides', 'MB-one', 'CC BY-SA 4.0'),
+  ('Shopping', 'Basile Morin', 'CC BY-SA 4.0'),
+  ('Grocery', 'Wilfredor', 'CC BY-SA 4.0'),
 ];
 
 abstract final class PriceStores {
