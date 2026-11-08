@@ -29,12 +29,12 @@ import '../briefing/brief_player.dart';
 import '../meeting_prep/meeting_prep_sheet.dart';
 import '../shopping/shopping_list_screen.dart';
 import '../shopping/shopping_service.dart';
-import 'deal_banners.dart';
 import 'home_extras.dart';
 import 'home_redesign.dart';
 import 'pro_banners.dart';
 import 'quick_tools.dart';
 import 'popular_apps.dart';
+import 'quick_apps.dart';
 import 'home_feed.dart';
 import 'home_memory.dart';
 
@@ -285,9 +285,9 @@ class _HomeFeedViewState extends State<HomeFeedView> {
             // The professions' photo banners and the documents box became
             // the Assistants tiles above (light premium, 2026-11-02).
             const SizedBox(height: 20),
-            // ORDER AND SHOP (owner, 2026-11-01): food and shopping apps,
-            // suggested for the time of day and the shopping list, sliding.
-            DealBanners(banners: dealBannersFor(now, toBuy: toBuy)),
+            // QUICK APPS (2026-11-08): GPay, WhatsApp, YouTube… one tap
+            // away, where the Order and shop banners used to be.
+            const Reveal(delayMs: 170, child: QuickApps()),
             const SizedBox(height: 20),
             // Once per release: what just got better. Below the day, never
             // above what needs the user.
