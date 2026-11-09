@@ -74,4 +74,27 @@ void main() {
     expect(find.text('New game'), findsOneWidget);
     expect(t.takeException(), isNull);
   });
+
+  testWidgets('light trail: repeat the trail, then a wrong pad ends it', (t) async {
+    t.view.physicalSize = const Size(1080, 2340);
+    t.view.devicePixelRatio = 2.625;
+    addTearDown(t.view.reset);
+    await t.pumpWidget(const MaterialApp(home: LightTrailScreen(seed: 3)));
+    await t.tap(find.text('Play again'));
+    await t.pump(const Duration(seconds: 2));
+    // The same trail the screen makes from seed 3.
+    final r = math.Random(3);
+    final first = r.nextInt(4);
+    final second = r.nextInt(4);
+    final pads = find.descendant(of: find.byType(GridView), matching: find.byType(GestureDetector));
+    expect(pads, findsNWidgets(4));
+    await t.tap(pads.at(first));
+    await t.pump(const Duration(seconds: 3));
+    expect(find.text('Your turn — 2 to go'), findsOneWidget);
+    await t.tap(pads.at((first + 1) % 4));
+    await t.pumpAndSettle();
+    expect(find.text('Trail broken'), findsOneWidget);
+    expect(find.text('You cleared 1 round.'), findsOneWidget);
+    expect(second, inInclusiveRange(0, 3));
+  });
 }

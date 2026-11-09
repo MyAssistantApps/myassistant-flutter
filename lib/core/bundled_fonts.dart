@@ -20,7 +20,10 @@ const bundledFontFamilies = <String, List<String>>{
 };
 
 void useBundledFonts() {
-  GoogleFonts.config.allowRuntimeFetching = false;
+  // true (2026-11-09): some text asks for a weight that isn't bundled
+  // (InterTight-Black / w900), which crashed with fetching off. Bundled
+  // weights still load from assets; only missing ones are fetched.
+  GoogleFonts.config.allowRuntimeFetching = true;
   // Both are under the SIL Open Font License, which asks that the licence
   // travels with the font: it shows on the app's licences page.
   LicenseRegistry.addLicense(() async* {

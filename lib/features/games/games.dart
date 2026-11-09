@@ -669,3 +669,189 @@ class _TicTacToeScreenState extends State<TicTacToeScreen> {
     );
   }
 }
+
+// ─────────────────────────────── light trail ───────────────────────────────
+
+/// Light trail: the pads light up in a trail, you tap it back. Each round
+/// the trail grows by one; a wrong pad ends the game. Best = longest trail.
+class LightTrailScreen extends StatefulWidget {
+  const LightTrailScreen({super.key, this.seed});
+  final int? seed;
+
+  @override
+  State<LightTrailScreen> createState() => _LightTrailScreenState();
+}
+
+class _LightTrailScreenState extends State<LightTrailScreen> {
+  static const _icons = [
+    Icons.bolt_rounded,
+    Icons.star_rounded,
+    Icons.favorite_rounded,
+    Icons.eco_rounded,
+  ];
+  late final math.Random _rand = math.Random(widget.seed);
+  final List<int> _trail = [];
+  int _step = 0;
+  int? _lit;
+  bool _showing = false;
+  bool _playing = false;
+  bool _over = false;
+  String? _best;
+
+  List<Color> get _colors => [Neon.cyan, Neon.violet, Neon.pink, Neon.lime];
+
+  /// Rounds completed so far.
+  int get _score => math.max(0, _trail.length - 1);
+
+  void _start() {
+    HapticFeedback.selectionClick();
+    setState(() {
+      _trail.clear();
+      _over = false;
+      _playing = true;
+      _best = null;
+    });
+    _nextRound();
+  }
+
+  Future<void> _nextRound() async {
+    _trail.add(_rand.nextInt(4));
+    _step = 0;
+    setState(() => _showing = true);
+    // A little faster as the trail grows.
+    final on = math.max(220, 520 - _trail.length * 20);
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    for (final p in _trail) {
+      if (!mounted) return;
+      setState(() => _lit = p);
+      HapticFeedback.selectionClick();
+      await Future<void>.delayed(Duration(milliseconds: on));
+      if (!mounted) return;
+      setState(() => _lit = null);
+      await Future<void>.delayed(const Duration(milliseconds: 160));
+    }
+    if (mounted) setState(() => _showing = false);
+  }
+
+  Future<void> _tap(int p) async {
+    if (!_playing || _showing || _over) return;
+    if (_trail[_step] != p) {
+      HapticFeedback.heavyImpact();
+      setState(() {
+        _over = true;
+        _playing = false;
+        _lit = null;
+      });
+      final score = _score;
+      final better = await GameBest.offer('trail_rounds', score, lowerWins: false);
+      final best = await GameBest.get('trail_rounds');
+      if (mounted) {
+        setState(() => _best =
+            better && score > 0 ? 'A new best!' : 'Best: ${best ?? 0} rounds');
+      }
+      return;
+    }
+    HapticFeedback.selectionClick();
+    setState(() => _lit = p);
+    Future<void>.delayed(const Duration(milliseconds: 160), () {
+      if (mounted && _lit == p && !_showing) setState(() => _lit = null);
+    });
+    _step++;
+    if (_step == _trail.length) {
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+      if (mounted && _playing) _nextRound();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final line = !_playing
+        ? ''
+        : _showing
+            ? 'Watch the trail…'
+            : 'Your turn — ${_trail.length - _step} to go';
+    return NeonScaffold(
+      appBar: appleAppBar(context, 'Light trail'),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _stat('round', '${_trail.isEmpty ? 0 : _trail.length}'),
+                  _stat('cleared', '$_score'),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Text(line,
+                  style: NeonType.manrope(17, FontWeight.w700)
+                      .copyWith(color: Neon.textHi)),
+              const SizedBox(height: 18),
+              Expanded(
+                child: Center(
+                  child: !_playing
+                      ? _Result(
+                          title: _over ? 'Trail broken' : 'Light trail',
+                          line: _over
+                              ? 'You cleared $_score round${_score == 1 ? '' : 's'}.'
+                              : 'Watch the pads light up, then tap them back in the same order. Each round adds one more.',
+                          best: _best,
+                          onAgain: _start,
+                        )
+                      : AspectRatio(
+                          aspectRatio: 1,
+                          child: GridView.count(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 14,
+                            crossAxisSpacing: 14,
+                            physics: const NeverScrollableScrollPhysics(),
+                            children: [
+                              for (var i = 0; i < 4; i++)
+                                Semantics(
+                                  button: true,
+                                  label: 'Pad ${i + 1}',
+                                  child: GestureDetector(
+                                    onTap: () => _tap(i),
+                                    child: AnimatedContainer(
+                                      duration:
+                                          const Duration(milliseconds: 120),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(28),
+                                        color: _colors[i].withValues(
+                                            alpha: _lit == i ? 0.9 : 0.18),
+                                        border: Border.all(
+                                            color: _colors[i].withValues(
+                                                alpha: _lit == i ? 1 : 0.45),
+                                            width: 2),
+                                        boxShadow: _lit == i
+                                            ? [
+                                                BoxShadow(
+                                                    color: _colors[i]
+                                                        .withValues(alpha: 0.6),
+                                                    blurRadius: 32)
+                                              ]
+                                            : null,
+                                      ),
+                                      child: Icon(_icons[i],
+                                          size: 44,
+                                          color: _lit == i
+                                              ? Neon.glyphOn(_colors[i])
+                                              : _colors[i]
+                                                  .withValues(alpha: 0.8)),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

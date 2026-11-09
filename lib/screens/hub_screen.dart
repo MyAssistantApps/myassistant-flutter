@@ -254,6 +254,13 @@ class _HubScreenState extends State<HubScreen> {
               Neon.accentD,
               (c) => const TicTacToeScreen(),
             ),
+            _Row(
+              'Light trail',
+              'Watch the lights, repeat the trail',
+              Icons.lightbulb_rounded,
+              Neon.accentC,
+              (c) => const LightTrailScreen(),
+            ),
           ]),
           _group(context, 'App', [
             _Row(
