@@ -27,14 +27,15 @@ import '../../widgets/whats_new_card.dart';
 import '../assistant/state/assistant_engine.dart';
 import '../briefing/brief_player.dart';
 import '../meeting_prep/meeting_prep_sheet.dart';
+import '../pricecompare/price_compare_section.dart';
 import '../shopping/shopping_list_screen.dart';
 import '../shopping/shopping_service.dart';
-import 'deal_banners.dart';
 import 'home_extras.dart';
 import 'home_redesign.dart';
 import 'pro_banners.dart';
 import 'quick_tools.dart';
 import 'popular_apps.dart';
+import 'quick_apps.dart';
 import 'home_feed.dart';
 import 'home_memory.dart';
 
@@ -222,6 +223,11 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                 newsOn: memory.newsOn.value,
                 hidden: memory.hiddenAt(now),
               ).where((e) => e.tip == null).toList();
+        final asks = [
+          for (final a in feed.asks)
+            if (!extras.any((e) => e.tip != null && (e.tip!.ask == a.request || e.tip!.say == a.label)))
+              a,
+        ];
         return ListView(
           padding: widget.padding,
           children: [
@@ -259,6 +265,13 @@ class _HomeFeedViewState extends State<HomeFeedView> {
               child:
                   PopularAppsSection(onOpen: (page) => _do.open(context, page)),
             ),
+            // PRICE COMPARE (owner, 2026-11-04): under Try now, BuyHatke's
+            // layout in the app's glass.
+            const SizedBox(height: 26),
+            Reveal(
+              delayMs: 138,
+              child: PriceCompareSection(onOpen: (page) => _do.open(context, page)),
+            ),
             if (extras.isNotEmpty) ...[
               const SizedBox(height: 24),
               Reveal(
@@ -272,22 +285,18 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                 ),
               ),
             ],
-            const SizedBox(height: 20),
-            // A chip that says what today's tip card says is dropped.
-            Reveal(
-              delayMs: 160,
-              child: _asks([
-                for (final a in feed.asks)
-                  if (!extras.any((e) => e.tip != null && (e.tip!.ask == a.request || e.tip!.say == a.label)))
-                    a,
-              ]),
-            ),
+            // A chip that says what today's tip card says is dropped; with
+            // no chips left, no empty gap is left either.
+            if (asks.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              Reveal(delayMs: 160, child: _asks(asks)),
+            ],
             // The professions' photo banners and the documents box became
             // the Assistants tiles above (light premium, 2026-11-02).
             const SizedBox(height: 20),
-            // ORDER AND SHOP (owner, 2026-11-01): food and shopping apps,
-            // suggested for the time of day and the shopping list, sliding.
-            DealBanners(banners: dealBannersFor(now, toBuy: toBuy)),
+            // QUICK APPS (2026-11-08): GPay, WhatsApp, YouTube… one tap
+            // away, where the Order and shop banners used to be.
+            const Reveal(delayMs: 170, child: QuickApps()),
             const SizedBox(height: 20),
             // Once per release: what just got better. Below the day, never
             // above what needs the user.

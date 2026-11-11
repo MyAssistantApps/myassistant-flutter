@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SHORTCUTS (2026-11-08): four things, one tap each. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_card_bg"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="6dp"
+    android:paddingEnd="6dp">
+    <LinearLayout android:id="@+id/sc_talk" style="@style/WidgetShortcut">
+        <FrameLayout style="@style/WidgetShortcutIcon">
+            <ImageView style="@style/WidgetShortcutGlyph" android:src="@drawable/ic_widget_mic_white" />
+        </FrameLayout>
+        <TextView style="@style/WidgetShortcutLabel" android:text="@string/widget_sc_talk" />
+    </LinearLayout>
+    <LinearLayout android:id="@+id/sc_price" style="@style/WidgetShortcut">
+        <FrameLayout style="@style/WidgetShortcutIcon">
+            <ImageView style="@style/WidgetShortcutGlyph" android:src="@drawable/ic_widget_price" />
+        </FrameLayout>
+        <TextView style="@style/WidgetShortcutLabel" android:text="@string/widget_sc_price" />
+    </LinearLayout>
+    <LinearLayout android:id="@+id/sc_flights" style="@style/WidgetShortcut">
+        <FrameLayout style="@style/WidgetShortcutIcon">
+            <ImageView style="@style/WidgetShortcutGlyph" android:src="@drawable/ic_widget_flight" />
+        </FrameLayout>
+        <TextView style="@style/WidgetShortcutLabel" android:text="@string/widget_sc_flights" />
+    </LinearLayout>
+    <LinearLayout android:id="@+id/sc_task" style="@style/WidgetShortcut">
+        <FrameLayout style="@style/WidgetShortcutIcon">
+            <ImageView style="@style/WidgetShortcutGlyph" android:src="@drawable/ic_widget_bolt" />
+        </FrameLayout>
+        <TextView style="@style/WidgetShortcutLabel" android:text="@string/widget_sc_task" />
+    </LinearLayout>
+</LinearLayout>

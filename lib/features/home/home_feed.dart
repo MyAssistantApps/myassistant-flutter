@@ -432,11 +432,9 @@ class HomeRanker {
         HomeAsk('Track an expense', 'I spent money today — note it for me.'),
       ];
     }
-    return const [
-      HomeAsk('Summarise my day', 'Summarise what happened today for me.'),
-      HomeAsk('What is tomorrow like?', 'What does my day tomorrow look like?'),
-      HomeAsk('Write an email', 'I want to send an email — ask me the details.'),
-    ];
+    // Evenings show no suggestions: "Summarise my day", "What is tomorrow
+    // like?" and "Write an email" were taken off Home (Manish, 2026-11-08).
+    return const [];
   }
 
   // ── words ────────────────────────────────────────────────────────────

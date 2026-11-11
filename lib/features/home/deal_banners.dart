@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:simple_icons/simple_icons.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../design/neon_tokens.dart';
 import '../../core/log.dart';
+import '../pricecompare/shop_browser.dart';
 
 /// ORDER AND SHOP, SLIDING (owner, 2026-11-01: "before Open a tool we need
 /// Swiggy and other similar platforms or e-commerce platforms and their
@@ -136,8 +136,7 @@ List<DealBanner> dealBannersFor(DateTime now, {List<String> toBuy = const []}) {
     ),
   ];
   // Meal times lead with food; a list to buy leads with groceries.
-  final mealTime =
-      (h >= 7 && h < 10) || (h >= 12 && h < 15) || (h >= 19 && h < 23);
+  final mealTime = (h >= 7 && h < 10) || (h >= 12 && h < 15) || (h >= 19 && h < 23);
   if (list.isNotEmpty && !mealTime) return [...groceries, ...food, ...shop];
   if (mealTime) return [...food, ...groceries, ...shop];
   return [...shop, ...groceries, ...food];
@@ -171,9 +170,7 @@ class _DealBannersState extends State<DealBanners> {
     _auto = Timer.periodic(const Duration(seconds: 6), (_) {
       if (!mounted || _held || !_page.hasClients) return;
       final next = (_at + 1) % widget.banners.length;
-      _page.animateToPage(next,
-          duration: const Duration(milliseconds: 520),
-          curve: Curves.easeOutCubic);
+      _page.animateToPage(next, duration: const Duration(milliseconds: 520), curve: Curves.easeOutCubic);
     });
   }
 
@@ -187,15 +184,16 @@ class _DealBannersState extends State<DealBanners> {
   Future<void> _open(DealBanner b) async {
     HapticFeedback.selectionClick();
     AppLog.add('home', 'banner ${b.brand}');
+    // 2026-11-07 (Manish): the store's site opens inside the app (the shop
+    // browser, with Compare and Ask AI) instead of handing off to its app.
+    if (b.url.isNotEmpty) {
+      openInShopBrowser(context, b.url);
+      return;
+    }
     if (b.pkg.isNotEmpty) {
       try {
-        final opened = await const MethodChannel('hari/intent')
-            .invokeMethod<String>('launchApp', {'name': b.brand, 'pkg': b.pkg});
-        if (opened != null && opened.isNotEmpty) return;
+        await const MethodChannel('hari/intent').invokeMethod<String>('launchApp', {'name': b.brand, 'pkg': b.pkg});
       } catch (_) {}
-    }
-    if (b.url.isNotEmpty) {
-      await launchUrl(Uri.parse(b.url), mode: LaunchMode.externalApplication);
     }
   }
 
@@ -208,8 +206,7 @@ class _DealBannersState extends State<DealBanners> {
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Text('Order and shop',
-              style: NeonType.eyebrow.copyWith(color: Neon.textLo)),
+          child: Text('Order and shop', style: NeonType.eyebrow.copyWith(color: Neon.textLo)),
         ),
         Listener(
           onPointerDown: (_) => _held = true,
@@ -226,8 +223,7 @@ class _DealBannersState extends State<DealBanners> {
               onPageChanged: (i) => setState(() => _at = i),
               itemBuilder: (_, i) => Padding(
                 padding: const EdgeInsets.only(right: 10),
-                child: _BannerCard(
-                    banner: banners[i], onTap: () => _open(banners[i])),
+                child: _BannerCard(banner: banners[i], onTap: () => _open(banners[i])),
               ),
             ),
           ),
@@ -244,9 +240,7 @@ class _DealBannersState extends State<DealBanners> {
                 height: 6,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(3),
-                  color: i == _at
-                      ? Neon.cyan
-                      : Neon.textDim.withValues(alpha: 0.45),
+                  color: i == _at ? Neon.cyan : Neon.textDim.withValues(alpha: 0.45),
                 ),
               ),
           ],
@@ -267,8 +261,7 @@ class _BannerCard extends StatelessWidget {
     final r = BorderRadius.circular(22);
     return Semantics(
       button: true,
-      label:
-          '${banner.brand}. ${banner.title}. ${banner.body}. ${banner.action}',
+      label: '${banner.brand}. ${banner.title}. ${banner.body}. ${banner.action}',
       excludeSemantics: true,
       child: Material(
         borderRadius: r,
@@ -297,37 +290,26 @@ class _BannerCard extends StatelessWidget {
                       children: [
                         Text(banner.brand,
                             style: NeonType.manrope(13, FontWeight.w800)
-                                .copyWith(
-                                    color: Color.lerp(c, Colors.white, 0.35))),
+                                .copyWith(color: Color.lerp(c, Colors.white, 0.35))),
                         const SizedBox(height: 4),
                         Text(banner.title,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: NeonType.manrope(18, FontWeight.w800)
-                                .copyWith(
-                                    color: Neon.textHi, letterSpacing: -0.2)),
+                                .copyWith(color: Neon.textHi, letterSpacing: -0.2)),
                         const SizedBox(height: 3),
                         Expanded(
                           child: Text(banner.body,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                  color: Neon.textLo,
-                                  fontSize: 13,
-                                  height: 1.3)),
+                              style: TextStyle(color: Neon.textLo, fontSize: 13, height: 1.3)),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                              color: c,
-                              borderRadius: BorderRadius.circular(20)),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(20)),
                           child: Text(banner.action,
                               style: NeonType.manrope(12.5, FontWeight.w800)
-                                  .copyWith(
-                                      color: c.computeLuminance() > 0.5
-                                          ? Colors.black
-                                          : Colors.white)),
+                                  .copyWith(color: c.computeLuminance() > 0.5 ? Colors.black : Colors.white)),
                         ),
                       ],
                     ),
@@ -357,8 +339,7 @@ class _BrandLogo extends StatefulWidget {
 
   static Future<Uint8List?> iconOf(String pkg) => _icons[pkg] ??= () async {
         try {
-          return await const MethodChannel('hari/intent')
-              .invokeMethod<Uint8List>('appIcon', {'pkg': pkg, 'size': 192});
+          return await const MethodChannel('hari/intent').invokeMethod<Uint8List>('appIcon', {'pkg': pkg, 'size': 192});
         } catch (_) {
           return null;
         }
@@ -395,20 +376,11 @@ class _BrandLogoState extends State<_BrandLogo> {
         height: size,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(size * 0.26),
-          boxShadow: [
-            BoxShadow(
-                color: c.withValues(alpha: 0.45),
-                blurRadius: 16,
-                spreadRadius: -2)
-          ],
+          boxShadow: [BoxShadow(color: c.withValues(alpha: 0.45), blurRadius: 16, spreadRadius: -2)],
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(size * 0.26),
-          child: Image.memory(png,
-              width: size,
-              height: size,
-              fit: BoxFit.cover,
-              gaplessPlayback: true),
+          child: Image.memory(png, width: size, height: size, fit: BoxFit.cover, gaplessPlayback: true),
         ),
       );
     }
@@ -418,21 +390,14 @@ class _BrandLogoState extends State<_BrandLogo> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(size * 0.26),
         color: c,
-        boxShadow: [
-          BoxShadow(
-              color: c.withValues(alpha: 0.45),
-              blurRadius: 16,
-              spreadRadius: -2)
-        ],
+        boxShadow: [BoxShadow(color: c.withValues(alpha: 0.45), blurRadius: 16, spreadRadius: -2)],
       ),
       alignment: Alignment.center,
       child: b.mark != null
           ? Icon(b.mark, color: Colors.white, size: size * 0.56)
           : Text(b.brand.characters.first,
-              style: NeonType.manrope(size * 0.48, FontWeight.w800).copyWith(
-                  color: c.computeLuminance() > 0.5
-                      ? Colors.black
-                      : Colors.white)),
+              style: NeonType.manrope(size * 0.48, FontWeight.w800)
+                  .copyWith(color: c.computeLuminance() > 0.5 ? Colors.black : Colors.white)),
     );
   }
 }

@@ -326,6 +326,39 @@
                 android:resource="@xml/widget_task_info" />
         </receiver>
 
+        <!-- THE OTHER HOME-SCREEN WIDGETS (2026-11-08): the Ask bar, My day
+             and Shortcuts. Exported for the same reason as the orb above. -->
+        <receiver
+            android:name=".TalkWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_talk_info" />
+        </receiver>
+        <receiver
+            android:name=".DayWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_day_info" />
+        </receiver>
+        <receiver
+            android:name=".ShortcutsWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_shortcuts_info" />
+        </receiver>
+
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />

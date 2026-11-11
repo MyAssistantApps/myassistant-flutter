@@ -28,6 +28,7 @@ import '../models/mail_inbox.dart';
 import '../services/mail_inbox_service.dart';
 import '../services/app_feedback.dart';
 import '../services/tester_feedback.dart';
+import '../features/widgets/widget_picker.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  ASSISTANT SETTINGS — how the assistant sounds and looks, plus the
@@ -482,6 +483,22 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                 const SizedBox(height: 24),
 
                 const AccountSection(),
+                const SizedBox(height: 24),
+
+                // HOME-SCREEN WIDGETS (2026-11-08): the picker the app
+                // offers once on opening, for whoever said "Not now".
+                const GroupLabel('Home screen'),
+                GroupedCard(
+                  dividerInset: 60,
+                  children: [
+                    AppleRow(
+                      leading: IconTile(Icons.widgets_rounded, AppleColors.purple),
+                      title: 'Home-screen widgets',
+                      subtitle: 'Ask bar, My day, Shortcuts and the orb',
+                      onTap: () => showWidgetPicker(context),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 24),
 
                 // SEND FEEDBACK (owner, 2026-09-25: "yes add the send

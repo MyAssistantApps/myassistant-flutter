@@ -35,6 +35,9 @@ class MainActivity : FlutterFragmentActivity() {
     /** Set when the floating mic opened us: Flutter starts a conversation. */
     private var pendingTalk = false
 
+    /** A home-screen widget's shortcut ("price", "flights"), taken once. */
+    private var pendingRoute: String? = null
+
     override fun onPause() {
         Overlay.setAppVisible(this, false)
         super.onPause()
@@ -47,6 +50,7 @@ class MainActivity : FlutterFragmentActivity() {
             pendingQuickTask = true
         }
         if (intent.getBooleanExtra(Overlay.EXTRA_TALK, false)) pendingTalk = true
+        intent.getStringExtra(HomeWidgets.EXTRA_ROUTE)?.let { pendingRoute = it }
     }
 
     @Deprecated("Activity results for the uninstall confirmation")
@@ -119,6 +123,36 @@ class MainActivity : FlutterFragmentActivity() {
             pendingQuickTask = true
         }
         if (intent?.getBooleanExtra(Overlay.EXTRA_TALK, false) == true) pendingTalk = true
+        intent?.getStringExtra(HomeWidgets.EXTRA_ROUTE)?.let { pendingRoute = it }
+        try { HomeWidgets.redrawAll(applicationContext) } catch (_: Throwable) {}
+
+        // HOME-SCREEN WIDGETS (2026-11-08): placing them, what is placed,
+        // My day's numbers, and which shortcut opened us (see HomeWidgets).
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "hari/widgets")
+            .setMethodCallHandler { call, result ->
+                val ctx = applicationContext
+                when (call.method) {
+                    "supported" -> result.success(HomeWidgets.pinSupported(ctx))
+                    "pin" -> result.success(HomeWidgets.pin(ctx, call.argument<String>("kind") ?: ""))
+                    "placed" -> result.success(HomeWidgets.placed(ctx))
+                    "saveDay" -> {
+                        HomeWidgets.saveDay(
+                            ctx,
+                            call.argument<Int>("meetings") ?: 0,
+                            call.argument<Int>("reminders") ?: 0,
+                            call.argument<Int>("bills") ?: 0,
+                            call.argument<String>("next") ?: "",
+                        )
+                        result.success(true)
+                    }
+                    "takeRoute" -> {
+                        val r = pendingRoute
+                        pendingRoute = null
+                        result.success(r)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
 
         // THE ASSISTANT OVER OTHER APPS (2026-10-19): permissions, the two
         // switches, the session copy for the listener, and the bubble's tap.

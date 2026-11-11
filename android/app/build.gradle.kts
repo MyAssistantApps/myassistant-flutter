@@ -21,6 +21,14 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
+// True only when Flutter builds for x86 alone (`flutter run` on an emulator).
+// Release and phone builds always list an arm target, so they keep the
+// arm-only packaging below.
+val emulatorOnlyBuild: Boolean = (project.findProperty("target-platform") as String?)
+    ?.split(",")
+    ?.let { platforms -> platforms.isNotEmpty() && platforms.all { it.contains("x64") || it.contains("x86") } }
+    ?: false
+
 android {
     namespace = "com.myassistant.myassistant"
     compileSdk = 36
@@ -53,8 +61,12 @@ android {
         // Real phones only: x86/x86_64 are emulator ABIs, and with the
         // onnxruntime + webrtc native libs they were ~70 MB of dead
         // weight in every shared APK.
-        ndk {
-            abiFilters += listOf("armeabi-v7a", "arm64-v8a")
+        // Except an emulator-only `flutter run` (it passes just android-x64
+        // or android-x86): that build needs the x86 libs to start at all.
+        if (!emulatorOnlyBuild) {
+            ndk {
+                abiFilters += listOf("armeabi-v7a", "arm64-v8a")
+            }
         }
     }
 
@@ -93,8 +105,10 @@ android {
     // are applied last and actually stick.
     packaging {
         jniLibs {
-            excludes.add("lib/x86_64/**")
-            excludes.add("lib/x86/**")
+            if (!emulatorOnlyBuild) {
+                excludes.add("lib/x86_64/**")
+                excludes.add("lib/x86/**")
+            }
         }
     }
 }

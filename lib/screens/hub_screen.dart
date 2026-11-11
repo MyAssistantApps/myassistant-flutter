@@ -52,6 +52,8 @@ class _HubScreenState extends State<HubScreen> {
     return SafeArea(
       bottom: false,
       child: ListView(
+        // Scrolling the list puts the keyboard away, as on iOS.
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         // The last row clears the dock and the mic on every phone (a fixed
         // 120 left it under the mic with 3-button navigation).
         padding: EdgeInsets.fromLTRB(16, 18, 16, Dock.clearance(context)),
@@ -84,6 +86,7 @@ class _HubScreenState extends State<HubScreen> {
                         tooltip: 'Clear search',
                         icon: Icon(Icons.close_rounded, color: Neon.textLo),
                         onPressed: () {
+                          FocusScope.of(context).unfocus();
                           _featureQuery.clear();
                           setState(() {});
                         },
@@ -102,7 +105,8 @@ class _HubScreenState extends State<HubScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: Neon.cyan.withValues(alpha: .7)),
+                  borderSide:
+                      BorderSide(color: Neon.cyan.withValues(alpha: .7)),
                 ),
               ),
             ),
@@ -112,9 +116,9 @@ class _HubScreenState extends State<HubScreen> {
             // next; everything with a date lives here.
             _Row(
               'Calendar',
-              'Everything with a date — reminders, promises, bills, birthdays',
+              'Reminders, bills and birthdays — by date',
               Icons.calendar_month_rounded,
-              Neon.accentA,
+              Neon.accentF,
               (c) => const CalendarScreen(),
             ),
             // "Office mode" (build 120): made by voice, run from here.
@@ -122,12 +126,12 @@ class _HubScreenState extends State<HubScreen> {
               'Shortcuts',
               'One word does several things — say its name',
               Icons.bolt_rounded,
-              Neon.accentA,
+              Neon.accentD,
               (c) => const ShortcutsScreen(),
             ),
             _Row(
               'Reminders',
-              'Everything you asked me to remember — add, tick off, remove',
+              'Everything you asked me to remember',
               Icons.notifications_active_rounded,
               Neon.accentA,
               (c) => const RemindersScreen(),
@@ -141,31 +145,6 @@ class _HubScreenState extends State<HubScreen> {
               Neon.accentE,
               (c) => const ShoppingListScreen(),
               trailing: const ShoppingCountBadge(),
-            ),
-          ]),
-          // THE GAMES HUB (client, 2026-11-01): short games of our own,
-          // offline (features/games/games.dart).
-          _group(context, 'Games', [
-            _Row(
-              'Memory pairs',
-              'Flip the cards and find every pair',
-              Icons.grid_view_rounded,
-              Neon.accentB,
-              (c) => const MemoryPairsScreen(),
-            ),
-            _Row(
-              'Quick maths',
-              'As many sums as you can in 60 seconds',
-              Icons.calculate_rounded,
-              Neon.accentA,
-              (c) => const QuickMathsScreen(),
-            ),
-            _Row(
-              'Tic-tac-toe with Maya',
-              'Three in a row — she plays to win',
-              Icons.tag_rounded,
-              Neon.accentD,
-              (c) => const TicTacToeScreen(),
             ),
           ]),
           // News as cards, by topic (2026-09-25).
@@ -188,7 +167,7 @@ class _HubScreenState extends State<HubScreen> {
             ),
             _Row(
               'Call notes',
-              'AI notes, reminders and answers from your recorded calls',
+              'Notes and reminders from your recorded calls',
               Icons.call_rounded,
               Neon.accentE,
               (c) => const CallNotesScreen(),
@@ -197,14 +176,14 @@ class _HubScreenState extends State<HubScreen> {
               'Email',
               'Link your mailbox — then ask me to read or send mail',
               Icons.alternate_email_rounded,
-              Neon.accentA,
+              Neon.accentF,
               (c) => const EmailSetupScreen(),
             ),
           ]),
           _group(context, 'Connections', [
             _Row(
               'Connected apps',
-              'Link your notes app, mail and more — in one place',
+              'Your notes app, mail and more — in one place',
               Icons.hub_rounded,
               Neon.accentA,
               (c) => const ConnectedAppsScreen(),
@@ -251,11 +230,43 @@ class _HubScreenState extends State<HubScreen> {
               (c) => const StocksScreen(),
             ),
           ]),
+          // THE GAMES HUB (client, 2026-11-01): short games of our own,
+          // offline (features/games/games.dart).
+          _group(context, 'Games', [
+            _Row(
+              'Memory pairs',
+              'Flip the cards and find every pair',
+              Icons.grid_view_rounded,
+              Neon.accentB,
+              (c) => const MemoryPairsScreen(),
+            ),
+            _Row(
+              'Quick maths',
+              'As many sums as you can in 60 seconds',
+              Icons.calculate_rounded,
+              Neon.accentA,
+              (c) => const QuickMathsScreen(),
+            ),
+            _Row(
+              'Tic-tac-toe with Maya',
+              'Three in a row — she plays to win',
+              Icons.tag_rounded,
+              Neon.accentD,
+              (c) => const TicTacToeScreen(),
+            ),
+            _Row(
+              'Light trail',
+              'Watch the lights, repeat the trail',
+              Icons.lightbulb_rounded,
+              Neon.accentC,
+              (c) => const LightTrailScreen(),
+            ),
+          ]),
           _group(context, 'App', [
             _Row(
               'Features',
               "What's live, what's being built, what's next",
-              Icons.grid_view_rounded,
+              Icons.new_releases_rounded,
               Neon.accentC,
               (c) => const FeaturesScreen(),
             ),
@@ -284,14 +295,13 @@ class _HubScreenState extends State<HubScreen> {
     final matches = query.isEmpty
         ? rows
         : rows
-            .where((r) => '$title ${r.title} ${r.subtitle}'
-                .toLowerCase()
-                .contains(query))
+            .where((r) =>
+                '$title ${r.title} ${r.subtitle}'.toLowerCase().contains(query))
             .toList();
     if (matches.isEmpty) return const SizedBox.shrink();
     _foundFeature = true;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.only(bottom: 22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -315,6 +325,7 @@ class _HubScreenState extends State<HubScreen> {
       child: InkWell(
         onTap: () {
           HapticFeedback.selectionClick();
+          FocusScope.of(context).unfocus();
           Navigator.of(context).push(MaterialPageRoute(builder: r.builder));
         },
         child: Padding(
