@@ -837,6 +837,13 @@ class AssistantBrain {
   /// Models that cannot think "minimal" (3.8 Flash thinks low at least).
   static bool _noMinimal(String model) => RegExp(r'3\.8-flash(?!-lite)').hasMatch(model);
 
+  /// One step deeper, never above medium.
+  static ThinkingLevel? _deeper(ThinkingLevel? l) => switch (l) {
+        ThinkingLevel.minimal => ThinkingLevel.low,
+        ThinkingLevel.low => ThinkingLevel.medium,
+        _ => l,
+      };
+
   /// The configured thinking level for [model]: the conversation model's
   /// own; a fallback answers without (it is there to be quick).
   ///
@@ -864,7 +871,13 @@ class AssistantBrain {
       'high' => ThinkingLevel.high,
       _ => null,
     };
-    if (conversation) level = _noMinimal(model) ? ThinkingLevel.low : ThinkingLevel.minimal;
+    if (conversation) {
+      level = _noMinimal(model) || !voice ? ThinkingLevel.low : ThinkingLevel.minimal;
+    } else if (!voice) {
+      // A turn nobody is waiting to hear is not racing a silence: think one
+      // step deeper than configured, never above medium.
+      level = _deeper(level);
+    }
     if (level == null && cap == null) return null;
     return GenerationConfig(
       maxOutputTokens: cap,
