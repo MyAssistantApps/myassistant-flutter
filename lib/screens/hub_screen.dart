@@ -22,6 +22,7 @@ import 'studio/studio_screen.dart';
 import '../features/home/try_now_cards.dart';
 import '../features/shopping/shopping_list_screen.dart';
 import '../design/motion.dart';
+import '../features/premium/premium_screen.dart';
 
 /// HUB TAB — every feature as a front door.
 ///
@@ -263,6 +264,13 @@ class _HubScreenState extends State<HubScreen> {
             ),
           ]),
           _group(context, 'App', [
+            _Row(
+              'MyAssistant Premium',
+              'Plans, free trial and credits',
+              Icons.workspace_premium_rounded,
+              Neon.accentA,
+              (c) => const PremiumScreen(),
+            ),
             _Row(
               'Features',
               "What's live, what's being built, what's next",
