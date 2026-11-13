@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../design/neon_tokens.dart';
 import '../../services/api_service.dart';
 import '../pricecompare/shop_browser.dart';
+import 'partner_app.dart';
 import 'services_screen.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
@@ -28,8 +29,11 @@ class _App {
         name = '${j['name']}',
         // The server's Home group ("Daily needs" for Porter, Urban
         // Company…), else the partner's own category.
-        category = '${j['homeGroup'] ?? j['category']}';
+        category = '${j['homeGroup'] ?? j['category']}',
+        pkg = j['pkg'] as String?;
   final String id;
+  /// Its Android app: opened when installed, else its Play Store page.
+  final String? pkg;
   final String name;
   final String category;
 }
@@ -66,12 +70,17 @@ class _PopularAppsSectionState extends State<PopularAppsSection> {
 
   Future<void> _open(_App a) async {
     HapticFeedback.selectionClick();
+    // Its own app when installed, else its Play Store page (2026-11-13).
+    if (await openPartnerApp(a.id, a.pkg)) return;
     final j = await ApiService.getJson('/go/${a.id}');
     final url = j?['url'] as String?;
     if (url == null || !mounted) return;
     // 2026-11-07 (Manish): opens inside the app (the shop browser).
     final u = Uri.tryParse(url);
-    if (u != null && (u.scheme == 'https' || u.scheme == 'http')) {
+    // A Play Store link (Ownly has no website) opens the Play Store app.
+    if (u != null &&
+        (u.scheme == 'https' || u.scheme == 'http') &&
+        u.host != 'play.google.com') {
       openInShopBrowser(context, url);
     } else {
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
