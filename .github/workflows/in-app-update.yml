@@ -1,0 +1,130 @@
+# IN-APP UPDATE — every push to hardening builds the app and publishes it to
+# the backend's update channel (owner, 2026-11-14). Installed apps see
+# "Update available" on their next launch (GET /config → latestVersionCode,
+# GET /app/latest.apk). App Distribution is no longer used.
+#
+#   1. tests (a build that fails them is never published)
+#   2. versionCode = what the server publishes now + 1, so it always
+#      installs as an update over what people have
+#   3. build with the team key (installed copies can only update to it)
+#   4. upload to POST /admin/apk on the production backend
+#
+# Secrets: DEBUG_KEYSTORE_BASE64 (team key), GOOGLE_SERVICES_JSON,
+# APP_CHECK_DEBUG_TOKEN, UPDATE_ADMIN_KEY (the backend's ADMIN_KEY).
+# Docs-only pushes are skipped; "Run workflow" publishes on demand.
+name: in-app update
+on:
+  push:
+    branches: [hardening]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+  workflow_dispatch:
+
+concurrency:
+  group: in-app-update
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  BACKEND: https://backend.envisionsit.in
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.47.5" # same as ci.yml
+          channel: stable
+          cache: true
+
+      - name: Signing, Firebase config and App Check token
+        env:
+          KEYSTORE_B64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+          APP_CHECK_DEBUG_TOKEN: ${{ secrets.APP_CHECK_DEBUG_TOKEN }}
+          ADMIN_KEY: ${{ secrets.UPDATE_ADMIN_KEY }}
+        run: |
+          missing=0
+          for v in KEYSTORE_B64 GOOGLE_SERVICES_JSON ADMIN_KEY; do
+            if [ -z "${!v}" ]; then echo "::error::secret for $v is missing"; missing=1; fi
+          done
+          [ "$missing" = 0 ] || exit 1
+          # The team debug key through android/key.properties (git-ignored);
+          # the passwords are Android's standard public debug ones.
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/team-debug.keystore"
+          printf '%s\n' \
+            "storeFile=$RUNNER_TEMP/team-debug.keystore" \
+            "storePassword=android" \
+            "keyAlias=androiddebugkey" \
+            "keyPassword=android" > android/key.properties
+          printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+          if [ -n "$APP_CHECK_DEBUG_TOKEN" ]; then
+            printf '%s' "$APP_CHECK_DEBUG_TOKEN" > android/app-check-debug-token.txt
+          fi
+
+      - run: flutter pub get
+
+      - name: Tests
+        run: flutter test
+
+      - name: Next version number
+        id: ver
+        run: |
+          current=$(curl -fsS -m 20 "$BACKEND/config" | python3 -c 'import json,sys; print(int(json.load(sys.stdin).get("latestVersionCode") or 0))')
+          next=$(( current + 1 ))
+          name=$(grep -m1 '^version:' pubspec.yaml | sed -E 's/version:[[:space:]]*([^+]+).*/\1/')
+          echo "code=$next" >> "$GITHUB_OUTPUT"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "→ publishing $name ($next); the server has $current"
+
+      - name: Build APK
+        run: BUILD_NUMBER=${{ steps.ver.outputs.code }} tool/build_apk.sh
+
+      - name: The APK must carry the team key
+        run: |
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          "$APKSIGNER" verify --print-certs build/app/outputs/flutter-apk/app-release.apk | tee certs.txt
+          if ! grep -qi "SHA-1 digest: 3903808d51b762b3835fabc509635ab4d39a5e1d" certs.txt; then
+            echo "::error::The APK is not signed with the team key — installed copies could not update to it."
+            exit 1
+          fi
+
+      - name: Keep the APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-${{ steps.ver.outputs.code }}
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+
+      - name: Publish to the in-app updater
+        env:
+          ADMIN_KEY: ${{ secrets.UPDATE_ADMIN_KEY }}
+          SUBJECT: ${{ github.event.head_commit.message }}
+        run: |
+          # The commit's first line is what users read under "What's new".
+          line=$(printf '%s' "${SUBJECT:-Improvements and fixes}" | head -n1 | cut -c1-120)
+          curl -fsS -m 600 \
+            -H "X-Admin-Key: $ADMIN_KEY" \
+            -F "apk=@build/app/outputs/flutter-apk/app-release.apk" \
+            -F "versionCode=${{ steps.ver.outputs.code }}" \
+            -F "versionName=${{ steps.ver.outputs.name }}" \
+            -F "changelog=$line" \
+            "$BACKEND/admin/apk" > publish.json
+          python3 -c 'import json; m=json.load(open("publish.json")); print("published", m.get("versionCode"), m.get("sha256","")[:12])'
+
+      - name: Check the server offers it
+        run: |
+          got=$(curl -fsS -m 20 "$BACKEND/config" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("latestVersionCode"))')
+          [ "$got" = "${{ steps.ver.outputs.code }}" ] || { echo "::error::server offers $got, expected ${{ steps.ver.outputs.code }}"; exit 1; }
+          echo "✓ installed apps will be offered ${{ steps.ver.outputs.code }}"

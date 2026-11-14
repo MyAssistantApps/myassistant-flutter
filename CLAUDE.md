@@ -47,21 +47,18 @@ keyboard, work on THEIR branch from the table above, push it, and open a PR.
 Never push to another teammate's branch, never merge a PR, and never change
 branch protection, collaborators, secrets or workflows for a teammate.
 
-## Pushing and releasing
+## Pushing releases the app
 
-Pushing to `hardening` runs CI (`flutter analyze` + `flutter test`, Flutter
-3.47.5). It does not send a build to anyone — App Distribution is no longer
-used (the last one was build 207, 2026-11-14).
+**Every push to `hardening` (except docs-only) releases the app** through
+`.github/workflows/in-app-update.yml`: tests, then a build signed with the
+team key, numbered one above what the backend publishes now, uploaded to
+the backend's update channel. Installed apps offer it on their next
+launch. The commit's first line is the "What's new" text users see — write
+it for them. Actions → in-app update → Run workflow publishes on demand.
 
-**Releases go out through the app's own updater**: the backend's `/config`
-announces the newest build and `/app/latest.apk` serves it; installed apps
-offer it on launch. To release:
-
-1. `flutter build apk --release --build-number=<N>` with N higher than the
-   last published build (207). The app offers only a higher number.
-2. Sign with the team key (SHA-256 `9e6b2d23…`) — a build signed with
-   another key will not install over existing ones.
-3. Publish it on the backend (see the backend's CLAUDE.md, "App updates").
+App Distribution is no longer used (the last one was build 207,
+2026-11-14). A build signed with another key will not install over
+existing ones, which is why the workflow checks the key.
 
 ## Secrets — both repos are PUBLIC
 
