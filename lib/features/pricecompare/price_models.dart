@@ -64,6 +64,11 @@ enum PriceCategory {
 
   const PriceCategory(this.label, this.line, this.icon, this.hue, this.ask, this.example);
 
+  /// What the app OFFERS (owner, 2026-11-14: flights, hotels, rides and
+  /// grocery removed from Price compare). The other values stay so saved
+  /// history and the server's prompts still parse.
+  static const shown = [PriceCategory.shopping];
+
   final String label;
   final String line;
   final IconData icon;

@@ -282,11 +282,12 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
           ),
         ),
         const SizedBox(height: 18),
-        // Categories: one row of tiles
+        // Categories: one row of tiles (only when there is more than one).
+        if (PriceCategory.shown.length > 1)
         Row(
           children: [
-            for (final c in PriceCategory.values) ...[
-              if (c != PriceCategory.values.first) const SizedBox(width: 8),
+            for (final c in PriceCategory.shown) ...[
+              if (c != PriceCategory.shown.first) const SizedBox(width: 8),
               Expanded(child: _catTile(c)),
             ],
           ],

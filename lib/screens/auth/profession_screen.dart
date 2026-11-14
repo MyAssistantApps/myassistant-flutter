@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../design/apple_kit.dart';
 import '../../design/neon_tokens.dart';
+import '../../services/app_feedback.dart';
 import '../../services/auth_service.dart';
 import '../../services/persona.dart';
 
@@ -58,6 +59,18 @@ class _ProfessionScreenState extends State<ProfessionScreen> {
         _busy = false;
         _error = "Couldn't save. Check your connection and try again.";
       });
+      return;
+    }
+    // An older server answers OK but stores nothing (no `persona` field).
+    // Saying "saved" there and showing "Not set" again looked like a broken
+    // button (2026-11-14): say plainly that this server can't keep it.
+    if (Persona.value != c) {
+      setState(() {
+        _busy = false;
+        _error = "This server doesn't support professions yet — it needs "
+            'the latest backend update. Your choice was not saved.';
+      });
+      AppFeedback.toast(_error!);
       return;
     }
     HapticFeedback.lightImpact();

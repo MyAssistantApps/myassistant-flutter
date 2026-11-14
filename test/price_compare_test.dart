@@ -85,7 +85,7 @@ void main() {
     }
   });
 
-  testWidgets('the Home section draws its hero, search and five photo cards', (t) async {
+  testWidgets('the Home section draws its hero, search and Product compare only', (t) async {
     SharedPreferences.setMockInitialValues({});
     t.view.physicalSize = const Size(1080, 2400);
     t.view.devicePixelRatio = 3;
@@ -99,10 +99,11 @@ void main() {
     expect(find.text('Price compare'), findsOneWidget);
     expect(find.text('Same product.\nLower price.'), findsOneWidget);
     expect(find.text('Search or paste a link'), findsOneWidget);
-    for (final title in ['Product compare', 'Flights', 'Hotels', 'Rides', 'Grocery']) {
-      expect(find.text(title), findsOneWidget, reason: title);
+    expect(find.text('Product compare'), findsOneWidget);
+    // Owner, 2026-11-14: flights, hotels, rides and grocery are gone.
+    for (final title in ['Flights', 'Hotels', 'Rides', 'Grocery']) {
+      expect(find.text(title), findsNothing, reason: title);
     }
-    expect(find.text('🔥 HOT'), findsOneWidget);
     // No overflow at a large text size either (the tiles overflowed once).
     expect(t.takeException(), isNull);
   });

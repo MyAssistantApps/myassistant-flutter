@@ -83,8 +83,9 @@ void main() {
 
   testWidgets('the Price compare page: categories, search pill, examples and stores fit', (t) async {
     await big(t, const PriceCompareScreen());
-    expect(find.text('Shopping'), findsWidgets);
-    expect(find.text('Grocery'), findsWidgets);
+    // Only Product compare is offered now (owner, 2026-11-14).
+    expect(find.text('Grocery'), findsNothing);
+    expect(find.text('Flights'), findsNothing);
     expect(find.text('Try'), findsOneWidget);
     expect(find.text('iPhone 16 128GB'), findsOneWidget);
     expect(find.text('Add budget'), findsOneWidget);

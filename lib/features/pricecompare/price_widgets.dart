@@ -238,7 +238,7 @@ class PriceCategoryShowcase extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rest = PriceCategory.values.where((c) => c != PriceCategory.shopping).toList();
+    final rest = PriceCategory.shown.where((c) => c != PriceCategory.shopping).toList();
     return Column(
       children: [
         _PhotoCard(
