@@ -53,6 +53,7 @@ import '../features/pricecompare/price_compare_screen.dart';
 import '../features/pricecompare/flight_search_screen.dart';
 import '../screens/reminders_screen.dart';
 import '../services/location_service.dart';
+import '../screens/listing/my_listing_screen.dart' show ListingNav;
 import '../services/share_intake_service.dart';
 import '../services/usage_service.dart';
 import '../services/api_service.dart';
@@ -75,6 +76,7 @@ Future<void> openNotificationPayload(String what,
     return ShoppingNav.fromNotification(what);
   }
   if (what == 'focus') return FocusNav.open();
+  if (what == ListingNav.payload) return ListingNav.open();
   // A direct message (2026-10-04): that person's chat.
   if (what.startsWith('dm:')) {
     final parts = what.split(':');

@@ -25,6 +25,8 @@ import 'pro/cases_screen.dart';
 import 'pro/invoices_screen.dart';
 import 'pro/leads_screen.dart';
 import 'pro/legal_draft_screen.dart';
+import 'listing/my_listing_screen.dart';
+import '../services/listing_service.dart';
 import '../models/clinic.dart' show rupees;
 import '../services/clinic_service.dart';
 import '../services/persona.dart';
@@ -550,6 +552,15 @@ class _ProAssistantScreenState extends State<ProAssistantScreen> {
                   onTap: () => _run(context, grid[i])),
             ),
           ),
+          // YOUR PUBLIC PAGE (2026-11-14): be found nearby and on Google.
+          // Only on the professional's OWN page (the server gates it too).
+          if (Persona.proKind == kind.name)
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              sliver: SliverToBoxAdapter(
+                child: PublicPageCard(tint: tint, kind: kind),
+              ),
+            ),
           SliverPadding(
             padding: EdgeInsets.fromLTRB(
                 16, 24, 16, 24 + MediaQuery.paddingOf(context).bottom),
@@ -1563,4 +1574,88 @@ class _ProChatScreenState extends State<ProChatScreen> {
           ],
         ),
       );
+}
+
+/// YOUR PUBLIC PAGE: live or not, visits, new booking requests — one tap
+/// to the page editor. Loads once when the page opens.
+class PublicPageCard extends StatefulWidget {
+  const PublicPageCard({super.key, required this.tint, required this.kind});
+  final Color tint;
+  final ProKind kind;
+
+  @override
+  State<PublicPageCard> createState() => _PublicPageCardState();
+}
+
+class _PublicPageCardState extends State<PublicPageCard> {
+  @override
+  void initState() {
+    super.initState();
+    ListingService.instance.load();
+  }
+
+  String get _place => switch (widget.kind) {
+        ProKind.doctor => 'clinic',
+        ProKind.advocate => 'chambers',
+        ProKind.business => 'business',
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder(
+      valueListenable: ListingService.instance.state,
+      builder: (context, s, _) {
+        final live = s?.listing.published == true;
+        final requests = s?.newRequests ?? 0;
+        final tint = live ? Neon.success : widget.tint;
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(22),
+            onTap: () async {
+              await Navigator.of(context).push(MaterialPageRoute<void>(
+                  builder: (_) => MyListingScreen(initialTab: requests > 0 ? 2 : 0)));
+              ListingService.instance.load();
+            },
+            child: Ink(
+              padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(22),
+                color: Color.alphaBlend(tint.withValues(alpha: 0.10), Neon.surface),
+                border: Border.all(color: tint.withValues(alpha: 0.35)),
+              ),
+              child: Row(children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(color: tint.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(14)),
+                  child: Icon(live ? Icons.public_rounded : Icons.campaign_rounded, color: tint),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(live ? 'Your public page' : 'Put your $_place on the map',
+                        style: NeonType.manrope(16, FontWeight.w800).copyWith(color: Neon.textHi)),
+                    const SizedBox(height: 2),
+                    Text(listingCardLine(s),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: requests > 0 ? Neon.warning : Neon.textLo, fontSize: 13, fontWeight: FontWeight.w600)),
+                  ]),
+                ),
+                if (requests > 0)
+                  Container(
+                    margin: const EdgeInsets.only(right: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(color: Neon.warning, borderRadius: BorderRadius.circular(999)),
+                    child: Text('$requests', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w800, fontSize: 12)),
+                  ),
+                Icon(Icons.chevron_right_rounded, color: Neon.textLo),
+              ]),
+            ),
+          ),
+        );
+      },
+    );
+  }
 }

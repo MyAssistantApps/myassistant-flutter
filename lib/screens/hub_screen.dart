@@ -6,6 +6,8 @@ import '../design/apple_kit.dart';
 import '../design/dock_metrics.dart';
 import '../design/neon_tokens.dart';
 import 'clients_screen.dart';
+import 'listing/my_listing_screen.dart';
+import 'listing/nearby_pros_screen.dart';
 import '../services/persona.dart';
 import 'connected_apps_screen.dart';
 import 'calendar_screen.dart';
@@ -171,6 +173,17 @@ class _HubScreenState extends State<HubScreen> {
               (c) => const NewsScreen(),
             ),
           ]),
+          // NEAR YOU (2026-11-14): doctors, advocates and businesses on
+          // MyAssistant who published their page.
+          _group(context, 'Near you', [
+            _Row(
+              'Professionals near you',
+              'Doctors, advocates and shops on MyAssistant — call or book',
+              Icons.storefront_rounded,
+              Neon.accentE,
+              (c) => const NearbyProsScreen(),
+            ),
+          ]),
           _group(context, 'Phone', [
             _Row(
               'Calls',
@@ -214,6 +227,14 @@ class _HubScreenState extends State<HubScreen> {
                 Icons.folder_shared_rounded,
                 Neon.accentF,
                 (c) => const ClientsScreen(),
+              ),
+            if (Persona.proKind != null)
+              _Row(
+                'Your public page',
+                'Be found nearby and on Google — posts and booking requests',
+                Icons.campaign_rounded,
+                Neon.accentD,
+                (c) => const MyListingScreen(),
               ),
             _Row(
               'My documents',

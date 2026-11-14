@@ -15,6 +15,8 @@ import 'avatar_message_service.dart';
 import 'brief_service.dart';
 import 'call_service.dart';
 import '../screens/bills_email_screen.dart' show BillsEmailNav;
+import '../screens/listing/my_listing_screen.dart' show ListingNav;
+import 'listing_service.dart';
 import 'document_events.dart';
 
 /// Registers this device with the backend so other people's agents can
@@ -91,6 +93,9 @@ class PushService {
         // Bills by email: a document arrived — open lists reload.
         final isMail = m.data['kind'] == 'mail_filed' || m.data['kind'] == 'mail_confirm';
         if (isMail) DocumentEvents.bump();
+        // A booking request from the public page: the badge moves at once.
+        final isListing = m.data['kind'] == 'listing_request';
+        if (isListing) ListingService.instance.newRequests.value++;
         // EVERYTHING ELSE (admin notices, update announcements, task
         // outcomes…): Android does not display pushes for a foregrounded
         // app — the app must. Silently dropping them here is why "send
@@ -149,7 +154,7 @@ class PushService {
           ReminderNotifications.instance.showNow(
             n.title ?? 'MyAssistant',
             n.body ?? '',
-            payload: isMail ? 'bills_email' : (group ?? dm),
+            payload: isMail ? 'bills_email' : (isListing ? ListingNav.payload : (group ?? dm)),
           );
         }
       });
@@ -180,6 +185,7 @@ class PushService {
           AppLog.add('push', 'bills email opened');
           unawaited(BillsEmailNav.open());
         }
+        if (m.data['kind'] == 'listing_request') unawaited(ListingNav.open());
       });
       // Cold start FROM the notification (app was killed).
       FirebaseMessaging.instance.getInitialMessage().then((m) {
@@ -207,6 +213,7 @@ class PushService {
           AppLog.add('push', 'bills email launched the app');
           unawaited(BillsEmailNav.open());
         }
+        if (m != null && m.data['kind'] == 'listing_request') unawaited(ListingNav.open());
       });
       _listenerAttached = true;
     } catch (e) {
