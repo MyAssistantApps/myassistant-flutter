@@ -47,14 +47,21 @@ keyboard, work on THEIR branch from the table above, push it, and open a PR.
 Never push to another teammate's branch, never merge a PR, and never change
 branch protection, collaborators, secrets or workflows for a teammate.
 
-## Pushing sends a build to the owner
+## Pushing and releasing
 
-Every push to `hardening` or `hardening-test` builds an APK (signed with
-the team debug key) in GitHub Actions (`.github/workflows/distribute.yml`)
-and sends it through Firebase App Distribution **to the owner only**
-(dhanushinsit@gmail.com) while the app is in his own testing. The
-`testers` group gets `hardening` builds again only when the owner sets the
-repo variable `SEND_TO_TESTERS=yes`. Other branches build nothing.
+Pushing to `hardening` runs CI (`flutter analyze` + `flutter test`, Flutter
+3.47.5). It does not send a build to anyone — App Distribution is no longer
+used (the last one was build 207, 2026-11-14).
+
+**Releases go out through the app's own updater**: the backend's `/config`
+announces the newest build and `/app/latest.apk` serves it; installed apps
+offer it on launch. To release:
+
+1. `flutter build apk --release --build-number=<N>` with N higher than the
+   last published build (207). The app offers only a higher number.
+2. Sign with the team key (SHA-256 `9e6b2d23…`) — a build signed with
+   another key will not install over existing ones.
+3. Publish it on the backend (see the backend's CLAUDE.md, "App updates").
 
 ## Secrets — both repos are PUBLIC
 
@@ -67,6 +74,8 @@ in the team Bitwarden vault and `./setup.sh` writes them locally.
 - `flutter analyze` — no new errors or warnings
 - `flutter test`
 - Java 17 for builds: `export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`
+- Use Flutter **3.47.5** (what CI pins). Newer Flutter needs a newer Gradle
+  than this project has.
 
 ## Setup
 
@@ -74,3 +83,62 @@ in the team Bitwarden vault and `./setup.sh` writes them locally.
 your branch's work first — uncommitted changes are backed up, then
 discarded), writes
 the secrets from Bitwarden and runs the backend and the app.
+
+---
+
+# Project guide (for Claude and the team)
+
+MyAssistant is a voice-first personal assistant. Users name their own
+assistant — never hardcode a name (the client's old name "Hari" must not
+appear in the UI). Backend: `myassistant-backend` (Node/Express/Postgres).
+
+## Which server
+
+The app talks to `https://backend.envisionsit.in` by default
+(`lib/services/api_service.dart`, since 2026-11-14). Override per build with
+`--dart-define=BASE_URL=...`, e.g. a local backend over USB:
+
+```sh
+flutter build apk --debug --dart-define=BASE_URL=http://localhost:3998
+adb install -r build/app/outputs/flutter-apk/app-debug.apk
+adb reverse tcp:3998 tcp:3998
+```
+
+Every request carries the phone's location (`X-Geo-Lat/Lng`, from
+`LocationService`) and timezone (`X-TZ-Offset`).
+
+## Code map
+
+- `lib/services/api_service.dart` — all HTTP; `getJson` / `sendJson` /
+  `postJson` / `deleteJson` return null on failure (409 returns the server's
+  explanation with `rejected: true`). Screens say what went wrong in words.
+- `lib/services/persona.dart` — the profession chosen at sign-up
+  (doctor / advocate / business / professional / student / personal).
+  `Persona.proKind` decides which Pro assistant a user sees — only their own.
+- `lib/services/pro_words.dart` — profession wording (Clinic / Chambers /
+  Office, Patient / Client …). Use it instead of hardcoding "clinic".
+- `lib/screens/pro_assistant_screen.dart` — the doctor's / advocate's /
+  business assistant page (featured Today card, action grid, public-page
+  card, Ask card).
+- `lib/screens/clinic/`, `lib/screens/pro/` — the workspaces
+  (appointments, follow-ups, dues, consult notes, prescriptions, cases,
+  legal drafts, invoices, leads); services in `clinic_service.dart` /
+  `pro_service.dart`.
+- `lib/screens/listing/` — "Your public page" (professionals publish a page
+  found nearby and on Google; posts; booking requests) and "Professionals
+  near you" (any user).
+- `lib/features/pricecompare/` — Price compare offers products only;
+  `PriceCategory.shown` lists what is offered (flights, hotels, rides and
+  grocery were removed on 2026-11-14 but stay in the enum for old history).
+- Pushes are routed by their `kind` in `lib/services/push_service.dart`;
+  notification taps by payload in `openNotificationPayload` (home_shell.dart).
+
+## Conventions
+
+- Hiding a screen is UX, not security — the backend enforces who may use what.
+- The app must tolerate an older backend (missing fields): parse defensively,
+  and never trap a user on a step the server cannot save.
+- Run `flutter analyze` on the files you changed and `flutter test` before
+  pushing; add a test in `test/` for new models and parsing.
+- Builds on Windows: `--android-project-arg=kotlin.incremental=false` avoids a
+  Kotlin cache error when the project and the Pub cache are on different drives.
