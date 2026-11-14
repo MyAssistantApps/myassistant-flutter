@@ -26,10 +26,11 @@ class ApiService {
   /// When no override is provided, default to the production backend.
   /// Diagnostics can override at runtime (persisted), --dart-define=BASE_URL
   /// overrides at build. 2026-10-31: production moved from
-  /// api.hariassistant.tech to myassistant.wishme.today.
+  /// api.hariassistant.tech to myassistant.wishme.today; 2026-11-14 to
+  /// backend.envisionsit.in (the Docker VPS, see backend deploy/docker-vps).
   static String get _defaultBaseUrl {
     if (_envBaseUrl.isNotEmpty) return _envBaseUrl;
-    return 'https://myassistant.wishme.today';
+    return 'https://backend.envisionsit.in';
   }
 
   /// This install's Android versionCode (set once at startup).
