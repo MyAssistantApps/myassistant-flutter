@@ -20,6 +20,7 @@ import '../../screens/reminders_screen.dart';
 import '../../services/app_feedback.dart';
 import '../../services/auth_service.dart';
 import '../../services/brief_service.dart';
+import '../../services/persona.dart';
 import '../../services/call_history.dart';
 import '../../services/missed_calls_service.dart';
 import '../../widgets/neon_cards.dart';
@@ -461,22 +462,43 @@ class _HomeFeedViewState extends State<HomeFeedView> {
   /// THE ASSISTANTS AS A SLIDING BANNER (owner, 2026-11-04: "a sliding
   /// banner, not the buttons"): Doctor's, Advocate's and Business, each
   /// with its own photo. My documents stays one slim row under it.
+  ///
+  /// ONLY THE USER'S OWN PROFESSION (owner, 2026-11-13): a doctor sees the
+  /// Doctor's assistant, an advocate the Advocate's, a business owner the
+  /// Business one; everyone else sees none (the server refuses the others).
   Widget _assistants() {
+    return ValueListenableBuilder<String>(
+      valueListenable: Persona.notifier,
+      builder: (context, _, __) => _assistantsFor(_proKindOf(Persona.proKind)),
+    );
+  }
+
+  static ProKind? _proKindOf(String? k) => switch (k) {
+        'doctor' => ProKind.doctor,
+        'advocate' => ProKind.advocate,
+        'business' => ProKind.business,
+        _ => null,
+      };
+
+  Widget _assistantsFor(ProKind? mine) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Semantics(
-          header: true,
-          child: Padding(
-            padding: const EdgeInsets.only(left: Neon.s1, bottom: 10),
-            child: Text('Assistants',
-                style: NeonType.manrope(21, FontWeight.w800)
-                    .copyWith(color: Neon.textHi, letterSpacing: -0.6)),
+        if (mine != null) ...[
+          Semantics(
+            header: true,
+            child: Padding(
+              padding: const EdgeInsets.only(left: Neon.s1, bottom: 10),
+              child: Text('Your assistant',
+                  style: NeonType.manrope(21, FontWeight.w800)
+                      .copyWith(color: Neon.textHi, letterSpacing: -0.6)),
+            ),
           ),
-        ),
-        ProBanners(
-            onOpen: (k) => _do.open(context, ProAssistantScreen(kind: k))),
-        const SizedBox(height: 12),
+          ProBanners(
+              kinds: [mine],
+              onOpen: (k) => _do.open(context, ProAssistantScreen(kind: k))),
+          const SizedBox(height: 12),
+        ],
         Tappable(
           onTap: () => _do.open(context, const DocumentsScreen()),
           semanticLabel: 'My documents',

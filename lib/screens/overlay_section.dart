@@ -76,7 +76,7 @@ class _OverlaySectionState extends State<OverlaySection> with WidgetsBindingObse
     final s = status ?? _s;
     if (on && !s.overlay) {
       _wanted = 'replies';
-      _say('Allow "Display over other apps" for Hari Assistant, then come back.');
+      _say('Allow "Display over other apps" for MyAssistant, then come back.');
       await OverlayBridge.openOverlaySettings();
       return;
     }
@@ -89,7 +89,7 @@ class _OverlaySectionState extends State<OverlaySection> with WidgetsBindingObse
         builder: (ctx) => AlertDialog(
           title: const Text('Allow notification access'),
           content: const Text(
-            'On the next screen, turn on Notification access for Hari Assistant.\n\n'
+            'On the next screen, turn on Notification access for MyAssistant.\n\n'
             'If Android says "Restricted setting": open App info, tap ⋮ at the top right, '
             'choose "Allow restricted settings", then come back and turn this on again.',
           ),
@@ -117,7 +117,7 @@ class _OverlaySectionState extends State<OverlaySection> with WidgetsBindingObse
     final s = status ?? _s;
     if (on && !s.overlay) {
       _wanted = 'bubble';
-      _say('Allow "Display over other apps" for Hari Assistant, then come back.');
+      _say('Allow "Display over other apps" for MyAssistant, then come back.');
       await OverlayBridge.openOverlaySettings();
       return;
     }

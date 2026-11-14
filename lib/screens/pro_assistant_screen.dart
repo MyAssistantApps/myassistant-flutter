@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import '../design/neon_widgets.dart';
@@ -18,6 +19,13 @@ import '../widgets/role_mic_orb.dart';
 import 'clients_screen.dart';
 import 'documents_screen.dart';
 import 'finance_screen.dart';
+import 'clinic/clinic_screen.dart';
+import 'clinic/clinic_settings_screen.dart';
+import 'clinic/clinic_sheets.dart';
+import '../models/clinic.dart' show rupees;
+import '../services/clinic_service.dart';
+import '../services/persona.dart';
+import '../services/pro_photo.dart';
 
 /// THE PROFESSIONAL ASSISTANTS (client, 2026-11-01: "in that place you can
 /// add Doctor's, Advocates & Business, below write 'Assistant'").
@@ -30,7 +38,12 @@ import 'finance_screen.dart';
 enum ProKind { doctor, advocate, business }
 
 class ProAction {
-  const ProAction(this.title, this.detail, this.icon, {this.ask, this.page});
+  const ProAction(this.title, this.detail, this.icon,
+      {this.ask, this.page, this.run, this.featured = false});
+
+  /// Drawn as the wide card at the top of the page (the doctor's "Today at
+  /// clinic", with the day's live numbers) instead of a grid tile.
+  final bool featured;
   final String title;
   final String detail;
   final IconData icon;
@@ -40,6 +53,9 @@ class ProAction {
 
   /// Or opened.
   final Widget Function()? page;
+
+  /// Or run in place (a bottom sheet — "Note a payment", "Book").
+  final Future<void> Function(BuildContext context)? run;
 }
 
 class ProProfile {
@@ -84,19 +100,33 @@ class ProProfile {
             "Doctor's",
             Icons.medical_services_rounded,
             'Your patients, their visits and dues, kept for you.',
+            // REAL SCREENS, NOT CANNED QUESTIONS (2026-11-13): the clinic
+            // workspace — today's appointments, follow-ups and payments —
+            // each a tap away; the chat and mic orb stay for everything else.
             [
+              ProAction('Today at clinic', 'Appointments, who is waiting, what is due',
+                  Icons.today_rounded,
+                  page: () => const ClinicScreen(), featured: true),
               ProAction('Patients', 'Each patient\'s file, notes and reports',
                   Icons.folder_shared_rounded,
                   page: () => const ClientsScreen()),
-              const ProAction('Who has dues pending?',
-                  'Patients with payments still due', Icons.payments_rounded,
-                  ask: 'Which of my patients have dues pending?'),
-              const ProAction('Follow-up visits', 'Recalls coming up',
+              ProAction('Book appointment', 'Pick a patient and a free time',
+                  Icons.event_available_rounded,
+                  run: (c) => bookAppointment(c)),
+              ProAction('Follow-up visits', 'Recalls — patients get a reminder call',
                   Icons.event_repeat_rounded,
-                  ask: 'Which patient follow-up visits are coming up?'),
-              const ProAction('Note a payment', 'Record what a patient paid',
+                  page: () => const ClinicScreen(initialTab: 1)),
+              ProAction('Dues pending',
+                  'Patients with payments still due', Icons.payments_rounded,
+                  page: () => const ClinicScreen(initialTab: 2)),
+              ProAction('Note a payment', 'Record what a patient paid',
                   Icons.receipt_long_rounded,
-                  ask: 'I want to record a payment from a patient.'),
+                  run: (c) => recordPayment(c)),
+              // With "Today at clinic" as the wide card on top, this makes
+              // six grid tiles — an even two-up grid, no orphan.
+              ProAction('Clinic settings', 'Timings, fee, registration no.',
+                  Icons.tune_rounded,
+                  page: () => const ClinicSettingsScreen()),
             ],
           ),
         ProKind.advocate => ProProfile(
@@ -146,12 +176,33 @@ class ProProfile {
       };
 }
 
-class ProAssistantScreen extends StatelessWidget {
+class ProAssistantScreen extends StatefulWidget {
   const ProAssistantScreen({super.key, required this.kind});
   final ProKind kind;
 
+  @override
+  State<ProAssistantScreen> createState() => _ProAssistantScreenState();
+}
+
+class _ProAssistantScreenState extends State<ProAssistantScreen> {
+  ProKind get kind => widget.kind;
+
+  @override
+  void initState() {
+    super.initState();
+    // The featured card shows the doctor's live day.
+    if (kind == ProKind.doctor && Persona.isDoctor) {
+      ClinicService.instance.refresh(force: true);
+    }
+  }
+
   void _run(BuildContext context, ProAction a) {
     HapticFeedback.selectionClick();
+    final run = a.run;
+    if (run != null) {
+      run(context);
+      return;
+    }
     final page = a.page;
     if (page != null) {
       Navigator.of(context)
@@ -161,9 +212,7 @@ class ProAssistantScreen extends StatelessWidget {
     final ask = a.ask;
     if (ask == null) return;
     // A chat opens here, the question already asked (owner, 2026-11-02).
-    Navigator.of(context).push(MaterialPageRoute<void>(
-        builder: (_) =>
-            ProChatScreen(profile: ProProfile.of(kind), first: ask)));
+    _chat(context, first: ask);
   }
 
   /// Camera or gallery → saved to My documents → a NEW chat with this
@@ -178,10 +227,70 @@ class ProAssistantScreen extends StatelessWidget {
             ProChatScreen(profile: ProProfile.of(kind), photo: doc)));
   }
 
-  void _chat(BuildContext context) {
+  void _chat(BuildContext context, {String? first}) {
     HapticFeedback.selectionClick();
     Navigator.of(context).push(MaterialPageRoute<void>(
-        builder: (_) => ProChatScreen(profile: ProProfile.of(kind))));
+        builder: (_) =>
+            ProChatScreen(profile: ProProfile.of(kind), first: first)));
+  }
+
+  /// YOUR OWN PHOTO (owner, 2026-11-14): take one, pick one, or go back to
+  /// the default. Shown only to the professional whose assistant this is.
+  Future<void> _editPhoto(BuildContext context) async {
+    HapticFeedback.selectionClick();
+    final custom = await ProPhoto.current(kind.name) != null;
+    if (!context.mounted) return;
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Neon.surface,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(8, 10, 8, 8),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Container(
+              width: 38,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                  color: Neon.textDim.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(2)),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Text('Your photo on this page',
+                  style: NeonType.manrope(17, FontWeight.w800)
+                      .copyWith(color: Neon.textHi)),
+            ),
+            ListTile(
+              leading: Icon(Icons.photo_camera_rounded, color: Neon.violet),
+              title: const Text('Take a photo'),
+              onTap: () => Navigator.pop(ctx, 'camera'),
+            ),
+            ListTile(
+              leading: Icon(Icons.photo_library_rounded, color: Neon.violet),
+              title: const Text('Choose from gallery'),
+              onTap: () => Navigator.pop(ctx, 'gallery'),
+            ),
+            if (custom)
+              ListTile(
+                leading: Icon(Icons.restart_alt_rounded, color: Neon.textLo),
+                title: const Text('Use the default photo'),
+                onTap: () => Navigator.pop(ctx, 'reset'),
+              ),
+          ]),
+        ),
+      ),
+    );
+    if (choice == null) return;
+    if (choice == 'reset') {
+      await ProPhoto.reset(kind.name);
+      AppFeedback.toast('Back to the default photo.');
+      return;
+    }
+    final ok = await ProPhoto.pick(kind.name, camera: choice == 'camera');
+    if (ok) AppFeedback.toast('Your photo is set.');
   }
 
   @override
@@ -189,6 +298,10 @@ class ProAssistantScreen extends StatelessWidget {
     final p = ProProfile.of(kind);
     final tint = p.tint();
     final top = MediaQuery.paddingOf(context).top;
+    // Only the professional whose assistant this is may change its photo.
+    final mine = Persona.proKind == kind.name;
+    final featured = p.actions.where((a) => a.featured).toList();
+    final grid = p.actions.where((a) => !a.featured).toList();
     // The hero shows the face whole: tall enough that the name and the
     // lead sit on the shoulders, below the chin, never over the face.
     final heroHeight =
@@ -197,8 +310,8 @@ class ProAssistantScreen extends StatelessWidget {
       backgroundColor: Neon.bg,
       body: CustomScrollView(
         slivers: [
-          // THE HERO: the profession's photo, fading into the page, with
-          // the name and what it does over it.
+          // THE HERO: the profession's photo (or the professional's own),
+          // fading into the page, with the name and what it does over it.
           SliverAppBar(
             pinned: true,
             stretch: true,
@@ -215,6 +328,29 @@ class ProAssistantScreen extends StatelessWidget {
                 child: const BackButton(color: Colors.white),
               ),
             ),
+            actions: [
+              if (mine)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 8, 10, 8),
+                  child: Tooltip(
+                    message: 'Change photo',
+                    child: Material(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      shape: const CircleBorder(),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        onTap: () => _editPhoto(context),
+                        child: const SizedBox(
+                          width: 40,
+                          height: 40,
+                          child: Icon(Icons.edit_rounded,
+                              color: Colors.white, size: 20),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
             flexibleSpace: LayoutBuilder(builder: (context, box) {
               // The small title shows only once the hero has scrolled away.
               final open = box.maxHeight > kToolbarHeight + top + 40;
@@ -244,14 +380,11 @@ class ProAssistantScreen extends StatelessWidget {
                     background: Stack(
                       fit: StackFit.expand,
                       children: [
-                        Image.asset(p.photo,
-                            fit: BoxFit.cover,
-                            alignment: p.photoAlign,
-                            filterQuality: FilterQuality.medium),
+                        ProPhotoImage(profile: p),
                         // Clear over the face (the top ~55%), then into the
                         // page's own ground where the words sit; a light
-                        // dark band at the very top keeps the back button
-                        // legible.
+                        // dark band at the very top keeps the back and edit
+                        // buttons legible.
                         DecoratedBox(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
@@ -309,10 +442,6 @@ class ProAssistantScreen extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 10),
-                              // The name and its lead on the left; the mic orb
-                              // that talks as this assistant (owner,
-                              // 2026-11-02) at the right edge, clear of the
-                              // face.
                               Row(
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
@@ -341,9 +470,6 @@ class ProAssistantScreen extends StatelessWidget {
                                     ),
                                   ),
                                   const SizedBox(width: 12),
-                                  // A PHOTO FOR THE ASSISTANT (2026-11-03):
-                                  // beside the mic — camera or gallery, then
-                                  // a new chat about it opens.
                                   _PhotoButton(
                                       tint: tint, onTap: () => _photo(context)),
                                   const SizedBox(width: 12),
@@ -360,65 +486,98 @@ class ProAssistantScreen extends StatelessWidget {
               );
             }),
           ),
+          // TODAY FIRST (2026-11-14): the featured action as one wide card
+          // with the day's live numbers, then the rest as an even grid.
+          if (featured.isNotEmpty)
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+              sliver: SliverToBoxAdapter(
+                child: _FeaturedCard(
+                  action: featured.first,
+                  tint: tint,
+                  showClinicDay: kind == ProKind.doctor && Persona.isDoctor,
+                  onTap: () => _run(context, featured.first),
+                ),
+              ),
+            ),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            padding: const EdgeInsets.fromLTRB(16, 22, 16, 0),
             sliver: SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.only(left: 4, bottom: 12),
-                child: Text('WHAT I CAN DO',
+                child: Text(
+                    featured.isNotEmpty ? 'QUICK ACTIONS' : 'WHAT I CAN DO',
                     style: NeonType.eyebrow.copyWith(color: Neon.textLo)),
               ),
             ),
           ),
-          // Two cards a row, each row as tall as its longer card — no
-          // fixed height leaving short cards half empty.
+          // Two even tiles a row: same height everywhere, so the grid reads
+          // as one set instead of a staircase of cards.
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            sliver: SliverList.separated(
-              itemCount: (p.actions.length + 1) ~/ 2,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (_, row) {
-                Widget card(int i) => i < p.actions.length
-                    ? _ActionCard(
-                        action: p.actions[i],
-                        tint: tint,
-                        onTap: () => _run(context, p.actions[i]))
-                    : const SizedBox.shrink();
-                return IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(child: card(row * 2)),
-                      const SizedBox(width: 12),
-                      Expanded(child: card(row * 2 + 1)),
-                    ],
-                  ),
-                );
-              },
+            sliver: SliverGrid.builder(
+              itemCount: grid.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                mainAxisExtent: 128,
+              ),
+              itemBuilder: (_, i) => _ActionCard(
+                  action: grid[i],
+                  tint: tint,
+                  onTap: () => _run(context, grid[i])),
             ),
           ),
           SliverPadding(
             padding: EdgeInsets.fromLTRB(
-                16, 20, 16, 24 + MediaQuery.paddingOf(context).bottom),
+                16, 24, 16, 24 + MediaQuery.paddingOf(context).bottom),
             sliver: SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _ChatButton(
-                      label: 'Chat with the ${p.name} Assistant',
-                      tint: tint,
-                      onTap: () => _chat(context)),
-                  const SizedBox(height: 12),
-                  Text(
-                      'Or just ask — for example "add a note to Ramesh\'s file".',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                          color: Neon.textDim, fontSize: NeonType.footnote)),
-                ],
+              child: _AskCard(
+                profile: p,
+                tint: tint,
+                onOpen: ({String? first}) => _chat(context, first: first),
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The profession's photo — or the professional's own, once they set one
+/// (ProPhoto). Used by the page's hero and the Home banner alike.
+class ProPhotoImage extends StatelessWidget {
+  const ProPhotoImage({super.key, required this.profile, this.alignment});
+  final ProProfile profile;
+
+  /// Defaults to the stock photo's framing; an own photo is centred a
+  /// little high, where a face usually is.
+  final Alignment? alignment;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<int>(
+      valueListenable: ProPhoto.version,
+      builder: (_, v, __) => FutureBuilder<File?>(
+        key: ValueKey(v),
+        future: ProPhoto.current(profile.kind.name),
+        builder: (_, snap) {
+          final own = snap.data;
+          if (own != null) {
+            return Image.file(own,
+                fit: BoxFit.cover,
+                alignment: alignment ?? const Alignment(0, -0.35),
+                filterQuality: FilterQuality.medium,
+                gaplessPlayback: true);
+          }
+          return Image.asset(profile.photo,
+              fit: BoxFit.cover,
+              alignment: alignment ?? profile.photoAlign,
+              filterQuality: FilterQuality.medium,
+              gaplessPlayback: true);
+        },
       ),
     );
   }
@@ -475,9 +634,154 @@ class _PhotoButton extends StatelessWidget {
   }
 }
 
-/// One thing the assistant does: a tinted card, the icon in a disc, the
-/// name and a line under it; a chat bubble when it asks, an arrow when it
-/// opens a page.
+/// The page's lead card: the featured action, wide, with — for a doctor —
+/// today's live numbers (patients to see, follow-ups, money pending).
+class _FeaturedCard extends StatelessWidget {
+  const _FeaturedCard({
+    required this.action,
+    required this.tint,
+    required this.showClinicDay,
+    required this.onTap,
+  });
+  final ProAction action;
+  final Color tint;
+  final bool showClinicDay;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final r = BorderRadius.circular(22);
+    return Semantics(
+      button: true,
+      label: '${action.title}. ${action.detail}',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: r,
+          onTap: onTap,
+          child: Ink(
+            padding: const EdgeInsets.fromLTRB(16, 16, 14, 16),
+            decoration: BoxDecoration(
+              borderRadius: r,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color.alphaBlend(
+                      tint.withValues(alpha: 0.30), Neon.glassFill.colors.first),
+                  Color.alphaBlend(
+                      tint.withValues(alpha: 0.08), Neon.glassFill.colors.last),
+                ],
+              ),
+              border: Border.all(color: tint.withValues(alpha: 0.45)),
+              boxShadow: Neon.halo(tint, strength: 0.35),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      gradient: LinearGradient(colors: [
+                        Color.lerp(tint, Colors.white, 0.15)!,
+                        tint,
+                      ]),
+                    ),
+                    child: Icon(action.icon, color: Colors.white, size: 23),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(action.title,
+                            style: NeonType.manrope(18, FontWeight.w800)
+                                .copyWith(color: Neon.textHi)),
+                        const SizedBox(height: 2),
+                        Text(action.detail,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                color: Neon.textLo, fontSize: 12.5)),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.arrow_forward_rounded,
+                      color: Neon.textHi, size: 20),
+                ]),
+                if (showClinicDay) ...[
+                  const SizedBox(height: 14),
+                  AnimatedBuilder(
+                    animation: ClinicService.instance,
+                    builder: (_, __) {
+                      final t = ClinicService.instance.today;
+                      final see = t?.openAppointments.length;
+                      final fu = t == null
+                          ? null
+                          : t.followUps.today.length + t.followUps.overdue.length;
+                      return Row(children: [
+                        _Stat(see?.toString() ?? '–', 'to see', tint),
+                        const SizedBox(width: 8),
+                        _Stat(fu?.toString() ?? '–', 'follow-ups', tint,
+                            alert: (t?.followUps.overdue.isNotEmpty ?? false)),
+                        const SizedBox(width: 8),
+                        _Stat(t == null ? '–' : rupees(t.duesTotal), 'pending',
+                            tint,
+                            alert: (t?.duesTotal ?? 0) > 0),
+                      ]);
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Stat extends StatelessWidget {
+  const _Stat(this.value, this.label, this.tint, {this.alert = false});
+  final String value;
+  final String label;
+  final Color tint;
+  final bool alert;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: Neon.isDark ? 0.22 : 0.05),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(value,
+                  style: NeonType.manrope(18, FontWeight.w800).copyWith(
+                      color: alert ? Neon.warning : Neon.textHi)),
+            ),
+            Text(label,
+                style: TextStyle(color: Neon.textLo, fontSize: 11.5)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One thing the assistant does: an even tile — the icon in a rounded
+/// square, the name and one line; an arrow when it opens something, a chat
+/// bubble only when it hands a question to the assistant.
 class _ActionCard extends StatelessWidget {
   const _ActionCard(
       {required this.action, required this.tint, required this.onTap});
@@ -488,6 +792,7 @@ class _ActionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final a = action;
+    final asks = a.page == null && a.run == null;
     final r = BorderRadius.circular(20);
     return Semantics(
       button: true,
@@ -500,12 +805,8 @@ class _ActionCard extends StatelessWidget {
           onTap: onTap,
           child: Ink(
             padding: const EdgeInsets.fromLTRB(14, 14, 12, 12),
-            // On the theme's own card surface, washed with the accent —
-            // right in both the light and the dark theme.
             decoration: BoxDecoration(
               borderRadius: r,
-              // Glass, like Home's cards (2026-11-03): the sky shows
-              // through, with a touch of the accent in the corner.
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -524,42 +825,35 @@ class _ActionCard extends StatelessWidget {
                 Row(
                   children: [
                     Container(
-                      width: 40,
-                      height: 40,
+                      width: 38,
+                      height: 38,
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
+                        borderRadius: BorderRadius.circular(12),
                         color: tint.withValues(alpha: 0.18),
-                        boxShadow: [
-                          BoxShadow(
-                              color: tint.withValues(alpha: 0.25),
-                              blurRadius: 12)
-                        ],
                       ),
-                      child: Icon(a.icon, color: tint, size: 21),
+                      child: Icon(a.icon, color: tint, size: 20),
                     ),
                     const Spacer(),
                     Icon(
-                        a.page != null
-                            ? Icons.arrow_forward_rounded
-                            : Icons.chat_bubble_outline_rounded,
+                        asks
+                            ? Icons.chat_bubble_outline_rounded
+                            : Icons.arrow_forward_rounded,
                         color: Neon.textDim,
-                        size: 18),
+                        size: 17),
                   ],
                 ),
-                // Every title starts at the same height, however many
-                // lines it takes.
-                const SizedBox(height: 12),
+                const Spacer(),
                 Text(a.title,
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: NeonType.manrope(15, FontWeight.w800)
+                    style: NeonType.manrope(14.5, FontWeight.w800)
                         .copyWith(color: Neon.textHi, height: 1.2)),
-                const SizedBox(height: 3),
+                const SizedBox(height: 2),
                 Text(a.detail,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                        color: Neon.textLo, fontSize: 12.5, height: 1.25)),
+                        color: Neon.textLo, fontSize: 12, height: 1.25)),
               ],
             ),
           ),
@@ -569,60 +863,171 @@ class _ActionCard extends StatelessWidget {
   }
 }
 
-/// The page's one big button: open a chat with this assistant.
-class _ChatButton extends StatelessWidget {
-  const _ChatButton(
-      {required this.label, required this.tint, required this.onTap});
-  final String label;
+/// ASK YOUR ASSISTANT (2026-11-14, replacing the plain "Chat with…" bar):
+/// the assistant's face with an online dot, a message box that opens the
+/// chat, and a few one-tap questions for this profession.
+class _AskCard extends StatelessWidget {
+  const _AskCard(
+      {required this.profile, required this.tint, required this.onOpen});
+  final ProProfile profile;
   final Color tint;
-  final VoidCallback onTap;
+  final void Function({String? first}) onOpen;
+
+  List<(IconData, String, String)> get _prompts => switch (profile.kind) {
+        ProKind.doctor => const [
+            (Icons.today_rounded, "Who's due today?",
+                'Which patients are due today, and who is overdue?'),
+            (Icons.note_add_rounded, 'Add a note',
+                'I want to add a note to a patient\'s file.'),
+            (Icons.payments_rounded, 'Who owes me?',
+                'Which of my patients have dues pending?'),
+          ],
+        ProKind.advocate => const [
+            (Icons.event_note_rounded, 'Hearings this week',
+                'What hearings do I have coming up this week?'),
+            (Icons.summarize_rounded, 'Summarise a case',
+                'Summarise one of my client\'s case files for me.'),
+            (Icons.gavel_rounded, 'Explain a judgment',
+                'Explain a court judgment to me in simple words.'),
+          ],
+        ProKind.business => const [
+            (Icons.receipt_long_rounded, "Today's sales",
+                'How did my business do today?'),
+            (Icons.payments_rounded, 'Who owes me?',
+                'Which customers still owe me money?'),
+            (Icons.trending_up_rounded, 'This month vs last',
+                'Compare my business this month with last month.'),
+          ],
+      };
 
   @override
   Widget build(BuildContext context) {
-    final r = BorderRadius.circular(18);
-    return Semantics(
-      button: true,
-      label: label,
-      excludeSemantics: true,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: r,
-          gradient: LinearGradient(colors: [
-            Color.lerp(Neon.accentFill, Colors.white, 0.12)!,
-            Neon.accentFill,
-          ]),
-          boxShadow: [
-            BoxShadow(
-                color: Neon.accentFill.withValues(alpha: 0.4),
-                blurRadius: 20,
-                spreadRadius: -6)
+    final r = BorderRadius.circular(24);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      decoration: BoxDecoration(
+        borderRadius: r,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color.alphaBlend(
+                tint.withValues(alpha: 0.16), Neon.glassFill.colors.first),
+            Neon.glassFill.colors.last,
           ],
         ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: r,
-            onTap: onTap,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.chat_bubble_rounded,
-                      color: Colors.white, size: 20),
-                  const SizedBox(width: 10),
-                  Flexible(
-                    child: Text(label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: NeonType.manrope(15.5, FontWeight.w800)
-                            .copyWith(color: Colors.white)),
+        border: Border.all(color: tint.withValues(alpha: 0.35)),
+        boxShadow: Neon.glassShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(children: [
+            // The assistant's face, with the "available" dot.
+            Stack(clipBehavior: Clip.none, children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: tint, width: 2),
+                ),
+                child: ClipOval(child: ProPhotoImage(profile: profile)),
+              ),
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  width: 13,
+                  height: 13,
+                  decoration: BoxDecoration(
+                    color: Neon.success,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Neon.surface, width: 2),
                   ),
+                ),
+              ),
+            ]),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Ask your assistant',
+                      style: NeonType.manrope(17, FontWeight.w800)
+                          .copyWith(color: Neon.textHi)),
+                  const SizedBox(height: 2),
+                  Text('Type or talk — it knows your ${switch (profile.kind) {
+                    ProKind.doctor => 'patients',
+                    ProKind.advocate => 'cases',
+                    ProKind.business => 'customers',
+                  }}.',
+                      style: TextStyle(color: Neon.textLo, fontSize: 12.5)),
                 ],
               ),
             ),
+          ]),
+          const SizedBox(height: 14),
+          // A message box that opens the chat — the familiar way to start.
+          Semantics(
+            button: true,
+            label: 'Chat with the ${profile.name} Assistant',
+            excludeSemantics: true,
+            child: Material(
+              color: Colors.black.withValues(alpha: Neon.isDark ? 0.25 : 0.05),
+              borderRadius: BorderRadius.circular(16),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () => onOpen(),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 6, 6, 6),
+                  child: Row(children: [
+                    Expanded(
+                      child: Text('Message ${profile.name} Assistant…',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              color: Neon.textDim, fontSize: 14.5)),
+                    ),
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(colors: [
+                          Color.lerp(Neon.accentFill, Colors.white, 0.12)!,
+                          Neon.accentFill,
+                        ]),
+                      ),
+                      child: const Icon(Icons.arrow_upward_rounded,
+                          color: Colors.white, size: 20),
+                    ),
+                  ]),
+                ),
+              ),
+            ),
           ),
-        ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final (icon, label, ask) in _prompts)
+                ActionChip(
+                  avatar: Icon(icon, size: 16, color: tint),
+                  label: Text(label),
+                  labelStyle: TextStyle(
+                      color: Neon.textHi,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600),
+                  backgroundColor: tint.withValues(alpha: 0.12),
+                  side: BorderSide(color: tint.withValues(alpha: 0.35)),
+                  shape: const StadiumBorder(),
+                  onPressed: () => onOpen(first: ask),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }

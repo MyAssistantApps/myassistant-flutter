@@ -27,6 +27,8 @@ import 'services/app_lock.dart';
 import 'services/auth_service.dart';
 import 'services/avatar_message_service.dart';
 import 'services/brief_service.dart';
+import 'services/clinic_service.dart';
+import 'services/persona.dart';
 import 'services/style_prefs.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -121,6 +123,22 @@ Future<void> main() async {
   // phone (review, 2026-09-26: they met the next account on a shared phone).
   // The screen stays on while the assistant talks (owner, 2026-11-04).
   ScreenAwake.instance.watch();
+  // Profession-specific workspaces follow the signed-in account. Anything
+  // cached for the clinic is dropped the moment the account (or its
+  // persona) changes, so one doctor's patients never flash for another.
+  Persona.bind();
+  int? lastUid;
+  String lastPersona = Persona.value;
+  AuthService.instance.addListener(() {
+    final u = AuthService.instance.user;
+    if (u?.id != lastUid || Persona.value != lastPersona) {
+      if (lastUid != null || lastPersona.isNotEmpty) {
+        ClinicService.instance.clear();
+      }
+      lastUid = u?.id;
+      lastPersona = Persona.value;
+    }
+  });
   runApp(const MyAssistantApp());
 }
 
@@ -290,6 +308,8 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
       if (AuthService.instance.isSignedIn) {
         Future.delayed(const Duration(milliseconds: 600), ClipboardOffer.instance.check);
       }
+      // A doctor coming back between patients sees the current clinic day.
+      if (Persona.isDoctor) ClinicService.instance.refresh();
       // Re-assert the FCM token too. Idempotent and instant when already
       // registered; rescues devices whose launch-time registration failed
       // (offline start) and would otherwise miss every push until the next

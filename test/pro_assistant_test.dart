@@ -11,7 +11,9 @@ void main() {
       final p = ProProfile.of(k);
       expect(p.actions.length, greaterThanOrEqualTo(3), reason: p.name);
       for (final a in p.actions) {
-        expect(a.page != null || (a.ask?.isNotEmpty ?? false), isTrue, reason: '${p.name}: ${a.title}');
+        // Opens a page, runs in place (a sheet), or asks the assistant.
+        expect(a.page != null || a.run != null || (a.ask?.isNotEmpty ?? false), isTrue,
+            reason: '${p.name}: ${a.title}');
       }
     }
     expect(ProProfile.of(ProKind.doctor).name, "Doctor's");
@@ -29,11 +31,26 @@ void main() {
       await t.pump();
       // The hero: the profession's name over its photo.
       expect(find.text(ProProfile.of(k).name), findsOneWidget);
-      expect(find.text('Chat with the ${ProProfile.of(k).name} Assistant'), findsOneWidget);
+      // The page is a lazy list: scroll to each thing, as a user would —
+      // the Doctor's page has six actions, so the chat sits below the fold.
+      final scroller = find.byType(Scrollable).first;
       for (final a in ProProfile.of(k).actions) {
+        await t.scrollUntilVisible(find.text(a.title), 120, scrollable: scroller);
         expect(find.text(a.title), findsOneWidget);
       }
+      // The ask card's message box (2026-11-14) carries this label.
+      final chat = find.bySemanticsLabel('Chat with the ${ProProfile.of(k).name} Assistant');
+      await t.scrollUntilVisible(chat, 120, scrollable: scroller);
+      expect(chat, findsOneWidget);
       expect(t.takeException(), isNull);
+      // Scrolling built the page's animated mic orb: dispose it inside the
+      // test, as the banner test below does, so no frame is left pending.
+      await t.pumpWidget(const SizedBox());
+      // The first widget test loads the app's fonts, and the engine's
+      // "system fonts changed" message lands asynchronously — let it arrive
+      // and be handled here rather than after the tree is gone.
+      await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await t.pump(const Duration(milliseconds: 100));
     });
   }
 

@@ -30,6 +30,29 @@ class AppUser {
   /// as not yet finished signing up.
   final bool phoneVerified;
 
+  /// What the user does, chosen at registration: doctor | professional |
+  /// business | student | personal — or '' when not chosen yet. Decides
+  /// which workspaces the app shows (see [Persona]).
+  final String persona;
+
+  /// Doctor's specialty ("Dentist") — optional free text.
+  final String specialty;
+
+  bool get isDoctor => persona == 'doctor';
+
+  AppUser copyWith({String? persona, String? specialty}) => AppUser(
+        id: id,
+        email: email,
+        name: name,
+        provider: provider,
+        gender: gender,
+        birthday: birthday,
+        phone: phone,
+        phoneVerified: phoneVerified,
+        persona: persona ?? this.persona,
+        specialty: specialty ?? this.specialty,
+      );
+
   const AppUser({
     required this.id,
     this.email,
@@ -39,6 +62,8 @@ class AppUser {
     this.birthday,
     this.phone,
     this.phoneVerified = false,
+    this.persona = '',
+    this.specialty = '',
   });
 
   factory AppUser.fromJson(Map<String, dynamic> j) => AppUser(
@@ -50,6 +75,8 @@ class AppUser {
         birthday: j['birthday'] as String?,
         phone: j['phone'] as String?,
         phoneVerified: j['phoneVerified'] == true,
+        persona: (j['persona'] as String?) ?? '',
+        specialty: (j['specialty'] as String?) ?? '',
       );
 }
 
@@ -240,6 +267,17 @@ class AuthService extends ChangeNotifier {
         notifyListeners();
       }
     } catch (_) {}
+  }
+
+  /// Applies a profile change the server has ALREADY accepted, without
+  /// waiting for /auth/me — so the UI switches workspaces instantly and a
+  /// failed refresh can't revert it. The next refreshUser() overwrites it
+  /// with the server's copy anyway.
+  void applyPersona(String persona, {String? specialty}) {
+    final u = user;
+    if (u == null) return;
+    user = u.copyWith(persona: persona, specialty: specialty);
+    notifyListeners();
   }
 
   // ---------------- EMAIL ----------------

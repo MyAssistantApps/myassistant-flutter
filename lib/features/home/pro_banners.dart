@@ -12,10 +12,14 @@ import '../../screens/pro_assistant_screen.dart';
 /// the card; the name, what it does and a button on the left — sliding like
 /// the shop banners, every 7 seconds or by swipe.
 class ProBanners extends StatefulWidget {
-  const ProBanners({super.key, required this.onOpen});
+  const ProBanners({super.key, required this.onOpen, this.kinds = ProKind.values});
 
   /// Opens the profession's page.
   final void Function(ProKind kind) onOpen;
+
+  /// Which professions to show. Home passes only the user's own (owner,
+  /// 2026-11-13: each profession sees ONLY its own assistant).
+  final List<ProKind> kinds;
 
   @override
   State<ProBanners> createState() => _ProBannersState();
@@ -27,7 +31,7 @@ class _ProBannersState extends State<ProBanners> {
   Timer? _auto;
   bool _held = false;
 
-  static const _kinds = ProKind.values;
+  List<ProKind> get _kinds => widget.kinds;
 
   @override
   void didChangeDependencies() {
@@ -38,6 +42,7 @@ class _ProBannersState extends State<ProBanners> {
   void _arm() {
     _auto?.cancel();
     if (_held) return;
+    if (_kinds.length < 2) return; // one card: nothing to slide to
     final still = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
     if (still) return;
     _auto = Timer.periodic(const Duration(seconds: 5), (_) {
@@ -97,8 +102,9 @@ class _ProBannersState extends State<ProBanners> {
             ),
           ),
         ),
-        const SizedBox(height: 10),
-        Row(
+        if (_kinds.length > 1) const SizedBox(height: 10),
+        if (_kinds.length > 1)
+          Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             for (var i = 0; i < _kinds.length; i++)
@@ -177,11 +183,10 @@ class ProBannerCard extends StatelessWidget {
                                 Colors.white
                               ],
                             ).createShader(r),
-                            child: Image.asset(p.photo,
-                                fit: BoxFit.cover,
-                                alignment: Alignment.topCenter,
-                                filterQuality: FilterQuality.medium,
-                                gaplessPlayback: true),
+                            // The professional's own photo once they set one
+                            // on their assistant page (ProPhoto), else stock.
+                            child: ProPhotoImage(
+                                profile: p, alignment: Alignment.topCenter),
                           ),
                         ),
                         // The card's night, washing over the photo from the left,

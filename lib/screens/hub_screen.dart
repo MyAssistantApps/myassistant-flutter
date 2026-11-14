@@ -6,6 +6,7 @@ import '../design/apple_kit.dart';
 import '../design/dock_metrics.dart';
 import '../design/neon_tokens.dart';
 import 'clients_screen.dart';
+import '../services/persona.dart';
 import 'connected_apps_screen.dart';
 import 'calendar_screen.dart';
 import 'calls_screen.dart';
@@ -40,8 +41,21 @@ class _HubScreenState extends State<HubScreen> {
   final _featureQuery = TextEditingController();
   bool _foundFeature = false;
 
+  // The Hub lives in the tab stack, so a profession changed in Settings
+  // must rebuild it here rather than on the next cold start.
+  void _onPersona() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    Persona.notifier.addListener(_onPersona);
+  }
+
   @override
   void dispose() {
+    Persona.notifier.removeListener(_onPersona);
     _featureQuery.dispose();
     super.dispose();
   }
@@ -189,14 +203,18 @@ class _HubScreenState extends State<HubScreen> {
               (c) => const ConnectedAppsScreen(),
             ),
           ]),
-          _group(context, 'Practice', [
-            _Row(
-              'Clients & patients',
-              'Case files, notes and their documents',
-              Icons.folder_shared_rounded,
-              Neon.accentF,
-              (c) => const ClientsScreen(),
-            ),
+          _group(context, Persona.usesCaseFiles ? 'Practice' : 'Files', [
+            // Case files only for professions that keep them (2026-11-13).
+            if (Persona.usesCaseFiles)
+              _Row(
+                Persona.isDoctor ? 'Patients' : 'Clients',
+                Persona.isDoctor
+                    ? 'Case files, visit notes and reports'
+                    : 'Case files, notes and their documents',
+                Icons.folder_shared_rounded,
+                Neon.accentF,
+                (c) => const ClientsScreen(),
+              ),
             _Row(
               'My documents',
               'Your own scans, IDs and files',

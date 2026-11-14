@@ -12,6 +12,8 @@ import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../services/app_feedback.dart';
 import '../design/motion.dart';
+import '../services/persona.dart';
+import 'auth/profession_screen.dart';
 
 /// ACCOUNT — who is signed in, and the three things anyone must be able to
 /// do with their own account: take their data, leave, and erase it.
@@ -139,6 +141,29 @@ class _AccountSectionState extends State<AccountSection> {
               trailing: _busy && !_exporting
                   ? const NeonLoader.inline()
                   : null,
+            ),
+            // What the user does — decides which assistant and workspace they
+            // see (Doctor's assistant + Clinic for doctors). Changeable here.
+            ValueListenableBuilder<String>(
+              valueListenable: Persona.notifier,
+              builder: (_, p, __) {
+                final spec = AuthService.instance.user?.specialty ?? '';
+                return AppleRow(
+                  title: 'Profession',
+                  subtitle: Persona.titleFor(p) +
+                      (p == 'doctor' && spec.isNotEmpty ? ' · $spec' : ''),
+                  trailing: Icon(Icons.chevron_right_rounded,
+                      size: 20, color: Neon.textDim),
+                  onTap: _busy
+                      ? null
+                      : () => Navigator.of(context).push(MaterialPageRoute<void>(
+                            builder: (ctx) => ProfessionScreen(
+                              editing: true,
+                              onDone: () => Navigator.of(ctx).pop(),
+                            ),
+                          )),
+                );
+              },
             ),
             AppleRow(
               title: 'Export my data',

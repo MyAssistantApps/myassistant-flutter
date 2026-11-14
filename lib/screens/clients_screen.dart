@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -13,10 +14,14 @@ import '../models/user_document.dart';
 import '../services/api_service.dart';
 import 'business_card_flow.dart';
 import '../services/document_events.dart';
+import '../services/persona.dart';
 import '../widgets/document_tile.dart';
 import '../services/app_feedback.dart';
 import '../design/motion.dart';
 import '../widgets/neon_cards.dart';
+import 'clinic/clinic_sheets.dart';
+import 'clinic/consult_note_screen.dart';
+import 'clinic/prescription_screen.dart';
 
 /// PROFESSIONAL MODE — the case-file workspace.
 ///
@@ -81,7 +86,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
   Widget build(BuildContext context) {
     // Under the night sky, with the theme's lit FAB (2026-09-30).
     return NeonScaffold(
-      appBar: appleAppBar(context, 'Clients & patients', actions: [
+      appBar: appleAppBar(context, Persona.isDoctor ? 'Patients' : 'Clients & patients', actions: [
         IconButton(
           tooltip: 'Scan a business card',
           icon: const Icon(Icons.contact_mail_rounded),
@@ -133,7 +138,9 @@ class _ClientsScreenState extends State<ClientsScreen> {
     if (rows.isEmpty) {
       return NeonEmptyState(
         icon: Icons.folder_shared_rounded,
-        title: _query.isEmpty ? 'No clients or patients yet' : 'No matches',
+        title: _query.isEmpty
+            ? (Persona.isDoctor ? 'No patients yet' : 'No clients yet')
+            : 'No matches',
         body: _query.isEmpty
             ? 'Add a patient or client to keep their documents and notes '
                 'in one place, separate from your own documents.'
@@ -513,6 +520,11 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
                   children: [
+                    // Doctors: the visit's actions, one tap each, on top.
+                    if (Persona.isDoctor) ...[
+                      _doctorActions(c),
+                      const SizedBox(height: 18),
+                    ],
                     const GroupLabel('Details'),
                     _detailsGroup(c),
                     const SizedBox(height: 24),
@@ -635,6 +647,59 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
         ],
       ),
     );
+  }
+
+  /// The doctor's visit toolbar: everything that happens with a patient in
+  /// the room, reachable without leaving the file. Each refreshes the file
+  /// when it returns, so the new note / document / recall shows at once.
+  Widget _doctorActions(Client c) {
+    Future<void> go(Future<dynamic> Function() open) async {
+      HapticFeedback.selectionClick();
+      final changed = await open();
+      if (changed == true && mounted) _load();
+    }
+
+    Widget act(IconData icon, String label, Future<dynamic> Function() open) {
+      return Expanded(
+        child: Material(
+          color: Neon.violet.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => go(open),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 11),
+              child: Column(children: [
+                Icon(icon, color: Neon.violet, size: 21),
+                const SizedBox(height: 4),
+                Text(label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        color: Neon.violet,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600)),
+              ]),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Row(children: [
+      act(Icons.record_voice_over_rounded, 'Consult', () => Navigator.of(context)
+          .push(MaterialPageRoute(builder: (_) => ConsultNoteScreen(patient: c)))),
+      const SizedBox(width: 6),
+      act(Icons.medication_rounded, 'Rx', () => Navigator.of(context)
+          .push(MaterialPageRoute(builder: (_) => PrescriptionScreen(patient: c)))),
+      const SizedBox(width: 6),
+      act(Icons.event_available_rounded, 'Book', () => bookAppointment(context, patient: c)),
+      const SizedBox(width: 6),
+      act(Icons.event_repeat_rounded, 'Follow-up',
+          () => scheduleFollowUp(context, patient: c)),
+      const SizedBox(width: 6),
+      act(Icons.currency_rupee_rounded, 'Payment', () => recordPayment(context, patient: c)),
+    ]);
   }
 
   String _recallLine() {
@@ -810,7 +875,8 @@ class _EditClientSheetState extends State<_EditClientSheet> {
       TextEditingController(text: widget.existing?.summary ?? '');
   late final _phone = TextEditingController(text: widget.existing?.phone ?? '');
   late final _email = TextEditingController(text: widget.existing?.email ?? '');
-  late String _kind = widget.existing?.kind ?? 'patient';
+  late String _kind =
+      widget.existing?.kind ?? (Persona.isDoctor ? 'patient' : 'client');
   bool _saving = false;
   String? _error;
 
