@@ -18,10 +18,13 @@ import '../features/assistant/state/assistant_state.dart';
 import '../widgets/role_mic_orb.dart';
 import 'clients_screen.dart';
 import 'documents_screen.dart';
-import 'finance_screen.dart';
 import 'clinic/clinic_screen.dart';
 import 'clinic/clinic_settings_screen.dart';
 import 'clinic/clinic_sheets.dart';
+import 'pro/cases_screen.dart';
+import 'pro/invoices_screen.dart';
+import 'pro/leads_screen.dart';
+import 'pro/legal_draft_screen.dart';
 import '../models/clinic.dart' show rupees;
 import '../services/clinic_service.dart';
 import '../services/persona.dart';
@@ -134,43 +137,61 @@ class ProProfile {
             "Advocate's",
             Icons.gavel_rounded,
             'Your cases, hearings and the law, at hand.',
+            // THE ADVOCATE'S CHAMBERS (owner, 2026-11-14): real tools, like
+            // the doctor's clinic — case diary, drafting, fees, bookings.
             [
-              ProAction('Case files', 'Each client\'s case, notes and papers',
+              ProAction('Today in chambers', 'Hearings, consultations, fees due',
+                  Icons.today_rounded,
+                  page: () => const ClinicScreen(), featured: true),
+              ProAction('Cases & hearings', 'Court, case no., next date',
+                  Icons.gavel_rounded,
+                  page: () => const CasesScreen()),
+              ProAction('Clients', 'Each client\'s file, notes and papers',
                   Icons.folder_shared_rounded,
                   page: () => const ClientsScreen()),
-              const ProAction('Hearings coming up',
-                  'From your cases and calendar', Icons.event_note_rounded,
-                  ask: 'What hearings do I have coming up?'),
-              const ProAction(
-                  'Look up the law',
-                  'Indian acts and sections, explained',
-                  Icons.menu_book_rounded,
-                  ask: 'I want to look up a section of Indian law.'),
-              const ProAction(
-                  'Draft a notice',
-                  'A legal notice or letter, written for you',
+              ProAction('Draft a document', 'Notice, affidavit, agreement → PDF',
                   Icons.edit_note_rounded,
-                  ask: 'Help me draft a legal notice.'),
+                  page: () => const LegalDraftScreen()),
+              ProAction('Book consultation', 'Pick a client and a free slot',
+                  Icons.event_available_rounded,
+                  run: (c) => bookAppointment(c)),
+              ProAction('Fees pending', 'Who owes you, settle in a tap',
+                  Icons.payments_rounded,
+                  page: () => const ClinicScreen(initialTab: 2)),
+              ProAction('Bill a fee', 'Fee invoice with a payment link',
+                  Icons.receipt_long_rounded,
+                  page: () => const InvoiceEditorScreen()),
             ],
           ),
         ProKind.business => ProProfile(
             k,
             'Business',
-            Icons.storefront_rounded,
-            'Your clients, money and records in one place.',
+            Icons.business_center_rounded,
+            'Your deals, clients, meetings and money — handled.',
+            // THE EXECUTIVE DESK (owner, 2026-11-14: for top business
+            // leaders): deals, invoices, receivables and meetings.
             [
-              ProAction('Clients', 'Each customer\'s file, notes and documents',
+              ProAction('Today at a glance', 'Meetings, follow-ups, receivables',
+                  Icons.today_rounded,
+                  page: () => const ClinicScreen(), featured: true),
+              ProAction('Leads & deals', 'Pipeline and who to call next',
+                  Icons.trending_up_rounded,
+                  page: () => const LeadsScreen()),
+              ProAction('Clients', 'Each client\'s file, notes and documents',
                   Icons.folder_shared_rounded,
                   page: () => const ClientsScreen()),
-              ProAction('Money', 'Income, spending and what is due',
+              ProAction('New invoice / quote', 'GST-ready PDF + payment link',
+                  Icons.request_quote_rounded,
+                  page: () => const InvoiceEditorScreen()),
+              ProAction('Invoices & quotes', 'Paid, unpaid, payment links',
+                  Icons.receipt_long_rounded,
+                  page: () => const InvoicesScreen()),
+              ProAction('Receivables', 'Who owes you, settle in a tap',
                   Icons.account_balance_wallet_rounded,
-                  page: () => const FinanceScreen()),
-              const ProAction('Record book', 'Add or check an entry',
-                  Icons.menu_book_rounded,
-                  ask: 'Show me the latest entries in my record book.'),
-              const ProAction('Write to a customer',
-                  'A quote, a reminder or a thank-you', Icons.mail_rounded,
-                  ask: 'Help me write a message to a customer.'),
+                  page: () => const ClinicScreen(initialTab: 2)),
+              ProAction('Schedule meeting', 'Pick a client and a free slot',
+                  Icons.event_available_rounded,
+                  run: (c) => bookAppointment(c)),
             ],
           ),
       };
@@ -191,7 +212,7 @@ class _ProAssistantScreenState extends State<ProAssistantScreen> {
   void initState() {
     super.initState();
     // The featured card shows the doctor's live day.
-    if (kind == ProKind.doctor && Persona.isDoctor) {
+    if (Persona.proKind == kind.name) {
       ClinicService.instance.refresh(force: true);
     }
   }
@@ -495,7 +516,7 @@ class _ProAssistantScreenState extends State<ProAssistantScreen> {
                 child: _FeaturedCard(
                   action: featured.first,
                   tint: tint,
-                  showClinicDay: kind == ProKind.doctor && Persona.isDoctor,
+                  showClinicDay: Persona.proKind == kind.name,
                   onTap: () => _run(context, featured.first),
                 ),
               ),
@@ -718,19 +739,40 @@ class _FeaturedCard extends StatelessWidget {
                     animation: ClinicService.instance,
                     builder: (_, __) {
                       final t = ClinicService.instance.today;
-                      final see = t?.openAppointments.length;
-                      final fu = t == null
-                          ? null
-                          : t.followUps.today.length + t.followUps.overdue.length;
+                      final money = t == null ? '–' : rupees(t.duesTotal);
+                      final owed = (t?.duesTotal ?? 0) > 0;
+                      // Each profession's three numbers that matter today.
+                      final stats = switch (Persona.value) {
+                        'advocate' => [
+                            _Stat(t?.hearingsToday.length.toString() ?? '–', 'hearings today', tint,
+                                alert: (t?.hearingsToday.isNotEmpty ?? false)),
+                            _Stat(t?.hearingsWeek.length.toString() ?? '–', 'this week', tint),
+                            _Stat(money, 'fees due', tint, alert: owed),
+                          ],
+                        'business' => [
+                            _Stat(t?.openAppointments.length.toString() ?? '–', 'meetings', tint),
+                            _Stat(t?.leadsDue.length.toString() ?? '–', 'follow-ups', tint,
+                                alert: (t?.leadsDue.isNotEmpty ?? false)),
+                            _Stat(money, 'receivable', tint, alert: owed),
+                          ],
+                        _ => [
+                            _Stat(t?.openAppointments.length.toString() ?? '–', 'to see', tint),
+                            _Stat(
+                                t == null
+                                    ? '–'
+                                    : (t.followUps.today.length + t.followUps.overdue.length).toString(),
+                                'follow-ups',
+                                tint,
+                                alert: (t?.followUps.overdue.isNotEmpty ?? false)),
+                            _Stat(money, 'pending', tint, alert: owed),
+                          ],
+                      };
                       return Row(children: [
-                        _Stat(see?.toString() ?? '–', 'to see', tint),
+                        stats[0],
                         const SizedBox(width: 8),
-                        _Stat(fu?.toString() ?? '–', 'follow-ups', tint,
-                            alert: (t?.followUps.overdue.isNotEmpty ?? false)),
+                        stats[1],
                         const SizedBox(width: 8),
-                        _Stat(t == null ? '–' : rupees(t.duesTotal), 'pending',
-                            tint,
-                            alert: (t?.duesTotal ?? 0) > 0),
+                        stats[2],
                       ]);
                     },
                   ),
@@ -891,12 +933,12 @@ class _AskCard extends StatelessWidget {
                 'Explain a court judgment to me in simple words.'),
           ],
         ProKind.business => const [
-            (Icons.receipt_long_rounded, "Today's sales",
-                'How did my business do today?'),
+            (Icons.today_rounded, 'My day',
+                'Brief me on my day: meetings, follow-ups due and money to collect.'),
             (Icons.payments_rounded, 'Who owes me?',
                 'Which customers still owe me money?'),
-            (Icons.trending_up_rounded, 'This month vs last',
-                'Compare my business this month with last month.'),
+            (Icons.trending_up_rounded, 'Pipeline summary',
+                'Summarise my open deals: value, stage and who to call next.'),
           ],
       };
 
@@ -960,7 +1002,7 @@ class _AskCard extends StatelessWidget {
                   Text('Type or talk — it knows your ${switch (profile.kind) {
                     ProKind.doctor => 'patients',
                     ProKind.advocate => 'cases',
-                    ProKind.business => 'customers',
+                    ProKind.business => 'clients',
                   }}.',
                       style: TextStyle(color: Neon.textLo, fontSize: 12.5)),
                 ],

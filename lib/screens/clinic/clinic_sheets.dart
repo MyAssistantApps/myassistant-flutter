@@ -7,6 +7,8 @@ import '../../models/client.dart';
 import '../../services/api_service.dart';
 import '../../services/app_feedback.dart';
 import '../../services/clinic_service.dart';
+import '../../services/pro_words.dart';
+import '../../services/persona.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  CLINIC SHEETS — the three things a doctor does between patients.
@@ -110,7 +112,7 @@ class _PatientPickerState extends State<_PatientPicker> {
     setState(() => _busy = true);
     try {
       final c = await ApiService.createClient(
-          name: name, kind: 'patient', phone: _phone.text.trim());
+          name: name, kind: Persona.isDoctor ? 'patient' : 'client', phone: _phone.text.trim());
       if (mounted) Navigator.pop(context, c);
     } catch (_) {
       if (mounted) {
@@ -133,7 +135,7 @@ class _PatientPickerState extends State<_PatientPicker> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _handle(),
-            _title('Choose patient'),
+            _title('Choose ${ProWords.current.person.toLowerCase()}'),
             TextField(
               autofocus: true,
               textCapitalization: TextCapitalization.words,
@@ -151,7 +153,7 @@ class _PatientPickerState extends State<_PatientPicker> {
               if (!_adding)
                 AppleRow(
                   leading: IconTile(Icons.person_add_alt_1_rounded, Neon.violet),
-                  title: 'Add "$q" as a new patient',
+                  title: 'Add "$q" as a new ${ProWords.current.person.toLowerCase()}',
                   onTap: () => setState(() => _adding = true),
                 )
               else
@@ -329,7 +331,7 @@ class _FollowUpSheetState extends State<_FollowUpSheet> {
           GroupedCard(children: [
             AppleRow(
               leading: IconTile(Icons.person_rounded, Neon.accentF),
-              title: p?.name ?? 'Choose patient',
+              title: p?.name ?? 'Choose ${ProWords.current.person.toLowerCase()}',
               titleColor: p == null ? Neon.violet : null,
               subtitle: p == null ? null : (p.phone.isEmpty ? 'No phone on file' : p.phone),
               trailing: Icon(Icons.chevron_right_rounded, color: Neon.textDim),
@@ -481,7 +483,7 @@ class _PaymentSheetState extends State<_PaymentSheet> {
           GroupedCard(children: [
             AppleRow(
               leading: IconTile(Icons.person_rounded, Neon.accentF),
-              title: _name ?? 'Choose patient',
+              title: _name ?? 'Choose ${ProWords.current.person.toLowerCase()}',
               titleColor: _name == null ? Neon.violet : null,
               trailing: Icon(Icons.chevron_right_rounded, color: Neon.textDim),
               onTap: () async {
@@ -634,11 +636,11 @@ class _BookSheetState extends State<_BookSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _handle(),
-          _title('Book appointment'),
+          _title(ProWords.current.book),
           GroupedCard(children: [
             AppleRow(
               leading: IconTile(Icons.person_rounded, Neon.accentF),
-              title: p?.name ?? 'Choose patient',
+              title: p?.name ?? 'Choose ${ProWords.current.person.toLowerCase()}',
               titleColor: p == null ? Neon.violet : null,
               subtitle: p == null
                   ? null
@@ -737,7 +739,7 @@ class _BookSheetState extends State<_BookSheet> {
           border: Border.all(color: Neon.line),
         ),
         child: Text(
-          'No free times this day. Check your clinic timings in Clinic → Settings, or pick another day.',
+          'No free times this day. Check your timings in ${ProWords.current.settings}, or pick another day.',
           style: TextStyle(color: Neon.textLo, fontSize: 13),
         ),
       );

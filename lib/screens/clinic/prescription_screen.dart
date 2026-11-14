@@ -368,6 +368,8 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
             }),
           ),
         ]),
+        // Room for the floating Dose / Frequency / Duration labels.
+        const SizedBox(height: 12),
         Row(children: [
           Expanded(child: _small(r.dose, 'Dose')),
           const SizedBox(width: 8),

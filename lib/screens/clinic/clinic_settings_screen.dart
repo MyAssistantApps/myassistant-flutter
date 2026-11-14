@@ -7,6 +7,8 @@ import '../../design/neon_widgets.dart';
 import '../../models/clinic.dart';
 import '../../services/app_feedback.dart';
 import '../../services/clinic_service.dart';
+import '../../services/pro_words.dart';
+import '../../services/persona.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  CLINIC SETTINGS — set once, used everywhere.
@@ -118,7 +120,7 @@ class _ClinicSettingsScreenState extends State<ClinicSettingsScreen> {
     final p = _p;
     return Scaffold(
       backgroundColor: Neon.bg,
-      appBar: appleAppBar(context, 'Clinic settings', actions: [
+      appBar: appleAppBar(context, ProWords.current.settings, actions: [
         TextButton(
           onPressed: p == null || _saving ? null : _save,
           child: Text(_saving ? 'Saving…' : 'Save',
@@ -137,24 +139,29 @@ class _ClinicSettingsScreenState extends State<ClinicSettingsScreen> {
               : ListView(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 60),
                   children: [
-                    const GroupLabel('Clinic'),
-                    _field(_name, 'Clinic name', Icons.local_hospital_outlined),
+                    GroupLabel(ProWords.current.workspace),
+                    _field(_name, ProWords.current.placeName, Icons.business_rounded),
                     _field(_address, 'Address', Icons.place_outlined, lines: 2),
                     _field(_phone, 'Clinic phone', Icons.phone_outlined,
                         type: TextInputType.phone),
-                    _field(_fee, 'Consultation fee (₹)', Icons.currency_rupee_rounded,
+                    if (ProWords.current.feeLabel != null)
+                    _field(_fee, ProWords.current.feeLabel!, Icons.currency_rupee_rounded,
                         type: TextInputType.number),
                     const SizedBox(height: 18),
-                    const GroupLabel('On your prescriptions'),
-                    _field(_qual, 'Qualifications (e.g. MBBS, MD)', Icons.school_outlined),
-                    _field(_reg, 'Medical registration number', Icons.verified_outlined),
+                    GroupLabel(Persona.isDoctor
+                        ? 'On your prescriptions'
+                        : Persona.value == 'advocate'
+                            ? 'On your letterhead'
+                            : 'On your invoices'),
+                    _field(_qual, ProWords.current.qualification, Icons.school_outlined),
+                    _field(_reg, ProWords.current.regNo, Icons.verified_outlined),
                     const SizedBox(height: 18),
                     const GroupLabel('Timings'),
                     GroupedCard(children: [
                       for (final d in clinicDays) _dayRow(p, d),
                     ]),
                     const SizedBox(height: 14),
-                    Text('Appointment length',
+                    Text('${ProWords.current.appointment[0].toUpperCase()}${ProWords.current.appointment.substring(1)} length',
                         style: TextStyle(
                             color: Neon.textHi,
                             fontSize: 15,
@@ -176,12 +183,10 @@ class _ClinicSettingsScreenState extends State<ClinicSettingsScreen> {
                       SwitchListTile.adaptive(
                         value: p.receptionistBooks,
                         onChanged: (v) => setState(() => p.receptionistBooks = v),
-                        title: Text('Book appointments on calls',
+                        title: Text('Book ${ProWords.current.appointments.toLowerCase()} on calls',
                             style: TextStyle(color: Neon.textHi, fontSize: 15)),
                         subtitle: Text(
-                            'When you can\'t answer, your assistant offers callers your free '
-                            'slots and books them. It never gives medical advice, and sends '
-                            'emergencies to 108.',
+                            ProWords.current.receptionist,
                             style: TextStyle(color: Neon.textLo, fontSize: 12.5, height: 1.35)),
                       ),
                     ]),

@@ -11,6 +11,10 @@ import '../../services/clinic_service.dart';
 import '../clients_screen.dart';
 import 'clinic_settings_screen.dart';
 import 'clinic_sheets.dart';
+import '../../services/pro_words.dart';
+import '../../services/persona.dart';
+import '../pro/cases_screen.dart';
+import '../pro/leads_screen.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  CLINIC — the doctor's workspace. Visible ONLY to doctors (persona).
@@ -49,9 +53,9 @@ class _ClinicScreenState extends State<ClinicScreen> {
       initialIndex: widget.initialTab.clamp(0, 2),
       child: Scaffold(
         backgroundColor: Neon.bg,
-        appBar: appleAppBar(context, 'Clinic', actions: [
+        appBar: appleAppBar(context, ProWords.current.workspace, actions: [
           IconButton(
-            tooltip: 'Patients',
+            tooltip: ProWords.current.people,
             icon: const Icon(Icons.folder_shared_rounded),
             onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const ClientsScreen())),
@@ -72,10 +76,10 @@ class _ClinicScreenState extends State<ClinicScreen> {
               dividerColor: Neon.line,
               labelStyle:
                   const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-              tabs: const [
-                Tab(text: 'Today'),
-                Tab(text: 'Follow-ups'),
-                Tab(text: 'Payments'),
+              tabs: [
+                const Tab(text: 'Today'),
+                const Tab(text: 'Follow-ups'),
+                Tab(text: ProWords.current.payments),
               ],
             ),
             const Expanded(
@@ -109,7 +113,7 @@ class _TodayTab extends StatelessWidget {
         if (t == null) {
           if (svc.failed) {
             return NeonErrorState(
-                message: "Couldn't load your clinic day.",
+                message: "Couldn't load your day.",
                 onRetry: () => svc.refresh(force: true));
           }
           return const Center(child: NeonLoader());
@@ -143,13 +147,13 @@ class _TodayTab extends StatelessWidget {
               _QuickActions(patientsLeft: open.where((a) => a.status == 'booked').length),
               const SizedBox(height: 22),
               GroupLabel(t.appointments.isEmpty
-                  ? 'Appointments'
-                  : 'Appointments · ${t.appointments.length}'),
+                  ? ProWords.current.appointments
+                  : '${ProWords.current.appointments} · ${t.appointments.length}'),
               if (t.appointments.isEmpty)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 20),
                   child: Text(
-                    'No appointments today. Book one above — or let your phone '
+                    'No ${ProWords.current.appointments.toLowerCase()} today. Book one above — or let your phone '
                     'receptionist book callers (Clinic settings).',
                     style: TextStyle(color: Neon.textLo, fontSize: 13.5, height: 1.4),
                   ),
@@ -161,6 +165,9 @@ class _TodayTab extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
               ],
+              // Each profession's own "today" list (2026-11-14).
+              if (Persona.value == 'advocate') ..._hearingsSection(context, t),
+              if (Persona.value == 'business') ..._leadsSection(context, t),
               if (f.today.isEmpty && f.overdue.isEmpty)
                 _calmCard(t)
               else ...[
@@ -203,7 +210,7 @@ class _TodayTab extends StatelessWidget {
         Expanded(
           child: Text(
             next == null
-                ? 'No follow-ups due. ${t.patients} patient${t.patients == 1 ? '' : 's'} on file.'
+                ? 'No follow-ups due. ${t.patients} ${ProWords.current.person.toLowerCase()}${t.patients == 1 ? '' : 's'} on file.'
                 : 'Nothing due today. Next: ${next.clientName}, ${followUpWhen(next.dueAt)}.',
             style: TextStyle(color: Neon.textHi, fontSize: 14, height: 1.35),
           ),
@@ -211,6 +218,53 @@ class _TodayTab extends StatelessWidget {
       ]),
     );
   }
+}
+
+/// Advocates: today's hearings, then the rest of the week.
+List<Widget> _hearingsSection(BuildContext context, ClinicToday t) {
+  final all = [...t.hearingsToday, ...t.hearingsWeek];
+  Widget row(Hearing h) => AppleRow(
+        leading: Icon(Icons.gavel_rounded,
+            color: t.hearingsToday.contains(h) ? Neon.warning : Neon.violet, size: 20),
+        title: h.caseTitle,
+        subtitle: [followUpWhen(h.at), if (h.court.isNotEmpty) h.court, if (h.purpose.isNotEmpty) h.purpose]
+            .join(' · '),
+        trailing: Icon(Icons.chevron_right_rounded, color: Neon.textDim),
+        onTap: () => Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => CaseDetailScreen(caseId: h.caseId))),
+      );
+  return [
+    GroupLabel(all.isEmpty ? 'Hearings this week' : 'Hearings this week · ${all.length}'),
+    if (all.isEmpty)
+      Padding(
+        padding: const EdgeInsets.only(bottom: 20),
+        child: Text('No hearings in the next 7 days.',
+            style: TextStyle(color: Neon.textLo, fontSize: 13.5)),
+      )
+    else ...[
+      GroupedCard(dividerInset: 52, children: [for (final h in all) row(h)]),
+      const SizedBox(height: 20),
+    ],
+  ];
+}
+
+/// Business: deals whose follow-up is due today.
+List<Widget> _leadsSection(BuildContext context, ClinicToday t) {
+  if (t.leadsDue.isEmpty) return const [];
+  return [
+    GroupLabel('Follow up today · ${t.leadsDue.length}'),
+    GroupedCard(dividerInset: 52, children: [
+      for (final l in t.leadsDue)
+        AppleRow(
+          leading: Icon(Icons.trending_up_rounded, color: Neon.warning, size: 20),
+          title: l.company.isEmpty ? l.name : '${l.name} · ${l.company}',
+          subtitle: [leadStageLabel[l.stage] ?? l.stage, if (l.value > 0) rupees(l.value)].join(' · '),
+          trailing: Icon(Icons.chevron_right_rounded, color: Neon.textDim),
+          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LeadsScreen())),
+        ),
+    ]),
+    const SizedBox(height: 20),
+  ];
 }
 
 class _Stat extends StatelessWidget {
@@ -318,7 +372,7 @@ class _SetupCard extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Set up your clinic — timings, fee and registration number. '
+                'Set up your ${ProWords.current.workspace.toLowerCase()} — timings, ${ProWords.current.feeLabel == null ? 'title' : 'fee'} and ${ProWords.current.regNo.toLowerCase()}. '
                 'Takes a minute; booking and prescriptions use it.',
                 style: TextStyle(color: Neon.textHi, fontSize: 13.5, height: 1.35),
               ),
@@ -358,7 +412,7 @@ class _ApptRow extends StatelessWidget {
           if (a.clientId != null)
             ListTile(
               leading: const Icon(Icons.folder_open_rounded),
-              title: const Text('Open patient file'),
+              title: Text('Open ${ProWords.current.person.toLowerCase()} file'),
               onTap: () {
                 Navigator.pop(ctx);
                 Navigator.of(context).push(MaterialPageRoute(
@@ -683,7 +737,7 @@ class _FollowUpsTabState extends State<_FollowUpsTab>
         icon: Icons.event_repeat_rounded,
         title: 'No follow-ups scheduled',
         body: 'Schedule one here or just say “follow up Ramesh in two weeks”. '
-            'Your assistant can call the patient to remind them.',
+            'Your assistant can call them to remind them.',
       );
     } else {
       body = RefreshIndicator(
@@ -847,7 +901,7 @@ class _PaymentsTabState extends State<_PaymentsTab>
                     ],
                   ),
                 ),
-                Text('${d.length} patient${d.length == 1 ? '' : 's'}',
+                Text('${d.length} ${ProWords.current.person.toLowerCase()}${d.length == 1 ? '' : 's'}',
                     style: TextStyle(color: Neon.textLo, fontSize: 13)),
               ]),
             ),

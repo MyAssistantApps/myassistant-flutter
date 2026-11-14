@@ -1,4 +1,6 @@
 // Clinic workspace models — shapes of /clinic/* (backend src/clinic/routes.js).
+import 'pro.dart';
+export 'pro.dart';
 
 class FollowUp {
   final int id;
@@ -81,6 +83,17 @@ class ClinicToday {
   final double duesTotal;
   final List<Appointment> appointments;
 
+  // Advocates: hearings today / later this week.
+  final List<Hearing> hearingsToday;
+  final List<Hearing> hearingsWeek;
+
+  // Business: leads to follow up today, the open pipeline, unpaid invoices.
+  final List<Lead> leadsDue;
+  final int openLeads;
+  final double pipelineValue;
+  final int unpaidInvoices;
+  final double unpaidTotal;
+
   const ClinicToday({
     required this.patients,
     required this.followUps,
@@ -88,6 +101,13 @@ class ClinicToday {
     required this.duesCount,
     required this.duesTotal,
     this.appointments = const [],
+    this.hearingsToday = const [],
+    this.hearingsWeek = const [],
+    this.leadsDue = const [],
+    this.openLeads = 0,
+    this.pipelineValue = 0,
+    this.unpaidInvoices = 0,
+    this.unpaidTotal = 0,
   });
 
   /// Appointments still to be seen today (booked or in the waiting room).
@@ -102,6 +122,13 @@ class ClinicToday {
         duesCount: (j['duesCount'] as num?)?.toInt() ?? 0,
         duesTotal: (j['duesTotal'] as num?)?.toDouble() ?? 0,
         appointments: Appointment.list(j['appointments']),
+        hearingsToday: Hearing.list(j['hearingsToday']),
+        hearingsWeek: Hearing.list(j['hearingsWeek']),
+        leadsDue: Lead.list(j['leadsDue']),
+        openLeads: (j['openLeads'] as num?)?.toInt() ?? 0,
+        pipelineValue: (j['pipelineValue'] as num?)?.toDouble() ?? 0,
+        unpaidInvoices: (j['unpaidInvoices'] as num?)?.toInt() ?? 0,
+        unpaidTotal: (j['unpaidTotal'] as num?)?.toDouble() ?? 0,
       );
 }
 

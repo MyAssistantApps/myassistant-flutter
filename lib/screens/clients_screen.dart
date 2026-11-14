@@ -22,6 +22,9 @@ import '../widgets/neon_cards.dart';
 import 'clinic/clinic_sheets.dart';
 import 'clinic/consult_note_screen.dart';
 import 'clinic/prescription_screen.dart';
+import 'pro/cases_screen.dart';
+import 'pro/invoices_screen.dart';
+import 'pro/legal_draft_screen.dart';
 
 /// PROFESSIONAL MODE — the case-file workspace.
 ///
@@ -521,7 +524,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
                   children: [
                     // Doctors: the visit's actions, one tap each, on top.
-                    if (Persona.isDoctor) ...[
+                    if (Persona.proKind != null) ...[
                       _doctorActions(c),
                       const SizedBox(height: 18),
                     ],
@@ -686,19 +689,41 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
       );
     }
 
+    Future<dynamic> push(Widget w) =>
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => w));
+    // Each profession's visit toolbar (2026-11-14).
+    final acts = switch (Persona.value) {
+      'advocate' => [
+          act(Icons.gavel_rounded, 'New case', () => newCaseSheet(context, client: c)),
+          act(Icons.edit_note_rounded, 'Draft',
+              () => push(LegalDraftScreen(clientId: c.id, clientName: c.name))),
+          act(Icons.event_available_rounded, 'Book', () => bookAppointment(context, patient: c)),
+          act(Icons.receipt_long_rounded, 'Bill fee',
+              () => push(InvoiceEditorScreen(clientId: c.id, clientName: c.name, presetLine: 'Professional fee'))),
+          act(Icons.currency_rupee_rounded, 'Payment', () => recordPayment(context, patient: c)),
+        ],
+      'business' => [
+          act(Icons.receipt_long_rounded, 'Invoice',
+              () => push(InvoiceEditorScreen(clientId: c.id, clientName: c.name))),
+          act(Icons.request_quote_rounded, 'Quote',
+              () => push(InvoiceEditorScreen(kind: 'quote', clientId: c.id, clientName: c.name))),
+          act(Icons.event_available_rounded, 'Meeting', () => bookAppointment(context, patient: c)),
+          act(Icons.event_repeat_rounded, 'Follow-up', () => scheduleFollowUp(context, patient: c)),
+          act(Icons.currency_rupee_rounded, 'Payment', () => recordPayment(context, patient: c)),
+        ],
+      _ => [
+          act(Icons.record_voice_over_rounded, 'Consult', () => push(ConsultNoteScreen(patient: c))),
+          act(Icons.medication_rounded, 'Rx', () => push(PrescriptionScreen(patient: c))),
+          act(Icons.event_available_rounded, 'Book', () => bookAppointment(context, patient: c)),
+          act(Icons.event_repeat_rounded, 'Follow-up', () => scheduleFollowUp(context, patient: c)),
+          act(Icons.currency_rupee_rounded, 'Payment', () => recordPayment(context, patient: c)),
+        ],
+    };
     return Row(children: [
-      act(Icons.record_voice_over_rounded, 'Consult', () => Navigator.of(context)
-          .push(MaterialPageRoute(builder: (_) => ConsultNoteScreen(patient: c)))),
-      const SizedBox(width: 6),
-      act(Icons.medication_rounded, 'Rx', () => Navigator.of(context)
-          .push(MaterialPageRoute(builder: (_) => PrescriptionScreen(patient: c)))),
-      const SizedBox(width: 6),
-      act(Icons.event_available_rounded, 'Book', () => bookAppointment(context, patient: c)),
-      const SizedBox(width: 6),
-      act(Icons.event_repeat_rounded, 'Follow-up',
-          () => scheduleFollowUp(context, patient: c)),
-      const SizedBox(width: 6),
-      act(Icons.currency_rupee_rounded, 'Payment', () => recordPayment(context, patient: c)),
+      for (var i = 0; i < acts.length; i++) ...[
+        if (i > 0) const SizedBox(width: 6),
+        acts[i],
+      ],
     ]);
   }
 

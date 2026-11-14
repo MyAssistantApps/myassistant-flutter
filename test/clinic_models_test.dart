@@ -99,4 +99,49 @@ void main() {
     expect(RxItem(name: 'Pantoprazole', dose: '40 mg', frequency: 'OD').line,
         'Pantoprazole 40 mg OD');
   });
+
+  group('advocates & business', () {
+    test('Today carries hearings, leads and unpaid invoices', () {
+      final t = ClinicToday.fromJson({
+        'patients': 4,
+        'followUps': {'overdue': [], 'today': [], 'upcoming': []},
+        'hearingsToday': [
+          {'id': 1, 'caseId': 7, 'caseTitle': 'Shetty vs Kumar', 'court': 'City Civil Court', 'at': 1000, 'status': 'upcoming'}
+        ],
+        'hearingsWeek': [],
+        'leadsDue': [
+          {'id': 3, 'name': 'Priya', 'company': 'Nair Exports', 'value': 1500000, 'stage': 'proposal'}
+        ],
+        'openLeads': 5,
+        'pipelineValue': 4200000,
+        'unpaidInvoices': 2,
+        'unpaidTotal': 271400,
+      });
+      expect(t.hearingsToday.single.caseTitle, 'Shetty vs Kumar');
+      expect(t.hearingsToday.single.court, 'City Civil Court');
+      expect(t.leadsDue.single.company, 'Nair Exports');
+      expect(t.pipelineValue, 4200000);
+      expect(t.unpaidTotal, 271400);
+    });
+    test('an older server without these fields still parses', () {
+      final t = ClinicToday.fromJson({'patients': 0, 'followUps': null});
+      expect(t.hearingsToday, isEmpty);
+      expect(t.leadsDue, isEmpty);
+      expect(t.unpaidInvoices, 0);
+    });
+    test('invoice and lead shapes', () {
+      final i = Invoice.fromJson({'id': 1, 'kind': 'quote', 'number': 'QT-0001', 'total': 500000, 'status': 'sent'});
+      expect(i.isQuote, isTrue);
+      expect(i.isPaid, isFalse);
+      final l = Lead.fromJson({'id': 2, 'name': 'Ravi', 'stage': 'won', 'clientId': 9});
+      expect(l.stage, 'won');
+      expect(l.clientId, 9);
+      expect(InvoiceLine(description: 'x', qty: 3, rate: 2500).amount, 7500);
+    });
+    test('a case without a next hearing is fine', () {
+      final c = LegalCase.fromJson({'id': 1, 'title': 'A vs B', 'nextHearingAt': null});
+      expect(c.nextHearingAt, isNull);
+      expect(c.status, 'open');
+    });
+  });
 }
