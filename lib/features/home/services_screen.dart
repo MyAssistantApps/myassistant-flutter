@@ -7,6 +7,7 @@ import '../../design/motion.dart';
 import '../../design/neon_tokens.dart';
 import '../../design/neon_widgets.dart';
 import '../../services/api_service.dart';
+import 'partner_app.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  EVERYDAY SERVICES — Quick tools → Misc (owner, 2026-11-04: "apps we
@@ -22,8 +23,11 @@ class _Partner {
       : id = '${j['id']}',
         name = '${j['name']}',
         category = '${j['category']}',
+        pkg = j['pkg'] as String?,
         color = _hex('${j['color'] ?? ''}');
   final String id;
+  /// Its Android app: opened when installed, else its Play Store page.
+  final String? pkg;
   final String name;
   final String category;
   final Color color;
@@ -79,6 +83,8 @@ class _ServicesScreenState extends State<ServicesScreen> {
 
   Future<void> _open(_Partner p) async {
     HapticFeedback.selectionClick();
+    // Its own app when installed, else its Play Store page (2026-11-13).
+    if (await openPartnerApp(p.id, p.pkg)) return;
     final j = await ApiService.getJson('/go/${p.id}');
     final url = j?['url'] as String?;
     if (url == null) {

@@ -17,6 +17,7 @@ import '../services/voice_choice.dart';
 import '../services/api_service.dart';
 import '../services/assistant_identity.dart';
 import 'account_section.dart';
+import '../features/premium/premium_screen.dart';
 import 'app_lock_section.dart';
 import 'theme_colour_screen.dart';
 import 'voice_picker_screen.dart';
@@ -195,6 +196,26 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                           'Maya from now on".',
                     ),
                   ),
+                ),
+                const SizedBox(height: 24),
+
+                // PREMIUM (2026-11-12): plans, the free trial and credits.
+                GroupedCard(
+                  dividerInset: 60,
+                  children: [
+                    AppleRow(
+                      leading: IconTile(
+                          Icons.workspace_premium_rounded, AppleColors.purple),
+                      title: 'MyAssistant Premium',
+                      subtitle: 'Try Pro free for 14 days',
+                      trailing: Icon(Icons.chevron_right_rounded,
+                          color: Neon.textDim, size: 20),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const PremiumScreen()),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 24),
 
