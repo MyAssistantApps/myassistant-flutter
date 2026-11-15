@@ -108,7 +108,10 @@ class AuthService extends ChangeNotifier {
   /// install is on this build.
   static const _googleWebClientId = String.fromEnvironment(
   'GOOGLE_WEB_CLIENT_ID',
-  defaultValue: '745518568956-211gq0mf70kv5lq58nnv9k9gmfe9i3i1.apps.googleusercontent.com',
+  // THE INVESTOR DEMO (2026-11-15): Google ties this package's Android
+  // sign-in to Firebase project hari-62ec0, so it asks for that project's
+  // web client; the server accepts it (src/routes/auth.js).
+  defaultValue: '134941649419-9u0hmtpljbgm9m9kihar08g2ms953v8r.apps.googleusercontent.com',
   );
   final _google = GoogleSignIn(
     serverClientId: _googleWebClientId.isEmpty ? null : _googleWebClientId,
