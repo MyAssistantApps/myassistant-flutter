@@ -523,19 +523,38 @@ class _HomeFeedViewState extends State<HomeFeedView> {
           onTap: () => _do.open(context, const DocumentsScreen()),
           semanticLabel: 'My Documents',
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
             decoration: Neon.glassBox(Neon.rLg),
             child: ExcludeSemantics(
               child: Row(
                 children: [
-                  Icon(Icons.description_rounded,
-                      color: Neon.violet, size: 22),
-                  const SizedBox(width: 12),
+                  // A lit tile (2026-11-15), like the app's other entries.
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      gradient: Neon.tile(Neon.violet),
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: Neon.halo(Neon.violet),
+                    ),
+                    child: const Icon(Icons.folder_copy_rounded,
+                        color: Colors.white, size: 23),
+                  ),
+                  const SizedBox(width: 14),
                   Expanded(
-                    child: Text('My Documents',
-                        style: NeonType.manrope(
-                                NeonType.body, FontWeight.w700)
-                            .copyWith(color: Neon.textHi)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('My Documents',
+                            style: NeonType.manrope(16, FontWeight.w800)
+                                .copyWith(color: Neon.textHi)),
+                        const SizedBox(height: 2),
+                        Text('IDs, bills, and reports — ask about any of them',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: Neon.textLo, fontSize: 12.5)),
+                      ],
+                    ),
                   ),
                   Icon(Icons.chevron_right_rounded,
                       color: Neon.textDim, size: 22),
