@@ -171,6 +171,7 @@ flutter:
     - assets/sounds/
     # Doctor's, Advocate's and Business banners (Pexels licence, CREDITS.md).
     - assets/pro/
+    - assets/zodiac/
     - assets/tryon/
     - assets/quick/
     - assets/flights/
