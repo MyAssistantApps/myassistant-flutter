@@ -57,7 +57,7 @@ class _ProfessionScreenState extends State<ProfessionScreen> {
     if (!ok) {
       setState(() {
         _busy = false;
-        _error = "Couldn't save. Check your connection and try again.";
+        _error = "Unable to save. Please check your connection and try again.";
       });
       return;
     }
@@ -67,8 +67,8 @@ class _ProfessionScreenState extends State<ProfessionScreen> {
     if (Persona.value != c) {
       setState(() {
         _busy = false;
-        _error = "This server doesn't support professions yet — it needs "
-            'the latest backend update. Your choice was not saved.';
+        _error = "This server does not yet support professions; it requires "
+            'the latest backend update. Your selection was not saved.';
       });
       AppFeedback.toast(_error!);
       return;
@@ -96,7 +96,7 @@ class _ProfessionScreenState extends State<ProfessionScreen> {
                     children: [
                       if (!widget.editing) ...[
                         Text(
-                          'What do you do?',
+                          'Select Your Profession',
                           style: GoogleFonts.spaceGrotesk(
                             fontSize: 26,
                             fontWeight: FontWeight.w700,
@@ -106,8 +106,8 @@ class _ProfessionScreenState extends State<ProfessionScreen> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Your assistant shapes itself around your work — '
-                          'the screens, the shortcuts and how it handles your '
+                          'Your assistant adapts to your profession: '
+                          'the screens, the shortcuts and the handling of your '
                           'calls.',
                           style: TextStyle(
                               color: Neon.textLo, fontSize: 14.5, height: 1.45),
@@ -165,11 +165,11 @@ class _ProfessionScreenState extends State<ProfessionScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Your specialty',
+          Text('Your Specialty',
               style: TextStyle(
                   color: Neon.textHi, fontSize: 15, fontWeight: FontWeight.w600)),
           const SizedBox(height: 4),
-          Text('Optional — helps your assistant talk to your patients.',
+          Text('Optional. Helps your assistant communicate with your patients.',
               style: TextStyle(color: Neon.textDim, fontSize: 12.5)),
           const SizedBox(height: 10),
           Wrap(
@@ -199,7 +199,7 @@ class _ProfessionScreenState extends State<ProfessionScreen> {
             textCapitalization: TextCapitalization.words,
             maxLength: 80,
             decoration: const InputDecoration(
-              labelText: 'Clinic or hospital name (optional)',
+              labelText: 'Clinic or Hospital Name (Optional)',
               counterText: '',
               prefixIcon: Icon(Icons.local_hospital_outlined),
             ),

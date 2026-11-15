@@ -51,7 +51,7 @@ class PriceStore {
 
 /// What can be compared, each with its own stores and its own form.
 enum PriceCategory {
-  shopping('Shopping', 'Amazon, Flipkart, Croma', Icons.shopping_bag_rounded, 0, 'Search a product or paste a link',
+  shopping('Shopping', 'Amazon, Flipkart, Croma', Icons.shopping_bag_rounded, 0, 'Search for a product or paste a link',
       'e.g. iPhone 16 128GB, boAt Airdopes 141'),
   flights('Flights', 'Airlines & booking sites', Icons.flight_takeoff_rounded, -58, 'From → To, and when',
       'e.g. Bengaluru to Delhi, 20 Nov'),
@@ -59,7 +59,7 @@ enum PriceCategory {
       'e.g. Goa, 2 nights from 12 Dec'),
   cabs(
       'Cabs', 'Uber, Ola, Rapido', Icons.local_taxi_rounded, -86, 'From → To', 'e.g. Indiranagar to Bengaluru airport'),
-  grocery('Grocery', 'Blinkit, Zepto, Instamart', Icons.local_grocery_store_rounded, 120, 'What do you need?',
+  grocery('Grocery', 'Blinkit, Zepto, Instamart', Icons.local_grocery_store_rounded, 120, 'Enter the item required',
       'e.g. Amul butter 500g, Aashirvaad atta 5kg');
 
   const PriceCategory(this.label, this.line, this.icon, this.hue, this.ask, this.example);

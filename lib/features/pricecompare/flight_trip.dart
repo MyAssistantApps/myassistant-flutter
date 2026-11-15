@@ -203,23 +203,23 @@ class FlightTrip {
   String? problem() {
     for (final (i, l) in legs.indexed) {
       final which = legs.length > 1 ? ' for flight ${i + 1}' : '';
-      if (l.from == null) return 'Choose where you fly from$which';
-      if (l.to == null) return 'Choose where you fly to$which';
-      if (l.from!.code == l.to!.code) return 'From and To must be different$which';
-      if (l.date == null) return 'Choose the departure date$which';
+      if (l.from == null) return 'Please select the departure airport$which';
+      if (l.to == null) return 'Please select the arrival airport$which';
+      if (l.from!.code == l.to!.code) return 'The departure and arrival airports must differ$which';
+      if (l.date == null) return 'Please select the departure date$which';
       if (i > 0 && legs[i - 1].date != null && l.date!.isBefore(legs[i - 1].date!)) {
-        return 'Flight ${i + 1} can\'t leave before flight $i';
+        return 'Flight ${i + 1} cannot depart before flight $i';
       }
     }
     if (type == TripType.roundTrip) {
-      if (returnDate == null) return 'Choose the return date';
+      if (returnDate == null) return 'Please select the return date';
       if (legs.first.date != null && returnDate!.isBefore(legs.first.date!)) {
-        return 'The return can\'t be before the departure';
+        return 'The return date cannot precede the departure date';
       }
     }
-    if (adults < 1) return 'At least one adult must fly';
-    if (infants > adults) return 'Each infant needs an adult';
-    if (travellers > maxTravellers) return 'Up to $maxTravellers travellers per booking';
+    if (adults < 1) return 'At least one adult traveller is required';
+    if (infants > adults) return 'Each infant must be accompanied by an adult';
+    if (travellers > maxTravellers) return 'A maximum of $maxTravellers travellers is permitted per booking';
     return null;
   }
 

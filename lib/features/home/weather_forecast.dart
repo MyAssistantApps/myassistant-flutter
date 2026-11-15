@@ -263,7 +263,7 @@ class WeatherForecastService extends ChangeNotifier {
     final before = umbrellaSetFor;
     umbrellaSetFor = id;
     notifyListeners();
-    final ok = await createReminder('Take an umbrella — rain from $rainLabel', at);
+    final ok = await createReminder('Carry an umbrella: rain expected from $rainLabel', at);
     if (!ok) {
       umbrellaSetFor = before;
       notifyListeners();

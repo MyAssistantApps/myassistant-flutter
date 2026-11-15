@@ -72,7 +72,7 @@ class _HotelsScreenState extends State<HotelsScreen> {
   Future<void> _open(String partner) async {
     if (_city.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Where are you staying?')));
+          const SnackBar(content: Text('Please enter a city, area or hotel.')));
       return;
     }
     HapticFeedback.selectionClick();
@@ -124,7 +124,7 @@ class _HotelsScreenState extends State<HotelsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Find your stay',
+                          Text('Find Your Stay',
                               style: NeonType.manrope(28, FontWeight.w800)
                                   .copyWith(
                                       color: Colors.white,
@@ -228,7 +228,7 @@ class _HotelsScreenState extends State<HotelsScreen> {
             ),
             for (final (id, name, line) in const [
               ('booking', 'Booking.com', 'Hotels worldwide · opens your search'),
-              ('agoda', 'Agoda', 'Great deals in Asia · opens your search'),
+              ('agoda', 'Agoda', 'Competitive rates in Asia · opens your search'),
               ('makemytrip', 'MakeMyTrip', 'Hotels across India'),
               ('goibibo', 'Goibibo', 'Hotels and homestays in India'),
             ])

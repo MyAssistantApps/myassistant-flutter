@@ -130,8 +130,8 @@ class _ChatNewScreenState extends State<ChatNewScreen> with WidgetsBindingObserv
             Expanded(
               child: Text(
                 _blocked
-                    ? 'Contacts are off for My Assistant. Turn them on in Settings to see who you can message.'
-                    : 'Allow contacts to see which of your contacts are on My Assistant.',
+                    ? 'Contacts access is disabled for MyAssistant. Please enable it in Settings to view the contacts you can message.'
+                    : 'Allow contacts access to view which of your contacts use MyAssistant.',
                 style: TextStyle(color: Neon.textHi, fontSize: NeonType.footnote, height: 1.35),
               ),
             ),
@@ -163,7 +163,7 @@ class _ChatNewScreenState extends State<ChatNewScreen> with WidgetsBindingObserv
         _error = null;
       });
     } catch (e) {
-      if (mounted) setState(() => _error = 'Could not load your contacts.');
+      if (mounted) setState(() => _error = 'Unable to load your contacts.');
     }
   }
 
@@ -175,7 +175,7 @@ class _ChatNewScreenState extends State<ChatNewScreen> with WidgetsBindingObserv
       await Share.share(text);
     } catch (_) {
       if (mounted) {
-        AppFeedback.show('Could not open the invite.', context: context);
+        AppFeedback.show('Unable to open the invitation.', context: context);
       }
     }
   }
@@ -196,7 +196,7 @@ class _ChatNewScreenState extends State<ChatNewScreen> with WidgetsBindingObserv
     setState(() => _creating = false);
     final id = ((r?['group'] as Map?)?['id'] as num?)?.toInt();
     if (id == null) {
-      AppFeedback.show('Could not create the group.', context: context);
+      AppFeedback.show('Unable to create the group. Please try again.', context: context);
       return;
     }
     Navigator.of(context).pushReplacement(MaterialPageRoute(
@@ -218,7 +218,7 @@ class _ChatNewScreenState extends State<ChatNewScreen> with WidgetsBindingObserv
     return NeonScaffold(
       appBar: AppBar(
         title: Text(
-          widget.pickForGroup ? 'Add people' : 'New chat',
+          widget.pickForGroup ? 'Add People' : 'New Chat',
           style: GoogleFonts.interTight(fontWeight: FontWeight.w700),
         ),
       ),
@@ -251,12 +251,12 @@ class _ChatNewScreenState extends State<ChatNewScreen> with WidgetsBindingObserv
     // Built as they scroll into view: an address book runs to hundreds.
     final rows = <Widget Function()>[
       if (onApp.isNotEmpty)
-        () => _header('On My Assistant', onApp.length),
+        () => _header('On MyAssistant', onApp.length),
       for (var i = 0; i < onApp.length; i++)
         () => _segment(_personTile(onApp[i]),
             first: i == 0, last: i == onApp.length - 1),
       if (!widget.pickForGroup && invite.isNotEmpty) ...[
-        () => _header('Invite to My Assistant', invite.length),
+        () => _header('Invite to MyAssistant', invite.length),
         for (var i = 0; i < invite.length; i++)
           () => _segment(_inviteTile(invite[i]),
               first: i == 0, last: i == invite.length - 1),
@@ -293,8 +293,8 @@ class _ChatNewScreenState extends State<ChatNewScreen> with WidgetsBindingObserv
                     )
                   : const NeonEmptyState(
                       icon: Icons.contacts_rounded,
-                      title: 'No contacts synced yet',
-                      body: 'Allow contacts access and they will appear '
+                      title: 'No contacts synchronised',
+                      body: 'Once contacts access is allowed, your contacts will appear '
                           'here.',
                     ))
               : ListView.builder(
@@ -399,7 +399,7 @@ class _NameDialogState extends State<_NameDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-        title: const Text('Name this group'),
+        title: const Text('Name This Group'),
         content: TextField(
           controller: _c,
           autofocus: true,

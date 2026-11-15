@@ -70,7 +70,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
     final cb = widget.onPurchase;
     if (cb == null) {
       AppFeedback.show(
-        "Payments open in the next update. Thanks for wanting in!",
+        "Payments will be available in the next update. Thank you for your interest.",
         context: context,
       );
       return;
@@ -155,7 +155,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
       ),
       const Spacer(),
       Tappable(
-        semanticLabel: 'See plans',
+        semanticLabel: 'View plans',
         onTap: _toPlans,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
@@ -293,7 +293,7 @@ class _Hero extends StatelessWidget {
                         height: 1.05)),
               ),
               const SizedBox(height: 10),
-              Text('Smarter. More helpful.\nAlways with you.',
+              Text('More capable. More helpful.\nAlways available.',
                   style: TextStyle(color: _P.textLo, fontSize: 16, height: 1.35)),
             ],
           ),
@@ -310,7 +310,7 @@ class _UnlockCard extends StatelessWidget {
 
   static const _items = [
     (Icons.mic_rounded, 'Live voice\nin 6 languages'),
-    (Icons.phone_in_talk_rounded, 'AI calls\nfor you'),
+    (Icons.phone_in_talk_rounded, 'AI calls on\nyour behalf'),
     (Icons.auto_awesome_rounded, 'Posters, photos\n& videos'),
     (Icons.work_rounded, 'Meetings\n& research'),
   ];
@@ -325,7 +325,7 @@ class _UnlockCard extends StatelessWidget {
           Row(children: [
             Icon(Icons.star_rounded, color: _P.gold, size: 22),
             const SizedBox(width: 8),
-            Text('Unlock powerful features',
+            Text('Unlock Advanced Features',
                 style: TextStyle(
                     color: _P.text, fontSize: 17, fontWeight: FontWeight.w700)),
           ]),
@@ -530,14 +530,14 @@ class _PlanCard extends StatelessWidget {
 
     return Tappable(
       scale: 0.985,
-      semanticLabel: '${plan.name}, ${rupees(price)} ${yearly ? 'a year' : 'a month'}',
+      semanticLabel: '${plan.name}, ${rupees(price)} ${yearly ? 'per year' : 'per month'}',
       onTap: onSelect,
       child: Stack(clipBehavior: Clip.none, alignment: Alignment.topCenter, children: [
         card,
         if (plan.badge != null)
           Positioned(top: -12, child: _Badge(text: plan.badge!, star: true))
         else if (plan.id == 'plus')
-          const Positioned(top: 6, child: _Badge(text: 'Try first')),
+          const Positioned(top: 6, child: _Badge(text: 'Entry Plan')),
       ]),
     );
   }
@@ -646,13 +646,13 @@ class _TrialNote extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Try Pro free for $freeTrialDays days',
+              Text('Try Pro Free for $freeTrialDays Days',
                   style: TextStyle(
                       color: _P.text, fontWeight: FontWeight.w700, fontSize: 15)),
               const SizedBox(height: 2),
               Text(
-                  'Every Pro feature and ${grouped(freeTrialCredits)} credits. '
-                  "We'll remind you 2 days before it ends.",
+                  'All Pro features and ${grouped(freeTrialCredits)} credits. '
+                  "A reminder will be sent 2 days before it ends.",
                   style: TextStyle(color: _P.textLo, fontSize: 12.5, height: 1.3)),
             ]),
           ),
@@ -681,11 +681,11 @@ class _Includes extends StatelessWidget {
           key: ValueKey(plan.id),
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("What's in ${plan.name}",
+            Text("Included in ${plan.name}",
                 style: TextStyle(
                     color: _P.text, fontSize: 17, fontWeight: FontWeight.w700)),
             const SizedBox(height: 2),
-            Text('${plan.tagline} · tap a plan above to compare',
+            Text('${plan.tagline} · select a plan above to compare',
                 style: TextStyle(color: _P.textDim, fontSize: 12.5)),
             const SizedBox(height: 12),
             for (final line in plan.includes)
@@ -728,12 +728,12 @@ class _CreditPacks extends StatelessWidget {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Padding(
         padding: const EdgeInsets.only(left: 4, bottom: 4),
-        child: Text('Need more credits?',
+        child: Text('Additional Credits',
             style: TextStyle(color: _P.text, fontSize: 17, fontWeight: FontWeight.w700)),
       ),
       Padding(
         padding: const EdgeInsets.only(left: 4, bottom: 12),
-        child: Text('For AI calls, images, edits and videos. Top-ups never expire.',
+        child: Text('For AI calls, images, edits and videos. Top-ups do not expire.',
             style: TextStyle(color: _P.textDim, fontSize: 12.5)),
       ),
       Row(children: [
@@ -819,7 +819,7 @@ class _SecureStrip extends StatelessWidget {
             Text('Your payment is 100% secure',
                 style: TextStyle(color: _P.text, fontSize: 13, fontWeight: FontWeight.w600)),
             const SizedBox(height: 2),
-            Text('Cancel any time',
+            Text('Cancel at any time',
                 style: TextStyle(color: _P.textDim, fontSize: 11.5)),
           ]),
         ),
@@ -842,7 +842,7 @@ class _Footer extends StatelessWidget {
       Row(mainAxisAlignment: MainAxisAlignment.center, children: [
         Icon(Icons.favorite_rounded, color: _P.violet, size: 16),
         const SizedBox(width: 8),
-        Text('Thank you for choosing MyAssistant!',
+        Text('Thank you for choosing MyAssistant.',
             style: TextStyle(color: _P.textLo, fontSize: 14)),
         const SizedBox(width: 8),
         Icon(Icons.favorite_rounded, color: _P.violet, size: 16),

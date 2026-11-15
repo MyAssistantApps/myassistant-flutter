@@ -175,12 +175,12 @@ class _AddressSheetViewState extends State<AddressSheetView> {
 
   Future<void> _maps() async {
     final ok = await _safeLaunch(AddressSheet.mapsUri(_c.address));
-    if (!ok) AppFeedback.show("Couldn't open Maps", tone: FeedbackTone.error);
+    if (!ok) AppFeedback.show("Unable to open Maps.", tone: FeedbackTone.error);
   }
 
   Future<void> _call() async {
     final ok = await _safeLaunch(AddressSheet.telUri(_c.phone!));
-    if (!ok) AppFeedback.show("Couldn't start the call", tone: FeedbackTone.error);
+    if (!ok) AppFeedback.show("Unable to start the call.", tone: FeedbackTone.error);
   }
 
   Future<bool> _safeLaunch(Uri uri) async {
@@ -194,7 +194,7 @@ class _AddressSheetViewState extends State<AddressSheetView> {
 
   Future<void> _share() async {
     try {
-      await AddressSheet.share('${_c.name} — ${_c.labelTitle} address:\n${_c.address}');
+      await AddressSheet.share('${_c.name}, ${_c.labelTitle} address:\n${_c.address}');
     } catch (err) {
       AppLog.add('address', 'share failed: $err');
     }
@@ -210,7 +210,7 @@ class _AddressSheetViewState extends State<AddressSheetView> {
     _reset = Timer(const Duration(seconds: 2), () {
       if (mounted) setState(() => _copied = false);
     });
-    AppFeedback.show('Address copied', context: context, tone: FeedbackTone.success);
+    AppFeedback.show('Address copied.', context: context, tone: FeedbackTone.success);
   }
 
   @override

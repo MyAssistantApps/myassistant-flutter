@@ -274,8 +274,8 @@ class _AvatarMessageDialogState extends State<_AvatarMessageDialog> {
                     const SizedBox(height: 14),
                     Text(
                         widget.kind == 'video'
-                            ? 'Getting the video…'
-                            : 'Getting the message…',
+                            ? 'Loading the video…'
+                            : 'Loading the message…',
                         style: TextStyle(
                             color: Neon.textDim,
                             fontSize: NeonType.footnote)),
@@ -302,7 +302,7 @@ class _AvatarMessageDialogState extends State<_AvatarMessageDialog> {
                           Container(
                             color: Colors.black38,
                             child: IconButton(
-                              tooltip: 'Play again',
+                              tooltip: 'Play Again',
                               iconSize: 56,
                               color: Colors.white,
                               icon: const Icon(Icons.replay_rounded),
@@ -352,9 +352,9 @@ class _AvatarMessageDialogState extends State<_AvatarMessageDialog> {
                     const SizedBox(height: 12),
                     Text(
                       note
-                          ? "The video didn't load. It's also saved in your "
+                          ? "Unable to load the video. It is also saved in your "
                               'documents.'
-                          : "The recording didn't load.",
+                          : "Unable to load the recording.",
                       textAlign: TextAlign.center,
                       style: TextStyle(
                           color: Neon.textDim,
@@ -365,14 +365,14 @@ class _AvatarMessageDialogState extends State<_AvatarMessageDialog> {
                     TextButton.icon(
                       onPressed: _tryAgain,
                       icon: const Icon(Icons.refresh_rounded, size: 18),
-                      label: const Text('Try again'),
+                      label: const Text('Retry'),
                     ),
                   ] else if (widget.kind == 'audio') ...[
                     const SizedBox(height: 12),
                     TextButton.icon(
                       onPressed: _replay,
                       icon: const Icon(Icons.replay_rounded, size: 18),
-                      label: const Text('Play again'),
+                      label: const Text('Play Again'),
                     ),
                   ],
                 ]),
@@ -390,7 +390,7 @@ class _AvatarMessageDialogState extends State<_AvatarMessageDialog> {
                   child: TextButton(
                     onPressed: () => Navigator.of(context).pop(true),
                     child: Text(
-                        'Show the other ${widget.total - widget.index} later'),
+                        'View Remaining ${widget.total - widget.index} Later'),
                   ),
                 ),
               ),

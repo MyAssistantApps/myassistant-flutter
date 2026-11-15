@@ -220,7 +220,7 @@ class _AssistantSetupScreenState extends State<AssistantSetupScreen> {
           // its own sentence saying what to change; only a real network
           // failure gets the generic line.
           _error = (r?['message'] as String?) ??
-              "Couldn't save the name. Check your connection and try again.";
+              "Unable to save the name. Please check your connection and try again.";
         });
       }
       return;
@@ -257,7 +257,7 @@ class _AssistantSetupScreenState extends State<AssistantSetupScreen> {
                   ),
                   const SizedBox(height: 22),
                   Text(
-                    'Name your assistant',
+                    'Name Your Assistant',
                     style: GoogleFonts.interTight(
                       fontSize: 26,
                       fontWeight: FontWeight.w700,
@@ -267,8 +267,8 @@ class _AssistantSetupScreenState extends State<AssistantSetupScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Pick any name you like — this is who you\'ll be '
-                    'talking to. You can rename it any time by simply '
+                    'Select any name you prefer. This is the assistant you will be '
+                    'speaking with. You may rename it at any time by '
                     'telling it so.',
                     style: TextStyle(
                         color: Neon.textLo, fontSize: 15, height: 1.45),
@@ -282,7 +282,7 @@ class _AssistantSetupScreenState extends State<AssistantSetupScreen> {
                     onChanged: (_) => setState(() {}),
                     onSubmitted: (_) => _save(),
                     decoration: const InputDecoration(
-                      labelText: 'Assistant name',
+                      labelText: 'Assistant Name',
                       hintText: 'e.g. Maya',
                       counterText: '',
                       prefixIcon: Icon(Icons.badge_outlined),
@@ -307,7 +307,7 @@ class _AssistantSetupScreenState extends State<AssistantSetupScreen> {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'Speak to me in',
+                    'Assistant Language',
                     style: TextStyle(
                         color: Neon.textHi,
                         fontSize: 15,
@@ -315,8 +315,8 @@ class _AssistantSetupScreenState extends State<AssistantSetupScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Your assistant greets and talks in this language. '
-                    'Change it any time by just asking.',
+                    'Your assistant greets and speaks in this language. '
+                    'You may change it at any time by asking.',
                     style: TextStyle(
                         color: Neon.textLo, fontSize: NeonType.footnote),
                   ),
@@ -362,7 +362,7 @@ class _AssistantSetupScreenState extends State<AssistantSetupScreen> {
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
-                                '“Hi, I\'m $n. How can I help you today?”',
+                                '“Hello, I am $n. How may I assist you today?”',
                                 style: TextStyle(
                                     color: Neon.textLo,
                                     fontSize: 14,
@@ -392,7 +392,7 @@ class _AssistantSetupScreenState extends State<AssistantSetupScreen> {
                   // everywhere and reads broken. Naming is mandatory —
                   // renaming later by voice stays free.
                   Text(
-                    'Required — you can rename it any time later.',
+                    'Required. You may rename it at any time.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                         color: Neon.textLo, fontSize: NeonType.caption),

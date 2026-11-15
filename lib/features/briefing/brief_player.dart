@@ -202,8 +202,8 @@ class BriefPlayer extends ChangeNotifier {
 
   /// What the strip says now.
   String get caption => switch (state) {
-        BriefPlayState.done => script?.offer?.say ?? 'That was your day.',
-        BriefPlayState.failed => error ?? "Couldn't play your brief.",
+        BriefPlayState.done => script?.offer?.say ?? 'Your brief is complete.',
+        BriefPlayState.failed => error ?? "Unable to play your brief.",
         _ => groups.isEmpty ? '' : groups[index.clamp(0, groups.length - 1)],
       };
 
@@ -297,7 +297,7 @@ class BriefPlayer extends ChangeNotifier {
     final s = given ?? _takeReady() ?? await _host.fetch();
     if (gen != _gen) return;
     if (s == null) {
-      error = "Couldn't get your day. Check your connection.";
+      error = "Unable to load your brief. Please check your internet connection.";
       _set(BriefPlayState.failed);
       return;
     }
@@ -306,7 +306,7 @@ class BriefPlayer extends ChangeNotifier {
     index = 0;
     _played = 0;
     if (groups.isEmpty) {
-      error = "There's nothing to read yet.";
+      error = "No items are available to read at present.";
       _set(BriefPlayState.failed);
       return;
     }
@@ -382,7 +382,7 @@ class BriefPlayer extends ChangeNotifier {
     if (gen != _gen) return;
     _watch(false);
     if (_played == 0) {
-      error = "Couldn't play your brief.";
+      error = "Unable to play your brief.";
       _set(BriefPlayState.failed);
       return;
     }

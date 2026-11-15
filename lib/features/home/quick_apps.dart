@@ -149,13 +149,13 @@ Future<void> _notInstalled(BuildContext context, QuickApp a, Widget icon) {
           children: [
             icon,
             const SizedBox(height: 16),
-            Text("You don't have ${a.name}",
+            Text("${a.name} Is Not Installed",
                 textAlign: TextAlign.center,
                 style: NeonType.manrope(20, FontWeight.w800)
                     .copyWith(color: Neon.textHi)),
             const SizedBox(height: 8),
             Text(
-                "${a.name} isn't installed on this phone. Get it from the "
+                "${a.name} is not installed on this phone. Please install it from the "
                 "Play Store, then tap it here to open it.",
                 textAlign: TextAlign.center,
                 style:
@@ -170,7 +170,7 @@ Future<void> _notInstalled(BuildContext context, QuickApp a, Widget icon) {
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
                 icon: const Icon(Icons.download_rounded),
-                label: Text('Get ${a.name}',
+                label: Text('Install ${a.name}',
                     style: NeonType.manrope(15, FontWeight.w800)),
                 onPressed: () {
                   Navigator.of(sheet).pop();
@@ -180,7 +180,7 @@ Future<void> _notInstalled(BuildContext context, QuickApp a, Widget icon) {
             ),
             TextButton(
               onPressed: () => Navigator.of(sheet).pop(),
-              child: Text('Not now', style: TextStyle(color: Neon.textLo)),
+              child: Text('Not Now', style: TextStyle(color: Neon.textLo)),
             ),
           ],
         ),
@@ -201,7 +201,7 @@ class QuickApps extends StatelessWidget {
           header: true,
           child: Padding(
             padding: const EdgeInsets.only(left: Neon.s1, bottom: 10),
-            child: Text('Quick apps',
+            child: Text('Quick Apps',
                 style: NeonType.manrope(21, FontWeight.w800)
                     .copyWith(color: Neon.textHi, letterSpacing: -0.6)),
           ),

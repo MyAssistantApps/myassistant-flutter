@@ -96,10 +96,10 @@ void main() {
       home: Scaffold(body: ListView(children: [PriceCompareSection(onOpen: (_) {})])),
     ));
     await t.pump();
-    expect(find.text('Price compare'), findsOneWidget);
-    expect(find.text('Same product.\nLower price.'), findsOneWidget);
+    expect(find.text('Price Compare'), findsOneWidget);
+    expect(find.text('Same Product.\nLower Price.'), findsOneWidget);
     expect(find.text('Search or paste a link'), findsOneWidget);
-    expect(find.text('Product compare'), findsOneWidget);
+    expect(find.text('Product Compare'), findsOneWidget);
     // Owner, 2026-11-14: flights, hotels, rides and grocery are gone.
     for (final title in ['Flights', 'Hotels', 'Rides', 'Grocery']) {
       expect(find.text(title), findsNothing, reason: title);
@@ -132,12 +132,12 @@ void main() {
     await t.pump(const Duration(milliseconds: 600));
     expect(find.text('BEST PRICE'), findsOneWidget);
     expect(find.text('BUY NOW'), findsOneWidget);
-    expect(find.textContaining('You save'), findsOneWidget);
-    await t.scrollUntilVisible(find.text('Price at each store'), 300);
+    expect(find.textContaining('Saving of'), findsOneWidget);
+    await t.scrollUntilVisible(find.text('Price at Each Store'), 300);
     expect(find.text('CHEAPEST'), findsOneWidget);
     expect(find.text('+₹2,000 more'), findsOneWidget);
     await t.scrollUntilVisible(find.text('NOW'), 300);
-    expect(find.textContaining('below its usual price'), findsOneWidget);
+    expect(find.textContaining('below the usual price'), findsOneWidget);
     expect(t.takeException(), isNull);
   });
 
@@ -188,7 +188,7 @@ void main() {
       expect(find.text('BEST DEAL · PER NIGHT'), findsOneWidget);
       await see(t, find.text('avg / night'));
       await see(t, find.text('Excellent'));
-      await see(t, find.text('Free cancellation'));
+      await see(t, find.text('Free Cancellation'));
       await see(t, find.text('₹8,400 for the stay'));
     });
 
@@ -201,7 +201,7 @@ void main() {
       expect(find.text('PICKUP'), findsOneWidget);
       expect(find.text('Heavy traffic'), findsOneWidget);
       await see(t, find.text('FASTEST PICKUP'));
-      await see(t, find.text('MOST ROOM'));
+      await see(t, find.text('MOST SPACIOUS'));
       await see(t, find.text('SURGE'));
     });
 
@@ -210,9 +210,9 @@ void main() {
         "offers": [{"store": "Blinkit", "price": 285, "info": {"pack": "500 g", "unitPrice": 570, "unit": "kg", "deliveryMin": 9, "deliveryFee": 0}},
                    {"store": "Zepto", "price": 279, "info": {"pack": "500 g", "unitPrice": 558, "unit": "kg", "deliveryMin": 12, "deliveryFee": 25}}],
         "facts": {"tip": "The 2 x 500 g combo is ₹20 cheaper on Blinkit."}}''');
-      await see(t, find.text('Delivery race'));
+      await see(t, find.text('Delivery Times'));
       await see(t, find.text('⚡ 9 min'));
-      await see(t, find.text('CHEAPEST TOTAL'));
+      await see(t, find.text('LOWEST TOTAL'));
       await see(t, find.text('BEST PER KG'));
     });
   });

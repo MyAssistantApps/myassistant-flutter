@@ -56,7 +56,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
       if (mounted) setState(() => _clients = rows);
     } catch (_) {
       if (mounted) {
-        setState(() => _error = "Couldn't load your clients");
+        setState(() => _error = "Unable to load your clients.");
       }
     }
   }
@@ -89,9 +89,9 @@ class _ClientsScreenState extends State<ClientsScreen> {
   Widget build(BuildContext context) {
     // Under the night sky, with the theme's lit FAB (2026-09-30).
     return NeonScaffold(
-      appBar: appleAppBar(context, Persona.isDoctor ? 'Patients' : 'Clients & patients', actions: [
+      appBar: appleAppBar(context, Persona.isDoctor ? 'Patients' : 'Clients & Patients', actions: [
         IconButton(
-          tooltip: 'Scan a business card',
+          tooltip: 'Scan a Business Card',
           icon: const Icon(Icons.contact_mail_rounded),
           onPressed: () async {
             await BusinessCardFlow.scan(context);
@@ -142,13 +142,13 @@ class _ClientsScreenState extends State<ClientsScreen> {
       return NeonEmptyState(
         icon: Icons.folder_shared_rounded,
         title: _query.isEmpty
-            ? (Persona.isDoctor ? 'No patients yet' : 'No clients yet')
-            : 'No matches',
+            ? (Persona.isDoctor ? 'No patients recorded' : 'No clients recorded')
+            : 'No matches found',
         body: _query.isEmpty
             ? 'Add a patient or client to keep their documents and notes '
                 'in one place, separate from your own documents.'
-            : 'Nobody matches "$_query".',
-        actionLabel: _query.isEmpty ? 'New case file' : null,
+            : 'No records match "$_query".',
+        actionLabel: _query.isEmpty ? 'New Case File' : null,
         actionIcon: Icons.person_add_alt_1_rounded,
         onAction: _query.isEmpty ? _addClient : null,
       );
@@ -272,7 +272,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
         _error = null;
       });
     } catch (_) {
-      if (mounted) setState(() => _error = "Couldn't load this case file");
+      if (mounted) setState(() => _error = "Unable to load this case file.");
     }
   }
 
@@ -286,7 +286,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
       _noteCtl.clear();
       setState(() => _notes = [note, ..._notes]);
     } catch (_) {
-      _toast("Couldn't save the note. Check your connection.");
+      _toast("Unable to save the note. Please check your connection.");
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -304,19 +304,19 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
             children: [
               AppleRow(
                 leading: IconTile(Icons.photo_camera_rounded, AppleColors.blue),
-                title: 'Take a photo',
+                title: 'Take a Photo',
                 onTap: () => Navigator.pop(ctx, 'camera'),
               ),
               AppleRow(
                 leading:
                     IconTile(Icons.photo_library_rounded, AppleColors.blue),
-                title: 'Pick from gallery',
+                title: 'Select from Gallery',
                 onTap: () => Navigator.pop(ctx, 'gallery'),
               ),
               AppleRow(
                 leading:
                     IconTile(Icons.picture_as_pdf_rounded, AppleColors.red),
-                title: 'Pick a PDF',
+                title: 'Select a PDF',
                 onTap: () => Navigator.pop(ctx, 'pdf'),
               ),
             ],
@@ -358,7 +358,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
         filename = 'case_${DateTime.now().millisecondsSinceEpoch}.jpg';
       }
     } catch (_) {
-      _toast("Couldn't open that. Check the app's permissions.");
+      _toast("Unable to open the file. Please check the app's permissions.");
       return;
     }
 
@@ -382,14 +382,14 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
         _toast('Saved to ${_client?.name ?? "this"}\'s file.');
       } else {
         await _load();
-        _toast("The document was saved but not to this file. Please check My documents.");
+        _toast("The document was saved but not to this file. Please check My Documents.");
       }
     } on DocumentUploadException catch (e) {
       _toast(e.message.isNotEmpty
-          ? "Couldn't upload that: ${e.message}"
-          : "Couldn't upload that. Nothing was saved.");
+          ? "Unable to upload the document: ${e.message}"
+          : "Unable to upload the document. Nothing was saved.");
     } catch (_) {
-      _toast("Couldn't upload that — check your connection and try again.");
+      _toast("Unable to upload the document. Please check your connection and try again.");
     } finally {
       if (mounted) {
         setState(() {
@@ -413,7 +413,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
           _documents.where((x) => x.id != d.id).toList(growable: false));
       return true;
     } catch (_) {
-      _toast("Couldn't delete. Check your connection and try again.");
+      _toast("Unable to delete. Please check your connection and try again.");
       return false;
     }
   }
@@ -425,7 +425,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
     try {
       await shareDocumentFile(d);
     } catch (_) {
-      _toast("Couldn't prepare that to share.");
+      _toast("Unable to prepare the document for sharing.");
     }
   }
 
@@ -449,11 +449,11 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
     final ok = await showAppDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text('Delete ${_client?.name ?? 'this case file'}?',
+        title: Text('Delete ${_client?.name ?? 'this case file'}',
             style: TextStyle(color: Neon.textHi)),
         content: Text(
           'This permanently removes the case file, its notes$docsLine. '
-          'This cannot be undone.',
+          'This action cannot be undone.',
           style: TextStyle(color: Neon.textLo, height: 1.4),
         ),
         actions: [
@@ -472,7 +472,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
       await ApiService.deleteClient(widget.clientId);
       if (mounted) Navigator.of(context).pop();
     } catch (_) {
-      _toast("Couldn't delete. Please try again.");
+      _toast("Unable to delete. Please try again.");
     }
   }
 
@@ -493,7 +493,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
     return NeonScaffold(
       appBar: appleAppBar(
         context,
-        c?.name ?? 'Case file',
+        c?.name ?? 'Case File',
         actions: [
           IconButton(
               tooltip: 'Edit',
@@ -568,9 +568,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                     if (_documents.isEmpty && !_uploading)
                       _emptyRow(
                         Icons.description_outlined,
-                        'No documents yet',
+                        'No documents attached',
                         'Attach reports, prescriptions or scans. '
-                            'They stay in ${c.name}\'s file only.',
+                            'They remain in ${c.name}\'s file only.',
                         tone: NeonTone.info,
                         actionLabel: 'Attach',
                         onAction: _busy ? null : _attachDocument,
@@ -587,14 +587,14 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                           ),
                         ),
                     const SizedBox(height: 24),
-                    const GroupLabel('Case notes'),
+                    const GroupLabel('Case Notes'),
                     _noteComposer(),
                     if (_notes.isEmpty)
                       _emptyRow(
                         Icons.sticky_note_2_outlined,
-                        'No notes yet',
+                        'No notes recorded',
                         tone: NeonTone.tip,
-                        'Dated notes you add here are read back '
+                        'Dated notes added here are read back '
                             'when you ask about ${c.name}.',
                       )
                     else
@@ -694,11 +694,11 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
     // Each profession's visit toolbar (2026-11-14).
     final acts = switch (Persona.value) {
       'advocate' => [
-          act(Icons.gavel_rounded, 'New case', () => newCaseSheet(context, client: c)),
+          act(Icons.gavel_rounded, 'New Case', () => newCaseSheet(context, client: c)),
           act(Icons.edit_note_rounded, 'Draft',
               () => push(LegalDraftScreen(clientId: c.id, clientName: c.name))),
           act(Icons.event_available_rounded, 'Book', () => bookAppointment(context, patient: c)),
-          act(Icons.receipt_long_rounded, 'Bill fee',
+          act(Icons.receipt_long_rounded, 'Bill Fee',
               () => push(InvoiceEditorScreen(clientId: c.id, clientName: c.name, presetLine: 'Professional fee'))),
           act(Icons.currency_rupee_rounded, 'Payment', () => recordPayment(context, patient: c)),
         ],
@@ -743,7 +743,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
   }
 
   String _balanceLine() {
-    if (_balance > 0) return 'Owes ₹${_fmtAmt(_balance)}';
+    if (_balance > 0) return 'Outstanding ₹${_fmtAmt(_balance)}';
     if (_balance < 0) return 'In credit ₹${_fmtAmt(-_balance)}';
     return '';
   }
@@ -796,7 +796,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
     ];
     if (rows.length == 1) {
       rows.add(AppleRow(
-        title: 'No details yet — tap the pencil to add.',
+        title: 'No details recorded. Tap the pencil to add them.',
         titleColor: Neon.textDim,
         titleMaxLines: 2,
       ));
@@ -831,7 +831,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
           ),
           const SizedBox(width: 8),
           IconButton(
-            tooltip: 'Add note',
+            tooltip: 'Add Note',
             onPressed: _busy ? null : _addNote,
             icon: Icon(Icons.send_rounded, color: Neon.violet),
           ),
@@ -855,7 +855,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
               // 48 dp to the finger and named (2026-09-30): it was a bare
               // 15 dp cross.
               IconButton(
-                tooltip: 'Delete note',
+                tooltip: 'Delete Note',
                 visualDensity: VisualDensity.compact,
                 onPressed: () async {
                   try {
@@ -864,7 +864,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                     setState(() =>
                         _notes = _notes.where((x) => x.id != n.id).toList());
                   } catch (_) {
-                    _toast("Couldn't delete the note.");
+                    _toast("Unable to delete the note.");
                   }
                 },
                 icon:
@@ -917,7 +917,7 @@ class _EditClientSheetState extends State<_EditClientSheet> {
   Future<void> _save() async {
     final name = _name.text.trim();
     if (name.isEmpty) {
-      setState(() => _error = 'A name is required.');
+      setState(() => _error = 'Please enter a name.');
       return;
     }
     setState(() {
@@ -948,7 +948,7 @@ class _EditClientSheetState extends State<_EditClientSheet> {
       if (mounted) {
         setState(() {
           _saving = false;
-          _error = "Couldn't save. Check your connection.";
+          _error = "Unable to save. Please check your connection.";
         });
       }
     }
@@ -979,14 +979,14 @@ class _EditClientSheetState extends State<_EditClientSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            widget.existing == null ? 'New case file' : 'Edit case file',
+            widget.existing == null ? 'New Case File' : 'Edit Case File',
             style: NeonType.cardTitle.copyWith(color: Neon.textHi),
           ),
           const SizedBox(height: 14),
           TextField(
               controller: _name,
               style: TextStyle(color: Neon.textHi),
-              decoration: _dec('Full name *')),
+              decoration: _dec('Full Name *')),
           const SizedBox(height: 10),
           Wrap(
             spacing: 8,
@@ -1016,7 +1016,7 @@ class _EditClientSheetState extends State<_EditClientSheet> {
               controller: _phone,
               keyboardType: TextInputType.phone,
               style: TextStyle(color: Neon.textHi),
-              decoration: _dec('Phone')),
+              decoration: _dec('Phone Number')),
           const SizedBox(height: 10),
           TextField(
               controller: _email,

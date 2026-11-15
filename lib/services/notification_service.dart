@@ -45,8 +45,8 @@ class ReminderNotifications {
   // reminders the user explicitly asked to be woken for.
   static const _alarmChannel = AndroidNotificationDetails(
     'hari_reminders_alarm',
-    'Wake-up reminders',
-    channelDescription: 'Reminders you asked to be woken for',
+    'Wake-Up Reminders',
+    channelDescription: 'Reminders for which you requested a wake-up alarm',
     importance: Importance.max,
     priority: Priority.high,
     category: AndroidNotificationCategory.alarm,
@@ -60,7 +60,7 @@ class ReminderNotifications {
   static const _softChannel = AndroidNotificationDetails(
     'hari_reminders_soft',
     'Reminders',
-    channelDescription: 'Everyday reminders you asked your assistant to set',
+    channelDescription: 'General reminders created by your assistant at your request',
     importance: Importance.defaultImportance,
     priority: Priority.defaultPriority,
     category: AndroidNotificationCategory.reminder,
@@ -72,8 +72,8 @@ class ReminderNotifications {
   // only its end rings.
   static const _habitChannel = AndroidNotificationDetails(
     'hari_habits',
-    'Habit reminders',
-    channelDescription: 'The daily nudge for a habit you track',
+    'Habit Reminders',
+    channelDescription: 'Daily reminders for the habits you track',
     importance: Importance.defaultImportance,
     priority: Priority.defaultPriority,
     category: AndroidNotificationCategory.reminder,
@@ -168,18 +168,18 @@ class ReminderNotifications {
       await android?.createNotificationChannel(const AndroidNotificationChannel(
         'hari_reminders_soft',
         'Reminders',
-        description: 'Everyday reminders you asked your assistant to set',
+        description: 'General reminders created by your assistant at your request',
         importance: Importance.defaultImportance,
       ));
       await android?.createNotificationChannel(const AndroidNotificationChannel(
         'hari_reminders_alarm',
-        'Wake-up reminders',
-        description: 'Reminders you asked to be woken for — these ring like an alarm',
+        'Wake-Up Reminders',
+        description: 'Reminders for which you requested a wake-up alarm. These sound as an alarm.',
         importance: Importance.max,
       ));
       await android?.createNotificationChannel(const AndroidNotificationChannel(
         'hari_default',
-        'Messages & alerts',
+        'Messages & Alerts',
         description: 'Messages from your circle, call prompts and updates',
         importance: Importance.high,
       ));
@@ -207,7 +207,7 @@ class ReminderNotifications {
         const NotificationDetails(
           android: AndroidNotificationDetails(
             'hari_default',
-            'Messages & alerts',
+            'Messages & Alerts',
             channelDescription:
                 'Messages from your circle, call prompts and updates',
             importance: Importance.high,
@@ -353,13 +353,13 @@ class ReminderNotifications {
     try {
       await _plugin.show(
         focusCountdownId,
-        rest ? 'Break' : (label.isEmpty ? 'Focusing' : 'Focusing on $label'),
+        rest ? 'Break' : (label.isEmpty ? 'Focus Session' : 'Focus Session: $label'),
         'Ends at ${_clock(endsAt)}',
         NotificationDetails(
           android: AndroidNotificationDetails(
             'hari_focus',
-            'Focus timer',
-            channelDescription: 'The countdown while a focus session runs',
+            'Focus Timer',
+            channelDescription: 'Countdown displayed during a focus session',
             importance: Importance.low,
             priority: Priority.low,
             ongoing: true,
@@ -378,18 +378,18 @@ class ReminderNotifications {
       );
       await _plugin.zonedSchedule(
         focusDoneId,
-        rest ? 'Break over' : 'Focus done — take 5?',
+        rest ? 'Break complete' : 'Focus session complete. A five-minute break is recommended.',
         rest
-            ? 'Ready for another focus?'
+            ? 'You may begin another focus session.'
             : label.isEmpty
-                ? 'Nice work. Stretch, breathe, then back to it.'
-                : 'Nice work on $label. Stretch, breathe, then back to it.',
+                ? 'Well done. Take a brief rest before resuming.'
+                : 'Well done on $label. Take a brief rest before resuming.',
         tz.TZDateTime.from(endsAt, tz.local),
         const NotificationDetails(
           android: AndroidNotificationDetails(
             'hari_focus_done',
-            'Focus finished',
-            channelDescription: 'When a focus session or a break ends',
+            'Focus Finished',
+            channelDescription: 'Alerts when a focus session or a break ends',
             importance: Importance.high,
             priority: Priority.high,
             category: AndroidNotificationCategory.reminder,
@@ -429,7 +429,7 @@ class ReminderNotifications {
           android: AndroidNotificationDetails(
             'hari_shopping',
             'Shopping',
-            channelDescription: 'The next thing on your list while you shop',
+            channelDescription: 'The next item on your list while you shop',
             importance: Importance.low,
             priority: Priority.low,
             ongoing: true,

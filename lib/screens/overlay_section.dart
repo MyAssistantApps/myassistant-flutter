@@ -76,7 +76,7 @@ class _OverlaySectionState extends State<OverlaySection> with WidgetsBindingObse
     final s = status ?? _s;
     if (on && !s.overlay) {
       _wanted = 'replies';
-      _say('Allow "Display over other apps" for MyAssistant, then come back.');
+      _say('Please allow "Display over other apps" for MyAssistant, then return to the app.');
       await OverlayBridge.openOverlaySettings();
       return;
     }
@@ -87,14 +87,14 @@ class _OverlaySectionState extends State<OverlaySection> with WidgetsBindingObse
       final pick = await showAppDialog<String>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Allow notification access'),
+          title: const Text('Allow Notification Access'),
           content: const Text(
-            'On the next screen, turn on Notification access for MyAssistant.\n\n'
-            'If Android says "Restricted setting": open App info, tap ⋮ at the top right, '
-            'choose "Allow restricted settings", then come back and turn this on again.',
+            'On the next screen, please enable Notification access for MyAssistant.\n\n'
+            'If Android displays "Restricted setting", open App info, tap ⋮ at the top right, '
+            'select "Allow restricted settings", then return and enable this option again.',
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, 'info'), child: const Text('Open App info')),
+            TextButton(onPressed: () => Navigator.pop(ctx, 'info'), child: const Text('Open App Info')),
             TextButton(onPressed: () => Navigator.pop(ctx, 'access'), child: const Text('Continue')),
           ],
         ),
@@ -117,7 +117,7 @@ class _OverlaySectionState extends State<OverlaySection> with WidgetsBindingObse
     final s = status ?? _s;
     if (on && !s.overlay) {
       _wanted = 'bubble';
-      _say('Allow "Display over other apps" for MyAssistant, then come back.');
+      _say('Please allow "Display over other apps" for MyAssistant, then return to the app.');
       await OverlayBridge.openOverlaySettings();
       return;
     }
@@ -136,23 +136,23 @@ class _OverlaySectionState extends State<OverlaySection> with WidgetsBindingObse
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const GroupLabel('Over other apps'),
+        const GroupLabel('Over Other Apps'),
         GroupedCard(
           dividerInset: 60,
           children: [
             AppleRow(
               leading: IconTile(Icons.notifications_active_rounded, AppleColors.orange),
-              title: 'Notification pop-ups',
+              title: 'Notification Pop-Ups',
               titleMaxLines: 2,
               subtitle: 'Reads new notifications: offers to reply to messages by voice, '
-                  'flags what matters and keeps lasting details in Memory. '
+                  'highlights important items and retains lasting details in Memory. '
                   'Codes and passwords never leave the phone.',
               trailing: Switch(value: repliesOn, onChanged: (v) => _setReplies(v)),
             ),
             AppleRow(
               leading: IconTile(Icons.mic_rounded, AppleColors.purple),
-              title: 'Floating mic',
-              subtitle: 'The orb over other apps — tap it to talk',
+              title: 'Floating Microphone',
+              subtitle: 'Displays the orb over other apps. Tap it to speak.',
               trailing: Switch(value: bubbleOn, onChanged: (v) => _setBubble(v)),
             ),
           ],

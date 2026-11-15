@@ -394,7 +394,7 @@ class _MonthCalendarState extends State<MonthCalendar> {
       ('Holiday', NeonTone.danger),
       ('Festival', NeonTone.discovery),
       ('Meeting', NeonTone.info),
-      ('To do', NeonTone.action),
+      ('To Do', NeonTone.action),
       ('Money', NeonTone.warning),
       ('World', NeonTone.tip),
     ];
@@ -452,7 +452,7 @@ class _MonthCalendarState extends State<MonthCalendar> {
       '$day ${_mo[_month - 1]}',
       if (isToday) 'today',
       if (holiday != null) holiday.title,
-      if (count > 0) '$count thing${count == 1 ? '' : 's'} on',
+      if (count > 0) '$count item${count == 1 ? '' : 's'} scheduled',
     ].join(', ');
 
     return Expanded(
@@ -562,7 +562,7 @@ class _MonthCalendarState extends State<MonthCalendar> {
       return [
         NeonEmptyState(
           icon: Icons.event_available_rounded,
-          title: 'Nothing on $label.',
+          title: 'No items scheduled on $label',
           tone: NeonTone.tip,
         ),
       ];
@@ -671,7 +671,7 @@ class _MonthCalendarState extends State<MonthCalendar> {
                 if (items.isEmpty)
                   const NeonEmptyState(
                     icon: Icons.event_available_rounded,
-                    title: 'Nothing on this day.',
+                    title: 'No items scheduled on this day',
                     tone: NeonTone.tip,
                   )
                 else
@@ -716,8 +716,8 @@ class _MonthCalendarState extends State<MonthCalendar> {
                                         if (!ctx.mounted) return;
                                         setSheet(() => problem = ok
                                             ? null
-                                            : "Couldn't delete that — check "
-                                                'your connection.');
+                                            : "Unable to delete the item. Please check "
+                                                'your internet connection.');
                                       },
                                     )
                                   else

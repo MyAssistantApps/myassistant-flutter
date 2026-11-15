@@ -83,7 +83,7 @@ class _RoleMicOrbState extends State<RoleMicOrb> {
   }
 
   String _label(OrbMood mood) {
-    if (!_talking) return 'Tap to talk';
+    if (!_talking) return 'Tap to speak';
     return switch (mood) {
       OrbMood.speaking => 'Speaking…',
       OrbMood.connecting => 'Connecting…',
@@ -102,8 +102,8 @@ class _RoleMicOrbState extends State<RoleMicOrb> {
     return Semantics(
       button: true,
       label: talking
-          ? 'Stop talking to ${widget.role.name}'
-          : 'Talk to ${widget.role.name}',
+          ? 'Stop speaking to ${widget.role.name}'
+          : 'Speak to ${widget.role.name}',
       excludeSemantics: true,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,

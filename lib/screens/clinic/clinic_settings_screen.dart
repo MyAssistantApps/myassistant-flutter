@@ -91,7 +91,7 @@ class _ClinicSettingsScreenState extends State<ClinicSettingsScreen> {
       AppFeedback.toast('Clinic settings saved.');
       Navigator.pop(context, true);
     } else {
-      AppFeedback.toast("Couldn't save. Check your connection.");
+      AppFeedback.toast("Unable to save. Please check your connection.");
     }
   }
 
@@ -129,7 +129,7 @@ class _ClinicSettingsScreenState extends State<ClinicSettingsScreen> {
       ]),
       body: _failed
           ? NeonErrorState(
-              message: "Couldn't load your clinic settings.",
+              message: "Unable to load your clinic settings.",
               onRetry: () {
                 setState(() => _failed = false);
                 _load();
@@ -142,17 +142,17 @@ class _ClinicSettingsScreenState extends State<ClinicSettingsScreen> {
                     GroupLabel(ProWords.current.workspace),
                     _field(_name, ProWords.current.placeName, Icons.business_rounded),
                     _field(_address, 'Address', Icons.place_outlined, lines: 2),
-                    _field(_phone, 'Clinic phone', Icons.phone_outlined,
+                    _field(_phone, 'Clinic Phone Number', Icons.phone_outlined,
                         type: TextInputType.phone),
                     if (ProWords.current.feeLabel != null)
                     _field(_fee, ProWords.current.feeLabel!, Icons.currency_rupee_rounded,
                         type: TextInputType.number),
                     const SizedBox(height: 18),
                     GroupLabel(Persona.isDoctor
-                        ? 'On your prescriptions'
+                        ? 'On Your Prescriptions'
                         : Persona.value == 'advocate'
-                            ? 'On your letterhead'
-                            : 'On your invoices'),
+                            ? 'On Your Letterhead'
+                            : 'On Your Invoices'),
                     _field(_qual, ProWords.current.qualification, Icons.school_outlined),
                     _field(_reg, ProWords.current.regNo, Icons.verified_outlined),
                     const SizedBox(height: 18),
@@ -161,7 +161,7 @@ class _ClinicSettingsScreenState extends State<ClinicSettingsScreen> {
                       for (final d in clinicDays) _dayRow(p, d),
                     ]),
                     const SizedBox(height: 14),
-                    Text('${ProWords.current.appointment[0].toUpperCase()}${ProWords.current.appointment.substring(1)} length',
+                    Text('${ProWords.current.appointment[0].toUpperCase()}${ProWords.current.appointment.substring(1)} Length',
                         style: TextStyle(
                             color: Neon.textHi,
                             fontSize: 15,
@@ -178,12 +178,12 @@ class _ClinicSettingsScreenState extends State<ClinicSettingsScreen> {
                         ),
                     ]),
                     const SizedBox(height: 22),
-                    const GroupLabel('Phone receptionist'),
+                    const GroupLabel('Phone Receptionist'),
                     GroupedCard(children: [
                       SwitchListTile.adaptive(
                         value: p.receptionistBooks,
                         onChanged: (v) => setState(() => p.receptionistBooks = v),
-                        title: Text('Book ${ProWords.current.appointments.toLowerCase()} on calls',
+                        title: Text('Book ${ProWords.current.appointments.toLowerCase()} on Calls',
                             style: TextStyle(color: Neon.textHi, fontSize: 15)),
                         subtitle: Text(
                             ProWords.current.receptionist,
@@ -258,7 +258,7 @@ class _ClinicSettingsScreenState extends State<ClinicSettingsScreen> {
                       child: Text(_fmt(sessions[i][1])),
                     ),
                     IconButton(
-                      tooltip: 'Remove session',
+                      tooltip: 'Remove Session',
                       icon: Icon(Icons.close_rounded, size: 18, color: Neon.textDim),
                       onPressed: () => setState(() => sessions.removeAt(i)),
                     ),
@@ -268,7 +268,7 @@ class _ClinicSettingsScreenState extends State<ClinicSettingsScreen> {
           ),
           if (sessions.length < 2)
             IconButton(
-              tooltip: 'Add session',
+              tooltip: 'Add Session',
               icon: Icon(Icons.add_circle_outline_rounded, color: Neon.violet),
               onPressed: () => setState(() {
                 p.hours[d] = [

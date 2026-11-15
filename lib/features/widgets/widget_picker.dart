@@ -64,8 +64,8 @@ class _WidgetPickerState extends State<_WidgetPicker> with WidgetsBindingObserve
     final ok = await svc.pin(kind);
     if (!ok && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Your launcher can\'t add it from here — long-press your home screen, tap Widgets, '
-              'and find MyAssistant.')));
+          content: Text('Your launcher does not support adding the widget from here. Please long-press your home screen, tap Widgets, '
+              'and select MyAssistant.')));
     }
     _refresh();
   }
@@ -73,10 +73,10 @@ class _WidgetPickerState extends State<_WidgetPicker> with WidgetsBindingObserve
   @override
   Widget build(BuildContext context) {
     final designs = [
-      ('talk', 'Ask bar', 'One tap and your assistant is listening.', const _TalkPreview()),
-      ('day', 'My day', 'Meetings, reminders, bills and what\'s next.', const _DayPreview()),
+      ('talk', 'Ask Bar', 'Activates your assistant with a single tap.', const _TalkPreview()),
+      ('day', 'My Day', 'Meetings, reminders, bills and upcoming items.', const _DayPreview()),
       ('shortcuts', 'Shortcuts', 'Talk, compare prices, flights, reminders.', const _ShortcutsPreview()),
-      ('orb', 'Orb', 'A small orb: tap it and your assistant is listening.', const _OrbPreview()),
+      ('orb', 'Orb', 'A compact orb that activates your assistant with a single tap.', const _OrbPreview()),
     ];
     return DraggableScrollableSheet(
       expand: false,
@@ -87,10 +87,10 @@ class _WidgetPickerState extends State<_WidgetPicker> with WidgetsBindingObserve
         controller: scroll,
         padding: EdgeInsets.fromLTRB(20, 0, 20, 16 + MediaQuery.paddingOf(context).bottom),
         children: [
-          Text('Add MyAssistant to your home screen',
+          Text('Add MyAssistant to Your Home Screen',
               style: NeonType.manrope(22, FontWeight.w800).copyWith(color: Neon.textHi, letterSpacing: -0.5)),
           const SizedBox(height: 6),
-          Text('Pick the widgets you like — your assistant, one tap away, without opening the app.',
+          Text('Select the widgets you prefer for single-tap access to your assistant without opening the app.',
               style: TextStyle(color: Neon.textLo, fontSize: 14, height: 1.35)),
           const SizedBox(height: 18),
           for (final (kind, title, line, preview) in designs) ...[
@@ -106,9 +106,9 @@ class _WidgetPickerState extends State<_WidgetPicker> with WidgetsBindingObserve
           const SizedBox(height: 4),
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text('Not now', style: TextStyle(color: Neon.textLo, fontSize: 15, fontWeight: FontWeight.w600)),
+            child: Text('Not Now', style: TextStyle(color: Neon.textLo, fontSize: 15, fontWeight: FontWeight.w600)),
           ),
-          Text('You can add them any time: long-press your home screen → Widgets → MyAssistant.',
+          Text('Widgets may be added at any time: long-press your home screen → Widgets → MyAssistant.',
               textAlign: TextAlign.center, style: TextStyle(color: Neon.textDim, fontSize: 12)),
         ],
       ),
@@ -231,7 +231,7 @@ class _TalkPreview extends StatelessWidget {
               children: [
                 const Text('Ask MyAssistant',
                     maxLines: 1, style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
-                Text('Tap and speak — I\'ll take care of it',
+                Text('Tap and speak to your assistant',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 12)),
@@ -332,7 +332,7 @@ class _ShortcutsPreview extends StatelessWidget {
         border: Border.all(color: const Color(0xFF3A2C63)),
       ),
       child: Row(children: [
-        sc(Icons.mic_rounded, 'Talk'),
+        sc(Icons.mic_rounded, 'Speak'),
         sc(Icons.local_offer_rounded, 'Compare'),
         sc(Icons.flight_rounded, 'Flights'),
         sc(Icons.notifications_rounded, 'Reminders'),
@@ -364,7 +364,7 @@ class _OrbPreview extends StatelessWidget {
             child: const Icon(Icons.mic_rounded, color: Colors.white, size: 24),
           ),
           const SizedBox(height: 6),
-          const Text('Talk', style: TextStyle(color: Color(0xFFCFC4E4), fontSize: 10.5)),
+          const Text('Speak', style: TextStyle(color: Color(0xFFCFC4E4), fontSize: 10.5)),
         ]),
       );
 }

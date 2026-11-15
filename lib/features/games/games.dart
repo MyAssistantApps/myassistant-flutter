@@ -86,7 +86,7 @@ class _Result extends StatelessWidget {
             FilledButton.icon(
               onPressed: onAgain,
               icon: const Icon(Icons.replay_rounded),
-              label: const Text('Play again'),
+              label: const Text('Play Again'),
             ),
           ],
         ),
@@ -181,7 +181,7 @@ class _MemoryPairsScreenState extends State<MemoryPairsScreen> {
             await GameBest.offer('pairs_moves', _moves, lowerWins: true);
         final best = await GameBest.get('pairs_moves');
         if (mounted) {
-          setState(() => _best = better ? 'A new best!' : 'Best: $best moves');
+          setState(() => _best = better ? 'New personal best' : 'Best: $best moves');
         }
       }
       if (mounted) setState(() {});
@@ -202,7 +202,7 @@ class _MemoryPairsScreenState extends State<MemoryPairsScreen> {
     final secs = _clock.elapsed.inSeconds;
     final colors = [Neon.cyan, Neon.violet, Neon.pink];
     return NeonScaffold(
-      appBar: appleAppBar(context, 'Memory pairs'),
+      appBar: appleAppBar(context, 'Memory Pairs'),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -222,7 +222,7 @@ class _MemoryPairsScreenState extends State<MemoryPairsScreen> {
                 child: Center(
                   child: won
                       ? _Result(
-                          title: 'All pairs found',
+                          title: 'All Pairs Found',
                           line: '$_moves moves in ${secs}s.',
                           best: _best,
                           onAgain: () => setState(_deal),
@@ -350,7 +350,7 @@ class _QuickMathsScreenState extends State<QuickMathsScreen> {
         final best = await GameBest.get('maths_score');
         if (mounted) {
           setState(() => _best =
-              better && _score > 0 ? 'A new best!' : 'Best: ${best ?? 0}');
+              better && _score > 0 ? 'New personal best' : 'Best: ${best ?? 0}');
         }
       } else {
         setState(() => _left--);
@@ -400,7 +400,7 @@ class _QuickMathsScreenState extends State<QuickMathsScreen> {
   @override
   Widget build(BuildContext context) {
     return NeonScaffold(
-      appBar: appleAppBar(context, 'Quick maths'),
+      appBar: appleAppBar(context, 'Quick Maths'),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -428,13 +428,13 @@ class _QuickMathsScreenState extends State<QuickMathsScreen> {
                   child: !_playing
                       ? (_best == null
                           ? _Result(
-                              title: 'Quick maths',
+                              title: 'Quick Maths',
                               line:
-                                  'As many sums as you can in ${widget.seconds} seconds. A wrong answer costs nothing but time.',
+                                  'Solve as many sums as possible in ${widget.seconds} seconds. An incorrect answer carries no penalty other than time.',
                               onAgain: _start,
                             )
                           : _Result(
-                              title: 'Time!',
+                              title: 'Time Up',
                               line: '$_score correct.',
                               best: _best,
                               onAgain: _start))
@@ -580,13 +580,13 @@ class _TicTacToeScreenState extends State<TicTacToeScreen> {
   Widget build(BuildContext context) {
     final w = ticWinner(_b);
     final line = switch (w) {
-      'X' => 'You win! Again?',
-      'O' => 'Maya wins this one.',
-      'draw' => "A draw. Nobody's giving in.",
-      _ => _thinking ? 'Maya is thinking…' : 'Your move. You are X.',
+      'X' => 'You have won.',
+      'O' => 'Maya has won this game.',
+      'draw' => "The game is a draw.",
+      _ => _thinking ? 'Maya is thinking…' : 'It is your move. You are X.',
     };
     return NeonScaffold(
-      appBar: appleAppBar(context, 'Tic-tac-toe with Maya'),
+      appBar: appleAppBar(context, 'Tic-Tac-Toe with Maya'),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -661,7 +661,7 @@ class _TicTacToeScreenState extends State<TicTacToeScreen> {
                 FilledButton.icon(
                     onPressed: _reset,
                     icon: const Icon(Icons.replay_rounded),
-                    label: const Text('New game')),
+                    label: const Text('New Game')),
             ],
           ),
         ),
@@ -747,7 +747,7 @@ class _LightTrailScreenState extends State<LightTrailScreen> {
       final best = await GameBest.get('trail_rounds');
       if (mounted) {
         setState(() => _best =
-            better && score > 0 ? 'A new best!' : 'Best: ${best ?? 0} rounds');
+            better && score > 0 ? 'New personal best' : 'Best: ${best ?? 0} rounds');
       }
       return;
     }
@@ -769,9 +769,9 @@ class _LightTrailScreenState extends State<LightTrailScreen> {
         ? ''
         : _showing
             ? 'Watch the trail…'
-            : 'Your turn — ${_trail.length - _step} to go';
+            : 'Your turn: ${_trail.length - _step} remaining';
     return NeonScaffold(
-      appBar: appleAppBar(context, 'Light trail'),
+      appBar: appleAppBar(context, 'Light Trail'),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -793,10 +793,10 @@ class _LightTrailScreenState extends State<LightTrailScreen> {
                 child: Center(
                   child: !_playing
                       ? _Result(
-                          title: _over ? 'Trail broken' : 'Light trail',
+                          title: _over ? 'Trail Broken' : 'Light Trail',
                           line: _over
                               ? 'You cleared $_score round${_score == 1 ? '' : 's'}.'
-                              : 'Watch the pads light up, then tap them back in the same order. Each round adds one more.',
+                              : 'Observe the pads as they light up, then tap them in the same order. Each round adds one more.',
                           best: _best,
                           onAgain: _start,
                         )

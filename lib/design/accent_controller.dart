@@ -45,7 +45,7 @@ class AccentController {
   /// glyphs on top (Neon.onAccent) — test/contrast_test.dart checks every
   /// swatch in both themes.
   static const swatches = <(String, Color)>[
-    ('Deep violet', Color(0xFF8466FF)),
+    ('Deep Violet', Color(0xFF8466FF)),
     ('Electric', Color(0xFF3D8BFF)),
     ('Indigo', Color(0xFF6E73FF)),
     ('Violet', Color(0xFFB14DFF)),

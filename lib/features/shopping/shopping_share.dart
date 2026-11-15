@@ -65,12 +65,12 @@ abstract final class ShoppingShare {
       // The theme's sheet (2026-09-30): its lit top edge.
       showDragHandle: true,
       builder: (ctx) {
-        final shop = _choice(ctx, Icons.add_shopping_cart_rounded, 'Add to shopping list', 'shop',
+        final shop = _choice(ctx, Icons.add_shopping_cart_rounded, 'Add to Shopping List', 'shop',
             primary: shopFirst);
         final read = _choice(
             ctx,
             Icons.chrome_reader_mode_rounded,
-            isLink ? 'Read it and tell me what it says' : 'Tell me about it',
+            isLink ? 'Read and Summarise the Link' : 'Describe This Content',
             'read',
             primary: !shopFirst);
         return SafeArea(
@@ -80,7 +80,7 @@ abstract final class ShoppingShare {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(isLink ? 'What shall I do with this link?' : 'What shall I do with this?',
+                Text(isLink ? 'Select an Action for This Link' : 'Select an Action',
                     style: NeonType.manrope(NeonType.title3, FontWeight.w700)
                         .copyWith(color: Neon.textHi)),
                 const SizedBox(height: 14),

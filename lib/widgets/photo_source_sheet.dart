@@ -51,16 +51,16 @@ abstract final class PhotoSourceSheet {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('Which photo?',
+                Text('Select a Photo',
                     style: NeonType.manrope(NeonType.title3, FontWeight.w700)
                         .copyWith(color: Neon.textHi)),
                 const SizedBox(height: 14),
-                _choice(ctx, Icons.photo_library_rounded, 'From my photos', 'gallery'),
+                _choice(ctx, Icons.photo_library_rounded, 'From Your Photos', 'gallery'),
                 const SizedBox(height: 12),
-                _choice(ctx, Icons.photo_camera_rounded, 'Take a picture of a printed photo',
+                _choice(ctx, Icons.photo_camera_rounded, 'Photograph a Printed Photo',
                     'camera'),
                 const SizedBox(height: 10),
-                Text('For a printed photo: lay it flat near a window, no flash.',
+                Text('For a printed photo, place it flat near a window and do not use flash.',
                     style: TextStyle(color: Neon.textLo, fontSize: NeonType.callout)),
               ],
             ),
@@ -108,13 +108,13 @@ abstract final class PhotoSourceSheet {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('What shall I do with this photo?',
+                Text('Select an Action for This Photo',
                     style: NeonType.manrope(NeonType.title3, FontWeight.w700)
                         .copyWith(color: Neon.textHi)),
                 const SizedBox(height: 14),
-                _choice(ctx, Icons.add_shopping_cart_rounded, 'Add to shopping list', 'shop'),
+                _choice(ctx, Icons.add_shopping_cart_rounded, 'Add to Shopping List', 'shop'),
                 const SizedBox(height: 12),
-                _choice(ctx, Icons.save_alt_rounded, 'Just save it', 'save'),
+                _choice(ctx, Icons.save_alt_rounded, 'Save Only', 'save'),
               ],
             ),
           ),
@@ -171,20 +171,20 @@ abstract final class PhotoSourceSheet {
       useRootNavigator: true,
       builder: (ctx) => AlertDialog(
         backgroundColor: Neon.surface,
-        title: Text(camera ? 'The camera is switched off' : 'Photos are switched off',
+        title: Text(camera ? 'Camera Access Is Disabled' : 'Photo Access Is Disabled',
             style: NeonType.manrope(NeonType.title3, FontWeight.w700).copyWith(color: Neon.textHi)),
         content: Text(
           camera
-              ? 'To take a picture, please allow the camera for this app in Settings. '
-                  'Or choose a photo from your gallery instead.'
-              : 'To choose a photo, please allow photos for this app in Settings.',
+              ? 'Camera access is required to take a picture. Please enable it in Settings. '
+                  'Alternatively, select a photo from your gallery.'
+              : 'Photo access is required to select a photo. Please enable it in Settings.',
           style: TextStyle(color: Neon.textHi, fontSize: NeonType.rowTitle, height: 1.35),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
             style: TextButton.styleFrom(minimumSize: const Size(64, 56)),
-            child: const Text('Not now', style: TextStyle(fontSize: 18)),
+            child: const Text('Not Now', style: TextStyle(fontSize: 18)),
           ),
           FilledButton(
             onPressed: () {

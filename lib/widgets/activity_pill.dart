@@ -72,7 +72,7 @@ class _AssistantActivityPillState extends State<AssistantActivityPill>
   String? get _controlLine {
     final held = engine.agentControl.value;
     if (held == null) return null;
-    if (held.over) return 'Done \u00b7 ${held.control.summary}';
+    if (held.over) return 'Completed \u00b7 ${held.control.summary}';
     final running = held.running;
     return running != null ? '$running agent' : held.control.summary;
   }
@@ -154,7 +154,7 @@ class _AssistantActivityPillState extends State<AssistantActivityPill>
     if (_elapsed >= 12) {
       return 'Still ${raw[0].toLowerCase()}${raw.substring(1)}';
     }
-    if (_elapsed >= 6) return '$raw \u2014 one moment';
+    if (_elapsed >= 6) return '$raw, please wait';
     return raw;
   }
 

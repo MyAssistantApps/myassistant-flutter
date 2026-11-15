@@ -116,7 +116,7 @@ class _CardButton extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (busy)
-            const NeonLoader.inline(size: 16, semanticLabel: 'Working')
+            const NeonLoader.inline(size: 16, semanticLabel: 'In progress')
           else if (icon != null)
             Icon(icon, size: 18, color: ink),
           if (busy || icon != null) const SizedBox(width: 8),
@@ -198,7 +198,7 @@ class ToolCard extends StatelessWidget {
         children: [
           activity.completed
               ? const NeonSuccess(size: 20)
-              : const NeonLoader.inline(size: 16, semanticLabel: 'Working'),
+              : const NeonLoader.inline(size: 16, semanticLabel: 'In progress'),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -472,7 +472,7 @@ class CallStatusCard extends StatelessWidget {
                 _StepLabel('Dialing'),
                 _StepLabel('Ringing'),
                 _StepLabel('In call'),
-                _StepLabel('Done'),
+                _StepLabel('Completed'),
               ],
             ),
           ],
@@ -541,7 +541,7 @@ class _ConfirmationCardState extends State<ConfirmationCard> {
                   size: 18, color: NeonTone.warning.ink),
               const SizedBox(width: 8),
               Text(
-                isCall ? 'Confirm this call' : 'Confirm',
+                isCall ? 'Confirm Call' : 'Confirm',
                 style: TextStyle(
                     color: Neon.textHi,
                     fontSize: 15,
@@ -575,11 +575,11 @@ class _ConfirmationCardState extends State<ConfirmationCard> {
             ),
           ] else
             Text(
-              pending.question ?? 'Shall I go ahead?',
+              pending.question ?? 'Shall I proceed?',
               style: TextStyle(color: Neon.textHi, fontSize: 15),
             ),
           if (_approved)
-            _DoneLine(isCall ? 'Placing the call' : 'Confirmed')
+            _DoneLine(isCall ? 'Placing the call…' : 'Confirmed')
           else ...[
             const SizedBox(height: 14),
             Row(
@@ -593,7 +593,7 @@ class _ConfirmationCardState extends State<ConfirmationCard> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: _CardButton(
-                    label: isCall ? 'Place call' : 'Confirm',
+                    label: isCall ? 'Place Call' : 'Confirm',
                     icon: isCall ? Icons.call_rounded : Icons.check_rounded,
                     primary: true,
                     tone: isCall ? NeonTone.success : NeonTone.action,
@@ -691,17 +691,17 @@ class _EventOfferCardState extends State<EventOfferCard> {
             children: [
               Expanded(
                 child: _CardButton(
-                  label: 'Remind me',
+                  label: 'Set Reminder',
                   icon: Icons.alarm_add_rounded,
                   primary: true,
                   busy: _busy,
-                  onTap: () => _run(widget.onRemind, 'Reminder set'),
+                  onTap: () => _run(widget.onRemind, 'Reminder created'),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: _CardButton(
-                  label: 'Add to calendar',
+                  label: 'Add to Calendar',
                   icon: Icons.calendar_month_rounded,
                   onTap: _busy
                       ? null
@@ -750,7 +750,7 @@ class _DocumentCardState extends State<DocumentCard> {
       await shareDocumentFile(document);
     } catch (_) {
       if (mounted) {
-        AppFeedback.show("Couldn't prepare that to send.", context: context);
+        AppFeedback.show("Unable to prepare the document for sending.", context: context);
       }
     } finally {
       if (mounted) setState(() => _sending = false);
@@ -920,7 +920,7 @@ class ScriptCard extends StatelessWidget {
     return _LitCard(
         tone: NeonTone.discovery,
         onTap: () => _openReader(context),
-        semanticLabel: 'Open $title full screen',
+        semanticLabel: 'Open $title in full screen',
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -979,7 +979,7 @@ class ScriptCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Tap to open full screen',
+              'Tap to open in full screen',
               style: TextStyle(
                 color: NeonTone.discovery.ink,
                 fontSize: 12,
@@ -1107,7 +1107,7 @@ class _GeneratedImageCardState extends State<GeneratedImageCard> {
       );
     } catch (_) {
       if (mounted) {
-        AppFeedback.show("Couldn't prepare that to share.", context: context);
+        AppFeedback.show("Unable to prepare the file for sharing.", context: context);
       }
     } finally {
       if (mounted) setState(() => _sending = false);
@@ -1162,7 +1162,7 @@ class _GeneratedImageCardState extends State<GeneratedImageCard> {
                               ? Icon(Icons.movie_rounded,
                                   color: Neon.cyan, size: 42)
                               : const NeonLoader(
-                                  size: 36, semanticLabel: 'Loading the video'),
+                                  size: 36, semanticLabel: 'Loading video'),
                         ))
                   : GestureDetector(
                       onTap: () => Navigator.of(context).push(
@@ -1190,13 +1190,13 @@ class _GeneratedImageCardState extends State<GeneratedImageCard> {
                                 color: Neon.surfaceHigh,
                                 child: const NeonLoader(
                                     size: 36,
-                                    semanticLabel: 'Loading the image'),
+                                    semanticLabel: 'Loading image'),
                               ),
                         errorBuilder: (_, __, ___) => Container(
                           height: 120,
                           alignment: Alignment.center,
                           color: Neon.surfaceHigh,
-                          child: Text("Couldn't load the image.",
+                          child: Text("Unable to load the image.",
                               style: TextStyle(color: Neon.textLo)),
                         ),
                       ),
@@ -1323,7 +1323,7 @@ class _DocumentGalleryScreenState extends State<DocumentGalleryScreen> {
       await shareDocumentFile(_current);
     } catch (_) {
       if (mounted) {
-        AppFeedback.show("Couldn't prepare that to send.", context: context);
+        AppFeedback.show("Unable to prepare the document for sending.", context: context);
       }
     } finally {
       if (mounted) setState(() => _sharing = false);
@@ -1446,7 +1446,7 @@ class _DocumentGalleryScreenState extends State<DocumentGalleryScreen> {
                       : const NeonLoader.page(),
                   errorBuilder: (_, __, ___) => Padding(
                     padding: const EdgeInsets.all(24),
-                    child: Text("Couldn't load this document.",
+                    child: Text("Unable to load this document.",
                         style: TextStyle(color: Neon.textLo)),
                   ),
                 ),
@@ -1507,12 +1507,12 @@ class _GalleryVideoState extends State<_GalleryVideo> {
     if (_failed) {
       return Center(
         child: Icon(Icons.movie_rounded, color: Neon.textDim, size: 64,
-            semanticLabel: "Couldn't play this video"),
+            semanticLabel: "Unable to play this video"),
       );
     }
     final c = _c;
     if (c == null || !c.value.isInitialized) {
-      return const NeonLoader.page(semanticLabel: 'Loading the video');
+      return const NeonLoader.page(semanticLabel: 'Loading video');
     }
     return Center(
       child: GestureDetector(

@@ -42,9 +42,9 @@ class _App {
 // Ola, Rapido, auto and the others, in one square").
 const _order = ['Rides', 'Food & groceries', 'Daily needs'];
 const _titles = <String, String>{
-  'Rides': 'Taxis & autos',
-  'Food & groceries': 'Food & groceries',
-  'Daily needs': 'Daily needs',
+  'Rides': 'Taxis & Autos',
+  'Food & groceries': 'Food & Groceries',
+  'Daily needs': 'Daily Needs',
 };
 const _icons = <String, IconData>{
   'Food & groceries': Icons.fastfood_rounded,
@@ -97,12 +97,12 @@ class _PopularAppsSectionState extends State<PopularAppsSection> {
           padding: const EdgeInsets.only(left: Neon.s1, bottom: 6),
           child: Row(
             children: [
-              Text('Popular apps',
+              Text('Popular Apps',
                   style: NeonType.manrope(21, FontWeight.w800).copyWith(color: Neon.textHi, letterSpacing: -0.6)),
               const Spacer(),
               TextButton(
                 onPressed: () => widget.onOpen(const ServicesScreen()),
-                child: Text('See all', style: TextStyle(color: Neon.violet, fontWeight: FontWeight.w700)),
+                child: Text('View All', style: TextStyle(color: Neon.violet, fontWeight: FontWeight.w700)),
               ),
             ],
           ),

@@ -105,8 +105,8 @@ class _CallDetailScreenState extends State<CallDetailScreen> {
     });
     if (text.isEmpty) {
       AppFeedback.show(r == null
-              ? "Couldn't draft one right now — try again."
-              : 'Nothing on this call needs a follow-up.', context: context);
+              ? "Unable to draft a follow-up. Please try again."
+              : 'No follow-up is required for this call.', context: context);
     }
   }
 
@@ -126,7 +126,7 @@ class _CallDetailScreenState extends State<CallDetailScreen> {
     if (how == 'copy') {
       await Clipboard.setData(ClipboardData(text: text));
       if (mounted) {
-        AppFeedback.copied(context, 'Copied — paste it anywhere.');
+        AppFeedback.copied(context, 'Copied to the clipboard.');
       }
       return;
     }
@@ -148,8 +148,8 @@ class _CallDetailScreenState extends State<CallDetailScreen> {
     } catch (_) {}
     if (!ok && mounted) {
       AppFeedback.show(how == 'whatsapp'
-              ? "The chat app isn't installed — try SMS."
-              : "Couldn't open messages.", context: context);
+              ? "The chat app is not installed. Please use SMS instead."
+              : "Unable to open the messaging app.", context: context);
     }
   }
 
@@ -193,18 +193,18 @@ class _CallDetailScreenState extends State<CallDetailScreen> {
     final c = _call;
     if (c == null) return;
     final b = StringBuffer()
-      ..writeln('Call notes — ${widget.peerLabel} ($_when)')
+      ..writeln('Call Notes: ${widget.peerLabel} ($_when)')
       ..writeln()
       ..writeln((c['summary'] ?? '').toString());
     final facts = _facts;
     if (facts.isNotEmpty) {
       b.writeln();
-      b.writeln('Key points:');
+      b.writeln('Key Points:');
       for (final f in facts) {
         b.writeln('• $f');
       }
     }
-    Share.share(b.toString().trim(), subject: 'Call notes');
+    Share.share(b.toString().trim(), subject: 'Call Notes');
   }
 
   @override
@@ -217,7 +217,7 @@ class _CallDetailScreenState extends State<CallDetailScreen> {
       appBar: appleAppBar(context, widget.peerLabel, actions: [
         if (c != null)
           IconButton(
-            tooltip: 'Share call notes',
+            tooltip: 'Share Call Notes',
             onPressed: _share,
             icon: Icon(Icons.share_rounded, color: Neon.cyan, size: 20),
           ),
@@ -238,7 +238,7 @@ class _CallDetailScreenState extends State<CallDetailScreen> {
                       child: _loading
                           ? const NeonLoader.page()
                           : NeonErrorState(
-                              message: "Couldn't load this call",
+                              message: "Unable to load this call.",
                               onRetry: () {
                                 setState(() => _loading = true);
                                 _load();
@@ -258,7 +258,7 @@ class _CallDetailScreenState extends State<CallDetailScreen> {
                             delayMs: 60,
                             child: NeonSection(
                               icon: Icons.subject_rounded,
-                              title: 'What the call was about',
+                              title: 'Call Summary',
                               tone: NeonTone.info,
                               child: Text((c['summary'] ?? '').toString(),
                                   style: TextStyle(
@@ -274,7 +274,7 @@ class _CallDetailScreenState extends State<CallDetailScreen> {
                             delayMs: 120,
                             child: NeonSection(
                               icon: Icons.fact_check_rounded,
-                              title: 'Key points',
+                              title: 'Key Points',
                               tone: NeonTone.tip,
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -319,7 +319,7 @@ class _CallDetailScreenState extends State<CallDetailScreen> {
                             delayMs: 180,
                             child: NeonSection(
                               icon: Icons.event_available_rounded,
-                              title: 'Added to your agenda',
+                              title: 'Added to Your Agenda',
                               tone: NeonTone.success,
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -390,8 +390,8 @@ class _CallDetailScreenState extends State<CallDetailScreen> {
                                     size: 18),
                                 label: Text(
                                     _showTranscript
-                                        ? 'Hide transcript'
-                                        : 'Show full transcript',
+                                        ? 'Hide Transcript'
+                                        : 'Show Full Transcript',
                                     style: NeonType.manrope(
                                         NeonType.footnote, FontWeight.w600)),
                               ),
@@ -411,14 +411,14 @@ class _CallDetailScreenState extends State<CallDetailScreen> {
     // buttons are the lit pills.
     return NeonSection(
       icon: Icons.send_rounded,
-      title: 'Follow up with ${widget.peerLabel}',
+      title: 'Follow Up with ${widget.peerLabel}',
       tone: NeonTone.action,
       lit: true,
       child: !has
           ? Align(
               alignment: Alignment.centerLeft,
               child: NeonPill(
-                label: _drafting ? 'Drafting…' : 'Draft a follow-up message',
+                label: _drafting ? 'Drafting…' : 'Draft a Follow-Up Message',
                 icon: Icons.auto_awesome_rounded,
                 tone: NeonTone.action,
                 busy: _drafting,
@@ -428,7 +428,7 @@ class _CallDetailScreenState extends State<CallDetailScreen> {
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('What you agreed, ready to send. Edit it if you like.',
+                Text('A summary of what was agreed, ready to send. You may edit it as required.',
                     style: TextStyle(
                         color: Neon.textDim, fontSize: NeonType.caption)),
                 const SizedBox(height: 8),
@@ -461,7 +461,7 @@ class _CallDetailScreenState extends State<CallDetailScreen> {
                   spacing: 8,
                   children: [
                     NeonPill(
-                        label: 'Chat app',
+                        label: 'Chat App',
                         icon: Icons.chat_rounded,
                         tone: NeonTone.success,
                         onPressed: () => _sendVia('whatsapp')),

@@ -100,7 +100,7 @@ class _StudioScreenState extends State<StudioScreen> {
     } catch (e) {
       _toast(e is StudioException && e.message.isNotEmpty
           ? e.message
-          : "Couldn't reach the studio — try again.");
+          : "Unable to connect to Style Studio. Please try again.");
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -110,11 +110,11 @@ class _StudioScreenState extends State<StudioScreen> {
     final yes = await showAppDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
-        title: const Text('Remove your photos?'),
+        title: const Text('Remove Your Photos'),
         content: const Text(
             'Your saved photos of yourself will be deleted from the server, '
             'and Style Studio will stop using them. Looks you have already '
-            'made stay in your files.'),
+            'created will remain in your files. Do you wish to proceed?'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(c, false),
@@ -134,7 +134,7 @@ class _StudioScreenState extends State<StudioScreen> {
     } catch (e) {
       _toast(e is StudioException && e.message.isNotEmpty
           ? e.message
-          : "Couldn't reach the studio — try again.");
+          : "Unable to connect to Style Studio. Please try again.");
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -145,7 +145,7 @@ class _StudioScreenState extends State<StudioScreen> {
   /* ---------------------------------------------------------------- */
 
   Future<void> _addMyPhoto() async {
-    final src = await _pickSource('Add a photo of you');
+    final src = await _pickSource('Add a Photo of Yourself');
     if (src == null) return;
     final shot = await ImagePicker().pickImage(
       source: src,
@@ -166,7 +166,7 @@ class _StudioScreenState extends State<StudioScreen> {
       );
       await _load(silent: true);
     } catch (e) {
-      _toast(e is StudioException ? e.message : "Couldn't save that photo.");
+      _toast(e is StudioException ? e.message : "Unable to save the photo. Please try again.");
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -192,13 +192,13 @@ class _StudioScreenState extends State<StudioScreen> {
               ),
               AppleRow(
                 leading: IconTile(Icons.photo_camera_rounded, Neon.accentA),
-                title: 'Take a photo',
+                title: 'Take a Photo',
                 trailing: const SizedBox.shrink(),
                 onTap: () => Navigator.pop(c, ImageSource.camera),
               ),
               AppleRow(
                 leading: IconTile(Icons.photo_library_rounded, Neon.accentC),
-                title: 'Choose from gallery',
+                title: 'Select from Gallery',
                 trailing: const SizedBox.shrink(),
                 onTap: () => Navigator.pop(c, ImageSource.gallery),
               ),
@@ -219,7 +219,7 @@ class _StudioScreenState extends State<StudioScreen> {
               AppleRow(
                 leading: Icon(Icons.check_circle_outline_rounded,
                     color: Neon.textHi),
-                title: 'Use this one for my looks',
+                title: 'Use This Photo for Looks',
                 trailing: const SizedBox.shrink(),
                 onTap: () => Navigator.pop(c, 'default'),
               ),
@@ -247,7 +247,7 @@ class _StudioScreenState extends State<StudioScreen> {
     } catch (e) {
       _toast(e is StudioException && e.message.isNotEmpty
           ? e.message
-          : "Couldn't reach the studio — try again.");
+          : "Unable to connect to Style Studio. Please try again.");
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -273,7 +273,7 @@ class _StudioScreenState extends State<StudioScreen> {
     final s = _state;
     if (s == null) return;
     if (r.needsModel && s.myPhotos.isEmpty) {
-      _toast('Add a photo of yourself first — every look uses it.');
+      _toast('Please add a photo of yourself first. It is required for every look.');
       await _addMyPhoto();
       if (!mounted || (_state?.myPhotos.isEmpty ?? true)) return;
     }
@@ -347,12 +347,12 @@ class _StudioScreenState extends State<StudioScreen> {
 
   // The server's own reason, when it gave one, is the next step to read.
   Widget _errorView() => NeonErrorState(
-        message: "Couldn't load Style Studio",
+        message: "Unable to load Style Studio.",
         hint: _error == _offline ? null : _error,
         onRetry: _load,
       );
 
-  static const _offline = "Couldn't load Style Studio. Check your connection.";
+  static const _offline = "Unable to load Style Studio. Please check your connection.";
 
   Widget _body() {
     final s = _state!;
@@ -378,7 +378,7 @@ class _StudioScreenState extends State<StudioScreen> {
           const SizedBox(height: 22),
         ],
         if (s.looks.isNotEmpty) ...[
-          _groupHeader('Your looks'),
+          _groupHeader('Your Looks'),
           _looksGrid(s),
           const SizedBox(height: 18),
         ],
@@ -399,7 +399,7 @@ class _StudioScreenState extends State<StudioScreen> {
             child: BrandMark(size: 58),
           ),
           const SizedBox(height: 18),
-          Text('See yourself in it first',
+          Text('Preview Before You Decide',
               style: GoogleFonts.interTight(
                   fontSize: 25,
                   fontWeight: FontWeight.w700,
@@ -407,9 +407,9 @@ class _StudioScreenState extends State<StudioScreen> {
                   color: Neon.textHi)),
           const SizedBox(height: 12),
           Text(
-            'Style Studio puts a new outfit, a different haircut or a '
-            'professional backdrop onto a photo of you — so you can look '
-            'before you buy, book or print.',
+            'Style Studio applies a new outfit, a different haircut or a '
+            'professional backdrop to a photo of you, allowing you to preview '
+            'the result before you purchase, book or print.',
             style: TextStyle(color: Neon.textLo, fontSize: 15, height: 1.45),
           ),
           const SizedBox(height: 24),
@@ -420,7 +420,7 @@ class _StudioScreenState extends State<StudioScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Before you start',
+                Text('Before You Begin',
                     style: TextStyle(
                         color: Neon.textHi,
                         fontWeight: FontWeight.w700,
@@ -433,14 +433,14 @@ class _StudioScreenState extends State<StudioScreen> {
                 _point(Icons.auto_fix_high_rounded,
                     'Every result is AI-generated and labelled as such in your files.'),
                 _point(Icons.delete_outline_rounded,
-                    'You can remove your photos any time — the privacy button in the corner deletes them.'),
+                    'You can remove your photos at any time: the privacy button in the corner deletes them.'),
               ],
             ),
           ),
           const SizedBox(height: 26),
           // The one lit action (it was a flat white slab).
           GlowCta(
-            label: 'I understand — continue',
+            label: 'I Understand, Continue',
             busy: _busy,
             onPressed: _accept,
           ),
@@ -478,8 +478,8 @@ class _StudioScreenState extends State<StudioScreen> {
             const SizedBox(width: 11),
             Expanded(
               child: Text(
-                'New looks are not available right now. '
-                'Everything else here works.',
+                'New looks are currently unavailable. '
+                'All other features remain available.',
                 style: TextStyle(color: Neon.textLo, fontSize: 13, height: 1.35),
               ),
             ),
@@ -493,7 +493,7 @@ class _StudioScreenState extends State<StudioScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _groupHeader(mine.isEmpty ? 'Start here' : 'Your photo'),
+        _groupHeader(mine.isEmpty ? 'Start Here' : 'Your Photo'),
         SizedBox(
           height: 108,
           child: ListView(
@@ -508,8 +508,8 @@ class _StudioScreenState extends State<StudioScreen> {
           Padding(
             padding: const EdgeInsets.only(top: 10, left: 2),
             child: Text(
-              'One clear, well-lit photo — face and shoulders visible. Every '
-              'look uses it, so you only do this once.',
+              'Please add one clear, well-lit photo with your face and shoulders visible. Every '
+              'look uses it, so this is required only once.',
               style: TextStyle(color: Neon.textLo, fontSize: 13, height: 1.4),
             ),
           ),
@@ -525,7 +525,7 @@ class _StudioScreenState extends State<StudioScreen> {
         padding: const EdgeInsets.only(right: 10),
         child: Tappable(
           onTap: _busy ? null : _addMyPhoto,
-          semanticLabel: 'Add a photo of you',
+          semanticLabel: 'Add a photo of yourself',
           child: Container(
             width: 82,
             decoration: BoxDecoration(
@@ -748,7 +748,7 @@ class _StudioScreenState extends State<StudioScreen> {
   Widget _footer(StudioState s) => Padding(
         padding: const EdgeInsets.only(top: 6, left: 4, right: 4),
         child: Text(
-          '${s.remaining} of ${s.limit} looks left today · '
+          '${s.remaining} of ${s.limit} looks remaining today · '
           'Results are AI-generated from your own photo and saved to your files.',
           style: TextStyle(
               color: Neon.textLo, fontSize: NeonType.caption, height: 1.4),

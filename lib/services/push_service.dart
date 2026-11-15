@@ -76,11 +76,11 @@ class PushService {
             // here once nothing is using the speaker and mic and the app
             // is unlocked (showPending waits; after ten minutes it leaves
             // a notification instead).
-            AppFeedback.toast('New video note from your circle.');
+            AppFeedback.toast('A new video note has been received from your circle.');
             unawaited(AvatarMessageService.instance.showPending());
           } else {
             AppFeedback.toast(
-                'New message from your circle — tap the mic and I\'ll read it.');
+                'A new message has been received from your circle. Tap the microphone to hear it.');
           }
           BriefService.instance.refresh(force: true);
         }
@@ -242,8 +242,8 @@ class PushService {
     if (_warnedNotifications) return;
     _warnedNotifications = true;
     AppFeedback.toast(
-        'Notifications are off for this app — enable them in phone '
-        'Settings → Apps so messages and calls can reach you.');
+        'Notifications are disabled for this app. Please enable them in phone '
+        'Settings → Apps so that messages and calls can reach you.');
   }
 
   /// A scheduled call landing on the phone: resolve the contact locally
@@ -257,17 +257,17 @@ class PushService {
     try {
       final matches = await CallService.instance.findContacts(name);
       if (matches.isEmpty || matches.first.phones.isEmpty) {
-        AppFeedback.toast("Couldn't find $name in your contacts to call.");
+        AppFeedback.toast("Unable to find $name in your contacts to place the call.");
         AppLog.add('push', 'scheduled call: no contact for "$name"');
         return;
       }
       final number = matches.first.phones.first.number;
       final ok = await CallService.instance.call(number);
       AppLog.add('push', 'scheduled call: dial ${ok ? 'started' : 'FAILED'}');
-      if (!ok) AppFeedback.toast("Couldn't start the call to $name.");
+      if (!ok) AppFeedback.toast("Unable to start the call to $name.");
     } catch (e) {
       AppLog.add('push', 'scheduled call failed: $e');
-      AppFeedback.toast("Couldn't start the call to $name.");
+      AppFeedback.toast("Unable to start the call to $name.");
     }
   }
 

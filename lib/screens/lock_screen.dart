@@ -130,7 +130,7 @@ class _LockScreenState extends State<LockScreen> {
         HapticFeedback.heavyImpact();
         setState(() {
           _pin = '';
-          _error = 'Wrong PIN — try again';
+          _error = 'Incorrect PIN. Please try again.';
         });
       }
     }
@@ -161,7 +161,7 @@ class _LockScreenState extends State<LockScreen> {
                         size: 44, color: Neon.violet),
                   ),
                   const SizedBox(height: 12),
-                  Text('MyAssistant is locked',
+                  Text('MyAssistant Is Locked',
                       style: Theme.of(context).textTheme.titleLarge),
                   const SizedBox(height: 20),
                   // PIN dots
@@ -242,7 +242,7 @@ class _LockScreenState extends State<LockScreen> {
                     NeonPill(
                       onPressed: _startBiometric,
                       icon: Icons.fingerprint_rounded,
-                      label: 'Use fingerprint / face',
+                      label: 'Use Fingerprint / Face',
                       tone: NeonTone.tip,
                     ),
                   ],

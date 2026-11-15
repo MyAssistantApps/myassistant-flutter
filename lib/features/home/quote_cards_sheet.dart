@@ -163,11 +163,11 @@ class _QuoteCardsSheetState extends State<_QuoteCardsSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text("Today's quote",
+            Text("Today's Quote",
                 style: NeonType.manrope(NeonType.headline, FontWeight.w700)
                     .copyWith(color: Neon.textHi)),
             const SizedBox(height: 4),
-            Text('Swipe to choose a style, then share it.',
+            Text('Swipe to select a style, then share it.',
                 style: TextStyle(color: Neon.textLo, fontSize: NeonType.footnote)),
             const SizedBox(height: 16),
             SizedBox(

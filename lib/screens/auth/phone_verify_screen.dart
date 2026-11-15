@@ -106,7 +106,7 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
   Future<void> _typed() async {
     final digits = _phone.text.replaceAll(RegExp(r'\D'), '');
     if (digits.length < 6) {
-      setState(() => _error = 'Enter your phone number first.');
+      setState(() => _error = 'Please enter your phone number.');
       return;
     }
     setState(() {
@@ -125,7 +125,7 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
   Future<void> _callMe() async {
     final digits = _phone.text.replaceAll(RegExp(r'\D'), '');
     if (_calledTo == null && digits.length < 10) {
-      setState(() => _error = 'Enter your 10-digit mobile number.');
+      setState(() => _error = 'Please enter your 10-digit mobile number.');
       return;
     }
     final to = _calledTo ?? _e164;
@@ -161,7 +161,7 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
     final code = _code.text.replaceAll(RegExp(r'\D'), '');
     if (to == null) return;
     if (code.length != 6) {
-      setState(() => _error = 'Enter the 6-digit code from the call.');
+      setState(() => _error = 'Please enter the 6-digit code from the call.');
       return;
     }
     setState(() {
@@ -181,25 +181,25 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
     final m = _methods;
     if (m == null) return 'Checking your SIM…';
     if (m.sim) {
-      return 'This is how friends and family reach you through their '
+      return 'Your number allows friends and family to reach you through their '
           'assistant. Google confirms the number of the SIM in this phone '
-          'with your network — there is no code to type.';
+          'with your network; no code is required.';
     }
-    if (!m.reached) return 'Could not reach the server. Check your connection.';
+    if (!m.reached) return 'Unable to connect. Please check your internet connection.';
     if (m.call) {
       final to = _calledTo;
       return to == null
-          ? 'This is how friends and family reach you through their assistant. '
-              "We'll call your number and read out a 6-digit code."
-          : "We're calling $to now. Answer, listen for the 6-digit code and "
-              'type it below.';
+          ? 'Your number allows friends and family to reach you through their assistant. '
+              "Your number will be called and a 6-digit code read out."
+          : "A call is being placed to $to. Please answer, note the 6-digit code and "
+              'enter it below.';
     }
     if (m.typed) {
-      return "Your network can't confirm numbers automatically yet. For "
-          'testing, enter your number instead.';
+      return "Your network is not yet able to confirm numbers automatically. For "
+          'testing, please enter your number instead.';
     }
-    return "Your network can't confirm numbers automatically yet, so this "
-        'step is not available on this phone for now.';
+    return "Your network is not yet able to confirm numbers automatically, so this "
+        'step is currently unavailable on this phone.';
   }
 
   @override
@@ -222,7 +222,7 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
                   ),
                   const SizedBox(height: 22),
                   Text(
-                    'Verify your number',
+                    'Verify Your Number',
                     style: GoogleFonts.interTight(
                       fontSize: 26,
                       fontWeight: FontWeight.w700,
@@ -258,7 +258,7 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
                             keyboardType: TextInputType.phone,
                             autofocus: true,
                             decoration: const InputDecoration(
-                              labelText: 'Phone number',
+                              labelText: 'Phone Number',
                               prefixIcon: Icon(Icons.phone_outlined),
                             ),
                           ),
@@ -282,7 +282,7 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
                           letterSpacing: 10,
                           color: Neon.textHi),
                       decoration: const InputDecoration(
-                        labelText: '6-digit code',
+                        labelText: '6-Digit Code',
                         counterText: '',
                       ),
                     ),
@@ -315,21 +315,21 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
                     const GlowCta(
                       label: '',
                       busy: true,
-                      busyLabel: 'Checking your number',
+                      busyLabel: 'Verifying Your Number',
                       onPressed: null,
                     )
                   else if (_methods!.sim)
                     GlowCta(
-                      label: 'Confirm with my SIM',
+                      label: 'Confirm with SIM',
                       onPressed: _viaSim,
                     )
                   else if (_methods!.call && _calledTo != null)
                     GlowCta(label: 'Verify', onPressed: _submitCode)
                   else if (_methods!.call)
-                    GlowCta(label: 'Call me with a code', onPressed: _callMe)
+                    GlowCta(label: 'Request Code by Call', onPressed: _callMe)
                   else if (_methods!.typed)
                     GlowCta(
-                      label: 'Use this number (testing)',
+                      label: 'Use This Number (Testing)',
                       onPressed: _typed,
                     )
                   else
@@ -338,7 +338,7 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
                     // on a network that cannot confirm it checks again (a
                     // new SIM, or the testing switch turned on).
                     GlowCta(
-                      label: _methods!.reached ? 'Check again' : 'Try again',
+                      label: _methods!.reached ? 'Check Again' : 'Retry',
                       onPressed: _check,
                     ),
                   if (_methods?.call == true &&
@@ -354,13 +354,13 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
                                     _calledTo = null;
                                     _error = null;
                                   }),
-                          child: const Text('Change number'),
+                          child: const Text('Change Number'),
                         ),
                         TextButton(
                           onPressed: _busy || _cooldown > 0 ? null : _callMe,
                           child: Text(_cooldown > 0
-                              ? 'Call again in ${_cooldown}s'
-                              : 'Call me again'),
+                              ? 'Call Again in ${_cooldown}s'
+                              : 'Call Again'),
                         ),
                       ],
                     ),
@@ -372,7 +372,7 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
                       _calledTo == null)
                     TextButton(
                       onPressed: _busy ? null : _typed,
-                      child: Text('Testing: use this number without a call',
+                      child: Text('Testing: Use This Number Without a Call',
                           style: TextStyle(
                               color: Neon.textLo, fontSize: NeonType.footnote)),
                     ),
@@ -380,7 +380,7 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
                   TextButton(
                     onPressed:
                         _busy ? null : () => AuthService.instance.signOut(),
-                    child: Text('Sign out',
+                    child: Text('Sign Out',
                         style: TextStyle(
                             color: Neon.textLo, fontSize: NeonType.footnote)),
                   ),

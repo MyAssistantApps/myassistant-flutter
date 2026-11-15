@@ -131,7 +131,7 @@ class HomeDashboard extends StatelessWidget {
                 QuoteOfDay.ensureFresh();
                 return Semantics(
                   button: true,
-                  hint: "Opens today's quote as images to share",
+                  hint: "Opens the quote of the day as shareable images",
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: () => showQuoteCardsSheet(context),

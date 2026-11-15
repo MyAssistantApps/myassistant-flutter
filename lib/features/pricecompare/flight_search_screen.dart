@@ -50,7 +50,7 @@ class _FlightSearchScreenState extends State<FlightSearchScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => _AirportPicker(title: from ? 'Flying from' : 'Flying to'),
+      builder: (_) => _AirportPicker(title: from ? 'Departure Airport' : 'Arrival Airport'),
     );
     if (picked == null) return;
     final l = _trip.legs[leg];
@@ -109,7 +109,7 @@ class _FlightSearchScreenState extends State<FlightSearchScreen> {
     if (name == null || !mounted) return;
     _set(_trip.copyWith(airline: name));
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$name fares will be shown first — now choose your route and date')),
+      SnackBar(content: Text('$name fares will be shown first. Please select your route and date.')),
     );
   }
 
@@ -141,7 +141,7 @@ class _FlightSearchScreenState extends State<FlightSearchScreen> {
   @override
   Widget build(BuildContext context) {
     return NeonScaffold(
-      appBar: appleAppBar(context, 'Flight compare'),
+      appBar: appleAppBar(context, 'Flight Compare'),
       body: ListView(
         padding: EdgeInsets.fromLTRB(16, 4, 16, 32 + MediaQuery.paddingOf(context).bottom),
         children: [
@@ -170,7 +170,7 @@ class _FlightSearchScreenState extends State<FlightSearchScreen> {
                     legs: [..._trip.legs, FlightLeg(from: last.to, date: last.date?.add(const Duration(days: 2)))]));
               },
               icon: const Icon(Icons.add_rounded),
-              label: const Text('Add another city'),
+              label: const Text('Add Another City'),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(46),
                 side: BorderSide(color: Neon.violet.withValues(alpha: 0.6)),
@@ -194,8 +194,8 @@ class _FlightSearchScreenState extends State<FlightSearchScreen> {
             child: SwitchListTile(
               value: _trip.nonStop,
               onChanged: (v) => _set(_trip.copyWith(nonStop: v)),
-              title: Text('Non-stop flights only', style: NeonType.row.copyWith(color: Neon.textHi)),
-              subtitle: Text('Skip flights with stops or changes',
+              title: Text('Non-Stop Flights Only', style: NeonType.row.copyWith(color: Neon.textHi)),
+              subtitle: Text('Exclude flights with stops or changes',
                   style: TextStyle(color: Neon.textLo, fontSize: NeonType.footnote)),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Neon.rLg)),
             ),
@@ -211,16 +211,16 @@ class _FlightSearchScreenState extends State<FlightSearchScreen> {
             ),
             const SizedBox(height: 10),
           ],
-          ApplePrimaryButton(label: 'Search flights', icon: Icons.flight_takeoff_rounded, onPressed: _search),
+          ApplePrimaryButton(label: 'Search Flights', icon: Icons.flight_takeoff_rounded, onPressed: _search),
           const SizedBox(height: 12),
           Text(
-            'Fares are found on the web and change quickly — the airline or booking site shows the final fare '
-            'before you pay. Special fares need proof at check-in.',
+            'Fares are retrieved from the web and change frequently. The airline or booking site displays the final fare '
+            'before payment. Special fares require proof of eligibility at check-in.',
             style: TextStyle(color: Neon.textDim, fontSize: NeonType.caption, height: 1.4),
           ),
           Align(
             alignment: Alignment.centerLeft,
-            child: TextButton(onPressed: () => showPhotoCredits(context), child: const Text('Photo credits')),
+            child: TextButton(onPressed: () => showPhotoCredits(context), child: const Text('Photo Credits')),
           ),
         ],
       ),
@@ -293,7 +293,7 @@ class _FlightSearchScreenState extends State<FlightSearchScreen> {
                   const Spacer(),
                   if (_trip.legs.length > 2)
                     IconButton(
-                      tooltip: 'Remove flight ${i + 1}',
+                      tooltip: 'Remove Flight ${i + 1}',
                       visualDensity: VisualDensity.compact,
                       onPressed: () => _set(_trip.copyWith(legs: [..._trip.legs]..removeAt(i))),
                       icon: Icon(Icons.close_rounded, size: 18, color: Neon.textLo),
@@ -343,7 +343,7 @@ class _FlightSearchScreenState extends State<FlightSearchScreen> {
                     'RETURN',
                     _trip.type == TripType.roundTrip ? _trip.returnDate : null,
                     _pickReturn,
-                    empty: 'Tap to add',
+                    empty: 'Tap to Add',
                     onClear: _trip.type == TripType.roundTrip
                         ? () => _set(_trip.copyWith(type: TripType.oneWay, clearReturn: true))
                         : null,
@@ -383,7 +383,7 @@ class _FlightSearchScreenState extends State<FlightSearchScreen> {
 
   Widget _airportBox(String label, Airport? a, VoidCallback onTap) => _box(
         onTap: onTap,
-        semantics: '$label: ${a?.label ?? 'choose'}',
+        semantics: '$label: ${a?.label ?? 'not selected'}',
         child: Padding(
           padding: const EdgeInsets.only(right: 56),
           child: Column(
@@ -392,7 +392,7 @@ class _FlightSearchScreenState extends State<FlightSearchScreen> {
               Text(label, style: NeonType.eyebrow.copyWith(color: Neon.textDim, fontSize: 10.5)),
               const SizedBox(height: 2),
               if (a == null)
-                Text('Choose city or airport',
+                Text('Select city or airport',
                     style: NeonType.manrope(17, FontWeight.w700).copyWith(color: Neon.textDim))
               else ...[
                 Text(a.city,
@@ -408,7 +408,7 @@ class _FlightSearchScreenState extends State<FlightSearchScreen> {
       );
 
   Widget _dateBox(String label, DateTime? d, VoidCallback onTap,
-          {String empty = 'Choose date', VoidCallback? onClear}) =>
+          {String empty = 'Select Date', VoidCallback? onClear}) =>
       _box(
         onTap: onTap,
         semantics: '$label: ${d == null ? empty : fullDate(d)}',
@@ -432,7 +432,7 @@ class _FlightSearchScreenState extends State<FlightSearchScreen> {
             if (onClear != null)
               GestureDetector(
                 onTap: onClear,
-                child: Icon(Icons.close_rounded, size: 18, color: Neon.textLo, semanticLabel: 'Remove return'),
+                child: Icon(Icons.close_rounded, size: 18, color: Neon.textLo, semanticLabel: 'Remove Return'),
               ),
           ],
         ),
@@ -599,7 +599,7 @@ class _AirportPickerState extends State<_AirportPicker> {
             Expanded(
               child: list.isEmpty
                   ? Center(
-                      child: Text('No airport matches "$_q"', style: TextStyle(color: Neon.textLo)),
+                      child: Text('No airports found for "$_q"', style: TextStyle(color: Neon.textLo)),
                     )
                   : ListView.builder(
                       itemCount: list.length,
@@ -691,7 +691,7 @@ class _TravellersSheetState extends State<_TravellersSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Travellers & class', style: NeonType.manrope(19, FontWeight.w800).copyWith(color: Neon.textHi)),
+            Text('Travellers & Class', style: NeonType.manrope(19, FontWeight.w800).copyWith(color: Neon.textHi)),
             const SizedBox(height: 8),
             _stepper('Adults', '12 years and above', t.adults, 1, t.adults + room,
                 (v) => setState(() => t = t.copyWith(adults: v, infants: t.infants > v ? v : null))),
@@ -699,12 +699,12 @@ class _TravellersSheetState extends State<_TravellersSheet> {
                 (v) => setState(() => t = t.copyWith(children: v))),
             _stepper(
                 'Infants',
-                'Under 2 years, on a lap',
+                'Under 2 years, seated on a lap',
                 t.infants,
                 0,
                 [t.adults, t.infants + room].reduce((a, b) => a < b ? a : b),
                 (v) => setState(() => t = t.copyWith(infants: v))),
-            Text('Up to ${FlightTrip.maxTravellers} travellers; one infant per adult.',
+            Text('A maximum of ${FlightTrip.maxTravellers} travellers; one infant per adult.',
                 style: TextStyle(color: Neon.textDim, fontSize: 12)),
             const SizedBox(height: 16),
             Text('CLASS', style: NeonType.eyebrow.copyWith(color: Neon.textLo)),

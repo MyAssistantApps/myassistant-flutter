@@ -117,7 +117,7 @@ class _NearbyProsScreenState extends State<NearbyProsScreen> {
     final results = _results;
     return Scaffold(
       backgroundColor: Neon.bg,
-      appBar: appleAppBar(context, 'Near you'),
+      appBar: appleAppBar(context, 'Near You'),
       body: Column(children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
@@ -184,9 +184,9 @@ class _NearbyProsScreenState extends State<NearbyProsScreen> {
     if (_problem == 'location') {
       return NeonEmptyState(
         icon: Icons.location_off_rounded,
-        title: 'Location is off',
-        body: 'Allow location to see doctors, advocates and businesses near you.',
-        actionLabel: 'Try again',
+        title: 'Location Unavailable',
+        body: 'Location access is required to display doctors, advocates and businesses near you.',
+        actionLabel: 'Retry',
         actionIcon: Icons.my_location_rounded,
         onAction: () async {
           if (await Geolocator.checkPermission() == LocationPermission.deniedForever) {
@@ -197,15 +197,15 @@ class _NearbyProsScreenState extends State<NearbyProsScreen> {
       );
     }
     if (_problem == 'network' && results == null) {
-      return NeonErrorState(message: "Couldn't search right now.", onRetry: _search);
+      return NeonErrorState(message: "Unable to search at present. Please try again.", onRetry: _search);
     }
     if (results == null) return const Center(child: NeonLoader());
     if (results.isEmpty) {
       return NeonEmptyState(
         icon: Icons.storefront_rounded,
-        title: _loading ? 'Searching…' : 'No one listed nearby yet',
-        body: 'Only professionals on MyAssistant who published their page appear here. Try a wider distance or "All".',
-        actionLabel: _radius < 50 ? 'Search within 50 km' : null,
+        title: _loading ? 'Searching…' : 'No Professionals Found Nearby',
+        body: 'Only professionals on MyAssistant who have published their page are listed here. Please select a wider distance or "All".',
+        actionLabel: _radius < 50 ? 'Search Within 50 km' : null,
         actionIcon: Icons.zoom_out_map_rounded,
         onAction: _radius < 50
             ? () {
@@ -393,7 +393,7 @@ class _ProDetailScreenState extends State<ProDetailScreen> {
       ),
     );
     if (sent == true && mounted) {
-      AppFeedback.toast('Request sent — ${c.displayName} will call you to confirm.');
+      AppFeedback.toast('Request sent. ${c.displayName} will call you to confirm.');
     }
   }
 
@@ -404,7 +404,7 @@ class _ProDetailScreenState extends State<ProDetailScreen> {
       backgroundColor: Neon.bg,
       appBar: appleAppBar(context, c?.title ?? ''),
       body: _failed
-          ? NeonErrorState(message: "Couldn't open this page.", onRetry: _load)
+          ? NeonErrorState(message: "Unable to open this page.", onRetry: _load)
           : c == null
               ? const Center(child: NeonLoader())
               : ListView(
@@ -449,7 +449,7 @@ class _ProDetailScreenState extends State<ProDetailScreen> {
                     ]),
                     if (c.acceptsRequests) ...[
                       const SizedBox(height: 10),
-                      ApplePrimaryButton(label: 'Request a booking', icon: Icons.event_available_rounded, onPressed: _book),
+                      ApplePrimaryButton(label: 'Request a Booking', icon: Icons.event_available_rounded, onPressed: _book),
                     ],
                     if (c.posts.isNotEmpty) ...[
                       const SizedBox(height: 18),
@@ -471,9 +471,9 @@ class _ProDetailScreenState extends State<ProDetailScreen> {
                     const SizedBox(height: 18),
                     _label('Details'),
                     GroupedCard(dividerInset: 16, children: [
-                      if (c.placeName.isNotEmpty && c.persona != 'business') _fact(Icons.storefront_rounded, 'Practice at', c.placeName),
+                      if (c.placeName.isNotEmpty && c.persona != 'business') _fact(Icons.storefront_rounded, 'Practice Location', c.placeName),
                       if (c.qualification.isNotEmpty) _fact(Icons.school_rounded, 'Qualification', c.qualification),
-                      if (c.regNo.isNotEmpty) _fact(Icons.verified_user_rounded, c.persona == 'advocate' ? 'Enrolment no.' : 'Reg. no.', c.regNo),
+                      if (c.regNo.isNotEmpty) _fact(Icons.verified_user_rounded, c.persona == 'advocate' ? 'Enrolment No.' : 'Registration No.', c.regNo),
                       if (c.hours.isNotEmpty) _fact(Icons.schedule_rounded, 'Timings', c.hours),
                       if (c.fee > 0 && c.persona == 'doctor') _fact(Icons.currency_rupee_rounded, 'Consultation', '₹${c.fee.round()}'),
                       if (c.languages.isNotEmpty) _fact(Icons.translate_rounded, 'Languages', c.languages),
@@ -481,7 +481,7 @@ class _ProDetailScreenState extends State<ProDetailScreen> {
                     ]),
                     if (c.services.isNotEmpty) ...[
                       const SizedBox(height: 18),
-                      _label(c.persona == 'advocate' ? 'Areas of practice' : 'Services'),
+                      _label(c.persona == 'advocate' ? 'Areas of Practice' : 'Services'),
                       Wrap(spacing: 8, runSpacing: 8, children: [for (final s in c.services) Chip(label: Text(s))]),
                     ],
                     if (c.url.isNotEmpty) ...[
@@ -489,10 +489,10 @@ class _ProDetailScreenState extends State<ProDetailScreen> {
                       TextButton.icon(
                         onPressed: () async {
                           await Clipboard.setData(ClipboardData(text: c.url));
-                          if (context.mounted) AppFeedback.copied(context, 'Link copied');
+                          if (context.mounted) AppFeedback.copied(context, 'Link copied.');
                         },
                         icon: const Icon(Icons.link_rounded, size: 18),
-                        label: const Text('Copy link to this page'),
+                        label: const Text('Copy Link to This Page'),
                       ),
                     ],
                   ],
@@ -545,7 +545,7 @@ class _BookSheetState extends State<_BookSheet> {
     if (!mounted) return;
     if (!ok) {
       setState(() => _busy = false);
-      AppFeedback.toast("Couldn't send. Please call instead.");
+      AppFeedback.toast("Unable to send the request. Please call instead.");
       return;
     }
     HapticFeedback.lightImpact();
@@ -557,28 +557,28 @@ class _BookSheetState extends State<_BookSheet> {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(18, 14, 18, 20),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Text('Request a booking', style: TextStyle(color: Neon.textHi, fontSize: 19, fontWeight: FontWeight.w700)),
+        Text('Request a Booking', style: TextStyle(color: Neon.textHi, fontSize: 19, fontWeight: FontWeight.w700)),
         const SizedBox(height: 4),
-        Text('${widget.card.displayName} will call you to confirm a time. Your number goes only to them.',
+        Text('${widget.card.displayName} will call you to confirm a time. Your number is shared only with them.',
             style: TextStyle(color: Neon.textLo, fontSize: 13)),
         const SizedBox(height: 12),
         TextField(controller: _name, textCapitalization: TextCapitalization.words, onChanged: (_) => setState(() {}),
-            decoration: const InputDecoration(labelText: 'Your name')),
+            decoration: const InputDecoration(labelText: 'Your Name')),
         const SizedBox(height: 10),
         TextField(controller: _phone, keyboardType: TextInputType.phone, onChanged: (_) => setState(() {}),
-            decoration: const InputDecoration(labelText: 'Phone')),
+            decoration: const InputDecoration(labelText: 'Phone Number')),
         const SizedBox(height: 10),
         Wrap(spacing: 8, runSpacing: 6, children: [
           for (final p in const ['Today', 'Tomorrow morning', 'Tomorrow evening', 'This weekend'])
             ActionChip(label: Text(p), onPressed: () => setState(() => _pref.text = p)),
         ]),
         const SizedBox(height: 8),
-        TextField(controller: _pref, decoration: const InputDecoration(labelText: 'Preferred day / time')),
+        TextField(controller: _pref, decoration: const InputDecoration(labelText: 'Preferred Day / Time')),
         const SizedBox(height: 10),
         TextField(controller: _msg, minLines: 1, maxLines: 4, textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(labelText: 'Message (optional)')),
+            decoration: const InputDecoration(labelText: 'Message (Optional)')),
         const SizedBox(height: 18),
-        ApplePrimaryButton(label: _busy ? 'Sending…' : 'Send request', onPressed: _ok && !_busy ? _send : null),
+        ApplePrimaryButton(label: _busy ? 'Sending…' : 'Send Request', onPressed: _ok && !_busy ? _send : null),
       ]),
     );
   }

@@ -55,7 +55,7 @@ void main() {
     ));
     await t.tap(find.text('open'));
     await t.pumpAndSettle();
-    await t.tap(find.text('Female voices'));
+    await t.tap(find.text('Female Voices'));
     await t.pumpAndSettle();
 
     final playCoral = find.byTooltip('Play a sample of Coral');
@@ -67,7 +67,7 @@ void main() {
     // The bug: this tap used to fall through, pick Coral and go back.
     await t.tap(find.byTooltip('Stop the sample of Coral'));
     await t.pump(const Duration(milliseconds: 20));
-    expect(find.text('Female voices'), findsOneWidget, reason: 'still on the picker');
+    expect(find.text('Female Voices'), findsOneWidget, reason: 'still on the picker');
     expect(popped, isNull, reason: 'no voice was chosen');
     expect(find.byTooltip('Play a sample of Coral'), findsOneWidget, reason: 'stopped');
 

@@ -86,7 +86,7 @@ class _EmailSetupScreenState extends State<EmailSetupScreen> {
     } on AuthException catch (e) {
       setState(() => _error = e.message);
     } catch (_) {
-      setState(() => _error = "Couldn't link your account — try again.");
+      setState(() => _error = "Unable to link your account. Please try again.");
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -96,7 +96,7 @@ class _EmailSetupScreenState extends State<EmailSetupScreen> {
     final addr = _address.text.trim();
     final pass = _password.text.trim();
     if (addr.isEmpty || pass.isEmpty) {
-      setState(() => _error = 'Enter the email address and its app password.');
+      setState(() => _error = 'Please enter the email address and its app password.');
       return;
     }
     setState(() {
@@ -122,11 +122,11 @@ class _EmailSetupScreenState extends State<EmailSetupScreen> {
       } else {
         setState(() => _error =
             (body is Map ? body['error'] : null)?.toString() ??
-                'Could not connect — check the address and app password.');
+                'Unable to connect. Please check the address and app password.');
       }
     } catch (_) {
       setState(() =>
-          _error = 'Could not reach the server — check your connection.');
+          _error = 'Unable to connect. Please check your internet connection.');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -138,17 +138,17 @@ class _EmailSetupScreenState extends State<EmailSetupScreen> {
       context: context,
       builder: (c) => AlertDialog(
         // The theme's floating surface and words (2026-09-30).
-        title: const Text('Disconnect mail?'),
+        title: const Text('Disconnect Mail'),
         content: Text(
           isGoogle
-              ? 'This unlinks your account — mail AND calendar '
-                  'features stop until you link it again.'
-              : 'Your saved credentials are deleted from the server.',
+              ? 'This will unlink your account. Mail and calendar '
+                  'features will be unavailable until it is linked again. Do you wish to proceed?'
+              : 'Your saved credentials will be deleted from the server. Do you wish to proceed?',
         ),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(c, false),
-              child: const Text('Keep it')),
+              child: const Text('Keep')),
           TextButton(
               onPressed: () => Navigator.pop(c, true),
               child: Text('Disconnect',
@@ -179,7 +179,7 @@ class _EmailSetupScreenState extends State<EmailSetupScreen> {
     if (!ok) {
       setState(() {
         _busy = false;
-        _error = "Couldn't disconnect — try again.";
+        _error = "Unable to disconnect. Please try again.";
       });
       return;
     }
@@ -238,7 +238,7 @@ class _EmailSetupScreenState extends State<EmailSetupScreen> {
         const SizedBox(height: 18),
         Reveal(
           delayMs: 60,
-          child: Text('Your mail, by voice',
+          child: Text('Email by Voice',
               textAlign: TextAlign.center,
               style: TextStyle(
                   color: Neon.textHi,
@@ -249,7 +249,7 @@ class _EmailSetupScreenState extends State<EmailSetupScreen> {
         const SizedBox(height: 6),
         Reveal(
           delayMs: 90,
-          child: Text('One tap to link. Then just say\n"Read my mails."',
+          child: Text('Link with a single tap, then say\n"Read my mails."',
               textAlign: TextAlign.center,
               style:
                   TextStyle(color: Neon.textLo, fontSize: 14, height: 1.45)),
@@ -315,7 +315,7 @@ class _EmailSetupScreenState extends State<EmailSetupScreen> {
         const SizedBox(height: 10),
         Reveal(
           delayMs: 160,
-          child: Text('One tap — nothing to type.',
+          child: Text('A single tap. No typing is required.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Neon.textDim, fontSize: 12)),
         ),
@@ -346,8 +346,8 @@ class _EmailSetupScreenState extends State<EmailSetupScreen> {
               onPressed: () => setState(() => _showManual = !_showManual),
               child: Text(
                   _showManual
-                      ? 'Hide the manual setup'
-                      : 'Use another mail service',
+                      ? 'Hide Manual Setup'
+                      : 'Use Another Mail Service',
                   style: TextStyle(color: Neon.cyanInk, fontSize: 14)),
             ),
           ),
@@ -359,15 +359,15 @@ class _EmailSetupScreenState extends State<EmailSetupScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 8),
-              _field(_address, 'Email address',
+              _field(_address, 'Email Address',
                   hint: 'you@company.com', keyboard: TextInputType.emailAddress),
               const SizedBox(height: 12),
-              _field(_password, 'App password',
+              _field(_password, 'App Password',
                   hint: 'App password from your mail provider', obscure: true),
               const SizedBox(height: 8),
               Text(
-                'Other mail services and company mailboxes: create an app '
-                'password in the provider\'s security settings and paste it '
+                'For other mail services and company mailboxes, create an app '
+                'password in the provider\'s security settings and enter it '
                 'here once.',
                 style: TextStyle(color: Neon.textLo, fontSize: 12, height: 1.5),
               ),
@@ -388,7 +388,7 @@ class _EmailSetupScreenState extends State<EmailSetupScreen> {
                       ),
                       child: _busy
                           ? const NeonLoader.inline(semanticLabel: 'Connecting')
-                          : Text('Connect mailbox',
+                          : Text('Connect Mailbox',
                               style: TextStyle(
                                   color: Neon.onAccent,
                                   fontWeight: FontWeight.w800,
@@ -431,7 +431,7 @@ class _EmailSetupScreenState extends State<EmailSetupScreen> {
                 ),
         ),
         const SizedBox(height: 16),
-        Text(_justLinked ? 'Linked!' : 'Your mail',
+        Text(_justLinked ? 'Account Linked' : 'Your Mail',
             textAlign: TextAlign.center,
             style: TextStyle(
                 color: Neon.textHi,
@@ -440,8 +440,8 @@ class _EmailSetupScreenState extends State<EmailSetupScreen> {
         const SizedBox(height: 4),
         Text(
             _method == 'google'
-                ? 'Your mailbox is linked. Ask me to write a mail — it lands here.'
-                : '$_connectedAddress is linked. Ask me to write a mail — it lands here.',
+                ? 'Your mailbox is linked. Mail your assistant writes at your request appears here.'
+                : '$_connectedAddress is linked. Mail your assistant writes at your request appears here.',
             textAlign: TextAlign.center,
             style: TextStyle(color: Neon.textLo, fontSize: 14)),
         const SizedBox(height: 22),
@@ -451,7 +451,7 @@ class _EmailSetupScreenState extends State<EmailSetupScreen> {
         const EmailSentList(),
         const SizedBox(height: 22),
         Center(
-          child: Text('Go back, tap the mic and say who to write to',
+          child: Text('Go back, tap the microphone and name the recipient',
               style: TextStyle(color: Neon.textDim, fontSize: 13)),
         ),
         const SizedBox(height: 30),

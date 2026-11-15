@@ -86,11 +86,11 @@ class PhoneVerifyService {
     try {
       final r = await _post('/phone/call-code', {'phone': e164});
       if (r.statusCode == 409) return 'This number is already registered to another account.';
-      if (r.statusCode >= 300) return _errorOf(r) ?? "Couldn't place the call. Try again.";
+      if (r.statusCode >= 300) return _errorOf(r) ?? "Unable to place the call. Please try again.";
       AppLog.add('phone', 'verification call requested');
       return null;
     } catch (_) {
-      return 'Could not reach the server. Check your connection.';
+      return 'Unable to reach the server. Please check your connection.';
     }
   }
 
@@ -120,24 +120,24 @@ class PhoneVerifyService {
           decoded = jsonDecode(r.body);
         } catch (_) {}
         return (decoded is Map ? decoded['error'] as String? : null) ??
-            'Could not register this number.';
+            'Unable to register this number.';
       }
       // Refresh so the gate sees phoneVerified and lets the user through.
       await _refreshUser();
       AppLog.add('phone', 'verified via $path');
       return null;
     } catch (_) {
-      return 'Could not reach the server. Check your connection.';
+      return 'Unable to reach the server. Please check your connection.';
     }
   }
 
   /// What the user reads when the phone's side did not finish.
   static String wordsFor(String code) => switch (code) {
-        'cancelled' => 'You closed the confirmation. Tap Confirm to try again.',
-        'unsupported' => "Your network can't confirm numbers automatically yet.",
-        'not_enabled' => 'Number confirmation is not switched on for this app yet.',
-        'network' => 'No connection. Check your internet and try again.',
-        _ => 'Could not confirm your number. Try again.',
+        'cancelled' => 'The confirmation was closed. Tap Confirm to try again.',
+        'unsupported' => "Your network does not yet support automatic number confirmation.",
+        'not_enabled' => 'Number confirmation is not yet enabled for this app.',
+        'network' => 'Unable to connect. Please check your internet connection.',
+        _ => 'Unable to confirm your number. Please try again.',
       };
 }
 

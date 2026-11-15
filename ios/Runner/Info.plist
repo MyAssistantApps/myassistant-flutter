@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Hari listens to your voice so you can talk to your assistant.</string>
+	<string>Microphone access allows you to speak to your assistant.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>The camera lets you save documents and receipts by photographing them, and record your own short video for the video notes you send.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Speech recognition turns your voice into questions for Hari.</string>
+	<string>Speech recognition converts your voice into requests for your assistant.</string>
 	<key>NSContactsUsageDescription</key>
-	<string>Contacts access lets Hari place calls when you ask, like "call amma".</string>
+	<string>Contacts access allows your assistant to place calls at your request, such as "call amma".</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Your location powers local weather, nearby places and regional language.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>

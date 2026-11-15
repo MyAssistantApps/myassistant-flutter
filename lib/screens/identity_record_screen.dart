@@ -71,8 +71,8 @@ abstract final class IdentityRecordRules {
   static const int audioBitrate = 128000;
 
   static const String tooShort =
-      'That was under 20 seconds — too short to make video notes from. '
-      'Read the whole script; it takes about 30.';
+      'The recording was under 20 seconds, which is too short to create video notes. '
+      'Please read the whole script; it takes about 30 seconds.';
 }
 
 /// How fast the words move: a slower reader picks Slower instead of
@@ -358,8 +358,8 @@ class _IdentityRecordScreenState extends State<IdentityRecordScreen>
         _resetClock();
         setState(() {
           _stage = RecordStage.preparing;
-          _notice = 'Recording stopped when the app went to the background, '
-              'and nothing was kept. Start again when you are ready.';
+          _notice = 'Recording stopped because the app moved to the background, '
+              'and nothing was kept. Please start again when you are ready.';
         });
       case RecordStage.ready:
         _letGoOfCamera();
@@ -429,7 +429,7 @@ class _IdentityRecordScreenState extends State<IdentityRecordScreen>
       if (!mounted) return;
       setState(() {
         _stage = RecordStage.ready;
-        _notice = "Couldn't start recording — try again.";
+        _notice = "Unable to start recording. Please try again.";
       });
       return;
     }
@@ -482,7 +482,7 @@ class _IdentityRecordScreenState extends State<IdentityRecordScreen>
     if (file == null) {
       setState(() {
         _stage = RecordStage.ready;
-        _notice = "That recording couldn't be kept — please record again.";
+        _notice = "The recording could not be kept. Please record again.";
       });
       return;
     }
@@ -612,7 +612,7 @@ class _IdentityRecordScreenState extends State<IdentityRecordScreen>
     _closePlayer();
     _deleteTake();
     if (!mounted) return;
-    AppFeedback.show('Your video is saved.',
+    AppFeedback.show('Video saved.',
         context: context, tone: FeedbackTone.success);
     Navigator.of(context).pop(r.video);
   }
@@ -626,17 +626,17 @@ class _IdentityRecordScreenState extends State<IdentityRecordScreen>
 
   Future<void> _onBack() async {
     if (_stage == RecordStage.uploading) {
-      AppFeedback.show('Saving your video — one moment.', context: context);
+      AppFeedback.show('Your video is being saved. Please wait.', context: context);
       return;
     }
     final recording = _stage == RecordStage.recording;
     final leave = await showAppDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
-        title: const Text('Discard this video?'),
+        title: const Text('Discard This Video'),
         content: Text(recording
-            ? 'The recording stops and nothing is saved.'
-            : 'Nothing is saved.'),
+            ? 'The recording will stop and nothing will be saved. Do you wish to proceed?'
+            : 'Nothing will be saved. Do you wish to proceed?'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(c, false),
@@ -796,7 +796,7 @@ class _IdentityRecordScreenState extends State<IdentityRecordScreen>
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _topBar(
-                title: 'Your video',
+                title: 'Your Video',
                 trailing: live ? _recPill() : null,
               ),
               AnimatedOpacity(curve: Motion.easeMove, 
@@ -962,9 +962,9 @@ class _IdentityRecordScreenState extends State<IdentityRecordScreen>
     final hint = switch (_stage) {
       RecordStage.preparing => _notice ?? 'Starting the camera…',
       RecordStage.ready => _notice ??
-          'Hold the phone at eye level, somewhere quiet and bright. Tap the '
-              'button, then read the words as they light up.',
-      RecordStage.countdown => 'Get ready — tap again to cancel.',
+          'Hold the phone at eye level in a quiet, well-lit place. Tap the '
+              'button, then read the words as they are highlighted.',
+      RecordStage.countdown => 'Prepare to begin. Tap again to cancel.',
       _ => null,
     };
     if (hint != null) return _hintText(hint);
@@ -972,8 +972,8 @@ class _IdentityRecordScreenState extends State<IdentityRecordScreen>
       valueListenable: _done,
       builder: (_, done, __) => _hintText(done
           // Not "all done": a slower reader may still be reading.
-          ? 'Finished? Tap to stop.'
-          : 'Read along at an easy pace.'),
+          ? 'Tap to stop when you have finished.'
+          : 'Read along at a comfortable pace.'),
     );
   }
 
@@ -1146,7 +1146,7 @@ class _IdentityRecordScreenState extends State<IdentityRecordScreen>
           onTap: _toggleReview,
           child: _overlay(
             top: _topBar(
-                title: 'Watch it back', subtitle: _clockOf(_takeLength)),
+                title: 'Review Video', subtitle: _clockOf(_takeLength)),
             note: uploading || _uploadError != null
                 ? Padding(
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
@@ -1182,7 +1182,7 @@ class _IdentityRecordScreenState extends State<IdentityRecordScreen>
                       Expanded(
                         // The one lit action: keep this take.
                         child: GlowCta(
-                          label: _uploadError != null ? 'Try again' : 'Save',
+                          label: _uploadError != null ? 'Retry' : 'Save',
                           onPressed: uploading ? null : _save,
                         ),
                       ),
@@ -1272,7 +1272,7 @@ class _IdentityRecordScreenState extends State<IdentityRecordScreen>
               const SizedBox(height: 8),
               Text(
                 v >= 1
-                    ? 'Almost there…'
+                    ? 'Finalising…'
                     : 'Saving your video… ${(v * 100).round()}%',
                 style: TextStyle(
                     color: _ink,
@@ -1289,40 +1289,40 @@ class _IdentityRecordScreenState extends State<IdentityRecordScreen>
         VoidCallback onAction) = switch (_block) {
       _Block.permission => (
           Icons.videocam_off_rounded,
-          'Camera and microphone needed',
-          'Your video is recorded right here in the app, so it needs both. '
+          'Camera and Microphone Required',
+          'Your video is recorded within the app, so both are required. '
               'Nothing is recorded until you tap the button.',
           'Allow',
           _prepare,
         ),
       _Block.permissionInSettings => (
           Icons.videocam_off_rounded,
-          'Camera and microphone are off',
-          'Turn on Camera and Microphone for this app in Settings, then '
-              'come back — this screen picks up where it left off.',
-          'Open settings',
+          'Camera and Microphone Are Off',
+          'Please turn on Camera and Microphone for this app in Settings, then '
+              'return; this screen will resume where it left off.',
+          'Open Settings',
           openAppSettings,
         ),
       _Block.noFrontCamera => (
           Icons.no_photography_rounded,
-          'No front camera',
-          'The video has to be you, facing the screen, so it can only be '
+          'No Front Camera',
+          'The video must show you facing the screen, so it can only be '
               'recorded with a front camera.',
-          'Go back',
+          'Go Back',
           () => Navigator.maybePop(context),
         ),
       _Block.camera => (
           Icons.videocam_off_rounded,
-          "Couldn't start the camera",
-          'Another app may be using it. Close that app, then try again.',
-          'Try again',
+          "Unable to Start the Camera",
+          'Another app may be using it. Please close that app and try again.',
+          'Retry',
           _prepare,
         ),
     };
     return SafeArea(
       child: Column(
         children: [
-          _topBar(title: 'Your video'),
+          _topBar(title: 'Your Video'),
           Expanded(
             child: Center(
               child: SingleChildScrollView(

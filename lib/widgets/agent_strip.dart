@@ -40,14 +40,14 @@ const agentRoster = <AgentInfo>[
       'Reminders, calendar, alarms, timers and your day.'),
   AgentInfo('info', 'Information', Icons.travel_explore_rounded,
       'Search, news, weather, places, law and travel.', 'Info'),
-  AgentInfo('commerce', 'Shopping and money', Icons.shopping_bag_rounded,
+  AgentInfo('commerce', 'Shopping and Money', Icons.shopping_bag_rounded,
       'Shopping list, orders, rides, recharges and payments.', 'Shopping'),
   AgentInfo('creative', 'Creative', Icons.palette_rounded,
       'Images, video, photo edits, documents and music.'),
-  AgentInfo('device', 'Phone control', Icons.tune_rounded,
+  AgentInfo('device', 'Phone Control', Icons.tune_rounded,
       'Settings, apps, the camera, screenshots and shortcuts.', 'Phone'),
   AgentInfo('memory', 'Memory', Icons.psychology_rounded,
-      'What to remember or forget about you and your people.'),
+      'Information to remember or forget about you and your contacts.'),
   AgentInfo('records', 'Records', Icons.folder_copy_rounded,
       'Saved documents, record books, cases and clients.'),
 ];
@@ -156,7 +156,7 @@ class _AgentStripState extends State<AgentStrip> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: 'Your assistant\'s agents. $_caption. Tap to see what each one does.',
+      label: 'Your assistant\'s agents. $_caption. Tap to view the role of each agent.',
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () => showAgentSheet(context),
@@ -369,7 +369,7 @@ Future<void> showAgentSheet(BuildContext context) {
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
           children: [
             Text(
-              'Your agents',
+              'Your Agents',
               style: GoogleFonts.interTight(
                 color: Neon.textHi,
                 fontSize: 20,
@@ -378,7 +378,7 @@ Future<void> showAgentSheet(BuildContext context) {
             ),
             const SizedBox(height: 4),
             Text(
-              'The manager reads each request and hands it to the agents that know that work.',
+              'The manager reads each request and assigns it to the agents responsible for that work.',
               style: TextStyle(color: Neon.textLo, fontSize: 13.5),
             ),
             const SizedBox(height: 12),
@@ -439,7 +439,7 @@ class AgentHandoffLane extends StatelessWidget {
         ..add(_HandoffChip(agent: info, state: state, pulse: pulse));
     }
     return Semantics(
-      label: 'Handed from the manager to ${turn.control.agents.map((a) => a.label).join(', ')}',
+      label: 'Assigned by the manager to${turn.control.agents.map((a) => a.label).join(', ')}',
       // Wraps rather than scrolls: a chip cut at the edge hid "Memory".
       child: Wrap(
         crossAxisAlignment: WrapCrossAlignment.center,

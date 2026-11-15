@@ -99,19 +99,19 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen>
     _toast(msg ??
         (ok
             ? (linked ? 'Google is disconnected.' : 'Google is connected.')
-            : "Couldn't do that. Please try again."));
+            : "Unable to complete the request. Please try again."));
   }
 
   Future<bool> _confirmUnlink(String name) async =>
       await showAppDialog<bool>(
         context: context,
         builder: (c) => AlertDialog(
-          title: Text('Disconnect $name?'),
-          content: const Text("I'll stop using it for you. Nothing in it is deleted."),
+          title: Text('Disconnect $name'),
+          content: const Text("Your assistant will no longer use it on your behalf. Nothing in it is deleted. Do you wish to proceed?"),
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(c, false),
-                child: const Text('Keep it')),
+                child: const Text('Keep')),
             FilledButton(
                 onPressed: () => Navigator.pop(c, true),
                 child: const Text('Disconnect')),
@@ -129,7 +129,7 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen>
       final ok = await _svc.disconnect(a.id);
       if (!mounted) return;
       setState(() => _busyId = null);
-      _toast(ok ? '${a.name} is disconnected.' : "Couldn't disconnect. Please try again.");
+      _toast(ok ? '${a.name} is disconnected.' : "Unable to disconnect. Please try again.");
       return;
     }
     setState(() => _busyId = a.id);
@@ -137,7 +137,7 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen>
     if (!mounted) return;
     setState(() => _busyId = null);
     if (r == ConnectResult.connected) _toast('${a.name} is connected.');
-    if (r == ConnectResult.failed) _toast("Couldn't connect ${a.name}. Please try again.");
+    if (r == ConnectResult.failed) _toast("Unable to connect ${a.name}. Please try again.");
   }
 
   Widget _appRow({
@@ -186,7 +186,7 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen>
     });
     if (r == ConnectResult.connected) _toast('Notion is connected.');
     if (r == ConnectResult.failed) {
-      _toast("Couldn't connect Notion. Please try again.");
+      _toast("Unable to connect Notion. Please try again.");
     }
   }
 
@@ -194,13 +194,13 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen>
     final ok = await showAppDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
-        title: const Text('Disconnect Notion?'),
+        title: const Text('Disconnect Notion'),
         content: const Text(
-            "I'll stop reading or adding to your pages. Nothing in Notion is deleted."),
+            "Your assistant will no longer read or add to your pages. Nothing in Notion is deleted. Do you wish to proceed?"),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(c, false),
-              child: const Text('Keep it')),
+              child: const Text('Keep')),
           FilledButton(
               onPressed: () => Navigator.pop(c, true),
               child: const Text('Disconnect')),
@@ -211,7 +211,7 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen>
     final done = await _svc.disconnectNotion();
     _toast(done
         ? 'Notion is disconnected.'
-        : "Couldn't disconnect. Please try again.");
+        : "Unable to disconnect. Please try again.");
   }
 
   Widget _notionCard(ConnectionInfo n) {
@@ -226,13 +226,13 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen>
       button = 'Disconnect';
       action = _disconnect;
     } else if (n.status == 'needs_reconnect') {
-      subtitle = 'Needs a quick reconnect';
+      subtitle = 'Reconnection required';
       button = 'Reconnect';
       action = _connect;
     } else {
       subtitle = _failed
-          ? "Couldn't connect. Please try again."
-          : 'Read your pages and add notes and to-dos — only the pages you choose.';
+          ? "Unable to connect. Please try again."
+          : 'Reads your pages and adds notes and to-dos, limited to the pages you select.';
       button = 'Connect';
       action = _connect;
     }
@@ -281,10 +281,10 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen>
           padding: const EdgeInsets.only(left: 16, top: 6, right: 16),
           child: Text(
             n.status == 'connected'
-                ? 'Try saying: "Add milk to my Groceries page in Notion."\n'
-                    'To let me see more pages later: in Notion, open the page, '
+                ? 'For example, say: "Add milk to my Groceries page in Notion."\n'
+                    'To grant access to further pages later: in Notion, open the page, '
                     'tap ••• → Connections, and add Hari Assistant.'
-                : 'To let me see more pages later: in Notion, open the page, '
+                : 'To grant access to further pages later: in Notion, open the page, '
                     'tap ••• → Connections, and add Hari Assistant.',
             // textLo (2026-09-30): textDim fell under 4.5:1 on the sky.
             style: TextStyle(color: Neon.textLo, fontSize: NeonType.caption),
@@ -299,15 +299,15 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen>
   Widget build(BuildContext context) {
     final n = _svc.notion;
     return NeonScaffold(
-      appBar: appleAppBar(context, 'Connected apps'),
+      appBar: appleAppBar(context, 'Connected Apps'),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 0, 4, 18),
             child: Text(
-              'Link the apps you already use, so I can help inside them. '
-              'You can unlink any time.',
+              'Link the apps you already use so that your assistant can work within them. '
+              'You may unlink them at any time.',
               style: TextStyle(color: Neon.textLo, fontSize: 14, height: 1.4),
             ),
           ),
@@ -322,7 +322,7 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen>
               name: 'Google',
               subtitle: _googleLinked == true
                   ? 'Gmail and Calendar are linked. Tap to disconnect.'
-                  : 'Gmail and Google Calendar — one sign-in',
+                  : 'Gmail and Google Calendar with a single sign-in',
               connected: _googleLinked == true,
               available: _googleLinked != null,
               onTap: _toggleGoogle,
@@ -330,7 +330,7 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen>
           ]),
           const SizedBox(height: 24),
           if (_svc.items.any((c) => c.id != 'notion')) ...[
-            const GroupLabel('More apps'),
+            const GroupLabel('More Apps'),
             GroupedCard(dividerInset: 60, children: [
               for (final a in _svc.items.where((c) => c.id != 'notion'))
                 _appRow(
@@ -339,7 +339,7 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen>
                   subtitle: a.connected
                       ? 'Connected${a.workspace != null ? ' to ${a.workspace}' : ''}. Tap to disconnect.'
                       : a.status == 'needs_reconnect'
-                          ? 'Needs a quick reconnect'
+                          ? 'Reconnection required'
                           : a.description,
                   connected: a.connected,
                   available: a.available,
@@ -348,7 +348,7 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen>
             ]),
             const SizedBox(height: 24),
           ],
-          const GroupLabel('Mail & calendar'),
+          const GroupLabel('Mail & Calendar'),
           GroupedCard(
             dividerInset: 60,
             children: [

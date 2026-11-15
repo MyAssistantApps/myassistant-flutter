@@ -96,7 +96,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
           children: [
             AppleRow(
               leading: IconTile(Icons.photo_camera_rounded, Neon.violet),
-              title: me ? 'Take a selfie' : 'Take a photo',
+              title: me ? 'Take a Selfie' : 'Take a Photo',
               subtitle: me
                   ? 'Face and shoulders, in good light'
                   : 'Of the ${c.refLabel.toLowerCase()} itself',
@@ -105,8 +105,8 @@ class _TryOnScreenState extends State<TryOnScreen> {
             ),
             AppleRow(
               leading: IconTile(Icons.photo_library_rounded, Neon.pink),
-              title: 'Choose from gallery',
-              subtitle: me ? 'A clear photo of you' : 'A screenshot works too',
+              title: 'Select from Gallery',
+              subtitle: me ? 'A clear photo of you' : 'A screenshot is also acceptable',
               trailing: const SizedBox.shrink(),
               onTap: () => Navigator.pop(ctx, ImageSource.gallery),
             ),
@@ -177,7 +177,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
       if (!mounted) return;
       setState(() => _error = e is StudioException && e.message.isNotEmpty
           ? e.message
-          : "That didn't come out. Check your connection and try again.");
+          : "Unable to create the look. Please check your internet connection and try again.");
     } finally {
       _tick?.cancel();
       if (mounted) setState(() => _running = false);
@@ -185,10 +185,10 @@ class _TryOnScreenState extends State<TryOnScreen> {
   }
 
   String get _progress {
-    if (_elapsed < 6) return 'Getting your photos ready…';
+    if (_elapsed < 6) return 'Preparing your photos…';
     if (_elapsed < 18) return 'Creating your look… ${_elapsed}s';
-    if (_elapsed < 45) return 'Getting the details right… ${_elapsed}s';
-    return 'Almost there — ${_elapsed}s';
+    if (_elapsed < 45) return 'Refining the details… ${_elapsed}s';
+    return 'Nearly complete… ${_elapsed}s';
   }
 
   void _view(StudioResult out) =>
@@ -232,8 +232,8 @@ class _TryOnScreenState extends State<TryOnScreen> {
               const SizedBox(height: 18),
               if (_studio?.consented != true) ...[
                 Text(
-                  'Your photos are used only to make this look, kept private '
-                  'and labelled AI-generated. Remove them any time in Style '
+                  'Your photos are used only to create this look, kept private '
+                  'and labelled AI-generated. You may remove them at any time in Style '
                   'Studio.',
                   style: TextStyle(
                       color: Neon.textDim,
@@ -274,7 +274,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
                   for (final (i, step) in [
                     'Add your photo',
                     'Add a photo of ${c.refLabel.toLowerCase()}',
-                    'Tap Create — it takes under a minute',
+                    'Tap Create; it takes less than a minute',
                   ].indexed)
                     Padding(
                       padding: const EdgeInsets.only(top: 3),
@@ -405,7 +405,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
                                         size: 24),
                                   ),
                                   const SizedBox(height: 10),
-                                  Text(me ? 'Add your photo' : 'Add photo',
+                                  Text(me ? 'Add Your Photo' : 'Add Photo',
                                       textAlign: TextAlign.center,
                                       style: NeonType.manrope(
                                               14, FontWeight.w700)
@@ -441,7 +441,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.only(left: 4, bottom: 8),
-            child: Text('MAKE IT YOURS',
+            child: Text('CUSTOMISE',
                 style: NeonType.eyebrow.copyWith(color: Neon.textLo)),
           ),
           Container(
@@ -471,9 +471,9 @@ class _TryOnScreenState extends State<TryOnScreen> {
 
   Widget _button() {
     final missing = !_hasMe
-        ? 'Add your photo to start'
+        ? 'Please add your photo to begin.'
         : _ref == null
-            ? 'Add a photo of ${c.refLabel.toLowerCase()}'
+            ? 'Please add a photo of ${c.refLabel.toLowerCase()}.'
             : null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -513,7 +513,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
                         const Icon(Icons.auto_awesome_rounded,
                             color: Colors.white, size: 20),
                       const SizedBox(width: 10),
-                      Text(_running ? _progress : 'Create my look',
+                      Text(_running ? _progress : 'Create My Look',
                           style: NeonType.manrope(15.5, FontWeight.w800)
                               .copyWith(color: Colors.white)),
                     ],
@@ -591,7 +591,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
                       color: Neon.success, size: 18),
                   const SizedBox(width: 6),
                   Expanded(
-                    child: Text('Your look · saved to My documents',
+                    child: Text('Your look · saved to My Documents',
                         style: TextStyle(
                             color: Neon.textHi,
                             fontSize: 13.5,

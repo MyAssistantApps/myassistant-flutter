@@ -123,15 +123,15 @@ class _StudioLookScreenState extends State<StudioLookScreen> {
           children: [
             AppleRow(
               leading: IconTile(Icons.photo_camera_rounded, Neon.accentA),
-              title: 'Photograph the item',
-              subtitle: 'Lay it flat, or shoot it on the hanger',
+              title: 'Photograph the Item',
+              subtitle: 'Lay the item flat or photograph it on a hanger',
               trailing: const SizedBox.shrink(),
               onTap: () => Navigator.pop(c, ImageSource.camera),
             ),
             AppleRow(
               leading: IconTile(Icons.photo_library_rounded, Neon.accentC),
-              title: 'Choose a photo',
-              subtitle: 'A screenshot from a shopping app works',
+              title: 'Select a Photo',
+              subtitle: 'A screenshot from a shopping app is acceptable',
               trailing: const SizedBox.shrink(),
               onTap: () => Navigator.pop(c, ImageSource.gallery),
             ),
@@ -156,7 +156,7 @@ class _StudioLookScreenState extends State<StudioLookScreen> {
   Future<void> _pickFromWardrobe() async {
     final w = widget.state.wardrobe;
     if (w.isEmpty) {
-      _toast('Nothing in your wardrobe yet — photograph an item instead.');
+      _toast('Your wardrobe is empty. Please photograph an item instead.');
       return;
     }
     final chosen = await showAppSheet<StudioPhoto>(
@@ -169,7 +169,7 @@ class _StudioLookScreenState extends State<StudioLookScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Your wardrobe',
+              Text('Your Wardrobe',
                   style: TextStyle(
                       color: Neon.textHi,
                       fontSize: 17,
@@ -221,7 +221,7 @@ class _StudioLookScreenState extends State<StudioLookScreen> {
   Future<void> _run() async {
     final missing = _missingRequired();
     if (missing != null) {
-      _toast('Choose $missing first.');
+      _toast('Please select $missing first.');
       return;
     }
     HapticFeedback.mediumImpact();
@@ -251,8 +251,8 @@ class _StudioLookScreenState extends State<StudioLookScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = e is StudioException
-          ? (e.message.isNotEmpty ? e.message : 'That did not come out.')
-          : 'That did not come out. Check your connection and try again.');
+          ? (e.message.isNotEmpty ? e.message : 'Unable to create the look.')
+          : 'Unable to create the look. Please check your connection and try again.');
     } finally {
       _tick?.cancel();
       if (mounted) setState(() => _running = false);
@@ -274,7 +274,7 @@ class _StudioLookScreenState extends State<StudioLookScreen> {
       canPop: !_running,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop && _running) {
-          _toast('Still working — it will be in your files either way.');
+          _toast('Processing is still in progress. The result will be saved to your files in either case.');
         }
       },
       // Under Home's sky, with the app's detail bar (2026-09-30).
@@ -294,27 +294,27 @@ class _StudioLookScreenState extends State<StudioLookScreen> {
             if (r.needsModel) _baseRow(),
             if (r.presets.isNotEmpty) ...[
               const SizedBox(height: 20),
-              _label('Pick one, or describe it yourself'),
+              _label('Select an option or provide a description'),
               const SizedBox(height: 10),
               _presetChips(),
             ],
             if (r.acceptsGarment) ...[
               const SizedBox(height: 22),
               _label(switch (r.id) {
-                'outfit' => 'Have a photo of the actual item?',
-                'hair' => 'Have a photo of the haircut you want?',
+                'outfit' => 'Photo of the actual item (optional)',
+                'hair' => 'Photo of the desired haircut (optional)',
                 'custom' => 'Add a reference photo',
-                _ => 'Have a photo of the actual piece?',
+                _ => 'Photo of the actual piece (optional)',
               }),
               const SizedBox(height: 4),
               Text(
                 switch (r.id) {
-                  'hair' => 'A photo of the cut — a salon picture, a celebrity '
-                      '— is copied onto your own face and hair.',
-                  'custom' => 'Anything you want taken from it — an outfit, '
-                      'an accessory, a setting. Tell me below what to use.',
-                  _ => 'A photo of the real thing keeps its exact colour, '
-                      'print and texture. Without one it is made from your '
+                  'hair' => 'A photo of the haircut, such as a salon picture or a '
+                      'celebrity photo, is applied to your own face and hair.',
+                  'custom' => 'Any element may be taken from it: an outfit, '
+                      'an accessory or a setting. Please specify below what to use.',
+                  _ => 'A photo of the actual item preserves its exact colour, '
+                      'print and texture. Without one, the look is created from your '
                       'description.',
                 },
                 style: TextStyle(color: Neon.textLo, fontSize: 13, height: 1.4),
@@ -374,7 +374,7 @@ class _StudioLookScreenState extends State<StudioLookScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Using your photo',
+              Text('Using Your Photo',
                   style: TextStyle(
                       color: Neon.textHi,
                       fontSize: 15,
@@ -507,7 +507,7 @@ class _StudioLookScreenState extends State<StudioLookScreen> {
               OutlinedButton.icon(
                 onPressed: _running ? null : _pickGarment,
                 icon: const Icon(Icons.add_a_photo_outlined, size: 17),
-                label: Text(attached ? 'Replace' : 'Add a photo'),
+                label: Text(attached ? 'Replace' : 'Add a Photo'),
               ),
               if (widget.state.wardrobe.isNotEmpty)
                 OutlinedButton.icon(
@@ -542,7 +542,7 @@ class _StudioLookScreenState extends State<StudioLookScreen> {
         decoration: InputDecoration(
           labelText: p.label + (p.required ? ' *' : ''),
         ),
-        hint: Text(p.required ? 'Choose one' : 'Let the assistant decide',
+        hint: Text(p.required ? 'Select one' : 'Let your assistant decide',
             style: TextStyle(color: Neon.textDim, fontSize: 14)),
         items: [
           for (final o in p.options)
@@ -616,7 +616,7 @@ class _StudioLookScreenState extends State<StudioLookScreen> {
                       style: const TextStyle(fontWeight: FontWeight.w600)),
                 ],
               )
-            : Text(_result == null ? 'Make it' : 'Make another',
+            : Text(_result == null ? 'Create' : 'Create Another',
                 style: const TextStyle(
                     fontWeight: FontWeight.w700, fontSize: 16)),
         ),
@@ -626,10 +626,10 @@ class _StudioLookScreenState extends State<StudioLookScreen> {
   /// elapsed time instead of inventing one — and it stops promising speed
   /// once the render is genuinely taking a while.
   String _progressWord() {
-    if (_elapsed < 6) return 'Setting it up…';
-    if (_elapsed < 16) return 'Making it… ${_elapsed}s';
-    if (_elapsed < 40) return 'Getting the details right… ${_elapsed}s';
-    return 'Still working — ${_elapsed}s';
+    if (_elapsed < 6) return 'Preparing…';
+    if (_elapsed < 16) return 'Creating… ${_elapsed}s';
+    if (_elapsed < 40) return 'Refining the details… ${_elapsed}s';
+    return 'Still processing… ${_elapsed}s';
   }
 
   // THE RESULT IS THE LIT CARD (2026-09-30): made and saved, in the
@@ -665,7 +665,7 @@ class _StudioLookScreenState extends State<StudioLookScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Saved to your files',
+                  Text('Saved to Your Files',
                       style: TextStyle(
                           color: Neon.textHi,
                           fontSize: 15,
@@ -674,7 +674,7 @@ class _StudioLookScreenState extends State<StudioLookScreen> {
                   Text(
                     out.specSize.isNotEmpty
                         ? out.specSize
-                        : 'Open it from Hub, My documents',
+                        : 'Available in Hub, My Documents',
                     style: TextStyle(
                         color: Neon.textLo, fontSize: NeonType.caption),
                   ),

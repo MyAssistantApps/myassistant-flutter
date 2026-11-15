@@ -61,7 +61,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
     if (!mounted) return;
     AppFeedback.show(
         'Server set to ${ApiService.baseUrl}. '
-        'Restart the app to reconnect everything.',
+        'Please restart the app to re-establish all connections.',
         context: context);
     setState(() {});
   }
@@ -76,7 +76,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
   Widget build(BuildContext context) {
     final engine = AssistantEngine.instance;
     return NeonScaffold(
-      appBar: appleAppBar(context, 'Connection & diagnostics'),
+      appBar: appleAppBar(context, 'Connection & Diagnostics'),
       body: ListView(
         padding: EdgeInsets.fromLTRB(
             16, 16, 16, 16 + MediaQuery.paddingOf(context).bottom),
@@ -114,12 +114,12 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
                 final ok = await SelfCheck.instance.run('button');
                 if (!context.mounted) return;
                 AppFeedback.show(
-                  ok ? 'Self-check sent to support.' : "Couldn't send it now. It will go with the next check.",
+                  ok ? 'Self-check sent to support.' : "Unable to send the self-check. It will be sent with the next check.",
                   context: context,
                   tone: ok ? FeedbackTone.success : FeedbackTone.error,
                 );
               },
-              child: const Text('Send self-check'),
+              child: const Text('Send Self-Check'),
             ),
           ]),
           if (_healthResult != null) ...[
@@ -170,8 +170,8 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
               ),
               AppleRow(
                 leading: IconTile(Icons.extension_rounded, AppleColors.teal),
-                title: 'Connected tools',
-                subtitle: 'Extra tools your assistant can use (advanced)',
+                title: 'Connected Tools',
+                subtitle: 'Additional tools available to your assistant (advanced)',
                 onTap: () => Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => const McpServersScreen())),
               ),
@@ -181,7 +181,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const GroupLabel('App log'),
+              const GroupLabel('App Log'),
               TextButton(
                   onPressed: () => setState(AppLog.clear),
                   child: const Text('Clear')),
@@ -192,7 +192,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
             builder: (_, __, ___) {
               final lines = AppLog.tail(120).reversed.toList();
               return _panel(
-                lines.isEmpty ? '(nothing yet)' : lines.join('\n'),
+                lines.isEmpty ? '(no entries)' : lines.join('\n'),
                 mono: true,
               );
             },

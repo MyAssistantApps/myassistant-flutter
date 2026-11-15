@@ -90,7 +90,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
     if (url == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Couldn't open ${p.name}.")));
+            SnackBar(content: Text("Unable to open ${p.name}.")));
       }
       return;
     }
@@ -101,7 +101,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
   Widget build(BuildContext context) {
     final all = _all;
     return NeonScaffold(
-      appBar: appleAppBar(context, 'Everyday services'),
+      appBar: appleAppBar(context, 'Everyday Services'),
       body: all == null
           ? const Center(
               child: NeonLoader.inline(size: 28, semanticLabel: 'Loading'))
@@ -112,7 +112,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                         setState(() => _all = null);
                         _load();
                       },
-                      child: const Text("Couldn't load. Try again")))
+                      child: const Text("Unable to load. Retry")))
               : _list(all),
     );
   }
@@ -134,18 +134,18 @@ class _ServicesScreenState extends State<ServicesScreen> {
       padding: EdgeInsets.fromLTRB(
           16, 8, 16, 28 + MediaQuery.paddingOf(context).bottom),
       children: [
-        Text('Everything you use daily',
+        Text('All Your Daily Services',
             style: NeonType.manrope(26, FontWeight.w800)
                 .copyWith(color: Neon.textHi, letterSpacing: -0.6)),
         const SizedBox(height: 4),
-        Text('Shop, move, travel and more — in one place.',
+        Text('Shopping, moving, travel and more, in one place.',
             style: TextStyle(color: Neon.textLo, fontSize: 14.5)),
         const SizedBox(height: 14),
         TextField(
           onChanged: (v) => setState(() => _q = v),
           style: TextStyle(color: Neon.textHi),
           decoration: InputDecoration(
-            hintText: 'Search a service',
+            hintText: 'Search for a service',
             prefixIcon: Icon(Icons.search_rounded, color: Neon.textDim),
             filled: true,
             fillColor: Neon.glassFill.colors.first,

@@ -71,16 +71,16 @@ class _ShortcutsScreenState extends State<ShortcutsScreen> {
             actions: [
               TextButton(
                   onPressed: () => Navigator.pop(c, false),
-                  child: const Text('Not now')),
+                  child: const Text('Not Now')),
               FilledButton(
                   onPressed: () => Navigator.pop(c, true),
-                  child: const Text('Yes, go ahead')),
+                  child: const Text('Yes, Proceed')),
             ],
           ),
         );
         if (yes != true) {
           await _svc.decline(reply.runId);
-          _say("Okay, I didn't run ${s.name}.");
+          _say("${s.name} was not run.");
           return;
         }
         reply = await _svc.approve(reply.runId);
@@ -132,15 +132,15 @@ class _ShortcutsScreenState extends State<ShortcutsScreen> {
     final name = await _askName('Rename', s.name);
     if (name == null || name.isEmpty || name == s.name) return;
     final err = await _svc.rename(s, name);
-    _say(err ?? 'Renamed to “$name”.', good: err == null);
+    _say(err ?? 'Shortcut renamed to “$name”.', good: err == null);
   }
 
   Future<void> _delete(Shortcut s) async {
     final yes = await showAppDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
-        title: Text('Delete “${s.name}”?'),
-        content: const Text('Saying its name will no longer do anything.'),
+        title: Text('Delete “${s.name}”'),
+        content: const Text('This shortcut will be permanently removed and its name will no longer run it. Do you wish to proceed?'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(c, false),
@@ -153,7 +153,7 @@ class _ShortcutsScreenState extends State<ShortcutsScreen> {
     );
     if (yes != true) return;
     final ok = await _svc.delete(s);
-    _say(ok ? 'Deleted “${s.name}”.' : "Couldn't delete that just now.",
+    _say(ok ? '“${s.name}” deleted.' : "Unable to delete the shortcut. Please try again.",
         good: ok);
   }
 
@@ -175,7 +175,7 @@ class _ShortcutsScreenState extends State<ShortcutsScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 16),
-          child: Text('One word does several things — say its name.',
+          child: Text('A shortcut performs several actions when you say its name.',
               style: TextStyle(
                   color: Neon.textLo,
                   fontSize: NeonType.footnote,
@@ -185,7 +185,7 @@ class _ShortcutsScreenState extends State<ShortcutsScreen> {
         // pulled: a real button now.
         if (_svc.failed && list.isEmpty)
           NeonErrorState(
-            message: "Couldn't load your shortcuts",
+            message: "Unable to load your shortcuts.",
             onRetry: () {
               // The spinner while it asks again.
               setState(() => _svc.failed = false);
@@ -195,8 +195,8 @@ class _ShortcutsScreenState extends State<ShortcutsScreen> {
         else if (list.isEmpty)
           const NeonEmptyState(
             icon: Icons.bolt_rounded,
-            title: 'No shortcuts yet',
-            body: 'Try saying: "Create a shortcut called office mode that '
+            title: 'No shortcuts available',
+            body: 'To create a shortcut, say "Create a shortcut called office mode that '
                 'puts my phone on silent and gives me directions to '
                 'office."',
           )
@@ -204,7 +204,7 @@ class _ShortcutsScreenState extends State<ShortcutsScreen> {
           for (final s in list) _card(s),
         if (_svc.full)
           _note(
-              'You have ${_svc.maxShortcuts} shortcuts — remove one to add another.'),
+              'The limit of ${_svc.maxShortcuts} shortcuts has been reached. Please remove one to add another.'),
       ],
     );
   }

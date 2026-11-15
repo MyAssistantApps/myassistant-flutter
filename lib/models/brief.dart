@@ -191,7 +191,7 @@ class BriefOffer {
   factory BriefOffer.fromJson(Map<String, dynamic> j) => BriefOffer(
         kind: j['kind'] as String? ?? 'talk',
         say: j['say'] as String? ?? '',
-        label: j['label'] as String? ?? 'Talk to me',
+        label: j['label'] as String? ?? 'Speak to Your Assistant',
         request: j['request'] as String? ?? '',
         meetingId: j['meetingId'] as String?,
       );

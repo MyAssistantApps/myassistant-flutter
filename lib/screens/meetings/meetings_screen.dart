@@ -52,7 +52,7 @@ class _RecordedMeetingsScreenState extends State<RecordedMeetingsScreen> {
       if (_items == null) {
         setState(() => _failed = true);
       } else if (!quiet) {
-        AppFeedback.show("Couldn't refresh.",
+        AppFeedback.show("Unable to refresh. Please try again.",
             context: context, tone: FeedbackTone.error);
       }
       return;
@@ -79,14 +79,14 @@ class _RecordedMeetingsScreenState extends State<RecordedMeetingsScreen> {
   Widget build(BuildContext context) {
     // Under the night sky, with the theme's lit FAB (2026-09-30).
     return NeonScaffold(
-      appBar: appleAppBar(context, 'Recorded meetings'),
+      appBar: appleAppBar(context, 'Recorded Meetings'),
       // One "Record" on an empty screen: the empty state's (2026-09-30).
       floatingActionButton: (_items?.isEmpty ?? true)
           ? null
           : FloatingActionButton.extended(
               onPressed: _record,
               icon: const Icon(Icons.fiber_manual_record_rounded),
-              label: const Text('Record a meeting'),
+              label: const Text('Record a Meeting'),
             ),
       body: SafeArea(child: StateSwitch.of(_body())),
     );
@@ -96,7 +96,7 @@ class _RecordedMeetingsScreenState extends State<RecordedMeetingsScreen> {
     final items = _items;
     if (items == null && _failed) {
       return NeonErrorState(
-        message: "Couldn't load your meetings",
+        message: "Unable to load your meetings.",
         onRetry: () {
           setState(() => _failed = false);
           _load();
@@ -112,10 +112,10 @@ class _RecordedMeetingsScreenState extends State<RecordedMeetingsScreen> {
           const SizedBox(height: 80),
           NeonEmptyState(
             icon: Icons.groups_rounded,
-            title: 'No meetings yet',
-            body: 'Tap Record a meeting, or say "record this meeting". You '
-                'get minutes, decisions and action items when it ends.',
-            actionLabel: 'Record a meeting',
+            title: 'No Meetings Recorded',
+            body: 'To record a meeting, tap Record a Meeting or say "record this meeting". '
+                'Minutes, decisions and action items are provided when it ends.',
+            actionLabel: 'Record a Meeting',
             actionIcon: Icons.fiber_manual_record_rounded,
             onAction: _record,
           ),
@@ -140,8 +140,8 @@ class _RecordedMeetingsScreenState extends State<RecordedMeetingsScreen> {
     final mins = (((m['duration_s'] as num?) ?? 0) / 60).round();
     final actions = (m['actions'] as List?)?.length ?? 0;
     final sub = switch (status) {
-      'processing' => 'Writing the minutes…',
-      'failed' => (m['summary'] ?? "Couldn't process this recording.").toString(),
+      'processing' => 'Preparing the minutes…',
+      'failed' => (m['summary'] ?? "Unable to process this recording.").toString(),
       _ => (m['summary'] ?? '').toString(),
     };
     final id = (m['id'] as num).toInt();
@@ -174,7 +174,7 @@ class _RecordedMeetingsScreenState extends State<RecordedMeetingsScreen> {
               ),
               if (status == 'processing')
                 const NeonLoader.inline(
-                    size: 14, semanticLabel: 'Writing the minutes'),
+                    size: 14, semanticLabel: 'Preparing the minutes'),
             ]),
             const SizedBox(height: 3),
             Text(
@@ -334,17 +334,17 @@ class _MeetingsScreenState extends State<MeetingsScreen> {
             ListTile(
               minTileHeight: 56,
               leading: Icon(Icons.person_rounded, color: Neon.violet),
-              title: Text('New chat',
+              title: Text('New Chat',
                   style: TextStyle(color: Neon.textHi, fontWeight: FontWeight.w600)),
-              subtitle: Text('Message one person', style: TextStyle(color: Neon.textLo)),
+              subtitle: Text('Send a message to one person', style: TextStyle(color: Neon.textLo)),
               onTap: () => Navigator.of(c).pop('chat'),
             ),
             ListTile(
               minTileHeight: 56,
               leading: Icon(Icons.group_add_rounded, color: Neon.violet),
-              title: Text('New group',
+              title: Text('New Group',
                   style: TextStyle(color: Neon.textHi, fontWeight: FontWeight.w600)),
-              subtitle: Text('Your team, family or friends together',
+              subtitle: Text('A shared conversation for your team, family or friends',
                   style: TextStyle(color: Neon.textLo)),
               onTap: () => Navigator.of(c).pop('group'),
             ),
@@ -406,7 +406,7 @@ class _MeetingsScreenState extends State<MeetingsScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _start,
         icon: const Icon(Icons.edit_square),
-        label: const Text('New chat'),
+        label: const Text('New Chat'),
       ),
       body: SafeArea(child: StateSwitch.of(_body())),
     );
@@ -416,7 +416,7 @@ class _MeetingsScreenState extends State<MeetingsScreen> {
     final groups = _groups;
     if (groups == null && _failed) {
       return NeonErrorState(
-        message: "Couldn't load your groups",
+        message: "Unable to load your groups.",
         onRetry: () {
           setState(() => _failed = false);
           _load();
@@ -435,7 +435,7 @@ class _MeetingsScreenState extends State<MeetingsScreen> {
             Row(children: [
               const Expanded(child: LargeTitle('Chats')),
               IconButton.filledTonal(
-                tooltip: 'New chat',
+                tooltip: 'New Chat',
                 onPressed: _start,
                 icon: const Icon(Icons.edit_square),
               ),
@@ -444,13 +444,13 @@ class _MeetingsScreenState extends State<MeetingsScreen> {
           const SizedBox(height: 22),
           _section('Groups'),
           if (groups.isEmpty)
-            _emptyRow('No groups yet', 'New group', _newGroup)
+            _emptyRow('No groups available', 'New Group', _newGroup)
           else
             _grouped([for (final g in groups) _groupTile(g)]),
           const SizedBox(height: 18),
           _section('Chats'),
           if (_threads.isEmpty)
-            _emptyRow('No chats yet', 'New chat', _newChat)
+            _emptyRow('No chats available', 'New Chat', _newChat)
           else
             _grouped([for (final t in _threads) _threadTile(t)]),
         ],
@@ -564,7 +564,7 @@ class _MeetingsScreenState extends State<MeetingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Record a meeting',
+                  Text('Record a Meeting',
                       style: NeonType.manrope(NeonType.callout, FontWeight.w600)
                           .copyWith(color: Neon.textHi)),
                   const SizedBox(height: 2),
@@ -581,7 +581,7 @@ class _MeetingsScreenState extends State<MeetingsScreen> {
             ),
             const SizedBox(width: 8),
             IconButton.filled(
-              tooltip: 'Start recording',
+              tooltip: 'Start Recording',
               onPressed: _record,
               style: IconButton.styleFrom(
                 backgroundColor: Neon.accentFill,

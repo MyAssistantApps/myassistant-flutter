@@ -93,7 +93,7 @@ const airlines = <Airline>[
     highlights: [
       'The most domestic flights in India',
       'Growing international network: Gulf, South-East Asia, Europe',
-      'Meals and seat choice are paid extras',
+      'Meals and seat selection are charged separately',
     ],
     website: 'https://www.goindigo.in/',
     color: Color(0xFF1B1D6D),
@@ -111,8 +111,8 @@ const airlines = <Airline>[
     ),
     credit: 'Timothy A. Gonsalves · CC BY-SA 4.0',
     gallery: [
-      AirlinePhoto('indigo_1', 'Airbus A321neo — the bigger jet for busy routes', 'Bahnfrend · CC BY-SA 4.0'),
-      AirlinePhoto('indigo_2', 'ATR 72 turboprop — for smaller airports', 'Timothy A. Gonsalves · CC BY-SA 4.0'),
+      AirlinePhoto('indigo_1', 'Airbus A321neo: the larger jet for busy routes', 'Bahnfrend · CC BY-SA 4.0'),
+      AirlinePhoto('indigo_2', 'ATR 72 turboprop, for smaller airports', 'Timothy A. Gonsalves · CC BY-SA 4.0'),
       AirlinePhoto('indigo_3', 'The all-economy cabin', 'Jer.dv · public domain'),
       AirlinePhoto('indigo_4', 'Boarding by the indigo tail', 'Bssasidhar · CC BY-SA 4.0'),
     ],
@@ -120,7 +120,7 @@ const airlines = <Airline>[
   Airline(
     id: 'airindia',
     name: 'Air India',
-    tagline: "India's flag carrier — full service, worldwide",
+    tagline: "India's flag carrier: full service, worldwide",
     kind: 'Full-service',
     hubs: ['Delhi', 'Mumbai'],
     alliance: 'Star Alliance',
@@ -141,13 +141,13 @@ const airlines = <Airline>[
       range: 'about 15,000 km',
       speed: 'about 900 km/h (Mach 0.85)',
       usedFor: 'Non-stop flights to Europe, the US and beyond',
-      fact: 'Air India\'s first A350s arrived in 2024 in the new red, purple and gold livery — the first '
+      fact: 'Air India\'s first A350s arrived in 2024 in the new red, purple and gold livery. It is the first '
           'Indian airline to fly the A350, with lie-flat suites in business.',
     ),
     credit: 'Pramodkraj12 · CC BY 4.0',
     gallery: [
       AirlinePhoto('airindia_1', 'Boeing 787 Dreamliner', 'Kokitakagi · CC BY 4.0'),
-      AirlinePhoto('airindia_2', 'Boeing 777-300ER — long-haul flights', 'Tomo 121 · CC BY-SA 3.0'),
+      AirlinePhoto('airindia_2', 'Boeing 777-300ER, for long-haul flights', 'Tomo 121 · CC BY-SA 3.0'),
       AirlinePhoto('airindia_3', 'Business class on the 777', 'Prateek Karandikar · CC BY-SA 4.0'),
       AirlinePhoto('airindia_4', 'A320neo in Star Alliance colours', 'UB-TY144 · CC BY 4.0'),
     ],
@@ -155,7 +155,7 @@ const airlines = <Airline>[
   Airline(
     id: 'aix',
     name: 'Air India Express',
-    tagline: 'Air India\'s low-cost arm — India and the Gulf',
+    tagline: 'Air India\'s low-cost arm, serving India and the Gulf',
     kind: 'Low-cost',
     hubs: ['Kochi', 'Delhi', 'Bengaluru'],
     cabins: ['Economy', 'Xpress Biz (select flights)'],
@@ -175,8 +175,8 @@ const airlines = <Airline>[
       range: 'about 6,500 km',
       speed: 'about 840 km/h (Mach 0.79)',
       usedFor: 'Domestic flights and the Gulf',
-      fact: 'The tails of Air India Express jets carry Indian art patterns — Bandhani, Kalamkari, Kanjeevaram '
-          'and more — so each one looks a little different.',
+      fact: 'The tails of Air India Express jets carry Indian art patterns such as Bandhani, Kalamkari and Kanjeevaram, '
+          'so each aircraft looks slightly different.',
     ),
     credit: 'Krish Aarush · CC BY-SA 4.0',
     gallery: [
@@ -188,14 +188,14 @@ const airlines = <Airline>[
   Airline(
     id: 'akasa',
     name: 'Akasa Air',
-    tagline: "India's newest airline — young fleet, friendly fares",
+    tagline: "India's newest airline, with a young fleet and competitive fares",
     kind: 'Low-cost',
     hubs: ['Mumbai', 'Bengaluru'],
     cabins: ['Economy'],
     highlights: [
       'Flying since 2022, with an all-Boeing 737 MAX fleet',
       'Pets allowed in the cabin on select flights',
-      'Café Akasa meals to pre-order',
+      'Café Akasa meals available to pre-order',
     ],
     website: 'https://www.akasaair.com/',
     color: Color(0xFFFF6F3C),
@@ -214,7 +214,7 @@ const airlines = <Airline>[
     credit: 'Timothy A. Gonsalves · CC BY-SA 4.0',
     gallery: [
       AirlinePhoto('akasa_1', 'Boeing 737 MAX 8 at Chennai', 'Timothy A. Gonsalves · CC BY-SA 4.0'),
-      AirlinePhoto('akasa_2', 'Boeing 737 MAX 8-200 — more seats, same size', 'Krish Aarush · CC BY-SA 4.0'),
+      AirlinePhoto('akasa_2', 'Boeing 737 MAX 8-200: more seats, same size', 'Krish Aarush · CC BY-SA 4.0'),
       AirlinePhoto('akasa_3', 'At Goa\'s Mopa airport', 'Arunpnair 787 · CC BY-SA 4.0'),
     ],
   ),
@@ -226,9 +226,9 @@ const airlines = <Airline>[
     hubs: ['Delhi', 'Mumbai', 'Hyderabad'],
     cabins: ['Economy', 'SpiceMax extra legroom'],
     highlights: [
-      'Flies to many smaller cities too',
+      'Also serves many smaller cities',
       'SpiceMax: more legroom, priority check-in, a meal',
-      'Often has sale fares — compare before you book',
+      'Sale fares are frequent; compare before booking',
     ],
     website: 'https://www.spicejet.com/',
     color: Color(0xFFD71921),
@@ -241,20 +241,20 @@ const airlines = <Airline>[
       range: 'about 5,400 km',
       speed: 'about 840 km/h (Mach 0.785)',
       usedFor: 'Domestic flights and the Gulf',
-      fact: 'The 737-800 is one of the best-selling jets ever built — thousands fly worldwide, and a 737 '
+      fact: 'The 737-800 is one of the best-selling jets ever built: thousands fly worldwide, and a 737 '
           'takes off somewhere every few seconds.',
     ),
     credit: 'Oleg Yunakov · CC BY-SA 4.0',
     gallery: [
       AirlinePhoto('spicejet_1', 'Boeing 737 MAX 8', 'Md Shaifuzzaman Ayon · CC BY-SA 4.0'),
-      AirlinePhoto('spicejet_2', 'Q400 turboprop — for regional routes', 'Premnath Kudva · CC BY-SA 3.0'),
+      AirlinePhoto('spicejet_2', 'Q400 turboprop, for regional routes', 'Premnath Kudva · CC BY-SA 3.0'),
       AirlinePhoto('spicejet_3', 'Boeing 737 MAX coming in to land', 'Anna Zvereva · CC BY-SA 2.0'),
     ],
   ),
   Airline(
     id: 'emirates',
     name: 'Emirates',
-    tagline: 'Fly through Dubai to the world, on the A380',
+    tagline: 'Worldwide connections through Dubai, on the A380',
     kind: 'Full-service',
     hubs: ['Dubai'],
     cabins: ['Economy', 'Premium Economy', 'Business', 'First'],
@@ -309,7 +309,7 @@ const airlines = <Airline>[
       range: 'about 16,000 km',
       speed: 'about 900 km/h (Mach 0.85)',
       usedFor: 'Long-haul flights from Doha',
-      fact: 'Qatar Airways was the first airline to fly the A350-1000, in 2018 — the longest member of the '
+      fact: 'Qatar Airways was the first airline to fly the A350-1000, in 2018. It is the longest member of the '
           'A350 family, built largely from carbon-fibre composites.',
     ),
     credit: 'Ian Gratton · CC BY 2.0',
@@ -323,7 +323,7 @@ const airlines = <Airline>[
   Airline(
     id: 'singapore',
     name: 'Singapore Airlines',
-    tagline: 'Legendary service through Changi',
+    tagline: 'Renowned service through Changi',
     kind: 'Full-service',
     hubs: ['Singapore'],
     alliance: 'Star Alliance',
@@ -331,20 +331,20 @@ const airlines = <Airline>[
     highlights: [
       'Known for its cabin crew and award-winning service',
       'Connections to Australia, Japan and the US via Changi',
-      'Book the Cook: choose your main course before you fly (premium cabins)',
+      'Book the Cook: select your main course before you fly (premium cabins)',
     ],
     website: 'https://www.singaporeair.com/en_UK/in/',
     color: Color(0xFFF3A81C),
     aircraft: 'Airbus A350-900',
     plane: Aircraft(
-      seats: '161 to 303 — three layouts, from ultra-long-range to regional',
+      seats: '161 to 303: three layouts, from ultra-long-range to regional',
       engines: '2 × Rolls-Royce Trent XWB-84',
       length: '66.8 m',
       wingspan: '64.8 m',
       range: 'up to about 18,000 km (ultra-long-range version)',
       speed: 'about 900 km/h (Mach 0.85)',
       usedFor: 'Long-haul and regional flights from Singapore',
-      fact: 'A special ultra-long-range A350-900 flies Singapore to New York non-stop — among the longest '
+      fact: 'A special ultra-long-range A350-900 flies Singapore to New York non-stop, among the longest '
           'flights in the world, about 18 hours.',
     ),
     credit: 'Ian Gratton · CC BY 2.0',

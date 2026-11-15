@@ -82,12 +82,12 @@ class ShareIntakeService {
         : 'Here is something I shared with you — summarise it for me:\n$text';
     try {
       await AssistantEngine.instance.askAssistant(ask);
-      AppFeedback.toast(url != null ? 'Reading that page…' : 'Reading that…',
+      AppFeedback.toast(url != null ? 'Reading the page…' : 'Reading the content…',
           tone: FeedbackTone.progress);
       return true;
     } catch (e) {
       AppLog.add('share', 'shared text failed: $e');
-      AppFeedback.toast("Couldn't hand that to the assistant — try again.");
+      AppFeedback.toast("Unable to pass this to your assistant. Please try again.");
       return false;
     }
   }
@@ -177,7 +177,7 @@ class ShareIntakeService {
   Future<void> _handle(List<SharedMediaFile> files) async {
     if (files.isEmpty) return;
     if (!AuthService.instance.isSignedIn) {
-      AppFeedback.toast('Sign in first, then share it again — nothing was saved.');
+      AppFeedback.toast('Please sign in, then share it again. Nothing was saved.');
       return;
     }
     // ONE PHOTO: maybe it is for a card (2026-09-26 — his daughter's old
@@ -292,20 +292,20 @@ class ShareIntakeService {
     } else if (saved > 0) {
       AppFeedback.toast(
           saved == 1
-              ? 'Got it — reading it now…'
-              : 'Got them — reading $saved files now…',
+              ? 'File received. Reading it now…'
+              : 'Files received. Reading $saved files now…',
           tone: FeedbackTone.progress);
     } else if (tooLarge > 0 && failed == 0) {
       AppFeedback.toast(tooLarge == 1
-          ? 'That file is too large to save (20 MB max).'
-          : 'Those files are too large to save (20 MB max each).');
+          ? 'The file is too large to save (maximum 20 MB).'
+          : 'The files are too large to save (maximum 20 MB each).');
     } else if (failed > 0) {
-      AppFeedback.toast("Couldn't save that — check your connection.");
+      AppFeedback.toast("Unable to save. Please check your internet connection.");
     } else if (refusal != null) {
       AppFeedback.toast(refusal);
     } else if (skipped > 0) {
-      AppFeedback.toast("Couldn't read that file type — photos, PDFs, "
-          'documents, sheets and slides work.');
+      AppFeedback.toast("Unable to read this file type. Photos, PDFs, "
+          'documents, sheets and slides are supported.');
     }
   }
 
@@ -321,19 +321,19 @@ class ShareIntakeService {
         picture = AiAttachment(kind: 'image', mimeType: usable.mime, bytes: usable.bytes);
       } catch (e) {
         AppLog.add('share', 'shared photo for the list does not open: $e');
-        AppFeedback.toast("That photo doesn't open here — nothing was added.",
+        AppFeedback.toast("This photo cannot be opened here. Nothing was added.",
             tone: FeedbackTone.error);
         return true;
       }
     }
-    AppFeedback.toast('Adding it to your shopping list…', tone: FeedbackTone.progress);
+    AppFeedback.toast('Adding to your shopping list…', tone: FeedbackTone.progress);
     try {
       await AssistantEngine.instance.askAboutShared(
           ShoppingShare.ask(text: text, picture: picture != null),
           image: picture);
     } catch (e) {
       AppLog.add('share', 'shopping list add failed: $e');
-      AppFeedback.toast("Couldn't hand that to the assistant — nothing was added. Try again.",
+      AppFeedback.toast("Unable to pass this to your assistant. Nothing was added. Please try again.",
           tone: FeedbackTone.error);
     }
     return true;
@@ -378,8 +378,8 @@ class ShareIntakeService {
         .toList();
     final title = (u['title'] ?? 'Document').toString();
     if (events.isEmpty) {
-      AppFeedback.toast('"$title" understood and remembered — ask me about '
-          'it any time.');
+      AppFeedback.toast('"$title" has been read and saved. You may ask your assistant about '
+          'it at any time.');
       return;
     }
     // Mirror into the phone's own calendar. Ask for the permission the
@@ -403,8 +403,8 @@ class ShareIntakeService {
     }
     final n = events.length;
     AppFeedback.toast(onCalendar > 0
-        ? '$n reminder${n == 1 ? '' : 's'} set from "$title" — '
-            'also on your calendar.'
-        : '$n reminder${n == 1 ? '' : 's'} set from "$title".');
+        ? '$n reminder${n == 1 ? '' : 's'} created from "$title" '
+            'and added to your calendar.'
+        : '$n reminder${n == 1 ? '' : 's'} created from "$title".');
   }
 }

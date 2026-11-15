@@ -39,11 +39,11 @@ class LegalDraftScreen extends StatefulWidget {
 
 class _LegalDraftScreenState extends State<LegalDraftScreen> {
   static const _kinds = [
-    ('notice', 'Legal notice', Icons.mail_lock_rounded),
-    ('reply', 'Reply to notice', Icons.reply_rounded),
+    ('notice', 'Legal Notice', Icons.mail_lock_rounded),
+    ('reply', 'Reply to Notice', Icons.reply_rounded),
     ('affidavit', 'Affidavit', Icons.verified_user_rounded),
     ('agreement', 'Agreement', Icons.handshake_rounded),
-    ('letter', 'Legal letter', Icons.description_rounded),
+    ('letter', 'Legal Letter', Icons.description_rounded),
   ];
 
   String _kind = 'notice';
@@ -82,7 +82,7 @@ class _LegalDraftScreenState extends State<LegalDraftScreen> {
       if (!mounted) return;
       setState(() => _transcribing = false);
       if (text == null || text.isEmpty) {
-        AppFeedback.toast("Couldn't hear that. Try again or type it.");
+        AppFeedback.toast("Unable to capture the audio. Please try again or type the text.");
         return;
       }
       final cur = _facts.text.trim();
@@ -91,7 +91,7 @@ class _LegalDraftScreenState extends State<LegalDraftScreen> {
       return;
     }
     if (!await _rec.hasPermission()) {
-      AppFeedback.toast('Microphone permission is needed to dictate.');
+      AppFeedback.toast('Microphone access is required to dictate. Please enable it in Settings.');
       return;
     }
     final dir = await getTemporaryDirectory();
@@ -106,7 +106,7 @@ class _LegalDraftScreenState extends State<LegalDraftScreen> {
   Future<void> _makeDraft() async {
     final f = _facts.text.trim();
     if (f.length < 15) {
-      AppFeedback.toast('Describe the facts in a sentence or two.');
+      AppFeedback.toast('Please describe the facts in one or two sentences.');
       return;
     }
     setState(() => _drafting = true);
@@ -115,7 +115,7 @@ class _LegalDraftScreenState extends State<LegalDraftScreen> {
     if (!mounted) return;
     setState(() => _drafting = false);
     if (d == null) {
-      AppFeedback.toast("Couldn't draft this. Check your connection and try again.");
+      AppFeedback.toast("Unable to prepare the draft. Please check your connection and try again.");
       return;
     }
     _title.text = d.title;
@@ -132,16 +132,16 @@ class _LegalDraftScreenState extends State<LegalDraftScreen> {
         context: context,
         builder: (ctx) => AlertDialog(
           backgroundColor: Neon.surface,
-          title: const Text('No enrolment number yet'),
-          content: const Text('Your letterhead prints your Bar Council enrolment number. Add it first?'),
+          title: const Text('Enrolment Number Not Provided'),
+          content: const Text('Your letterhead prints your Bar Council enrolment number. Do you wish to add it first?'),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Create without it')),
+            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Create Without It')),
             TextButton(
               onPressed: () {
                 Navigator.pop(ctx, false);
                 Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ClinicSettingsScreen()));
               },
-              child: const Text('Add it'),
+              child: const Text('Add Now'),
             ),
           ],
         ),
@@ -154,7 +154,7 @@ class _LegalDraftScreenState extends State<LegalDraftScreen> {
     if (!mounted) return;
     setState(() => _creating = false);
     if (doc == null) {
-      AppFeedback.toast("Couldn't create the PDF. Check your connection.");
+      AppFeedback.toast("Unable to create the PDF. Please check your connection.");
       return;
     }
     HapticFeedback.lightImpact();
@@ -168,7 +168,7 @@ class _LegalDraftScreenState extends State<LegalDraftScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Neon.bg,
-      appBar: appleAppBar(context, 'Draft a document'),
+      appBar: appleAppBar(context, 'Draft a Document'),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
         children: _draft == null ? _askStep() : _reviewStep(),
@@ -192,7 +192,7 @@ class _LegalDraftScreenState extends State<LegalDraftScreen> {
         GroupedCard(children: [
           AppleRow(
             leading: IconTile(Icons.person_rounded, Neon.accentF),
-            title: _clientName ?? 'For which client? (optional)',
+            title: _clientName ?? 'Select Client (Optional)',
             titleColor: _clientName == null ? Neon.violet : null,
             trailing: Icon(Icons.chevron_right_rounded, color: Neon.textDim),
             onTap: () async {
@@ -216,7 +216,7 @@ class _LegalDraftScreenState extends State<LegalDraftScreen> {
               onChanged: (_) => setState(() {}),
               textCapitalization: TextCapitalization.sentences,
               decoration: const InputDecoration(
-                labelText: 'Facts and instructions',
+                labelText: 'Facts and Instructions',
                 hintText: 'e.g. Tenant hasn\'t paid 4 months\' rent of ₹60,000; vacate within 15 days.',
                 alignLabelWithHint: true,
               ),
@@ -233,19 +233,19 @@ class _LegalDraftScreenState extends State<LegalDraftScreen> {
         if (_recording || _transcribing)
           Padding(
             padding: const EdgeInsets.only(top: 6),
-            child: Text(_recording ? 'Listening… tap stop when done' : 'Transcribing…',
+            child: Text(_recording ? 'Listening… Tap Stop when finished.' : 'Transcribing…',
                 style: TextStyle(color: Neon.violet, fontSize: 12.5, fontWeight: FontWeight.w600)),
           ),
         const SizedBox(height: 16),
         ApplePrimaryButton(
-          label: _drafting ? 'Drafting…' : 'Draft it',
+          label: _drafting ? 'Drafting…' : 'Prepare Draft',
           icon: Icons.auto_awesome_rounded,
           onPressed: _drafting || _recording || _transcribing || _facts.text.trim().length < 15 ? null : _makeDraft,
         ),
         const SizedBox(height: 10),
         Text(
           'Cites only provisions from the app\'s Indian-law reference (BNS/BNSS/BSA, not repealed IPC '
-          'numbers). Facts it doesn\'t have are left as [PLACEHOLDERS] for you to fill.',
+          'numbers). Facts it does not have are left as [PLACEHOLDERS] for you to fill.',
           textAlign: TextAlign.center,
           style: TextStyle(color: Neon.textDim, fontSize: 12, height: 1.4),
         ),
@@ -264,14 +264,14 @@ class _LegalDraftScreenState extends State<LegalDraftScreen> {
           Icon(Icons.fact_check_rounded, color: Neon.warning, size: 20),
           const SizedBox(width: 10),
           Expanded(
-            child: Text('A draft for you to check and sign — edit anything before creating the PDF.',
+            child: Text('This is a draft for you to review and sign. You may edit any part before creating the PDF.',
                 style: TextStyle(color: Neon.textHi, fontSize: 12.5, height: 1.35)),
           ),
         ]),
       ),
       if (d.advocateChecks.isNotEmpty) ...[
         const SizedBox(height: 14),
-        const GroupLabel('Check before sending'),
+        const GroupLabel('Review Before Sending'),
         GroupedCard(dividerInset: 16, children: [
           for (final c in d.advocateChecks)
             AppleRow(

@@ -112,11 +112,11 @@ class LocationService {
       // one line says where the switch is instead.
       if (await Geolocator.checkPermission() ==
           LocationPermission.deniedForever) {
-        explain?.call('Location is off for the assistant — turn it on in '
-            'the phone settings for "near me" answers.');
+        explain?.call('Location access is disabled for your assistant. Please enable it in '
+            'the phone settings to receive "near me" answers.');
         return false;
       }
-      explain?.call('To answer "near me" questions, allow your location.');
+      explain?.call('Location access is required to answer "near me" questions. Please allow it.');
       final r = await Geolocator.requestPermission();
       final ok = r == LocationPermission.whileInUse ||
           r == LocationPermission.always;

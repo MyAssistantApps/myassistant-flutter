@@ -47,7 +47,7 @@ class _McpServersScreenState extends State<McpServersScreen> {
     setState(() {
       _loading = false;
       if (r == null) {
-        _error = "Couldn't load your connected tools";
+        _error = "Unable to load your connected tools.";
       } else {
         _servers = (r['servers'] as List?) ?? [];
       }
@@ -62,7 +62,7 @@ class _McpServersScreenState extends State<McpServersScreen> {
     if (!mounted) return;
     setState(() => _busy.remove(id));
     if (r == null) {
-      _toast("That didn't work. Check the connection.");
+      _toast("The action could not be completed. Please check the connection.");
     }
     await _load();
   }
@@ -77,11 +77,11 @@ class _McpServersScreenState extends State<McpServersScreen> {
     // The sky, and the theme's lit FAB (2026-09-30): the local fill
     // colours matched the theme's and kept its glow off.
     return NeonScaffold(
-      appBar: appleAppBar(context, 'Connected tools'),
+      appBar: appleAppBar(context, 'Connected Tools'),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _addServer,
         icon: const Icon(Icons.add),
-        label: const Text('Add server'),
+        label: const Text('Add Server'),
       ),
       body: RefreshIndicator(
         onRefresh: _load,
@@ -92,9 +92,9 @@ class _McpServersScreenState extends State<McpServersScreen> {
                     16, 8, 16, 96 + MediaQuery.paddingOf(context).bottom),
                 children: [
                   Text(
-                    'Connect external tools — files, issue trackers, calendars — '
-                    'and your assistant can use them in conversation. Optional: '
-                    'everything works without them.',
+                    'Connect external tools, such as files, issue trackers and calendars, '
+                    'so that your assistant can use them in conversation. This is optional: '
+                    'all features work without them.',
                     // textLo (2026-09-30): textDim fell under 4.5:1.
                     style: TextStyle(
                         color: Neon.textLo, fontSize: NeonType.footnote),
@@ -108,9 +108,9 @@ class _McpServersScreenState extends State<McpServersScreen> {
                     if (_servers.isEmpty)
                       NeonEmptyState(
                         icon: Icons.extension_rounded,
-                        title: 'No servers yet',
-                        body: 'Add one to extend what your assistant can do.',
-                        actionLabel: 'Add server',
+                        title: 'No Servers Added',
+                        body: 'To extend the capabilities of your assistant, add a server.',
+                        actionLabel: 'Add Server',
                         actionIcon: Icons.add_rounded,
                         onAction: _addServer,
                       ),
@@ -269,7 +269,7 @@ class _McpServersScreenState extends State<McpServersScreen> {
       builder: (c) => AlertDialog(
         title: Text('Remove $name?', style: TextStyle(color: Neon.textHi)),
         content: Text(
-            'Its tools will no longer be available to your assistant. Stored credentials are deleted.',
+            'Its tools will no longer be available to your assistant, and stored credentials will be deleted. Do you wish to proceed?',
             style: TextStyle(color: Neon.textLo)),
         actions: [
           TextButton(
@@ -301,13 +301,13 @@ class _McpServersScreenState extends State<McpServersScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Add MCP server',
+              Text('Add MCP Server',
                   style: TextStyle(
                       color: Neon.textHi,
                       fontSize: 18,
                       fontWeight: FontWeight.w600)),
               const SizedBox(height: 14),
-              _field(name, 'Name', 'e.g. My tools'),
+              _field(name, 'Name', 'e.g. My Tools'),
               const SizedBox(height: 10),
               SegmentedButton<String>(
                 segments: const [
@@ -320,10 +320,10 @@ class _McpServersScreenState extends State<McpServersScreen> {
               const SizedBox(height: 10),
               _field(url, 'Server URL', 'https://example.com/mcp'),
               const SizedBox(height: 10),
-              _field(token, 'Access token (optional)', '', obscure: true),
+              _field(token, 'Access Token (Optional)', '', obscure: true),
               const SizedBox(height: 6),
               Text(
-                'The token is encrypted on the server and never sent back to this app.',
+                'The token is encrypted on the server and is never returned to this app.',
                 style:
                     TextStyle(color: Neon.textLo, fontSize: NeonType.caption),
               ),
@@ -350,7 +350,7 @@ class _McpServersScreenState extends State<McpServersScreen> {
       if (token.text.trim().isNotEmpty) 'secrets': {'token': token.text.trim()},
     });
     if (r == null) {
-      _toast("Couldn't add that server.");
+      _toast("Unable to add the server. Please try again.");
       return;
     }
     await _load();

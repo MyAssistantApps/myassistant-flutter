@@ -35,18 +35,18 @@ Future<UserDocument?> uploadMyDocument(BuildContext context,
           children: [
             AppleRow(
               leading: IconTile(Icons.photo_camera_rounded, AppleColors.blue),
-              title: 'Take a photo',
+              title: 'Take a Photo',
               onTap: () => Navigator.pop(ctx, 'camera'),
             ),
             AppleRow(
               leading: IconTile(Icons.photo_library_rounded, AppleColors.blue),
-              title: 'Pick from gallery',
+              title: 'Select from Gallery',
               onTap: () => Navigator.pop(ctx, 'gallery'),
             ),
             if (!photosOnly)
               AppleRow(
                 leading: IconTile(Icons.description_rounded, AppleColors.red),
-                title: 'Pick a file (PDF, Word, Excel…)',
+                title: 'Select a File (PDF, Word, Excel…)',
                 onTap: () => Navigator.pop(ctx, 'file'),
               ),
           ],
@@ -87,7 +87,7 @@ Future<UserDocument?> uploadMyDocument(BuildContext context,
     }
   } catch (_) {
     if (context.mounted) {
-      AppFeedback.show("Couldn't open that. Check the app's permissions.",
+      AppFeedback.show("Unable to open the item. Please check the app's permissions.",
           context: context, tone: FeedbackTone.error);
     }
     return null;
@@ -101,7 +101,7 @@ Future<UserDocument?> uploadMyDocument(BuildContext context,
         bytes: bytes, filename: filename, mimeType: mime);
     if (context.mounted) {
       AppFeedback.show(
-          r.notice ?? '"${r.document.title}" saved. Ask me about it any time.',
+          r.notice ?? '"${r.document.title}" saved. You may ask your assistant about it at any time.',
           context: context);
     }
     return r.document;
@@ -109,15 +109,15 @@ Future<UserDocument?> uploadMyDocument(BuildContext context,
     if (context.mounted) {
       AppFeedback.show(
           e.message.isNotEmpty
-              ? "Couldn't upload that: ${e.message}"
-              : "Couldn't upload that. Nothing was saved.",
+              ? "Unable to upload the document: ${e.message}"
+              : "Unable to upload the document. Nothing was saved.",
           context: context,
           tone: FeedbackTone.error);
     }
   } catch (_) {
     if (context.mounted) {
       AppFeedback.show(
-          "Couldn't upload that. Check your connection and try again.",
+          "Unable to upload the document. Please check your connection and try again.",
           context: context,
           tone: FeedbackTone.error);
     }
@@ -137,7 +137,7 @@ void askAboutDocuments(BuildContext context) {
                 ProKind.business,
                 'Documents',
                 Icons.description_rounded,
-                'Ask anything about the documents you saved.',
+                'Ask any question about your saved documents.',
                 []),
           )));
 }
@@ -190,17 +190,17 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       if (!mounted) return;
       // Already loaded: keep the list and say the refresh missed.
       if (_docs != null) {
-        AppFeedback.show("Couldn't refresh.",
+        AppFeedback.show("Unable to refresh. Please try again.",
             context: context, tone: FeedbackTone.error);
         return;
       }
-      setState(() => _error = "Couldn't load your documents");
+      setState(() => _error = "Unable to load your documents.");
     }
   }
 
   /// Deletes on the server first; the list only changes once it confirmed.
   Future<bool> _delete(UserDocument d) async {
-    final ok = await confirmDeleteDocument(context, d, where: 'My documents');
+    final ok = await confirmDeleteDocument(context, d, where: 'My Documents');
     if (!ok || !mounted) return false;
     try {
       await ApiService.deleteDocument(d.id);
@@ -211,7 +211,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       return true;
     } catch (_) {
       if (mounted) {
-        AppFeedback.show("Couldn't delete. Check your connection and try again.", context: context);
+        AppFeedback.show("Unable to delete. Please check your connection and try again.", context: context);
       }
       return false;
     }
@@ -226,7 +226,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     // 2026-09-30: under the app's sky; loading, empty and the grid
     // replace one another softly.
     return NeonScaffold(
-      appBar: appleAppBar(context, 'My documents', actions: [
+      appBar: appleAppBar(context, 'My Documents', actions: [
         // The Documents Assistant's own mic (owner, 2026-11-02).
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -237,7 +237,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
               labelColor: Neon.textLo),
         ),
         IconButton(
-          tooltip: 'Ask about my documents',
+          tooltip: 'Ask About Your Documents',
           icon: const Icon(Icons.forum_rounded),
           onPressed: () => askAboutDocuments(context),
         ),
@@ -282,14 +282,14 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
           Row(children: [
             Icon(Icons.autorenew_rounded, size: 18, color: Neon.warning),
             const SizedBox(width: 8),
-            Text(due.length == 1 ? '1 renewal coming up' : '${due.length} renewals coming up',
+            Text(due.length == 1 ? '1 renewal due soon' : '${due.length} renewals due soon',
                 style: TextStyle(
                     color: Neon.textHi,
                     fontSize: 14,
                     fontWeight: FontWeight.w700)),
           ]),
           const SizedBox(height: 2),
-          Text("You'll get reminders 30 days and 7 days before, and on the day.",
+          Text("Reminders will be sent 30 days and 7 days in advance, and on the day.",
               style: TextStyle(color: Neon.textLo, fontSize: 12)),
           const SizedBox(height: 6),
           for (final d in due.take(4))
@@ -346,9 +346,9 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
               height: MediaQuery.of(context).size.height * 0.6,
               child: const NeonEmptyState(
                 icon: Icons.description_outlined,
-                title: 'No documents yet',
-                body: 'Tap Upload to add a photo or file, share one into '
-                    'the app, or ask your assistant to save something. '
+                title: 'No documents available',
+                body: 'To add a photo or file, tap Upload, share one into '
+                    'the app, or ask your assistant to save an item. '
                     'Documents filed under a client or patient appear in '
                     'their case file instead.',
               ),

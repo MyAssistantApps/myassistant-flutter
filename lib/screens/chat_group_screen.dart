@@ -211,12 +211,12 @@ class _ChatGroupScreenState extends State<ChatGroupScreen> {
     }
     final leaving = v == 'leave';
     final ok = await _confirm(
-      leaving ? 'Leave this group?' : 'Clear this chat?',
+      leaving ? 'Leave Group' : 'Clear Chat',
       leaving
-          ? 'You will stop receiving messages here. What you have already '
-              'sent stays for everyone else.'
-          : 'This removes the messages from your copy only. Everyone else '
-              'keeps theirs.',
+          ? 'You will no longer receive messages here. Messages you have already '
+              'sent remain visible to everyone else.'
+          : 'This removes the messages from your copy only. All other members '
+              'retain theirs.',
       leaving ? 'Leave' : 'Clear',
     );
     if (!ok || !mounted) return;
@@ -272,13 +272,13 @@ class _ChatGroupScreenState extends State<ChatGroupScreen> {
             if (m.mine)
               ListTile(
                 leading: Icon(Icons.undo_rounded, color: Neon.error),
-                title: Text('Delete for everyone',
+                title: Text('Delete for Everyone',
                     style: TextStyle(color: Neon.errorInk)),
                 onTap: () => Navigator.of(c).pop('everyone'),
               ),
             ListTile(
               leading: Icon(Icons.visibility_off_rounded, color: Neon.textHi),
-              title: Text('Delete for me', style: TextStyle(color: Neon.textHi)),
+              title: Text('Delete for Me', style: TextStyle(color: Neon.textHi)),
               onTap: () => Navigator.of(c).pop('me'),
             ),
           ],
@@ -322,15 +322,15 @@ class _ChatGroupScreenState extends State<ChatGroupScreen> {
             itemBuilder: (_) => [
               PopupMenuItem(
                 value: 'mute',
-                child: Text(_muted ? 'Unmute' : 'Mute notifications'),
+                child: Text(_muted ? 'Unmute' : 'Mute Notifications'),
               ),
               const PopupMenuItem(
                 value: 'clear',
-                child: Text('Clear chat'),
+                child: Text('Clear Chat'),
               ),
               PopupMenuItem(
                 value: 'leave',
-                child: Text('Leave group', style: TextStyle(color: Neon.errorInk)),
+                child: Text('Leave Group', style: TextStyle(color: Neon.errorInk)),
               ),
             ],
           ),
@@ -366,7 +366,7 @@ class _ChatGroupScreenState extends State<ChatGroupScreen> {
                 : _failed && _messages.isEmpty
                     // Scrolls when the keyboard leaves little room.
                     ? NeonErrorState(
-                        message: "Couldn't load this group",
+                        message: "Unable to load this group.",
                         onRetry: () {
                           setState(() {
                             _failed = false;
@@ -380,8 +380,8 @@ class _ChatGroupScreenState extends State<ChatGroupScreen> {
                     // is the next step.
                     ? const NeonEmptyState(
                         icon: Icons.forum_outlined,
-                        title: 'No messages yet',
-                        body: 'Say hello.',
+                        title: 'No messages available',
+                        body: 'Send a message to begin the conversation.',
                       )
                     : ListView.builder(
                         controller: _scroll,
@@ -422,7 +422,7 @@ class _ChatGroupScreenState extends State<ChatGroupScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Let my assistant reply here',
+                        'Allow My Assistant to Reply Here',
                         style: TextStyle(
                             color: Neon.textHi,
                             fontSize: 13.5,
@@ -430,8 +430,8 @@ class _ChatGroupScreenState extends State<ChatGroupScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'In this group, members’ assistants may answer for '
-                        'them while they are away.',
+                        'In this group, members’ assistants may answer on '
+                        'their behalf while they are away.',
                         style: TextStyle(
                             color: Neon.textLo, fontSize: 12, height: 1.3),
                       ),
@@ -518,7 +518,7 @@ class _ChatGroupScreenState extends State<ChatGroupScreen> {
           child: Row(children: [
             // TEAM TASK LIST (2026-10-04): share a checklist the group ticks off.
             IconButton(
-              tooltip: 'Share a task list',
+              tooltip: 'Share a Task List',
               onPressed: _newTaskList,
               icon: Icon(Icons.checklist_rounded, color: Neon.cyanInk),
             ),

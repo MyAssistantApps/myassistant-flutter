@@ -112,20 +112,20 @@ class PriceService extends ChangeNotifier {
   Future<PriceAnswer> compare(PriceCategory category, String query, {double? budget}) async {
     await load();
     final q = query.trim();
-    if (q.isEmpty) throw const PriceCompareException('Type what to compare first.');
+    if (q.isEmpty) throw const PriceCompareException('Please enter the item to compare.');
     final prompt = promptFor(category, q, budget: budget, now: DateTime.now());
     final ({String text, List<SourceLink> sources, String? suggestionsHtml}) out;
     try {
       out = await (ask ?? _askGemini)(prompt);
     } on TimeoutException {
-      throw const PriceCompareException('That took too long. Check your connection and try again.');
+      throw const PriceCompareException('The request timed out. Please check your internet connection and try again.');
     } catch (e) {
       AppLog.add('price', 'look-up failed: $e');
-      throw const PriceCompareException("Couldn't reach the price search. Check your connection and try again.");
+      throw const PriceCompareException("Unable to reach the price search. Please check your internet connection and try again.");
     }
     final result = PriceResult.parse(out.text, category: category, query: q, at: DateTime.now());
     if (result == null) {
-      throw const PriceCompareException("Couldn't find current prices for that. Try a more exact name.");
+      throw const PriceCompareException("Unable to find current prices for this item. Please enter a more precise name.");
     }
     _remember(result);
     unawaited(_save());
@@ -137,7 +137,7 @@ class PriceService extends ChangeNotifier {
   /// on the stores we cover, with photo, price, rating and store.
   Future<List<ProductHit>> searchProducts(String query) async {
     final q = query.trim();
-    if (q.isEmpty) throw const PriceCompareException('Type what to search for first.');
+    if (q.isEmpty) throw const PriceCompareException('Please enter the item to search for.');
     final stores = PriceStores.shopping.map((s) => s.name).join(', ');
     final now = DateTime.now();
     final prompt =
@@ -151,10 +151,10 @@ Prices are numbers in rupees. Leave out mrp, rating, reviews, image or url you c
     try {
       out = await (ask ?? _askGemini)(prompt);
     } on TimeoutException {
-      throw const PriceCompareException('That took too long. Check your connection and try again.');
+      throw const PriceCompareException('The request timed out. Please check your internet connection and try again.');
     } catch (e) {
       AppLog.add('price', 'product search failed: $e');
-      throw const PriceCompareException("Couldn't reach the price search. Check your connection and try again.");
+      throw const PriceCompareException("Unable to reach the price search. Please check your internet connection and try again.");
     }
     var hits = ProductHit.listFrom(out.text);
     if (hits.isEmpty) {
@@ -186,7 +186,7 @@ Prices are numbers in rupees. Leave out mrp, rating, reviews, image or url you c
         AppLog.add('price', 'product search fallback failed: $e');
       }
     }
-    if (hits.isEmpty) throw const PriceCompareException("Couldn't find products for that. Try other words.");
+    if (hits.isEmpty) throw const PriceCompareException("No products were found for this search. Please try different keywords.");
     return hits;
   }
 
@@ -201,10 +201,10 @@ Prices are numbers in rupees. Leave out mrp, rating, reviews, image or url you c
     try {
       out = await (ask ?? _askGemini)(prompt);
     } on TimeoutException {
-      throw const PriceCompareException('That took too long. Check your connection and try again.');
+      throw const PriceCompareException('The request timed out. Please check your internet connection and try again.');
     } catch (e) {
       AppLog.add('price', 'flight look-up failed: $e');
-      throw const PriceCompareException("Couldn't reach the fare search. Check your connection and try again.");
+      throw const PriceCompareException("Unable to reach the fare search. Please check your internet connection and try again.");
     }
     var fares = FlightFares.parse(out.text);
     var sources = out.sources;
@@ -231,7 +231,7 @@ Prices are numbers in rupees. Leave out mrp, rating, reviews, image or url you c
     }
     if (fares == null) {
       throw const PriceCompareException(
-          "No fares found for this flight right now. Try another date, or pull down to search again.");
+          "No fares are currently available for this flight. Please select another date, or pull down to search again.");
     }
     final l = trip.legs.first;
     final result = fares.toResult(
@@ -266,7 +266,7 @@ Times are local 24-hour times; always give both depart and arrive and the durati
   /// (one or more: name, price seen, store), with what is good and bad
   /// about each and better buys worth a look, checked on the web.
   Future<ProductAdvice> recommend(List<({String name, double? price, String store})> products) async {
-    if (products.isEmpty) throw const PriceCompareException('Open a product first.');
+    if (products.isEmpty) throw const PriceCompareException('Please open a product first.');
     final list = [
       for (final (i, p) in products.indexed)
         '${i + 1}. ${p.name}${p.price == null ? '' : ' — ${rupees(p.price!)}'} on ${p.store}',
@@ -292,13 +292,13 @@ Answer with ONLY this JSON (no markdown):
     try {
       out = await (ask ?? _askGemini)(prompt);
     } on TimeoutException {
-      throw const PriceCompareException('That took too long. Try again.');
+      throw const PriceCompareException('The request timed out. Please try again.');
     } catch (e) {
       AppLog.add('price', 'recommend failed: $e');
-      throw const PriceCompareException("Couldn't reach the AI. Check your connection and try again.");
+      throw const PriceCompareException("Unable to reach the AI service. Please check your internet connection and try again.");
     }
     final a = ProductAdvice.parse(out.text, count: products.length);
-    if (a == null) throw const PriceCompareException("The AI couldn't decide on these. Try again.");
+    if (a == null) throw const PriceCompareException("The AI was unable to provide a recommendation. Please try again.");
     return a.withSources(out.sources, parseSearchSuggestions(out.suggestionsHtml));
   }
 
@@ -368,7 +368,7 @@ Answer with ONLY this JSON (no markdown):
             _watches[w.id] = fresh.copyWith(notified: now);
             await ReminderNotifications.instance.showNow(
               'Price drop: ${fresh.product}',
-              '${rupees(low.price)} on ${low.store} — at or under your ${rupees(fresh.target)} alert.',
+              '${rupees(low.price)} on ${low.store}, at or below your alert price of ${rupees(fresh.target)}.',
             );
           }
         } catch (e) {

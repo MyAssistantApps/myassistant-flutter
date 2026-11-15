@@ -141,13 +141,13 @@ class AuthService extends ChangeNotifier {
     try {
       account = await _googleData.signIn();
     } catch (_) {
-      throw const AuthException('Google sign-in failed. Please try again.');
+      throw const AuthException('Unable to sign in with Google. Please try again.');
     }
     if (account == null) throw const AuthException('');
     final code = account.serverAuthCode;
     if (code == null) {
       throw const AuthException(
-          "We couldn't connect your Google account just now. Please try again in a moment.");
+          "Unable to connect your Google account. Please try again shortly.");
     }
     await ApiService.connectGoogle(code);
   }
@@ -326,7 +326,7 @@ class AuthService extends ChangeNotifier {
     final idToken = (await account.authentication).idToken;
     if (idToken == null) {
       throw const AuthException(
-          "We couldn't sign you in with Google just now. Please try again in a moment.");
+          "Unable to sign in with Google. Please try again shortly.");
     }
     await _post('/auth/google', {'idToken': idToken});
   }
@@ -338,7 +338,7 @@ class AuthService extends ChangeNotifier {
       scopes: [AppleIDAuthorizationScopes.email, AppleIDAuthorizationScopes.fullName],
     );
     if (cred.identityToken == null) {
-      throw const AuthException('Apple sign-in failed. Please try again.');
+      throw const AuthException('Unable to sign in with Apple. Please try again.');
     }
     // Apple sends the name ONLY on the very first sign-in — forward it
     // so the backend can store it.
@@ -458,8 +458,8 @@ class AuthService extends ChangeNotifier {
       // Say which it is: their internet, or our server (2026-10-09).
       await NetStatus.instance.check();
       throw AuthException(NetStatus.instance.state.value == NetState.offline
-          ? 'No internet connection. Check Wi-Fi or mobile data and try again.'
-          : 'Could not reach the server. Please try again in a moment.');
+          ? 'No internet connection. Please check Wi-Fi or mobile data and try again.'
+          : 'Unable to reach the server. Please try again shortly.');
     }
 
     final Map<String, dynamic> data;
@@ -467,14 +467,14 @@ class AuthService extends ChangeNotifier {
       data = jsonDecode(r.body) as Map<String, dynamic>;
     } catch (_) {
       throw AuthException(r.statusCode == 429
-          ? 'Too many sign-in attempts just now. Please wait a few minutes and try again.'
-          : "We couldn't sign you in just now. Please try again in a moment.");
+          ? 'Too many sign-in attempts. Please wait a few minutes and try again.'
+          : "Unable to sign you in. Please try again shortly.");
     }
 
     if (r.statusCode != 200) {
       final msg = data['error'] as String?;
       throw AuthException(msg == null || msg.isEmpty
-          ? "We couldn't sign you in just now. Please try again in a moment."
+          ? "Unable to sign you in. Please try again shortly."
           : msg[0].toUpperCase() + msg.substring(1));
     }
 

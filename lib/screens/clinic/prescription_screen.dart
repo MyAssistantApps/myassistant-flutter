@@ -104,7 +104,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
       if (!mounted) return;
       setState(() => _transcribing = false);
       if (text == null || text.isEmpty) {
-        AppFeedback.toast("Couldn't hear that. Try again or type it.");
+        AppFeedback.toast("Unable to hear the dictation. Please try again or type it.");
         return;
       }
       final cur = _dictation.text.trim();
@@ -113,7 +113,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
       return;
     }
     if (!await _rec.hasPermission()) {
-      AppFeedback.toast('Microphone permission is needed to dictate.');
+      AppFeedback.toast('Microphone access is required to dictate. Please enable it in Settings.');
       return;
     }
     final dir = await getTemporaryDirectory();
@@ -134,7 +134,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
     if (!mounted) return;
     setState(() => _parsing = false);
     if (r == null) {
-      AppFeedback.toast("Couldn't read that. Check your connection, or add the medicines by hand.");
+      AppFeedback.toast("Unable to read the dictation. Please check your connection, or add the medicines manually.");
       return;
     }
     setState(() {
@@ -148,13 +148,13 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
       }
       _dictation.clear();
     });
-    if (r.meds.isEmpty) AppFeedback.toast('No medicines found in that — add them below.');
+    if (r.meds.isEmpty) AppFeedback.toast('No medicines were identified. Please add them below.');
   }
 
   Future<void> _create() async {
     final meds = _rows.map((r) => r.toItem()).where((m) => m.name.trim().isNotEmpty).toList();
     if (meds.isEmpty && _advice.text.trim().isEmpty) {
-      AppFeedback.toast('Add at least one medicine or some advice.');
+      AppFeedback.toast('Please add at least one medicine or some advice.');
       return;
     }
     final missingDose = meds.where((m) => m.dose.trim().isEmpty || m.frequency.trim().isEmpty).toList();
@@ -162,13 +162,13 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
       final go = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Some fields are empty'),
+          title: const Text('Some Fields Are Empty'),
           content: Text(
               '${missingDose.map((m) => m.name).join(', ')} '
-              '${missingDose.length == 1 ? 'has' : 'have'} no dose or frequency. Print anyway?'),
+              '${missingDose.length == 1 ? 'has' : 'have'} no dose or frequency. Do you wish to print regardless?'),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Fix it')),
-            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Print anyway')),
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Amend')),
+            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Print Anyway')),
           ],
         ),
       );
@@ -187,7 +187,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
     if (!mounted) return;
     setState(() => _creating = false);
     if (doc == null) {
-      AppFeedback.toast("Couldn't create the prescription. Check your connection.");
+      AppFeedback.toast("Unable to create the prescription. Please check your connection.");
       return;
     }
     HapticFeedback.lightImpact();
@@ -206,7 +206,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Neon.bg,
-      appBar: appleAppBar(context, 'Prescription — ${widget.patient.name}'),
+      appBar: appleAppBar(context, 'Prescription: ${widget.patient.name}'),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
         children: [
@@ -216,8 +216,8 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
               borderRadius: BorderRadius.circular(12),
               child: ListTile(
                 leading: Icon(Icons.info_outline_rounded, color: Neon.warning),
-                title: const Text('Add your registration number'),
-                subtitle: const Text('It goes on every prescription. Clinic settings →'),
+                title: const Text('Add Your Registration Number'),
+                subtitle: const Text('It appears on every prescription. Clinic settings →'),
                 onTap: () async {
                   await Navigator.of(context).push(MaterialPageRoute(
                       builder: (_) => const ClinicSettingsScreen()));
@@ -254,7 +254,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
                       color: Colors.white),
                 ),
                 IconButton(
-                  tooltip: 'Add from text',
+                  tooltip: 'Add from Text',
                   onPressed: _parsing ? null : _parse,
                   icon: Icon(Icons.playlist_add_rounded, color: Neon.violet),
                 ),
@@ -266,7 +266,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
               padding: const EdgeInsets.only(top: 6),
               child: Text(
                 _recording
-                    ? 'Listening… tap stop when done'
+                    ? 'Listening… Tap Stop when finished'
                     : _transcribing
                         ? 'Transcribing…'
                         : 'Reading the prescription…',
@@ -279,10 +279,10 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
           TextButton.icon(
             onPressed: () => setState(() => _rows.add(_MedRow.from(RxItem()))),
             icon: const Icon(Icons.add_rounded),
-            label: const Text('Add medicine'),
+            label: const Text('Add Medicine'),
           ),
           const SizedBox(height: 10),
-          const GroupLabel('Patient & visit'),
+          const GroupLabel('Patient & Visit'),
           Row(children: [
             SizedBox(
               width: 90,
@@ -328,7 +328,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
           ),
           const SizedBox(height: 20),
           ApplePrimaryButton(
-            label: _creating ? 'Creating…' : 'Create prescription PDF',
+            label: _creating ? 'Creating…' : 'Create Prescription PDF',
             icon: Icons.picture_as_pdf_rounded,
             onPressed: _creating || _recording ? null : _create,
           ),

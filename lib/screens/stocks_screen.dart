@@ -35,11 +35,11 @@ class _StocksScreenState extends State<StocksScreen> {
       if (!mounted) return;
       // Already loaded: keep the data and say the refresh missed.
       if (_data != null) {
-        AppFeedback.show("Couldn't refresh.",
+        AppFeedback.show("Unable to refresh.",
             context: context, tone: FeedbackTone.error);
         return;
       }
-      setState(() => _error = "Couldn't load market data");
+      setState(() => _error = "Unable to load market data.");
     }
   }
 
@@ -156,12 +156,12 @@ class _StocksScreenState extends State<StocksScreen> {
             ),
           ),
         if (invest.isNotEmpty) ...[
-          const GroupLabel('Gaining momentum'),
+          const GroupLabel('Gaining Momentum'),
           ...invest.map((e) => _stockCard(e, true)),
           const SizedBox(height: 24),
         ],
         if (sell.isNotEmpty) ...[
-          const GroupLabel('Losing momentum'),
+          const GroupLabel('Losing Momentum'),
           ...sell.map((e) => _stockCard(e, false)),
           const SizedBox(height: 24),
         ],
@@ -174,8 +174,8 @@ class _StocksScreenState extends State<StocksScreen> {
         if (nothing)
           NeonEmptyState(
             icon: Icons.show_chart_rounded,
-            title: 'No market updates right now',
-            body: 'Check back later.',
+            title: 'No market updates available',
+            body: 'Please check again later.',
             actionLabel: 'Refresh',
             actionIcon: Icons.refresh_rounded,
             onAction: () {

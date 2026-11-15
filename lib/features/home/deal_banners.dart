@@ -65,8 +65,8 @@ List<DealBanner> dealBannersFor(DateTime now, {List<String> toBuy = const []}) {
   final food = [
     DealBanner(
       brand: 'Swiggy',
-      title: '$meal time',
-      body: 'See what restaurants near you are serving, and today\'s offers.',
+      title: '$meal Time',
+      body: 'View what nearby restaurants are serving, together with today\'s offers.',
       action: 'Open Swiggy',
       color: const Color(0xFFFC8019),
       icon: Icons.delivery_dining_rounded,
@@ -76,8 +76,8 @@ List<DealBanner> dealBannersFor(DateTime now, {List<String> toBuy = const []}) {
     ),
     const DealBanner(
       brand: 'Zomato',
-      title: 'Something different?',
-      body: 'Browse restaurants and their deals on Zomato.',
+      title: 'More Dining Options',
+      body: 'Browse restaurants and their offers on Zomato.',
       action: 'Open Zomato',
       color: Color(0xFFE23744),
       icon: Icons.restaurant_rounded,
@@ -91,11 +91,11 @@ List<DealBanner> dealBannersFor(DateTime now, {List<String> toBuy = const []}) {
     DealBanner(
       brand: 'Blinkit',
       title: list.isEmpty
-          ? 'Groceries in minutes'
-          : '${list.length} ${list.length == 1 ? 'thing' : 'things'} on your list',
+          ? 'Groceries in Minutes'
+          : '${list.length} ${list.length == 1 ? 'Item' : 'Items'} on Your List',
       body: list.isEmpty
-          ? 'Milk, fruit, snacks and more, delivered fast.'
-          : '${list.take(3).join(', ')}${list.length > 3 ? ' and more' : ''} — get them in minutes.',
+          ? 'Milk, fruit, snacks and more, delivered promptly.'
+          : '${list.take(3).join(', ')}${list.length > 3 ? ' and more' : ''} can be delivered within minutes.',
       action: 'Open Blinkit',
       color: const Color(0xFF0C831F),
       icon: Icons.shopping_basket_rounded,
@@ -104,8 +104,8 @@ List<DealBanner> dealBannersFor(DateTime now, {List<String> toBuy = const []}) {
     ),
     const DealBanner(
       brand: 'Zepto',
-      title: 'Daily needs, fast',
-      body: 'Groceries and essentials at your door.',
+      title: 'Daily Essentials',
+      body: 'Groceries and essentials delivered promptly to your door.',
       action: 'Open Zepto',
       color: Color(0xFF7B2FF7),
       icon: Icons.bolt_rounded,
@@ -116,9 +116,9 @@ List<DealBanner> dealBannersFor(DateTime now, {List<String> toBuy = const []}) {
   const shop = [
     DealBanner(
       brand: 'Amazon',
-      title: "Today's deals",
-      body: 'The deals Amazon is running today, on one page.',
-      action: 'See deals',
+      title: "Today's Deals",
+      body: 'Amazon deals available today, on a single page.',
+      action: 'View Deals',
       color: Color(0xFFFF9900),
       icon: Icons.local_offer_rounded,
       url: 'https://www.amazon.in/deals',
@@ -127,8 +127,8 @@ List<DealBanner> dealBannersFor(DateTime now, {List<String> toBuy = const []}) {
     DealBanner(
       brand: 'Flipkart',
       title: 'Offers on Flipkart',
-      body: 'Phones, fashion and home — the current offers.',
-      action: 'See offers',
+      body: 'Current offers on phones, fashion and home.',
+      action: 'View Offers',
       color: Color(0xFF2874F0),
       icon: Icons.shopping_bag_rounded,
       url: 'https://www.flipkart.com/offers-store',
@@ -206,7 +206,7 @@ class _DealBannersState extends State<DealBanners> {
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Text('Order and shop', style: NeonType.eyebrow.copyWith(color: Neon.textLo)),
+          child: Text('Order and Shop', style: NeonType.eyebrow.copyWith(color: Neon.textLo)),
         ),
         Listener(
           onPointerDown: (_) => _held = true,

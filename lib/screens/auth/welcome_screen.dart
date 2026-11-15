@@ -126,8 +126,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                       0.7,
                                       Text(
                                         first.isEmpty
-                                            ? 'Welcome aboard!'
-                                            : 'You\'re all set, $who!',
+                                            ? 'Welcome to MyAssistant'
+                                            : 'Setup Complete, $who',
                                         textAlign: TextAlign.center,
                                         style: GoogleFonts.interTight(
                                           fontSize: 30,
@@ -143,8 +143,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                       0.45,
                                       0.85,
                                       Text(
-                                        '$assistant is ready — calls, reminders, messages '
-                                        'and your day, all handled by voice.',
+                                        '$assistant is ready. Calls, reminders, messages '
+                                        'and your day are all managed by voice.',
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
                                             color: Neon.textLo,

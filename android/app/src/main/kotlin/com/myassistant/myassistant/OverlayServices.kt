@@ -26,7 +26,7 @@ private fun ensureChannel(ctx: Context) {
     val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     if (nm.getNotificationChannel("hari_overlay") == null) {
         nm.createNotificationChannel(NotificationChannel(
-            "hari_overlay", "Assistant over other apps", NotificationManager.IMPORTANCE_MIN))
+            "hari_overlay", "Assistant Over Other Apps", NotificationManager.IMPORTANCE_MIN))
     }
 }
 
@@ -60,7 +60,7 @@ class BubbleService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_STOP) { stopEverything(); return START_NOT_STICKY }
-        val n = note(this, "Assistant is ready over other apps", stop = true)
+        val n = note(this, "Your assistant is available over other apps", stop = true)
         // ONLY THE OWNER'S SWITCH STARTS IT (owner, 2026-10-20): Android may
         // revive a sticky service after the app was killed, so it checks the
         // switch and the permission itself and goes away when either is off.
@@ -128,7 +128,7 @@ class MicService : Service() {
     }
     override fun onBind(intent: Intent?): IBinder? = null
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val n = note(this, "Assistant is listening")
+        val n = note(this, "Your assistant is listening")
         try {
             if (Build.VERSION.SDK_INT >= 30) startForeground(42, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
             else startForeground(42, n)

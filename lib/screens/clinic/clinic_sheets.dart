@@ -117,7 +117,7 @@ class _PatientPickerState extends State<_PatientPicker> {
     } catch (_) {
       if (mounted) {
         setState(() => _busy = false);
-        AppFeedback.toast("Couldn't add the patient. Try again.");
+        AppFeedback.toast("Unable to add the patient. Please try again.");
       }
     }
   }
@@ -135,7 +135,7 @@ class _PatientPickerState extends State<_PatientPicker> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _handle(),
-            _title('Choose ${ProWords.current.person.toLowerCase()}'),
+            _title('Select ${ProWords.current.person.toLowerCase()}'),
             TextField(
               autofocus: true,
               textCapitalization: TextCapitalization.words,
@@ -144,7 +144,7 @@ class _PatientPickerState extends State<_PatientPicker> {
                 _adding = false;
               }),
               decoration: const InputDecoration(
-                hintText: 'Search or type a new name',
+                hintText: 'Search or enter a new name',
                 prefixIcon: Icon(Icons.search_rounded),
               ),
             ),
@@ -164,7 +164,7 @@ class _PatientPickerState extends State<_PatientPicker> {
                       autofocus: true,
                       keyboardType: TextInputType.phone,
                       decoration: const InputDecoration(
-                        labelText: 'Phone (for reminder calls)',
+                        labelText: 'Phone Number (for reminder calls)',
                         prefixIcon: Icon(Icons.phone_rounded),
                       ),
                       onSubmitted: (_) => _create(),
@@ -186,7 +186,7 @@ class _PatientPickerState extends State<_PatientPicker> {
                             setState(() => _failed = false);
                             _load();
                           },
-                          child: const Text("Couldn't load patients — retry")))
+                          child: const Text("Unable to load patients. Retry")))
                   : _all == null
                       ? const Center(
                           child: CircularProgressIndicator(strokeWidth: 2))
@@ -295,7 +295,7 @@ class _FollowUpSheetState extends State<_FollowUpSheet> {
     final p = _patient;
     if (p == null || _busy) return;
     if (_due.isBefore(DateTime.now())) {
-      AppFeedback.toast('Pick a time in the future.');
+      AppFeedback.toast('Please select a future time.');
       return;
     }
     setState(() => _busy = true);
@@ -308,13 +308,13 @@ class _FollowUpSheetState extends State<_FollowUpSheet> {
     if (!mounted) return;
     if (r == null) {
       setState(() => _busy = false);
-      AppFeedback.toast("Couldn't schedule. Check your connection.");
+      AppFeedback.toast("Unable to schedule. Please check your connection.");
       return;
     }
     HapticFeedback.lightImpact();
     AppFeedback.toast(r.noPhone
-        ? 'Follow-up set. No phone on file, so your assistant can\'t call ${p.name}.'
-        : 'Follow-up set for ${p.name}, ${_label(_due)}.');
+        ? 'Follow-up scheduled. No phone number on file, so your assistant cannot call ${p.name}.'
+        : 'Follow-up scheduled for ${p.name}, ${_label(_due)}.');
     Navigator.pop(context, true);
   }
 
@@ -327,13 +327,13 @@ class _FollowUpSheetState extends State<_FollowUpSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _handle(),
-          _title('Schedule follow-up'),
+          _title('Schedule Follow-up'),
           GroupedCard(children: [
             AppleRow(
               leading: IconTile(Icons.person_rounded, Neon.accentF),
-              title: p?.name ?? 'Choose ${ProWords.current.person.toLowerCase()}',
+              title: p?.name ?? 'Select ${ProWords.current.person.toLowerCase()}',
               titleColor: p == null ? Neon.violet : null,
-              subtitle: p == null ? null : (p.phone.isEmpty ? 'No phone on file' : p.phone),
+              subtitle: p == null ? null : (p.phone.isEmpty ? 'No phone number on file' : p.phone),
               trailing: Icon(Icons.chevron_right_rounded, color: Neon.textDim),
               onTap: () async {
                 final c = await pickPatient(context);
@@ -352,7 +352,7 @@ class _FollowUpSheetState extends State<_FollowUpSheet> {
               _chip(
                   _days == null && _customDate != null
                       ? _dateOnly(_customDate!)
-                      : 'Pick date',
+                      : 'Select Date',
                   _days == null,
                   _pickDate,
                   icon: Icons.event_rounded),
@@ -369,7 +369,7 @@ class _FollowUpSheetState extends State<_FollowUpSheet> {
                       fontSize: 14.5,
                       fontWeight: FontWeight.w600)),
             ),
-            TextButton(onPressed: _pickTime, child: const Text('Change time')),
+            TextButton(onPressed: _pickTime, child: const Text('Change Time')),
           ]),
           const SizedBox(height: 10),
           TextField(
@@ -377,7 +377,7 @@ class _FollowUpSheetState extends State<_FollowUpSheet> {
             textCapitalization: TextCapitalization.sentences,
             maxLength: 120,
             decoration: const InputDecoration(
-              labelText: 'Reason (optional)',
+              labelText: 'Reason (Optional)',
               hintText: 'e.g. BP review, suture removal',
               counterText: '',
               prefixIcon: Icon(Icons.notes_rounded),
@@ -388,10 +388,10 @@ class _FollowUpSheetState extends State<_FollowUpSheet> {
             contentPadding: EdgeInsets.zero,
             value: _callPatient,
             onChanged: (v) => setState(() => _callPatient = v),
-            title: Text('Remind the patient',
+            title: Text('Remind the Patient',
                 style: TextStyle(color: Neon.textHi, fontSize: 15)),
             subtitle: Text(
-                'Your assistant calls them shortly before the visit',
+                'Your assistant calls them shortly before the visit.',
                 style: TextStyle(color: Neon.textLo, fontSize: 12.5)),
           ),
           const SizedBox(height: 12),
@@ -449,7 +449,7 @@ class _PaymentSheetState extends State<_PaymentSheet> {
   Future<void> _save() async {
     final amt = double.tryParse(_amount.text.replaceAll(',', '').trim());
     if (_id == null || amt == null || amt <= 0 || _busy) {
-      if (amt == null || amt <= 0) AppFeedback.toast('Enter an amount.');
+      if (amt == null || amt <= 0) AppFeedback.toast('Please enter an amount.');
       return;
     }
     setState(() => _busy = true);
@@ -461,13 +461,13 @@ class _PaymentSheetState extends State<_PaymentSheet> {
     if (!mounted) return;
     if (bal == null) {
       setState(() => _busy = false);
-      AppFeedback.toast("Couldn't save. Check your connection.");
+      AppFeedback.toast("Unable to save. Please check your connection.");
       return;
     }
     HapticFeedback.lightImpact();
     AppFeedback.toast(bal > 0
-        ? '$_name still owes ₹${bal.toStringAsFixed(bal % 1 == 0 ? 0 : 2)}.'
-        : '$_name is all settled.');
+        ? '$_name has an outstanding balance of ₹${bal.toStringAsFixed(bal % 1 == 0 ? 0 : 2)}.'
+        : '$_name has no outstanding balance.');
     Navigator.pop(context, true);
   }
 
@@ -479,11 +479,11 @@ class _PaymentSheetState extends State<_PaymentSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _handle(),
-          _title(_owes ? 'Add amount owed' : 'Record payment'),
+          _title(_owes ? 'Add Outstanding Amount' : 'Record Payment'),
           GroupedCard(children: [
             AppleRow(
               leading: IconTile(Icons.person_rounded, Neon.accentF),
-              title: _name ?? 'Choose ${ProWords.current.person.toLowerCase()}',
+              title: _name ?? 'Select ${ProWords.current.person.toLowerCase()}',
               titleColor: _name == null ? Neon.violet : null,
               trailing: Icon(Icons.chevron_right_rounded, color: Neon.textDim),
               onTap: () async {
@@ -506,7 +506,7 @@ class _PaymentSheetState extends State<_PaymentSheet> {
                   icon: Icon(Icons.check_circle_outline_rounded)),
               ButtonSegment(
                   value: true,
-                  label: Text('Owes'),
+                  label: Text('Due'),
                   icon: Icon(Icons.schedule_rounded)),
             ],
             selected: {_owes},
@@ -530,7 +530,7 @@ class _PaymentSheetState extends State<_PaymentSheet> {
             textCapitalization: TextCapitalization.sentences,
             maxLength: 100,
             decoration: const InputDecoration(
-              labelText: 'Note (optional)',
+              labelText: 'Note (Optional)',
               hintText: 'e.g. Consultation, X-ray',
               counterText: '',
             ),
@@ -617,7 +617,7 @@ class _BookSheetState extends State<_BookSheet> {
     if (!mounted) return;
     if (a == null) {
       setState(() => _busy = false);
-      AppFeedback.toast("Couldn't book. The slot may have just been taken.");
+      AppFeedback.toast("Unable to book. The slot may have just been taken.");
       _loadSlots();
       return;
     }
@@ -640,11 +640,11 @@ class _BookSheetState extends State<_BookSheet> {
           GroupedCard(children: [
             AppleRow(
               leading: IconTile(Icons.person_rounded, Neon.accentF),
-              title: p?.name ?? 'Choose ${ProWords.current.person.toLowerCase()}',
+              title: p?.name ?? 'Select ${ProWords.current.person.toLowerCase()}',
               titleColor: p == null ? Neon.violet : null,
               subtitle: p == null
                   ? null
-                  : (p.phone.isEmpty ? 'No phone — no reminder call' : p.phone),
+                  : (p.phone.isEmpty ? 'No phone number; no reminder call' : p.phone),
               trailing: Icon(Icons.chevron_right_rounded, color: Neon.textDim),
               onTap: () async {
                 final c = await pickPatient(context);
@@ -687,7 +687,7 @@ class _BookSheetState extends State<_BookSheet> {
             textCapitalization: TextCapitalization.sentences,
             maxLength: 120,
             decoration: const InputDecoration(
-              labelText: 'Reason (optional)',
+              labelText: 'Reason (Optional)',
               hintText: 'e.g. Fever, review, dressing',
               counterText: '',
               prefixIcon: Icon(Icons.notes_rounded),
@@ -697,10 +697,10 @@ class _BookSheetState extends State<_BookSheet> {
             contentPadding: EdgeInsets.zero,
             value: _remind,
             onChanged: (v) => setState(() => _remind = v),
-            title: Text('Reminder call',
+            title: Text('Reminder Call',
                 style: TextStyle(color: Neon.textHi, fontSize: 15)),
             subtitle: Text(
-                'Your assistant calls the patient a few hours before',
+                'Your assistant calls the patient a few hours before.',
                 style: TextStyle(color: Neon.textLo, fontSize: 12.5)),
           ),
           const SizedBox(height: 10),
@@ -708,7 +708,7 @@ class _BookSheetState extends State<_BookSheet> {
             label: _busy
                 ? 'Booking…'
                 : _slot == null
-                    ? 'Pick a time'
+                    ? 'Select a Time'
                     : 'Book ${_hm(_slot!)}',
             onPressed: p == null || _slot == null || _busy ? null : _save,
           ),
@@ -722,7 +722,7 @@ class _BookSheetState extends State<_BookSheet> {
     if (_slotsFailed) {
       return TextButton(
           onPressed: _loadSlots,
-          child: const Text("Couldn't load free times — retry"));
+          child: const Text("Unable to load available times. Retry"));
     }
     if (s == null) {
       return const Padding(
@@ -739,7 +739,7 @@ class _BookSheetState extends State<_BookSheet> {
           border: Border.all(color: Neon.line),
         ),
         child: Text(
-          'No free times this day. Check your timings in ${ProWords.current.settings}, or pick another day.',
+          'No times are available on this day. Please check your timings in ${ProWords.current.settings}, or select another day.',
           style: TextStyle(color: Neon.textLo, fontSize: 13),
         ),
       );
@@ -784,10 +784,10 @@ class _LateSheetState extends State<_LateSheet> {
     if (!mounted) return;
     Navigator.pop(context);
     AppFeedback.toast(n == null
-        ? "Couldn't call patients — calling may not be set up on the server yet."
+        ? "Unable to call patients. Calling may not yet be set up on the server."
         : n == 0
-            ? 'No patients with a phone number left today.'
-            : 'Calling $n patient${n == 1 ? '' : 's'} to say you\'re $_min minutes late.');
+            ? 'No remaining patients today have a phone number.'
+            : 'Calling $n patient${n == 1 ? '' : 's'} to advise that you are $_min minutes late.');
   }
 
   @override
@@ -799,13 +799,13 @@ class _LateSheetState extends State<_LateSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _handle(),
-          _title('Running late'),
+          _title('Running Late'),
           Text(
             widget.patientsLeft == 0
-                ? 'There are no more booked patients today.'
-                : 'Your assistant will phone the ${widget.patientsLeft} patient'
-                    '${widget.patientsLeft == 1 ? '' : 's'} still to come today and '
-                    'tell them about the delay.',
+                ? 'No further patients are booked today.'
+                : 'Your assistant will call the ${widget.patientsLeft} patient'
+                    '${widget.patientsLeft == 1 ? '' : 's'} still expected today and '
+                    'inform them of the delay.',
             style: TextStyle(color: Neon.textLo, fontSize: 14, height: 1.4),
           ),
           const SizedBox(height: 16),
@@ -815,7 +815,7 @@ class _LateSheetState extends State<_LateSheet> {
           ]),
           const SizedBox(height: 18),
           ApplePrimaryButton(
-            label: _busy ? 'Calling…' : 'Tell them',
+            label: _busy ? 'Calling…' : 'Notify Patients',
             onPressed: widget.patientsLeft == 0 || _busy ? null : _go,
           ),
         ],
@@ -875,7 +875,7 @@ String followUpWhen(DateTime d) {
   final day = DateTime(d.year, d.month, d.day);
   final diff = day.difference(today).inDays;
   if (diff < 0) {
-    return diff == -1 ? 'Yesterday — overdue' : '${-diff} days overdue';
+    return diff == -1 ? 'Yesterday, overdue' : '${-diff} days overdue';
   }
   if (diff == 0) return 'Today, ${_hm(d)}';
   if (diff == 1) return 'Tomorrow, ${_hm(d)}';

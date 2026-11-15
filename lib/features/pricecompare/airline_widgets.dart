@@ -146,7 +146,7 @@ class _Slide extends StatelessWidget {
                   color: Colors.black.withValues(alpha: 0.45),
                   borderRadius: BorderRadius.circular(Neon.rPill),
                 ),
-                child: Text('FIND THE CHEAPEST FLIGHT',
+                child: Text('FIND THE LOWEST FARE',
                     style: NeonType.manrope(10, FontWeight.w800).copyWith(color: Colors.white, letterSpacing: 0.9)),
               ),
             ),
@@ -537,7 +537,7 @@ class _AirlinePageState extends State<_AirlinePage> {
                     ],
                   ),
                   const SizedBox(height: 18),
-                  _fact(Icons.location_city_rounded, 'Home airports', a.hubs.join(', '), brand),
+                  _fact(Icons.location_city_rounded, 'Home Airports', a.hubs.join(', '), brand),
                   _fact(Icons.airline_seat_recline_extra_rounded, 'Cabins', a.cabins.join(' · '), brand),
                   const SizedBox(height: 4),
                   _card(
@@ -545,7 +545,7 @@ class _AirlinePageState extends State<_AirlinePage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _eyebrow('GOOD TO KNOW'),
+                        _eyebrow('KEY INFORMATION'),
                         const SizedBox(height: 8),
                         for (final h in a.highlights)
                           Padding(
@@ -578,8 +578,8 @@ class _AirlinePageState extends State<_AirlinePage> {
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
           child: Text(
-              'Tap a photo to see it full screen; swipe for more airlines. Aircraft sizes are the maker\'s figures; '
-              'seats vary by plane. Details can change — check with the airline before you fly.',
+              'Tap a photo to view it in full screen; swipe for more airlines. Aircraft sizes are the manufacturer\'s figures; '
+              'seats vary by aircraft. Details are subject to change; please confirm with the airline before you fly.',
               style: TextStyle(color: Neon.textDim, fontSize: NeonType.caption, height: 1.4)),
         ),
       ],
@@ -696,7 +696,7 @@ class _AircraftCard extends StatelessWidget {
       (Icons.straighten_rounded, 'Length', p.length),
       (Icons.open_in_full_rounded, 'Wingspan', p.wingspan),
       (Icons.public_rounded, 'Range', p.range),
-      (Icons.speed_rounded, 'Cruise speed', p.speed),
+      (Icons.speed_rounded, 'Cruise Speed', p.speed),
     ];
     return _card(
       brand: brand,

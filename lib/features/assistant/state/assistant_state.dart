@@ -66,18 +66,18 @@ enum AssistantPhase {
         AssistantPhase.listening => 'Listening…',
         AssistantPhase.transcribing => 'Thinking…',
         AssistantPhase.thinking => 'Thinking…',
-        AssistantPhase.responding => 'Working on it…',
+        AssistantPhase.responding => 'Processing…',
         AssistantPhase.searching => 'Searching…',
         AssistantPhase.findingContact => 'Finding contact…',
         AssistantPhase.preparingMessage => 'Thinking…',
         AssistantPhase.generatingVoice => 'Thinking…',
-        AssistantPhase.waitingForConfirmation => 'Waiting for you',
+        AssistantPhase.waitingForConfirmation => 'Awaiting approval',
         AssistantPhase.dialing => 'Dialing…',
         AssistantPhase.ringing => 'Ringing…',
-        AssistantPhase.inCall => 'On the call',
+        AssistantPhase.inCall => 'In call',
         AssistantPhase.speaking => 'Speaking…',
-        AssistantPhase.completed => 'Done',
-        AssistantPhase.error => 'Something went wrong',
+        AssistantPhase.completed => 'Completed',
+        AssistantPhase.error => 'An error has occurred',
       };
 
   /// Whether a running action can be cancelled from the UI.
@@ -182,8 +182,8 @@ class CallStatusInfo {
         // The backend's agent-call engine reports these two while Hari is
         // actually speaking to the business. Without them the card showed
         // the raw state string ("in_progress") to the user.
-        'in_progress' => 'Speaking with them',
-        'summarizing' => 'Getting the answer',
+        'in_progress' => 'Call in progress',
+        'summarizing' => 'Preparing summary',
         'completed' => 'Call completed',
         'ended' => 'Call ended',
         'timeout' => 'Call timed out',

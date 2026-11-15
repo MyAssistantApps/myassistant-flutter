@@ -105,12 +105,12 @@ Future<void> openDocumentFile(UserDocument d) async {
       // same file to Google Slides/Docs/Sheets, Drive or WhatsApp, which
       // is how most phones open these without an Office app installed.
       AppFeedback.toast(d.isPdf
-          ? 'No app on this phone can open PDFs — install a PDF reader.'
-          : 'No app here opens a ${documentTypeLabel(d)} — use Share to open it in a '
+          ? 'No app on this phone can open PDFs. Please install a PDF reader.'
+          : 'No app on this phone can open a ${documentTypeLabel(d)}. Please use Share to open it in a '
               '${d.kind == 'sheet' ? 'spreadsheet' : d.kind == 'slides' ? 'slides' : 'documents'} app.');
     }
   } catch (_) {
-    AppFeedback.toast("Couldn't open that document — try again.");
+    AppFeedback.toast("Unable to open the document. Please try again.");
   }
 }
 
@@ -164,10 +164,10 @@ Future<bool> confirmDeleteDocument(BuildContext context, UserDocument d,
     context: context,
     // The theme's floating surface and words (2026-09-30).
     builder: (ctx) => AlertDialog(
-      title: const Text('Delete this document?'),
+      title: const Text('Delete Document'),
       content: Text(
         '"${d.title}" will be permanently removed from '
-        '${where ?? 'your account'}. This cannot be undone.',
+        '${where ?? 'your account'}. This action cannot be undone.',
       ),
       actions: [
         TextButton(
@@ -541,7 +541,7 @@ Future<void> showDocumentActions(
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
                       child: Text(
-                        'Sender not confirmed — check it before paying.',
+                        'Sender not confirmed. Please verify before making payment.',
                         style: TextStyle(
                             color: Neon.warningInk,
                             fontSize: NeonType.footnote),
@@ -579,7 +579,7 @@ Future<void> showDocumentActions(
         await shareDocumentFile(d);
       } catch (_) {
         if (context.mounted) {
-          AppFeedback.show("Couldn't prepare that to share.", context: context);
+          AppFeedback.show("Unable to prepare the document for sharing.", context: context);
         }
       }
     case DocumentMenuAction.delete:

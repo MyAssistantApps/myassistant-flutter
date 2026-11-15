@@ -24,7 +24,7 @@ void main() {
         post: (path, body) async {
           posts.add((path, body));
           if (path == '/phone/call-verify' && body['code'] != '482913') {
-            return http.Response(jsonEncode({'error': "That code isn't right. 4 tries left."}), 400);
+            return http.Response(jsonEncode({'error': 'The code is incorrect. 4 attempts remaining.'}), 400);
           }
           return http.Response(jsonEncode({'ok': true}), codeStatus);
         },
@@ -46,7 +46,7 @@ void main() {
     final s = svc();
     expect(await s.requestCall('+919845012345'), isNull);
     expect(posts.single.$1, '/phone/call-code');
-    expect(await s.verifyCallCode('+919845012345', '000000'), contains("isn't right"));
+    expect(await s.verifyCallCode('+919845012345', '000000'), contains('is incorrect'));
     expect(refreshed, 0);
     expect(await s.verifyCallCode('+919845012345', '482913'), isNull);
     expect(refreshed, 1);
@@ -60,16 +60,16 @@ void main() {
     final s = svc();
     await t.pumpWidget(MaterialApp(home: PhoneVerifyScreen(service: s)));
     await t.pumpAndSettle();
-    expect(find.text('Call me with a code'), findsOneWidget);
+    expect(find.text('Request Code by Call'), findsOneWidget);
     expect(find.textContaining('Testing:'), findsNothing, reason: 'typed path hidden when the server has it off');
 
     await t.enterText(find.byType(TextField).at(1), '9845012345');
-    await t.tap(find.text('Call me with a code'));
+    await t.tap(find.text('Request Code by Call'));
     await t.pump();
     await t.pump(const Duration(milliseconds: 50));
-    expect(find.textContaining("We're calling +919845012345"), findsOneWidget);
-    expect(find.text('6-digit code'), findsOneWidget);
-    expect(find.textContaining('Call again in'), findsOneWidget);
+    expect(find.textContaining('A call is being placed to +919845012345'), findsOneWidget);
+    expect(find.text('6-Digit Code'), findsOneWidget);
+    expect(find.textContaining('Call Again in'), findsOneWidget);
 
     await t.enterText(find.byType(TextField).first, '482913');
     await t.pump();

@@ -142,7 +142,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       child: Scaffold(
         backgroundColor: SplashScreen.night,
         body: Semantics(
-          label: 'My Assistant',
+          label: 'MyAssistant',
           image: true,
           child: layers == null
               ? const SizedBox.expand()

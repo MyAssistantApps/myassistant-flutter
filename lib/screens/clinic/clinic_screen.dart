@@ -61,7 +61,7 @@ class _ClinicScreenState extends State<ClinicScreen> {
                 MaterialPageRoute(builder: (_) => const ClientsScreen())),
           ),
           IconButton(
-            tooltip: 'Clinic settings',
+            tooltip: 'Clinic Settings',
             icon: const Icon(Icons.tune_rounded),
             onPressed: () => Navigator.of(context).push(MaterialPageRoute(
                 builder: (_) => const ClinicSettingsScreen())),
@@ -113,7 +113,7 @@ class _TodayTab extends StatelessWidget {
         if (t == null) {
           if (svc.failed) {
             return NeonErrorState(
-                message: "Couldn't load your day.",
+                message: "Unable to load today's schedule.",
                 onRetry: () => svc.refresh(force: true));
           }
           return const Center(child: NeonLoader());
@@ -134,7 +134,7 @@ class _TodayTab extends StatelessWidget {
                 const SizedBox(height: 14),
               ],
               Row(children: [
-                _Stat('${open.length}', waiting > 0 ? '$waiting waiting' : 'To see',
+                _Stat('${open.length}', waiting > 0 ? '$waiting waiting' : 'To See',
                     Neon.violet),
                 const SizedBox(width: 10),
                 _Stat('${f.today.length + f.overdue.length}', 'Follow-ups',
@@ -153,8 +153,8 @@ class _TodayTab extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 20),
                   child: Text(
-                    'No ${ProWords.current.appointments.toLowerCase()} today. Book one above — or let your phone '
-                    'receptionist book callers (Clinic settings).',
+                    'No ${ProWords.current.appointments.toLowerCase()} today. Book one above, or allow your phone '
+                    'receptionist to book callers (Clinic Settings).',
                     style: TextStyle(color: Neon.textLo, fontSize: 13.5, height: 1.4),
                   ),
                 )
@@ -177,13 +177,13 @@ class _TodayTab extends StatelessWidget {
                   const SizedBox(height: 20),
                 ],
                 if (f.today.isNotEmpty) ...[
-                  GroupLabel('Due today · ${f.today.length}'),
+                  GroupLabel('Due Today ·${f.today.length}'),
                   _FollowUpGroup(f.today),
                   const SizedBox(height: 20),
                 ],
               ],
               if (t.dues.isNotEmpty) ...[
-                GroupLabel('Payments pending · ${t.duesCount}'),
+                GroupLabel('Payments Pending ·${t.duesCount}'),
                 _DuesGroup(t.dues),
                 const SizedBox(height: 20),
               ],
@@ -211,7 +211,7 @@ class _TodayTab extends StatelessWidget {
           child: Text(
             next == null
                 ? 'No follow-ups due. ${t.patients} ${ProWords.current.person.toLowerCase()}${t.patients == 1 ? '' : 's'} on file.'
-                : 'Nothing due today. Next: ${next.clientName}, ${followUpWhen(next.dueAt)}.',
+                : 'No follow-ups due today. Next:${next.clientName}, ${followUpWhen(next.dueAt)}.',
             style: TextStyle(color: Neon.textHi, fontSize: 14, height: 1.35),
           ),
         ),
@@ -234,7 +234,7 @@ List<Widget> _hearingsSection(BuildContext context, ClinicToday t) {
             .push(MaterialPageRoute(builder: (_) => CaseDetailScreen(caseId: h.caseId))),
       );
   return [
-    GroupLabel(all.isEmpty ? 'Hearings this week' : 'Hearings this week · ${all.length}'),
+    GroupLabel(all.isEmpty ? 'Hearings This Week' : 'Hearings This Week · ${all.length}'),
     if (all.isEmpty)
       Padding(
         padding: const EdgeInsets.only(bottom: 20),
@@ -252,7 +252,7 @@ List<Widget> _hearingsSection(BuildContext context, ClinicToday t) {
 List<Widget> _leadsSection(BuildContext context, ClinicToday t) {
   if (t.leadsDue.isEmpty) return const [];
   return [
-    GroupLabel('Follow up today · ${t.leadsDue.length}'),
+    GroupLabel('Follow Up Today ·${t.leadsDue.length}'),
     GroupedCard(dividerInset: 52, children: [
       for (final l in t.leadsDue)
         AppleRow(
@@ -372,8 +372,8 @@ class _SetupCard extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Set up your ${ProWords.current.workspace.toLowerCase()} — timings, ${ProWords.current.feeLabel == null ? 'title' : 'fee'} and ${ProWords.current.regNo.toLowerCase()}. '
-                'Takes a minute; booking and prescriptions use it.',
+                'Please set up your ${ProWords.current.workspace.toLowerCase()}: timings,${ProWords.current.feeLabel == null ? 'title' : 'fee'} and ${ProWords.current.regNo.toLowerCase()}. '
+                'This takes a minute and is used for booking and prescriptions.',
                 style: TextStyle(color: Neon.textHi, fontSize: 13.5, height: 1.35),
               ),
             ),
@@ -398,7 +398,7 @@ class _ApptRow extends StatelessWidget {
   Future<void> _set(String status) async {
     HapticFeedback.lightImpact();
     final ok = await ClinicService.instance.setAppointmentStatus(a.id, status);
-    if (!ok) AppFeedback.toast("Couldn't update. Check your connection.");
+    if (!ok) AppFeedback.toast("Unable to update. Please check your connection.");
   }
 
   void _menu(BuildContext context) {
@@ -412,7 +412,7 @@ class _ApptRow extends StatelessWidget {
           if (a.clientId != null)
             ListTile(
               leading: const Icon(Icons.folder_open_rounded),
-              title: Text('Open ${ProWords.current.person.toLowerCase()} file'),
+              title: Text('Open ${ProWords.current.person.toLowerCase()} File'),
               onTap: () {
                 Navigator.pop(ctx);
                 Navigator.of(context).push(MaterialPageRoute(
@@ -429,10 +429,10 @@ class _ApptRow extends StatelessWidget {
               },
             ),
           for (final (s, label, icon) in const [
-            ('arrived', 'Arrived — in waiting room', Icons.chair_rounded),
+            ('arrived', 'Arrived, in Waiting Room', Icons.chair_rounded),
             ('done', 'Seen', Icons.check_circle_rounded),
             ('no_show', 'No-show', Icons.person_off_rounded),
-            ('cancelled', 'Cancel appointment', Icons.event_busy_rounded),
+            ('cancelled', 'Cancel Appointment', Icons.event_busy_rounded),
           ])
             if (a.status != s)
               ListTile(
@@ -456,7 +456,7 @@ class _ApptRow extends StatelessWidget {
       'done' => ('Seen', Neon.success),
       'no_show' => ('No-show', Neon.error),
       'cancelled' => ('Cancelled', Neon.textDim),
-      _ => (a.source == 'receptionist' ? 'Booked by phone' : 'Booked', Neon.violet),
+      _ => (a.source == 'receptionist' ? 'Booked by Phone' : 'Booked', Neon.violet),
     };
     return InkWell(
       onTap: () => _menu(context),
@@ -528,7 +528,7 @@ class _VoiceHint extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Faster by voice — tap the mic and say:\n'
+              'For faster entry by voice, tap the microphone and say:\n'
               '“Follow up Ramesh in two weeks”\n'
               '“Note for Ramesh: BP 130/85, continue meds”\n'
               '“Ramesh paid 500”',
@@ -568,14 +568,14 @@ class _FollowUpRow extends StatelessWidget {
     HapticFeedback.lightImpact();
     final ok = await ClinicService.instance.closeFollowUp(f.id, cancel: cancel);
     AppFeedback.toast(ok
-        ? (cancel ? 'Follow-up cancelled.' : '${f.clientName} — done.')
-        : "Couldn't update. Check your connection.");
+        ? (cancel ? 'Follow-up cancelled.' : '${f.clientName}: marked as completed.')
+        : "Unable to update. Please check your connection.");
     if (ok) onChanged?.call();
   }
 
   Future<void> _call() async {
     final ok = await launchUrl(Uri(scheme: 'tel', path: f.clientPhone));
-    if (!ok) AppFeedback.toast("Couldn't open the dialer.");
+    if (!ok) AppFeedback.toast("Unable to open the dialler.");
   }
 
   void _menu(BuildContext context) {
@@ -588,7 +588,7 @@ class _FollowUpRow extends StatelessWidget {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           ListTile(
             leading: const Icon(Icons.folder_open_rounded),
-            title: const Text('Open patient file'),
+            title: const Text('Open Patient File'),
             onTap: () {
               Navigator.pop(ctx);
               Navigator.of(context).push(MaterialPageRoute(
@@ -597,7 +597,7 @@ class _FollowUpRow extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.check_rounded),
-            title: const Text('Mark done'),
+            title: const Text('Mark as Completed'),
             onTap: () {
               Navigator.pop(ctx);
               _close(context);
@@ -605,7 +605,7 @@ class _FollowUpRow extends StatelessWidget {
           ),
           ListTile(
             leading: Icon(Icons.close_rounded, color: Neon.error),
-            title: Text('Cancel follow-up', style: TextStyle(color: Neon.error)),
+            title: Text('Cancel Follow-up', style: TextStyle(color: Neon.error)),
             onTap: () {
               Navigator.pop(ctx);
               _close(context, cancel: true);
@@ -670,7 +670,7 @@ class _FollowUpRow extends StatelessWidget {
               onPressed: _call,
             ),
           IconButton(
-            tooltip: 'Mark done',
+            tooltip: 'Mark as Completed',
             icon: Icon(Icons.check_circle_outline_rounded, color: Neon.violet),
             onPressed: () => _close(context),
           ),
@@ -725,7 +725,7 @@ class _FollowUpsTabState extends State<_FollowUpsTab>
     Widget body;
     if (_failed) {
       body = NeonErrorState(
-          message: "Couldn't load follow-ups.",
+          message: "Unable to load follow-ups.",
           onRetry: () {
             setState(() => _failed = false);
             _load();
@@ -736,8 +736,8 @@ class _FollowUpsTabState extends State<_FollowUpsTab>
       body = const NeonEmptyState(
         icon: Icons.event_repeat_rounded,
         title: 'No follow-ups scheduled',
-        body: 'Schedule one here or just say “follow up Ramesh in two weeks”. '
-            'Your assistant can call them to remind them.',
+        body: 'Schedule one here or say “follow up Ramesh in two weeks”. '
+            'Your assistant can call them with a reminder.',
       );
     } else {
       body = RefreshIndicator(
@@ -857,7 +857,7 @@ class _PaymentsTabState extends State<_PaymentsTab>
     Widget body;
     if (_failed) {
       body = NeonErrorState(
-          message: "Couldn't load payments.",
+          message: "Unable to load payments.",
           onRetry: () {
             setState(() => _failed = false);
             _load();
@@ -867,8 +867,8 @@ class _PaymentsTabState extends State<_PaymentsTab>
     } else if (d.isEmpty) {
       body = const NeonEmptyState(
         icon: Icons.verified_rounded,
-        title: 'Nobody owes you anything',
-        body: 'Record a balance with “Owes”, or say “Ramesh owes 2000”.',
+        title: 'No outstanding balances',
+        body: 'Record a balance with “Due”, or say “Ramesh owes 2000”.',
       );
     } else {
       body = RefreshIndicator(
@@ -890,7 +890,7 @@ class _PaymentsTabState extends State<_PaymentsTab>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Total pending',
+                      Text('Total Pending',
                           style: TextStyle(color: Neon.textLo, fontSize: 13)),
                       const SizedBox(height: 2),
                       Text(rupees(_total),

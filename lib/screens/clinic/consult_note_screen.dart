@@ -69,11 +69,11 @@ class _ConsultNoteScreenState extends State<ConsultNoteScreen> {
   Future<void> _toggleRecord() async {
     if (_recording) return _stop();
     if (!_consent) {
-      AppFeedback.toast('Tick that the patient agreed to recording first.');
+      AppFeedback.toast('Please confirm that the patient has agreed to the recording.');
       return;
     }
     if (!await _rec.hasPermission()) {
-      AppFeedback.toast('Microphone permission is needed to record.');
+      AppFeedback.toast('Microphone access is required to record. Please enable it in Settings.');
       return;
     }
     final dir = await getTemporaryDirectory();
@@ -109,7 +109,7 @@ class _ConsultNoteScreenState extends State<ConsultNoteScreen> {
     if (!mounted) return;
     setState(() => _transcribing = false);
     if (text == null || text.isEmpty) {
-      AppFeedback.toast("Couldn't transcribe that recording. Try again, or type the notes.");
+      AppFeedback.toast("Unable to transcribe the recording. Please try again or type the notes.");
       return;
     }
     final cur = _transcript.text.trim();
@@ -120,7 +120,7 @@ class _ConsultNoteScreenState extends State<ConsultNoteScreen> {
   Future<void> _draft() async {
     final t = _transcript.text.trim();
     if (t.length < 20) {
-      AppFeedback.toast('Add a bit more of the consultation first.');
+      AppFeedback.toast('Please add more of the consultation before drafting.');
       return;
     }
     setState(() => _drafting = true);
@@ -129,7 +129,7 @@ class _ConsultNoteScreenState extends State<ConsultNoteScreen> {
     if (!mounted) return;
     setState(() => _drafting = false);
     if (r == null) {
-      AppFeedback.toast("Couldn't draft the note. Check your connection and try again.");
+      AppFeedback.toast("Unable to draft the note. Please check your connection and try again.");
       return;
     }
     final n = r.note;
@@ -158,7 +158,7 @@ class _ConsultNoteScreenState extends State<ConsultNoteScreen> {
     if (!mounted) return;
     setState(() => _saving = false);
     if (!ok) {
-      AppFeedback.toast("Couldn't save. Check your connection.");
+      AppFeedback.toast("Unable to save. Please check your internet connection.");
       return;
     }
     HapticFeedback.lightImpact();
@@ -183,19 +183,19 @@ class _ConsultNoteScreenState extends State<ConsultNoteScreen> {
           if (meds.isNotEmpty)
             ListTile(
               leading: const Icon(Icons.medication_rounded),
-              title: const Text('Write the prescription'),
-              subtitle: Text('${meds.length} medicine${meds.length == 1 ? '' : 's'} from this consult'),
+              title: const Text('Write Prescription'),
+              subtitle: Text('${meds.length} medicine${meds.length == 1 ? '' : 's'} from this consultation'),
               onTap: () => Navigator.pop(ctx, 'rx'),
             ),
           if (fu != null && fu > 0)
             ListTile(
               leading: const Icon(Icons.event_repeat_rounded),
-              title: Text('Schedule review in $fu day${fu == 1 ? '' : 's'}'),
+              title: Text('Schedule Review in $fu Day${fu == 1 ? '' : 's'}'),
               onTap: () => Navigator.pop(ctx, 'fu'),
             ),
           ListTile(
             leading: const Icon(Icons.close_rounded),
-            title: const Text('Not now'),
+            title: const Text('Not Now'),
             onTap: () => Navigator.pop(ctx),
           ),
         ]),
@@ -222,7 +222,7 @@ class _ConsultNoteScreenState extends State<ConsultNoteScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Neon.bg,
-      appBar: appleAppBar(context, 'Consult — ${widget.patient.name}'),
+      appBar: appleAppBar(context, 'Consultation: ${widget.patient.name}'),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
         children: _note == null ? _captureStep() : _reviewStep(),
@@ -267,7 +267,7 @@ class _ConsultNoteScreenState extends State<ConsultNoteScreen> {
             _transcribing
                 ? 'Transcribing…'
                 : _recording
-                    ? 'Recording  $_clock  — tap to stop'
+                    ? 'Recording  $_clock  · Tap to stop'
                     : 'Tap to record the consultation',
             style: TextStyle(
                 color: _recording ? Neon.error : Neon.textLo,
@@ -283,14 +283,14 @@ class _ConsultNoteScreenState extends State<ConsultNoteScreen> {
           onChanged: (_) => setState(() {}),
           textCapitalization: TextCapitalization.sentences,
           decoration: const InputDecoration(
-            labelText: 'Consultation transcript or your notes',
-            hintText: 'Recordings appear here. You can also type or dictate with the keyboard mic.',
+            labelText: 'Consultation transcript or notes',
+            hintText: 'Recordings appear here. You may also type, or dictate using the keyboard microphone.',
             alignLabelWithHint: true,
           ),
         ),
         const SizedBox(height: 16),
         ApplePrimaryButton(
-          label: _drafting ? 'Drafting the note…' : 'Draft note',
+          label: _drafting ? 'Drafting the note…' : 'Draft Note',
           icon: Icons.auto_awesome_rounded,
           onPressed: _drafting || _recording || _transcribing ||
                   _transcript.text.trim().length < 20
@@ -299,7 +299,7 @@ class _ConsultNoteScreenState extends State<ConsultNoteScreen> {
         ),
         if (_drafting) ...[
           const SizedBox(height: 10),
-          Text('This can take up to a minute for a long consultation.',
+          Text('A long consultation may take up to a minute.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Neon.textDim, fontSize: 12)),
         ],
@@ -319,22 +319,22 @@ class _ConsultNoteScreenState extends State<ConsultNoteScreen> {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Draft — check every line before saving. '
-              'It records only what was said; edit anything that is wrong.',
+              'Draft: please review every line before saving. '
+              'It records only what was said; please correct any errors.',
               style: TextStyle(color: Neon.textHi, fontSize: 12.5, height: 1.35),
             ),
           ),
         ]),
       ),
       const SizedBox(height: 14),
-      _box(_cc, 'Chief complaint', 1),
+      _box(_cc, 'Chief Complaint', 1),
       _box(_s, 'S — Subjective', 3),
       _box(_o, 'O — Objective', 3),
       _box(_a, 'A — Assessment', 2),
       _box(_p, 'P — Plan', 3),
       if (n.medications.isNotEmpty) ...[
         const SizedBox(height: 6),
-        const GroupLabel('Medicines mentioned'),
+        const GroupLabel('Medicines Mentioned'),
         GroupedCard(children: [
           for (var i = 0; i < n.medications.length; i++)
             AppleRow(
@@ -351,7 +351,7 @@ class _ConsultNoteScreenState extends State<ConsultNoteScreen> {
       ],
       if (n.redFlags.isNotEmpty) ...[
         const SizedBox(height: 12),
-        Text('Warning signs told to patient: ${n.redFlags.join('; ')}',
+        Text('Warning signs explained to the patient:${n.redFlags.join('; ')}',
             style: TextStyle(color: Neon.textLo, fontSize: 13)),
       ],
       if (n.followUpDays != null && n.followUpDays! > 0) ...[
@@ -371,7 +371,7 @@ class _ConsultNoteScreenState extends State<ConsultNoteScreen> {
         Expanded(
           flex: 2,
           child: ApplePrimaryButton(
-            label: _saving ? 'Saving…' : 'Save to patient file',
+            label: _saving ? 'Saving…' : 'Save to Patient File',
             onPressed: _saving ? null : _save,
           ),
         ),

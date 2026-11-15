@@ -62,7 +62,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
       final d = docs.where((x) => x.id == id).firstOrNull;
       if (d != null && mounted) openDocument(context, d);
     } catch (_) {
-      AppFeedback.toast("Couldn't open the PDF.");
+      AppFeedback.toast("Unable to open the PDF.");
     }
   }
 
@@ -84,22 +84,22 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
           if (i.paymentUrl.isNotEmpty && !i.isPaid)
             ListTile(
               leading: const Icon(Icons.link_rounded),
-              title: const Text('Copy payment link'),
+              title: const Text('Copy Payment Link'),
               subtitle: Text(i.paymentUrl, maxLines: 1, overflow: TextOverflow.ellipsis),
               onTap: () {
                 Clipboard.setData(ClipboardData(text: i.paymentUrl));
                 Navigator.pop(ctx);
-                AppFeedback.toast('Payment link copied — paste it in WhatsApp.');
+                AppFeedback.toast('Payment link copied. You may paste it in WhatsApp.');
               },
             ),
           if (!i.isQuote && !i.isPaid)
             ListTile(
               leading: Icon(Icons.check_circle_rounded, color: Neon.success),
-              title: const Text('Mark as paid (cash / bank)'),
+              title: const Text('Mark as Paid (Cash / Bank)'),
               onTap: () async {
                 Navigator.pop(ctx);
                 final ok = await ProService.instance.markInvoicePaid(i.id);
-                AppFeedback.toast(ok ? '${i.number} marked paid.' : "Couldn't update. Check your connection.");
+                AppFeedback.toast(ok ? '${i.number} marked as paid.' : "Unable to update the invoice. Please check your connection.");
                 _load();
               },
             ),
@@ -113,13 +113,13 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
     final items = _items;
     return Scaffold(
       backgroundColor: Neon.bg,
-      appBar: appleAppBar(context, 'Invoices & quotes'),
+      appBar: appleAppBar(context, 'Invoices & Quotes'),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: Neon.violet,
         foregroundColor: Colors.white,
         onPressed: _new,
         icon: const Icon(Icons.add_rounded),
-        label: Text(_kind == 'quote' ? 'New quote' : 'New invoice'),
+        label: Text(_kind == 'quote' ? 'New Quote' : 'New Invoice'),
       ),
       body: Column(children: [
         Padding(
@@ -142,7 +142,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
         Expanded(
           child: _failed
               ? NeonErrorState(
-                  message: "Couldn't load invoices.",
+                  message: "Unable to load invoices.",
                   onRetry: () {
                     setState(() => _failed = false);
                     _load();
@@ -152,8 +152,8 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                   : items.isEmpty
                       ? NeonEmptyState(
                           icon: Icons.receipt_long_rounded,
-                          title: _kind == 'quote' ? 'No quotes yet' : 'No invoices yet',
-                          body: 'Create one in a few taps — it\'s filed under the client as a PDF.',
+                          title: _kind == 'quote' ? 'No Quotes Created' : 'No Invoices Created',
+                          body: 'Create one in a few steps. It is filed under the client as a PDF.',
                         )
                       : RefreshIndicator(
                           color: Neon.violet,
@@ -251,12 +251,12 @@ class _InvoiceEditorScreenState extends State<InvoiceEditorScreen> {
   Future<void> _save() async {
     final id = _clientId;
     if (id == null) {
-      AppFeedback.toast('Choose the client first.');
+      AppFeedback.toast('Please select the client first.');
       return;
     }
     final items = _lines.map((l) => l.line).where((l) => l.description.trim().isNotEmpty && l.qty > 0).toList();
     if (items.isEmpty) {
-      AppFeedback.toast('Add at least one item with a quantity.');
+      AppFeedback.toast('Please add at least one item with a quantity.');
       return;
     }
     setState(() => _busy = true);
@@ -271,7 +271,7 @@ class _InvoiceEditorScreenState extends State<InvoiceEditorScreen> {
     if (!mounted) return;
     setState(() => _busy = false);
     if (r == null) {
-      AppFeedback.toast("Couldn't create it. Check your connection.");
+      AppFeedback.toast("Unable to create the document. Please check your connection.");
       return;
     }
     HapticFeedback.lightImpact();
@@ -279,7 +279,7 @@ class _InvoiceEditorScreenState extends State<InvoiceEditorScreen> {
     if (inv.paymentUrl.isNotEmpty) {
       await Clipboard.setData(ClipboardData(text: inv.paymentUrl));
       if (!mounted) return;
-      AppFeedback.toast('${inv.number} created. Payment link copied — paste it to $_clientName.');
+      AppFeedback.toast('${inv.number} created. Payment link copied; you may send it to $_clientName.');
     } else {
       AppFeedback.toast(r.paymentError != null && !inv.isQuote
           ? '${inv.number} created. (${r.paymentError})'
@@ -295,7 +295,7 @@ class _InvoiceEditorScreenState extends State<InvoiceEditorScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Neon.bg,
-      appBar: appleAppBar(context, _kind == 'quote' ? 'New quote' : 'New invoice'),
+      appBar: appleAppBar(context, _kind == 'quote' ? 'New Quote' : 'New Invoice'),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
         children: [
@@ -311,7 +311,7 @@ class _InvoiceEditorScreenState extends State<InvoiceEditorScreen> {
           GroupedCard(children: [
             AppleRow(
               leading: IconTile(Icons.business_rounded, Neon.accentF),
-              title: _clientName ?? 'Choose client',
+              title: _clientName ?? 'Select Client',
               titleColor: _clientName == null ? Neon.violet : null,
               trailing: Icon(Icons.chevron_right_rounded, color: Neon.textDim),
               onTap: () async {
@@ -331,7 +331,7 @@ class _InvoiceEditorScreenState extends State<InvoiceEditorScreen> {
           TextButton.icon(
             onPressed: () => setState(() => _lines.add(_LineCtl())),
             icon: const Icon(Icons.add_rounded),
-            label: const Text('Add item'),
+            label: const Text('Add Item'),
           ),
           const SizedBox(height: 10),
           Text('GST', style: TextStyle(color: Neon.textHi, fontWeight: FontWeight.w600)),
@@ -347,7 +347,7 @@ class _InvoiceEditorScreenState extends State<InvoiceEditorScreen> {
               ),
           ]),
           const SizedBox(height: 14),
-          Text(_kind == 'quote' ? 'Valid for' : 'Payment due in',
+          Text(_kind == 'quote' ? 'Valid For' : 'Payment Due In',
               style: TextStyle(color: Neon.textHi, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           Wrap(spacing: 8, children: [
@@ -360,7 +360,7 @@ class _InvoiceEditorScreenState extends State<InvoiceEditorScreen> {
                 onSelected: (_) => setState(() => _dueDays = d),
               ),
             ChoiceChip(
-              label: const Text('No date'),
+              label: const Text('No Date'),
               selected: _dueDays == null,
               showCheckmark: false,
               selectedColor: Neon.violet.withValues(alpha: 0.15),
@@ -373,7 +373,7 @@ class _InvoiceEditorScreenState extends State<InvoiceEditorScreen> {
             minLines: 1,
             maxLines: 3,
             textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(labelText: 'Notes (optional)', hintText: 'e.g. Bank details, terms'),
+            decoration: const InputDecoration(labelText: 'Notes (Optional)', hintText: 'e.g. Bank details, terms'),
           ),
           const SizedBox(height: 18),
           Container(
@@ -392,13 +392,13 @@ class _InvoiceEditorScreenState extends State<InvoiceEditorScreen> {
           ),
           const SizedBox(height: 18),
           ApplePrimaryButton(
-            label: _busy ? 'Creating…' : (_kind == 'quote' ? 'Create quote' : 'Create invoice'),
+            label: _busy ? 'Creating…' : (_kind == 'quote' ? 'Create Quote' : 'Create Invoice'),
             icon: Icons.picture_as_pdf_rounded,
             onPressed: _busy ? null : _save,
           ),
           if (_kind == 'invoice') ...[
             const SizedBox(height: 8),
-            Text('A payment link is attached when online payments are set up.',
+            Text('A payment link is attached when online payments have been set up.',
                 textAlign: TextAlign.center, style: TextStyle(color: Neon.textDim, fontSize: 12)),
           ],
         ],

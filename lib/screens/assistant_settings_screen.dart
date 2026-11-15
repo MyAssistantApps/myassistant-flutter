@@ -150,9 +150,9 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
     final msg = switch (started) {
       FeedbackStart.opened => null,
       FeedbackStart.offline =>
-        'Feedback needs the internet. Check your connection and try again.',
+        'Feedback requires an internet connection. Please check your connection and try again.',
       FeedbackStart.unavailable =>
-        "Feedback isn't available right now. Please try again later.",
+        "Feedback is currently unavailable. Please try again later.",
     };
     if (msg == null) return;
     AppFeedback.show(msg, context: context, tone: FeedbackTone.error);
@@ -192,7 +192,7 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                       leading: IconTile(
                           Icons.auto_awesome_rounded, AppleColors.purple),
                       title: n,
-                      subtitle: 'To rename, just say it — "your name is '
+                      subtitle: 'To rename your assistant, say "your name is '
                           'Maya from now on".',
                     ),
                   ),
@@ -228,8 +228,8 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                     AppleRow(
                       leading: IconTile(
                           Icons.psychology_rounded, AppleColors.indigo),
-                      title: 'What I remember',
-                      subtitle: 'Review what the assistant knows about you',
+                      title: 'Stored Memories',
+                      subtitle: 'Review what your assistant knows about you',
                       trailing: Icon(Icons.chevron_right_rounded,
                           color: Neon.textDim, size: 20),
                       onTap: () => Navigator.of(context).push(
@@ -259,10 +259,10 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                                 ? Icons.dark_mode_rounded
                                 : Icons.light_mode_rounded,
                             AppleColors.indigo),
-                        title: 'Dark mode',
+                        title: 'Dark Mode',
                         subtitle: mode == ThemeMode3.dark
-                            ? 'On — the app is dark'
-                            : 'Off — the app is light',
+                            ? 'On · dark appearance'
+                            : 'Off · light appearance',
                         trailing: Switch(
                           value: mode == ThemeMode3.dark,
                           onChanged: (v) {
@@ -281,8 +281,8 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                       AppleRow(
                         leading:
                             IconTile(Icons.palette_rounded, AppleColors.purple),
-                        title: 'Theme colour',
-                        subtitle: 'Paints the orb, the mic and every highlight',
+                        title: 'Theme Colour',
+                        subtitle: 'Applied to the orb, the microphone and all highlights',
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -326,7 +326,7 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                             IconTile(Icons.newspaper_rounded, AppleColors.blue),
                         title: 'News on Home',
                         subtitle:
-                            'Two headlines from the topic you read, when there is room',
+                            'Two headlines from the topic you read, when space permits',
                         trailing: Switch(
                           value: on,
                           onChanged: (v) {
@@ -350,8 +350,8 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                     AppleRow(
                       leading:
                           IconTile(Icons.graphic_eq_rounded, AppleColors.teal),
-                      title: 'Assistant voice',
-                      subtitle: 'Preview and choose an OpenAI voice',
+                      title: 'Assistant Voice',
+                      subtitle: 'Preview and select an OpenAI voice',
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -395,16 +395,16 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                 // "Video avatar → Avatar face" was here. It appeared whenever
                 // the server listed faces, but the app has no video renderer
                 // (face mode is off), so a pick changed nothing visible.
-                const GroupLabel('Your avatar identity'),
+                const GroupLabel('Your Avatar Identity'),
                 GroupedCard(
                   dividerInset: 60,
                   children: [
                     AppleRow(
                       leading: IconTile(
                           Icons.video_camera_front_rounded, AppleColors.green),
-                      title: 'Send messages as you',
-                      subtitle: 'Your face and voice on messages you send '
-                          '— with your consent.',
+                      title: 'Send Messages as You',
+                      subtitle: 'Your face and voice on messages you send, '
+                          'with your consent.',
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                             builder: (_) => const AvatarIdentityScreen()),
@@ -431,9 +431,9 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                                   leading: IconTile(
                                       Icons.forward_to_inbox_rounded,
                                       AppleColors.blue),
-                                  title: 'Bills by email',
+                                  title: 'Bills by Email',
                                   subtitle:
-                                      "Forward bills and tickets — I'll file "
+                                      "Forward bills and tickets; your assistant will file "
                                       'them and remind you',
                                   onTap: () => Navigator.of(context).push(
                                     MaterialPageRoute(
@@ -448,13 +448,13 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                         ),
                 ),
 
-                const GroupLabel('Standing rules'),
+                const GroupLabel('Standing Rules'),
                 Padding(
                   padding: const EdgeInsets.only(left: 16, bottom: 8),
                   child: Text(
                     'Permanent instructions the assistant follows before every '
-                    'decision — e.g. "Always ask before sending messages", '
-                    '"Call me by my first name". You can also just say these in '
+                    'decision, e.g. "Always ask before sending messages", '
+                    '"Call me by my first name". These may also be stated in '
                     'conversation.',
                     // textLo: textDim fell under 4.5:1 on the ambient wash.
                     style: TextStyle(
@@ -472,7 +472,7 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                                 child: Text(r['instruction'] ?? '',
                                     style: TextStyle(color: Neon.textLo))),
                             IconButton(
-                              tooltip: 'Remove rule',
+                              tooltip: 'Remove Rule',
                               icon: Icon(Icons.close_rounded,
                                   size: 18, color: Neon.textDim),
                               onPressed: () => _removeRule(r['id'] as int),
@@ -488,13 +488,13 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                     child: TextField(
                       controller: _newRule,
                       style: TextStyle(color: Neon.textHi),
-                      decoration: _dec('Add a rule', 'Always…'),
+                      decoration: _dec('Add a Rule', 'Always…'),
                       onSubmitted: (_) => _addRule(),
                     ),
                   ),
                   const SizedBox(width: 8),
                   IconButton(
-                      tooltip: 'Add rule',
+                      tooltip: 'Add Rule',
                       onPressed: _addRule,
                       icon: Icon(Icons.add_circle_rounded, color: Neon.violet)),
                 ]),
@@ -508,14 +508,14 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
 
                 // HOME-SCREEN WIDGETS (2026-11-08): the picker the app
                 // offers once on opening, for whoever said "Not now".
-                const GroupLabel('Home screen'),
+                const GroupLabel('Home Screen'),
                 GroupedCard(
                   dividerInset: 60,
                   children: [
                     AppleRow(
                       leading: IconTile(Icons.widgets_rounded, AppleColors.purple),
-                      title: 'Home-screen widgets',
-                      subtitle: 'Ask bar, My day, Shortcuts and the orb',
+                      title: 'Home-Screen Widgets',
+                      subtitle: 'Ask Bar, My Day, Shortcuts and the Orb',
                       onTap: () => showWidgetPicker(context),
                     ),
                   ],
@@ -534,15 +534,15 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                     AppleRow(
                       leading:
                           IconTile(Icons.feedback_outlined, AppleColors.blue),
-                      title: 'Send feedback',
-                      subtitle: 'Tell the developer what to improve',
+                      title: 'Send Feedback',
+                      subtitle: 'Suggest improvements to the developer',
                       onTap: _sendFeedback,
                     ),
                   ],
                 ),
                 const SizedBox(height: 24),
 
-                const GroupLabel('About & legal'),
+                const GroupLabel('About & Legal'),
                 GroupedCard(
                   children: [
                     _legalRow('Privacy Policy', '/legal/privacy'),

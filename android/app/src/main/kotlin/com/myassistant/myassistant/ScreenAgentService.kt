@@ -260,7 +260,7 @@ class ScreenAgentService : AccessibilityService() {
         val body = card().apply {
             orientation = LinearLayout.VERTICAL
             addView(TextView(this@ScreenAgentService).apply {
-                text = "Your assistant wants to:"
+                text = "Your assistant requests permission to:"
                 setTextColor(Color.parseColor("#FFC857"))
                 textSize = 13f
             })

@@ -104,32 +104,32 @@ class ProProfile {
             k,
             "Doctor's",
             Icons.medical_services_rounded,
-            'Your patients, their visits and dues, kept for you.',
+            'Your patients, their visits and outstanding amounts, managed for you.',
             // REAL SCREENS, NOT CANNED QUESTIONS (2026-11-13): the clinic
             // workspace — today's appointments, follow-ups and payments —
             // each a tap away; the chat and mic orb stay for everything else.
             [
-              ProAction('Today at clinic', 'Appointments, who is waiting, what is due',
+              ProAction('Today at Clinic', 'Appointments, patients waiting, amounts due',
                   Icons.today_rounded,
                   page: () => const ClinicScreen(), featured: true),
-              ProAction('Patients', 'Each patient\'s file, notes and reports',
+              ProAction('Patients', 'The file, notes and reports of each patient',
                   Icons.folder_shared_rounded,
                   page: () => const ClientsScreen()),
-              ProAction('Book appointment', 'Pick a patient and a free time',
+              ProAction('Book Appointment', 'Select a patient and an available time',
                   Icons.event_available_rounded,
                   run: (c) => bookAppointment(c)),
-              ProAction('Follow-up visits', 'Recalls — patients get a reminder call',
+              ProAction('Follow-Up Visits', 'Recalls: patients receive a reminder call',
                   Icons.event_repeat_rounded,
                   page: () => const ClinicScreen(initialTab: 1)),
-              ProAction('Dues pending',
-                  'Patients with payments still due', Icons.payments_rounded,
+              ProAction('Dues Pending',
+                  'Patients with payments outstanding', Icons.payments_rounded,
                   page: () => const ClinicScreen(initialTab: 2)),
-              ProAction('Note a payment', 'Record what a patient paid',
+              ProAction('Record Payment', 'Record a payment received from a patient',
                   Icons.receipt_long_rounded,
                   run: (c) => recordPayment(c)),
               // With "Today at clinic" as the wide card on top, this makes
               // six grid tiles — an even two-up grid, no orphan.
-              ProAction('Clinic settings', 'Timings, fee, registration no.',
+              ProAction('Clinic Settings', 'Timings, fee, registration no.',
                   Icons.tune_rounded,
                   page: () => const ClinicSettingsScreen()),
             ],
@@ -138,29 +138,29 @@ class ProProfile {
             k,
             "Advocate's",
             Icons.gavel_rounded,
-            'Your cases, hearings and the law, at hand.',
+            'Your cases, hearings and legal references, readily available.',
             // THE ADVOCATE'S CHAMBERS (owner, 2026-11-14): real tools, like
             // the doctor's clinic — case diary, drafting, fees, bookings.
             [
-              ProAction('Today in chambers', 'Hearings, consultations, fees due',
+              ProAction('Today in Chambers', 'Hearings, consultations, fees due',
                   Icons.today_rounded,
                   page: () => const ClinicScreen(), featured: true),
-              ProAction('Cases & hearings', 'Court, case no., next date',
+              ProAction('Cases & Hearings', 'Court, case no., next date',
                   Icons.gavel_rounded,
                   page: () => const CasesScreen()),
-              ProAction('Clients', 'Each client\'s file, notes and papers',
+              ProAction('Clients', 'The file, notes and papers of each client',
                   Icons.folder_shared_rounded,
                   page: () => const ClientsScreen()),
-              ProAction('Draft a document', 'Notice, affidavit, agreement → PDF',
+              ProAction('Draft a Document', 'Notice, affidavit, agreement → PDF',
                   Icons.edit_note_rounded,
                   page: () => const LegalDraftScreen()),
-              ProAction('Book consultation', 'Pick a client and a free slot',
+              ProAction('Book Consultation', 'Select a client and an available slot',
                   Icons.event_available_rounded,
                   run: (c) => bookAppointment(c)),
-              ProAction('Fees pending', 'Who owes you, settle in a tap',
+              ProAction('Fees Pending', 'Amounts outstanding, settled in one tap',
                   Icons.payments_rounded,
                   page: () => const ClinicScreen(initialTab: 2)),
-              ProAction('Bill a fee', 'Fee invoice with a payment link',
+              ProAction('Bill a Fee', 'Fee invoice with a payment link',
                   Icons.receipt_long_rounded,
                   page: () => const InvoiceEditorScreen()),
             ],
@@ -169,29 +169,29 @@ class ProProfile {
             k,
             'Business',
             Icons.business_center_rounded,
-            'Your deals, clients, meetings and money — handled.',
+            'Your deals, clients, meetings and finances, managed for you.',
             // THE EXECUTIVE DESK (owner, 2026-11-14: for top business
             // leaders): deals, invoices, receivables and meetings.
             [
-              ProAction('Today at a glance', 'Meetings, follow-ups, receivables',
+              ProAction('Today at a Glance', 'Meetings, follow-ups, receivables',
                   Icons.today_rounded,
                   page: () => const ClinicScreen(), featured: true),
-              ProAction('Leads & deals', 'Pipeline and who to call next',
+              ProAction('Leads & Deals', 'Pipeline and next contacts to call',
                   Icons.trending_up_rounded,
                   page: () => const LeadsScreen()),
-              ProAction('Clients', 'Each client\'s file, notes and documents',
+              ProAction('Clients', 'The file, notes and documents of each client',
                   Icons.folder_shared_rounded,
                   page: () => const ClientsScreen()),
-              ProAction('New invoice / quote', 'GST-ready PDF + payment link',
+              ProAction('New Invoice / Quote', 'GST-ready PDF with a payment link',
                   Icons.request_quote_rounded,
                   page: () => const InvoiceEditorScreen()),
-              ProAction('Invoices & quotes', 'Paid, unpaid, payment links',
+              ProAction('Invoices & Quotes', 'Paid, unpaid, payment links',
                   Icons.receipt_long_rounded,
                   page: () => const InvoicesScreen()),
-              ProAction('Receivables', 'Who owes you, settle in a tap',
+              ProAction('Receivables', 'Amounts outstanding, settled in one tap',
                   Icons.account_balance_wallet_rounded,
                   page: () => const ClinicScreen(initialTab: 2)),
-              ProAction('Schedule meeting', 'Pick a client and a free slot',
+              ProAction('Schedule Meeting', 'Select a client and an available slot',
                   Icons.event_available_rounded,
                   run: (c) => bookAppointment(c)),
             ],
@@ -282,24 +282,24 @@ class _ProAssistantScreenState extends State<ProAssistantScreen> {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Text('Your photo on this page',
+              child: Text('Your Photo on This Page',
                   style: NeonType.manrope(17, FontWeight.w800)
                       .copyWith(color: Neon.textHi)),
             ),
             ListTile(
               leading: Icon(Icons.photo_camera_rounded, color: Neon.violet),
-              title: const Text('Take a photo'),
+              title: const Text('Take a Photo'),
               onTap: () => Navigator.pop(ctx, 'camera'),
             ),
             ListTile(
               leading: Icon(Icons.photo_library_rounded, color: Neon.violet),
-              title: const Text('Choose from gallery'),
+              title: const Text('Select from Gallery'),
               onTap: () => Navigator.pop(ctx, 'gallery'),
             ),
             if (custom)
               ListTile(
                 leading: Icon(Icons.restart_alt_rounded, color: Neon.textLo),
-                title: const Text('Use the default photo'),
+                title: const Text('Use the Default Photo'),
                 onTap: () => Navigator.pop(ctx, 'reset'),
               ),
           ]),
@@ -309,11 +309,11 @@ class _ProAssistantScreenState extends State<ProAssistantScreen> {
     if (choice == null) return;
     if (choice == 'reset') {
       await ProPhoto.reset(kind.name);
-      AppFeedback.toast('Back to the default photo.');
+      AppFeedback.toast('Default photo restored.');
       return;
     }
     final ok = await ProPhoto.pick(kind.name, camera: choice == 'camera');
-    if (ok) AppFeedback.toast('Your photo is set.');
+    if (ok) AppFeedback.toast('Photo updated.');
   }
 
   @override
@@ -356,7 +356,7 @@ class _ProAssistantScreenState extends State<ProAssistantScreen> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(0, 8, 10, 8),
                   child: Tooltip(
-                    message: 'Change photo',
+                    message: 'Change Photo',
                     child: Material(
                       color: Colors.black.withValues(alpha: 0.35),
                       shape: const CircleBorder(),
@@ -529,7 +529,7 @@ class _ProAssistantScreenState extends State<ProAssistantScreen> {
               child: Padding(
                 padding: const EdgeInsets.only(left: 4, bottom: 12),
                 child: Text(
-                    featured.isNotEmpty ? 'QUICK ACTIONS' : 'WHAT I CAN DO',
+                    featured.isNotEmpty ? 'QUICK ACTIONS' : 'CAPABILITIES',
                     style: NeonType.eyebrow.copyWith(color: Neon.textLo)),
               ),
             ),
@@ -626,7 +626,7 @@ class _PhotoButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: 'Add a photo — take one or choose from gallery',
+      label: 'Add a photo: take one or select from the gallery',
       excludeSemantics: true,
       child: GestureDetector(
         onTap: onTap,
@@ -654,7 +654,7 @@ class _PhotoButton extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            Text('Add photo',
+            Text('Add Photo',
                 style: TextStyle(
                     color: Neon.textHi,
                     fontSize: 11.5,
@@ -928,27 +928,27 @@ class _AskCard extends StatelessWidget {
 
   List<(IconData, String, String)> get _prompts => switch (profile.kind) {
         ProKind.doctor => const [
-            (Icons.today_rounded, "Who's due today?",
+            (Icons.today_rounded, "Patients Due Today",
                 'Which patients are due today, and who is overdue?'),
-            (Icons.note_add_rounded, 'Add a note',
+            (Icons.note_add_rounded, 'Add a Note',
                 'I want to add a note to a patient\'s file.'),
-            (Icons.payments_rounded, 'Who owes me?',
+            (Icons.payments_rounded, 'Outstanding Dues',
                 'Which of my patients have dues pending?'),
           ],
         ProKind.advocate => const [
-            (Icons.event_note_rounded, 'Hearings this week',
+            (Icons.event_note_rounded, 'Hearings This Week',
                 'What hearings do I have coming up this week?'),
-            (Icons.summarize_rounded, 'Summarise a case',
+            (Icons.summarize_rounded, 'Summarise a Case',
                 'Summarise one of my client\'s case files for me.'),
-            (Icons.gavel_rounded, 'Explain a judgment',
+            (Icons.gavel_rounded, 'Explain a Judgment',
                 'Explain a court judgment to me in simple words.'),
           ],
         ProKind.business => const [
-            (Icons.today_rounded, 'My day',
+            (Icons.today_rounded, 'Daily Briefing',
                 'Brief me on my day: meetings, follow-ups due and money to collect.'),
-            (Icons.payments_rounded, 'Who owes me?',
+            (Icons.payments_rounded, 'Receivables',
                 'Which customers still owe me money?'),
-            (Icons.trending_up_rounded, 'Pipeline summary',
+            (Icons.trending_up_rounded, 'Pipeline Summary',
                 'Summarise my open deals: value, stage and who to call next.'),
           ],
       };
@@ -1006,11 +1006,11 @@ class _AskCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Ask your assistant',
+                  Text('Ask Your Assistant',
                       style: NeonType.manrope(17, FontWeight.w800)
                           .copyWith(color: Neon.textHi)),
                   const SizedBox(height: 2),
-                  Text('Type or talk — it knows your ${switch (profile.kind) {
+                  Text('Type or speak. Your assistant is familiar with your ${switch (profile.kind) {
                     ProKind.doctor => 'patients',
                     ProKind.advocate => 'cases',
                     ProKind.business => 'clients',
@@ -1200,8 +1200,8 @@ class _ProChatScreenState extends State<ProChatScreen> {
     setState(() => _dictating = false);
     if (failed.isNotEmpty) {
       AppFeedback.toast(failed == 'permission'
-          ? 'Allow the microphone to use voice typing.'
-          : "Couldn't hear that — try again, or type it.");
+          ? 'Microphone access is required to use voice typing. Please enable it in Settings.'
+          : "Unable to capture the audio. Please try again or type your message.");
     }
   }
 
@@ -1280,7 +1280,7 @@ class _ProChatScreenState extends State<ProChatScreen> {
                           children: [
                             Icon(p.icon, color: tint, size: 40),
                             const SizedBox(height: 12),
-                            Text('Ask anything about your work.',
+                            Text('Ask any question about your work.',
                                 textAlign: TextAlign.center,
                                 style: NeonType.manrope(16, FontWeight.w700)
                                     .copyWith(color: Neon.textHi)),
@@ -1306,7 +1306,7 @@ class _ProChatScreenState extends State<ProChatScreen> {
                                 const NeonLoader.inline(
                                     size: 14, semanticLabel: 'Working'),
                                 const SizedBox(width: 10),
-                                Text(doing ?? 'Working on it…',
+                                Text(doing ?? 'Processing…',
                                     style: TextStyle(
                                         color: Neon.textLo,
                                         fontSize: NeonType.footnote)),
@@ -1315,7 +1315,7 @@ class _ProChatScreenState extends State<ProChatScreen> {
                           ),
                         if (ask != null)
                           _confirmCard(
-                              ask.question ?? 'Shall I go ahead?', tint),
+                              ask.question ?? 'Shall I proceed?', tint),
                       ],
                     ),
             ),
@@ -1372,8 +1372,8 @@ class _ProChatScreenState extends State<ProChatScreen> {
               border: Border.all(color: Neon.glassEdge.first),
             ),
             child: Text(
-                'Got your photo. What would you like me to do with it? '
-                'Ask me to read it, explain it, or file it.',
+                'I have received your photo. What would you like me to do with it? '
+                'I can read it, explain it, or file it.',
                 style: TextStyle(
                     color: Neon.textHi,
                     fontSize: NeonType.rowTitle,
@@ -1440,7 +1440,7 @@ class _ProChatScreenState extends State<ProChatScreen> {
                 const SizedBox(width: 8),
                 FilledButton(
                     onPressed: () => _engine.confirm(true),
-                    child: const Text('Yes, go ahead')),
+                    child: const Text('Yes, Proceed')),
               ],
             ),
           ],
@@ -1455,7 +1455,7 @@ class _ProChatScreenState extends State<ProChatScreen> {
           padding: const EdgeInsets.only(right: 4),
           child: IconButton(
             key: const ValueKey('pro-chat-dictate'),
-            tooltip: _dictating ? 'Stop voice typing' : 'Voice typing',
+            tooltip: _dictating ? 'Stop Voice Typing' : 'Voice Typing',
             onPressed: _sending ? null : _toggleDictation,
             icon: AnimatedContainer(
               duration: const Duration(milliseconds: 120),
@@ -1504,7 +1504,7 @@ class _ProChatScreenState extends State<ProChatScreen> {
               child: ValueListenableBuilder<bool>(
                 valueListenable: documentUploading,
                 builder: (context, busy, _) => IconButton(
-                  tooltip: busy ? 'Uploading' : 'Attach a photo or file',
+                  tooltip: busy ? 'Uploading' : 'Attach a Photo or File',
                   constraints:
                       const BoxConstraints.tightFor(width: 50, height: 50),
                   onPressed: busy ? null : _attach,
@@ -1634,7 +1634,7 @@ class _PublicPageCardState extends State<PublicPageCard> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(live ? 'Your public page' : 'Put your $_place on the map',
+                    Text(live ? 'Your Public Page' : 'Publish a page for your $_place',
                         style: NeonType.manrope(16, FontWeight.w800).copyWith(color: Neon.textHi)),
                     const SizedBox(height: 2),
                     Text(listingCardLine(s),

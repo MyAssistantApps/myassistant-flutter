@@ -301,8 +301,8 @@ class AppUpdateService {
       if (want.isEmpty || hash.toLowerCase() != want) {
         await _safeDelete(file);
         throw Exception(want.isEmpty
-            ? 'no checksum published for this update — not installing it'
-            : 'checksum mismatch — download corrupted');
+            ? 'no checksum was published for this update, so it was not installed'
+            : 'the download was corrupted (checksum mismatch)');
       }
       if (_cancelled) {
         await _safeDelete(file);
@@ -325,8 +325,8 @@ class AppUpdateService {
         final granted = await Permission.requestInstallPackages.request();
         if (!granted.isGranted) {
           throw Exception(
-              'allow "Install unknown apps" for this app on the settings '
-              'page, then come back and tap Try again');
+              'please allow "Install unknown apps" for this app on the settings '
+              'page, then return and tap Retry');
         }
       }
       // HANDS-FREE INSTALL. A PackageInstaller session with
@@ -432,7 +432,7 @@ class _UpdateSheetState extends State<_UpdateSheet> {
       if (mounted) {
         setState(() {
           _error =
-              "Couldn't update: ${e.toString().replaceFirst('Exception: ', '')}";
+              "Unable to update: ${e.toString().replaceFirst('Exception: ', '')}";
           _progress = null;
           _installing = false;
         });
@@ -479,7 +479,7 @@ class _UpdateSheetState extends State<_UpdateSheet> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Update available — v${cfg.latestVersionName}',
+                    'Update Available: v${cfg.latestVersionName}',
                     style: TextStyle(
                         color: Neon.textHi,
                         fontSize: 17,
@@ -511,7 +511,7 @@ class _UpdateSheetState extends State<_UpdateSheet> {
                       ],
                       if (widget.forced) ...[
                         const SizedBox(height: 10),
-                        Text('This update is required to keep using the app.',
+                        Text('This update is required to continue using the app.',
                             style:
                                 TextStyle(color: Neon.errorInk, fontSize: 13)),
                       ],
@@ -520,8 +520,8 @@ class _UpdateSheetState extends State<_UpdateSheet> {
                           cfg.apkSize > 0) ...[
                         const SizedBox(height: 10),
                         Text(
-                          "${_size(cfg.apkSize)} download — you're on mobile data, so "
-                          "it won't start until you say so.",
+                          "${_size(cfg.apkSize)} download. You are on mobile data, so "
+                          "it will not start until you confirm.",
                           style: TextStyle(
                               color: Neon.textDim,
                               fontSize: 13,
@@ -551,8 +551,8 @@ class _UpdateSheetState extends State<_UpdateSheet> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'The app will close and reopen by itself in a moment. '
-                  'Nothing is lost — this is the update finishing.',
+                  'The app will close and reopen automatically in a moment. '
+                  'No data will be lost; the update is being completed.',
                   style: TextStyle(
                       color: Neon.textLo, fontSize: 13, height: 1.35),
                 ),
@@ -568,7 +568,7 @@ class _UpdateSheetState extends State<_UpdateSheet> {
                     Expanded(
                       child: Text(
                         _progress! >= 1
-                            ? 'Verified — starting the install…'
+                            ? 'Verified. Starting installation…'
                             : 'Downloading ${(_progress! * 100).toStringAsFixed(0)}%'
                                 '${cfg.apkSize > 0 ? ' of ${_size(cfg.apkSize)}' : ''}',
                         style: TextStyle(color: Neon.textDim, fontSize: 13),
@@ -608,7 +608,7 @@ class _UpdateSheetState extends State<_UpdateSheet> {
                           backgroundColor: Neon.textHi,
                           foregroundColor: Neon.onInk),
                       icon: const Icon(Icons.download_rounded, size: 18),
-                      label: Text(_error == null ? 'Update now' : 'Try again'),
+                      label: Text(_error == null ? 'Update Now' : 'Retry'),
                     ),
                   ],
                 ),

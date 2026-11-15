@@ -760,7 +760,7 @@ class _HomeShellState extends State<HomeShell>
                 Row(children: [
                   Icon(Icons.graphic_eq_rounded, color: Neon.violet, size: 20),
                   const SizedBox(width: 9),
-                  Text('Your calls, understood',
+                  Text('Call Notes from Recordings',
                       style: TextStyle(
                           color: Neon.textHi,
                           fontSize: 17,
@@ -768,16 +768,16 @@ class _HomeShellState extends State<HomeShell>
                 ]),
                 const SizedBox(height: 10),
                 Text(
-                  'Your assistant can read the call recordings your phone\'s '
-                  'own dialer saves, and turn them into your agenda — '
+                  'Your assistant can read the call recordings saved by your phone\'s '
+                  'own dialer and convert them into your agenda: '
                   'meetings, reminders and promises are filed automatically, '
-                  'and you can ask what was said on any recorded call.\n\n'
+                  'and you may ask what was said on any recorded call.\n\n'
                   '• Only calls recorded from now on are read.\n'
-                  '• Audio is deleted right after transcription; only text '
+                  '• Audio is deleted immediately after transcription; only text '
                   'is kept, and your files are never touched.\n'
-                  '• You can switch this off any time in Hub → Call notes.\n'
-                  '• Where you live may require telling the other person a '
-                  'call is recorded — that part is on you.',
+                  '• You may switch this off at any time in Hub → Call notes.\n'
+                  '• The law where you live may require informing the other person that a '
+                  'call is recorded; this remains your responsibility.',
                   style:
                       TextStyle(color: Neon.textLo, fontSize: 13, height: 1.45),
                 ),
@@ -786,14 +786,14 @@ class _HomeShellState extends State<HomeShell>
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => answer(ctx, false),
-                      child: const Text('Turn off'),
+                      child: const Text('Turn Off'),
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: FilledButton(
                       onPressed: () => answer(ctx, true),
-                      child: const Text('Keep it on'),
+                      child: const Text('Keep On'),
                     ),
                   ),
                 ]),

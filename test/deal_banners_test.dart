@@ -10,15 +10,15 @@ void main() {
   test('meal times lead with food, named for the meal', () {
     final lunch = dealBannersFor(at(13));
     expect(lunch.first.brand, 'Swiggy');
-    expect(lunch.first.title, 'Lunch time');
-    expect(dealBannersFor(at(20)).first.title, 'Dinner time');
+    expect(lunch.first.title, 'Lunch Time');
+    expect(dealBannersFor(at(20)).first.title, 'Dinner Time');
   });
 
   test('a shopping list leads with groceries, naming what is on it', () {
     final b = dealBannersFor(at(17), toBuy: ['milk', 'eggs', 'bread', 'rice']);
     expect(b.first.brand, 'Blinkit');
-    expect(b.first.title, '4 things on your list');
-    expect(b.first.body, 'milk, eggs, bread and more — get them in minutes.');
+    expect(b.first.title, '4 Items on Your List');
+    expect(b.first.body, 'milk, eggs, bread and more can be delivered within minutes.');
   });
 
   test('no banner claims a discount it cannot back', () {
@@ -36,11 +36,11 @@ void main() {
     await t.pumpWidget(MaterialApp(
       home: Scaffold(body: ListView(children: [DealBanners(banners: dealBannersFor(at(13)))])),
     ));
-    expect(find.text('Order and shop'), findsOneWidget);
-    expect(find.text('Lunch time'), findsOneWidget);
+    expect(find.text('Order and Shop'), findsOneWidget);
+    expect(find.text('Lunch Time'), findsOneWidget);
     await t.drag(find.byType(PageView), const Offset(-300, 0));
     await t.pumpAndSettle();
-    expect(find.text('Something different?'), findsOneWidget);
+    expect(find.text('More Dining Options'), findsOneWidget);
     expect(t.takeException(), isNull);
   });
 }

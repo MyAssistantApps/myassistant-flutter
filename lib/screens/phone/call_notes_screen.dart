@@ -64,29 +64,29 @@ class _CallNotesScreenState extends State<CallNotesScreen> {
     final agreed = await showAppDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Analyse your calls?',
+        title: Text('Enable Call Analysis',
             style: TextStyle(color: Neon.textHi, fontSize: 17)),
         content: Text(
           'Your phone\'s own dialer records your calls (both sides). With '
-          'this on, each new recording is read, transcribed and understood '
-          '— meetings, promises, tasks and deadlines land on your agenda '
-          'automatically, and you can ask things like "what did I discuss '
+          'this enabled, each new recording is read, transcribed and analysed. '
+          'Meetings, promises, tasks and deadlines are added to your agenda '
+          'automatically, and you can ask questions such as "what did I discuss '
           'with Ramesh four days back".\n\n'
           '• Only calls recorded AFTER you turn this on are read, each '
-          'one once — nothing older than a day.\n'
-          '• Uploaded audio is deleted right after transcription; your '
+          'one once; nothing older than a day is read.\n'
+          '• Uploaded audio is deleted immediately after transcription; your '
           'recording files on the phone are never touched.\n'
           '• Depending on where you live, you may need to tell the other '
-          'person the call is recorded. That part is on you.',
+          'person the call is recorded. That responsibility is yours.',
           style: TextStyle(color: Neon.textLo, fontSize: 14, height: 1.45),
         ),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Not now')),
+              child: const Text('Not Now')),
           FilledButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('I agree — turn on')),
+              child: const Text('I Agree, Turn On')),
         ],
       ),
     );
@@ -95,7 +95,7 @@ class _CallNotesScreenState extends State<CallNotesScreen> {
     final ok = await svc.setAnalysis(true);
     if (!ok) {
       if (mounted) {
-        AppFeedback.show("Couldn't save the setting — try again.", context: context);
+        AppFeedback.show("Unable to save the setting. Please try again.", context: context);
       }
       return;
     }
@@ -115,18 +115,18 @@ class _CallNotesScreenState extends State<CallNotesScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('One more step — on your phone',
+            Text('One Further Step on Your Phone',
                 style: GoogleFonts.interTight(
                     color: Neon.textHi,
                     fontSize: 17,
                     fontWeight: FontWeight.w700)),
             const SizedBox(height: 10),
             Text(
-              'Turn on your phone\'s own call recording:\n\n'
+              'Please enable your phone\'s own call recording:\n\n'
               '1. The call settings screen opens next.\n'
               '2. Tap "Record calls" or "Recording".\n'
-              '3. Switch on "Auto record calls".\n\n'
-              'From then on, every recorded call is analysed here '
+              '3. Enable "Auto record calls".\n\n'
+              'Thereafter, every recorded call is analysed here '
               'automatically.',
               style:
                   TextStyle(color: Neon.textLo, fontSize: 14, height: 1.5),
@@ -139,10 +139,10 @@ class _CallNotesScreenState extends State<CallNotesScreen> {
                   Navigator.pop(ctx);
                   final ok = await svc.openSystemCallSettings();
                   if (!ok && mounted) {
-                    AppFeedback.show('Open your Phone app → Settings → Record calls.', context: context);
+                    AppFeedback.show('Please open your Phone app → Settings → Record calls.', context: context);
                   }
                 },
-                child: const Text('Open call settings'),
+                child: const Text('Open Call Settings'),
               ),
             ),
           ],
@@ -161,7 +161,7 @@ class _CallNotesScreenState extends State<CallNotesScreen> {
     final on = svc.analysisEnabled;
     // Under the night sky (2026-09-30).
     return NeonScaffold(
-      appBar: appleAppBar(context, 'Call notes'),
+      appBar: appleAppBar(context, 'Call Notes'),
       body: SafeArea(
         child: RefreshIndicator(
           color: Neon.violet,
@@ -191,13 +191,13 @@ class _CallNotesScreenState extends State<CallNotesScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('AI call analysis',
+                              Text('AI Call Analysis',
                                   style: NeonType.manrope(
                                           NeonType.callout, FontWeight.w700)
                                       .copyWith(color: Neon.textHi)),
                               Text(
                                 'Reads your phone\'s call recordings and '
-                                'files what was agreed.',
+                                'records what was agreed.',
                                 style: TextStyle(
                                     color: Neon.textLo,
                                     fontSize: NeonType.caption),
@@ -225,7 +225,7 @@ class _CallNotesScreenState extends State<CallNotesScreen> {
                                   size: 15, color: Neon.cyan),
                               const SizedBox(width: 7),
                               Flexible(
-                                child: Text('Set up call recording',
+                                child: Text('Set Up Call Recording',
                                     style: NeonType.manrope(
                                             NeonType.footnote, FontWeight.w600)
                                         .copyWith(color: Neon.cyanInk)),
@@ -244,7 +244,7 @@ class _CallNotesScreenState extends State<CallNotesScreen> {
                   Expanded(
                     child: Semantics(
                       header: true,
-                      child: Text('Recent calls',
+                      child: Text('Recent Calls',
                           style: NeonType.sectionTitle
                               .copyWith(color: Neon.textHi)),
                     ),
@@ -259,12 +259,12 @@ class _CallNotesScreenState extends State<CallNotesScreen> {
               if (groups.isEmpty)
                 NeonEmptyState(
                   icon: Icons.phone_callback_rounded,
-                  title: on ? 'No analysed calls yet' : 'No call notes yet',
+                  title: on ? 'No Analysed Calls Available' : 'No Call Notes Available',
                   body: on
-                      ? 'After your next recorded call, open the app and it '
+                      ? 'After your next recorded call, open the app and the call '
                           'will appear here.'
-                      : 'Turn on AI call analysis above to get notes, '
-                          'reminders and answers from your calls.',
+                      : 'To receive notes, reminders and answers from your calls, '
+                          'enable AI Call Analysis above.',
                   tone: on ? NeonTone.success : NeonTone.brand,
                 )
               else
@@ -298,8 +298,8 @@ class _CallNotesScreenState extends State<CallNotesScreen> {
           Expanded(
             child: Text(
               on
-                  ? 'On — each new recorded call is analysed once.'
-                  : 'Off — no recordings are read or uploaded.',
+                  ? 'On: each new recorded call is analysed once.'
+                  : 'Off: no recordings are read or uploaded.',
               style: TextStyle(color: Neon.textLo, fontSize: NeonType.caption),
             ),
           ),
@@ -419,7 +419,7 @@ class _CallNotesScreenState extends State<CallNotesScreen> {
         );
     switch (status) {
       case 'done':
-        return Text(sum.isEmpty ? 'Analysed — tap for details.' : sum,
+        return Text(sum.isEmpty ? 'Analysed. Tap to view details.' : sum,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
@@ -439,7 +439,7 @@ class _CallNotesScreenState extends State<CallNotesScreen> {
             sum.isEmpty ? 'Not analysed.' : sum);
       default: // failed
         return chip(Icons.error_outline_rounded, Neon.warningInk,
-            sum.isEmpty ? "Couldn't analyse this call." : sum);
+            sum.isEmpty ? "Unable to analyse this call." : sum);
     }
   }
 }

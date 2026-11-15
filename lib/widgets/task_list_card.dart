@@ -83,7 +83,7 @@ class TaskRow extends StatelessWidget {
     return Semantics(
       checked: item.done,
       label: item.text,
-      hint: item.done ? 'Done by $who. Tap to reopen.' : 'Tap to mark done.',
+      hint: item.done ? 'Completed by $who. Tap to reopen.' : 'Tap to mark as completed.',
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(10),
@@ -130,7 +130,7 @@ class TaskRow extends StatelessWidget {
                 ),
                 if (detail && item.done)
                   Text(
-                    'Done by $who${item.doneAt > 0 ? ' · ${ChatBubble.clock(item.doneAt)}' : ''}',
+                    'Completed by $who${item.doneAt > 0 ? ' · ${ChatBubble.clock(item.doneAt)}' : ''}',
                     style: TextStyle(color: Neon.successInk, fontSize: NeonType.caption),
                   ),
               ]),
@@ -157,7 +157,7 @@ Future<void> tapTask(BuildContext context, int groupId, TaskList list, TaskItem 
   } else {
     show(list);
     if (context.mounted) {
-      AppFeedback.show("Couldn't update that task. Please try again.",
+      AppFeedback.show("Unable to update the task. Please try again.",
           context: context, tone: FeedbackTone.error);
     }
   }
@@ -241,7 +241,7 @@ class _TaskListCardState extends State<TaskListCard> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        l.title.isNotEmpty ? l.title : 'Task list',
+                        l.title.isNotEmpty ? l.title : 'Task List',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.interTight(
@@ -338,11 +338,11 @@ class _TaskListSheetState extends State<TaskListSheet> {
             shrinkWrap: true,
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
             children: [
-              Text(l.title.isNotEmpty ? l.title : 'Task list',
+              Text(l.title.isNotEmpty ? l.title : 'Task List',
                   style: GoogleFonts.interTight(
                       color: Neon.textHi, fontWeight: FontWeight.w700, fontSize: 20)),
               const SizedBox(height: 2),
-              Text('${l.doneCount} of ${l.items.length} done · anyone in the group can tick or reopen',
+              Text('${l.doneCount} of ${l.items.length} completed · any group member may tick or reopen',
                   style: TextStyle(color: Neon.textLo, fontSize: NeonType.footnote)),
               const SizedBox(height: 12),
               for (final i in l.items)
@@ -418,7 +418,7 @@ class _NewTaskListSheetState extends State<NewTaskListSheet> {
     if (!mounted) return;
     if (r == null) {
       setState(() => _sending = false);
-      AppFeedback.show("Couldn't share the list. Please try again.",
+      AppFeedback.show("Unable to share the list. Please try again.",
           context: context, tone: FeedbackTone.error);
       return;
     }
@@ -448,7 +448,7 @@ class _NewTaskListSheetState extends State<NewTaskListSheet> {
             shrinkWrap: true,
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
             children: [
-              Text('New task list',
+              Text('New Task List',
                   style: GoogleFonts.interTight(
                       color: Neon.textHi, fontWeight: FontWeight.w700, fontSize: 20)),
               TextField(
@@ -477,7 +477,7 @@ class _NewTaskListSheetState extends State<NewTaskListSheet> {
                     ),
                   ),
                   IconButton(
-                    tooltip: 'Remove task',
+                    tooltip: 'Remove Task',
                     onPressed: () => _remove(i),
                     icon: Icon(Icons.close_rounded, size: 18, color: Neon.textDim),
                   ),
@@ -487,7 +487,7 @@ class _NewTaskListSheetState extends State<NewTaskListSheet> {
                 child: TextButton.icon(
                   onPressed: _tasks.length >= 30 ? null : _add,
                   icon: const Icon(Icons.add_rounded),
-                  label: const Text('Add task'),
+                  label: const Text('Add Task'),
                 ),
               ),
               const SizedBox(height: 8),
@@ -499,7 +499,7 @@ class _NewTaskListSheetState extends State<NewTaskListSheet> {
                   minimumSize: const Size.fromHeight(48),
                   shape: const StadiumBorder(),
                 ),
-                child: Text(_sending ? 'Sharing…' : 'Share with the group'),
+                child: Text(_sending ? 'Sharing…' : 'Share with the Group'),
               ),
             ],
           ),

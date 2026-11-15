@@ -52,7 +52,7 @@ void main() {
 
     // Yearly is the default.
     expect(find.text('₹4,999'), findsOneWidget);
-    expect(find.text("What's in Pro"), findsOneWidget);
+    expect(find.text('Included in Pro'), findsOneWidget);
 
     if (Platform.environment['PREMIUM_SHOT'] == '1') {
       await expectLater(find.byType(PremiumScreen),
@@ -65,7 +65,7 @@ void main() {
 
     await tester.tap(find.text('Business'));
     await tester.pump(const Duration(milliseconds: 600));
-    expect(find.text("What's in Business"), findsOneWidget);
+    expect(find.text('Included in Business'), findsOneWidget);
 
     await tester.tap(find.text('Subscribe').at(1));
     await tester.pump(const Duration(milliseconds: 600));

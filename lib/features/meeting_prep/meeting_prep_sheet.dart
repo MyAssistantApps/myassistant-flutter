@@ -98,10 +98,10 @@ class _MeetingPrepSheetState extends State<MeetingPrepSheet> {
       _reminded = ok;
     });
     if (ok) {
-      AppFeedback.show("I'll remind you 10 minutes before.",
+      AppFeedback.show("A reminder has been set for 10 minutes before the meeting.",
           context: context, tone: FeedbackTone.success);
     } else {
-      AppFeedback.showRetry("Couldn't set the reminder. Check your connection.",
+      AppFeedback.showRetry("Unable to set the reminder. Please check your internet connection.",
           context: context, onRetry: () => unawaited(_remind()));
     }
   }
@@ -112,11 +112,11 @@ class _MeetingPrepSheetState extends State<MeetingPrepSheet> {
     try {
       final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!ok && mounted) {
-        AppFeedback.show("Couldn't open the call link.", context: context, tone: FeedbackTone.error);
+        AppFeedback.show("Unable to open the call link.", context: context, tone: FeedbackTone.error);
       }
     } catch (_) {
       if (mounted) {
-        AppFeedback.show("Couldn't open the call link.", context: context, tone: FeedbackTone.error);
+        AppFeedback.show("Unable to open the call link.", context: context, tone: FeedbackTone.error);
       }
     }
   }
@@ -130,7 +130,7 @@ class _MeetingPrepSheetState extends State<MeetingPrepSheet> {
       body = const Padding(
         padding: EdgeInsets.symmetric(vertical: 56),
         child: NeonLoader.page(
-          label: 'Getting your meeting ready…',
+          label: 'Preparing your meeting…',
           semanticLabel: 'Preparing your meeting',
         ),
       );
@@ -138,8 +138,8 @@ class _MeetingPrepSheetState extends State<MeetingPrepSheet> {
       body = Padding(
         padding: const EdgeInsets.symmetric(vertical: 24),
         child: NeonErrorState(
-          message: "Couldn't prepare this meeting",
-          hint: 'Check your connection and try again.',
+          message: "Unable to prepare this meeting.",
+          hint: 'Please check your internet connection and try again.',
           onRetry: () => unawaited(_load()),
         ),
       );
@@ -150,8 +150,8 @@ class _MeetingPrepSheetState extends State<MeetingPrepSheet> {
           icon: Icons.event_available_rounded,
           title: widget.meetingId == null
               ? 'No meetings in the next 24 hours'
-              : "That meeting isn't in the next 24 hours",
-          body: 'Nothing to prepare for right now.',
+              : "That meeting is not in the next 24 hours",
+          body: 'There is nothing to prepare at present.',
           tone: NeonTone.success,
         ),
       );
@@ -237,7 +237,7 @@ class _MeetingPrepSheetState extends State<MeetingPrepSheet> {
                   boxShadow: _reminded ? null : Neon.halo(NeonTone.brand.rim.first, strength: 1.2),
                 ),
                 child: NeonPill(
-                  label: _reminded ? 'Reminder set' : 'Remind me 10 min before',
+                  label: _reminded ? 'Reminder Set' : 'Remind 10 Min Before',
                   icon: _reminded ? Icons.check_rounded : Icons.alarm_add_rounded,
                   tone: _reminded ? NeonTone.success : NeonTone.brand,
                   busy: _reminding,
@@ -246,7 +246,7 @@ class _MeetingPrepSheetState extends State<MeetingPrepSheet> {
               ),
             if (m.link.isNotEmpty)
               NeonPill(
-                label: 'Join the call',
+                label: 'Join the Call',
                 icon: Icons.videocam_rounded,
                 tone: NeonTone.info,
                 onPressed: () => unawaited(_join(m.link)),
@@ -254,7 +254,7 @@ class _MeetingPrepSheetState extends State<MeetingPrepSheet> {
           ],
         ),
         if (p.people.isNotEmpty) ...[
-          _header("Who's there"),
+          _header("Attendees"),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -266,7 +266,7 @@ class _MeetingPrepSheetState extends State<MeetingPrepSheet> {
               child: Text(
                 [
                   x.name,
-                  if (x.lastContact.isNotEmpty) 'last in touch ${x.lastContact}',
+                  if (x.lastContact.isNotEmpty) 'last contacted ${x.lastContact}',
                   if (x.notes.isNotEmpty) x.notes,
                 ].join(' · '),
                 style: TextStyle(color: Neon.textLo, fontSize: NeonType.body, height: 1.35),
@@ -274,19 +274,19 @@ class _MeetingPrepSheetState extends State<MeetingPrepSheet> {
             ),
         ],
         if (p.talkingPoints.isNotEmpty) ...[
-          _header('Talking points'),
+          _header('Talking Points'),
           for (var i = 0; i < p.talkingPoints.length; i++) _numbered(i + 1, p.talkingPoints[i]),
         ],
         if (p.context.isNotEmpty) ...[
-          _header('Worth knowing'),
+          _header('Background'),
           for (final c in p.context) _bullet(c, NeonTone.discovery),
         ],
         if (p.asks.isNotEmpty) ...[
-          _header('Promises'),
+          _header('Commitments'),
           for (final a in p.asks) _bullet(a, NeonTone.action),
         ],
         if (p.risks.isNotEmpty) ...[
-          _header('Watch out'),
+          _header('Points of Caution'),
           for (final r in p.risks) _bullet(r, NeonTone.warning),
         ],
       ],

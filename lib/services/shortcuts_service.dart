@@ -156,7 +156,7 @@ class ShortcutsService extends ChangeNotifier {
   ShortcutRunReply _runReply(ShortcutsReply r) {
     if (!r.ok) {
       return ShortcutRunReply(
-          error: r.status == 410 ? 'That was a while ago — tap Run again.' : lineFor(r.error, r.data));
+          error: r.status == 410 ? 'This request has expired. Please tap Run again.' : lineFor(r.error, r.data));
     }
     final run = ((r.json!['run'] as Map?) ?? const {}).cast<String, dynamic>();
     final confirm = (run['confirm'] as Map?)?['summary'] as String?;
@@ -174,34 +174,34 @@ class ShortcutsService extends ChangeNotifier {
   static String lineFor(String? code, [Map<String, dynamic> data = const {}]) {
     switch (code) {
       case 'name_taken':
-        return 'That name is already used.';
+        return 'This name is already in use.';
       case 'reserved_name':
-        return "That name is one of my own commands — try another.";
+        return "This name is reserved for a built-in command. Please enter another.";
       case 'bad_name':
-        return 'A name is 2 to 40 letters.';
+        return 'A name must contain 2 to 40 letters.';
       case 'too_many_shortcuts':
-        return 'You have 50 shortcuts — remove one to add another.';
+        return 'You have 50 shortcuts. Please remove one to add another.';
       case 'needs_detail':
-        return (data['question'] as String?) ?? 'That step needs one more detail.';
+        return (data['question'] as String?) ?? 'This step requires one more detail.';
       case 'step_not_allowed':
-        return (data['why'] as String?) ?? "That can't be part of a shortcut.";
+        return (data['why'] as String?) ?? "This cannot be part of a shortcut.";
       case 'stale':
-        return 'It changed a moment ago — try again.';
+        return 'This was changed a moment ago. Please try again.';
       case 'app_too_old':
-        return 'This needs the latest app update.';
+        return 'This requires the latest app update.';
       case 'daily_limit':
-        return "That's enough shortcut runs for today.";
+        return "The daily limit for shortcut runs has been reached.";
       case 'last_task_not_finished':
-        return "That task didn't finish, so there's nothing to save yet.";
+        return "The task did not finish, so there is nothing to save yet.";
       case 'already_a_shortcut':
-        return 'That task is already a shortcut.';
+        return 'This task is already a shortcut.';
       case 'nothing_to_save':
       case 'too_old':
-        return 'Do the task once more, then save it.';
+        return 'Please perform the task once more, then save it.';
       case 'money_app':
-        return "Tasks in money apps can't be saved.";
+        return "Tasks in money apps cannot be saved.";
       default:
-        return "Couldn't do that just now — try again.";
+        return "Unable to complete the request. Please try again.";
     }
   }
 

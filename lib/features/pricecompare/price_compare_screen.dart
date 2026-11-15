@@ -79,7 +79,7 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
       if (t.isEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context)
-              .showSnackBar(const SnackBar(content: Text('Copy a product link from Amazon or Flipkart first')));
+              .showSnackBar(const SnackBar(content: Text('Please copy a product link from Amazon or Flipkart first.')));
         }
         return;
       }
@@ -117,7 +117,7 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
   @override
   Widget build(BuildContext context) {
     return NeonScaffold(
-      appBar: appleAppBar(context, 'Price compare'),
+      appBar: appleAppBar(context, 'Price Compare'),
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: ListView(
@@ -125,20 +125,20 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
           children: [
             _searchCard(),
             const SizedBox(height: 22),
-            _sectionTitle('Shop in the app'),
+            _sectionTitle('Shop Within the App'),
             Padding(
               padding: const EdgeInsets.fromLTRB(4, 2, 4, 10),
-              child: Text('Open a store here. When you open a product, tap Compare to see its price everywhere.',
+              child: Text('Open a store here. On a product page, tap Compare to view its price across all stores.',
                   style: TextStyle(color: Neon.textLo, fontSize: 13, height: 1.35)),
             ),
             _shopStores(),
             const SizedBox(height: 22),
-            _sectionTitle('What are you comparing?'),
+            _sectionTitle('Select a Category'),
             const SizedBox(height: 10),
             _categories(),
             if (svc.watches.isNotEmpty) ...[
               const SizedBox(height: 24),
-              _sectionTitle('Your price alerts'),
+              _sectionTitle('Your Price Alerts'),
               const SizedBox(height: 10),
               _alerts(),
             ],
@@ -146,7 +146,7 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
               const SizedBox(height: 24),
               Row(
                 children: [
-                  Expanded(child: _sectionTitle('Recently compared')),
+                  Expanded(child: _sectionTitle('Recently Compared')),
                   TextButton(onPressed: svc.clearRecent, child: const Text('Clear')),
                 ],
               ),
@@ -155,15 +155,15 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
             ],
             const SizedBox(height: 22),
             Text(
-              'Prices are found on the web with Google Search and can change at any moment — the store '
-              'shows the final price before you pay. Alerts are checked when you open Price compare.',
+              'Prices are retrieved from the web using Google Search and may change at any time. The store '
+              'displays the final price before payment. Alerts are checked each time Price Compare is opened.',
               style: TextStyle(color: Neon.textDim, fontSize: NeonType.caption, height: 1.4),
             ),
             Align(
               alignment: Alignment.centerLeft,
               child: TextButton(
                 onPressed: () => showPhotoCredits(context),
-                child: const Text('Photo credits'),
+                child: const Text('Photo Credits'),
               ),
             ),
           ],
@@ -269,14 +269,14 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
             children: [
               Text.rich(
                 TextSpan(children: [
-                  const TextSpan(text: 'Compare before\n'),
-                  TextSpan(text: 'you pay', style: TextStyle(color: Neon.violet)),
+                  const TextSpan(text: 'Compare Before\n'),
+                  TextSpan(text: 'You Pay', style: TextStyle(color: Neon.violet)),
                 ]),
                 style:
                     NeonType.manrope(30, FontWeight.w800).copyWith(color: Neon.textHi, letterSpacing: -1, height: 1.1),
               ),
               const SizedBox(height: 8),
-              Text('Every store\'s price, the history, and the AI\'s buy-or-wait.',
+              Text('Prices across all stores, price history and an AI purchase recommendation.',
                   style: TextStyle(color: Neon.textLo, fontSize: 14, height: 1.35)),
             ],
           ),
@@ -328,7 +328,7 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
               ),
               if (_cat == PriceCategory.shopping || _cat == PriceCategory.grocery)
                 IconButton(
-                  tooltip: 'Paste a product link',
+                  tooltip: 'Paste a Product Link',
                   onPressed: _paste,
                   icon: Icon(Icons.content_paste_rounded, color: Neon.textLo, size: 21),
                 ),
@@ -355,7 +355,7 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
             runSpacing: 8,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Text('Try', style: TextStyle(color: Neon.textDim, fontSize: 13)),
+              Text('Examples', style: TextStyle(color: Neon.textDim, fontSize: 13)),
               for (final e in examples)
                 ActionChip(
                   label: Text(e),
@@ -383,7 +383,7 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
             if (_cat != PriceCategory.flights)
               ActionChip(
                 avatar: Icon(Icons.account_balance_wallet_rounded, size: 16, color: Neon.cyan),
-                label: Text(_budget.text.isEmpty ? 'Add budget' : 'Budget ₹${_budget.text}'),
+                label: Text(_budget.text.isEmpty ? 'Add Budget' : 'Budget ₹${_budget.text}'),
                 labelStyle: TextStyle(color: Neon.textHi, fontSize: 12.5),
                 backgroundColor: Neon.cyan.withValues(alpha: 0.10),
                 side: BorderSide(color: Neon.cyan.withValues(alpha: 0.4)),
@@ -393,7 +393,7 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
               ),
             if (stores.isNotEmpty)
               Row(mainAxisSize: MainAxisSize.min, children: [
-                Text('Checks', style: TextStyle(color: Neon.textDim, fontSize: 12.5)),
+                Text('Stores', style: TextStyle(color: Neon.textDim, fontSize: 12.5)),
                 const SizedBox(width: 6),
                 SizedBox(
                   height: 26,
@@ -470,13 +470,13 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
     final v = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Your budget'),
+        title: const Text('Your Budget'),
         content: TextField(
           controller: c,
           autofocus: true,
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          decoration: const InputDecoration(prefixText: '₹ ', hintText: 'The AI weighs it in its pick'),
+          decoration: const InputDecoration(prefixText: '₹ ', hintText: 'Considered in the AI recommendation'),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, ''), child: const Text('Clear')),
@@ -507,7 +507,7 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
                 title: w.product,
                 subtitle: [
                   'Alert at ${rupees(w.target)}',
-                  if (w.last != null) 'now ${rupees(w.last!)}${w.store.isEmpty ? '' : ' on ${w.store}'}',
+                  if (w.last != null) 'currently ${rupees(w.last!)}${w.store.isEmpty ? '' : ' on ${w.store}'}',
                 ].join(' · '),
                 onTap: () => _go(w.query, w.category),
               ),

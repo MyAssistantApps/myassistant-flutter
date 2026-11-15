@@ -20,7 +20,7 @@ import 'shop_api.dart';
 extension ShopDomainText on ShopDomain {
   String get title => this == ShopDomain.grocery ? 'Groceries' : 'Food';
   String get headline =>
-      this == ShopDomain.grocery ? 'Fresh to your door' : 'Hungry? Order in';
+      this == ShopDomain.grocery ? 'Groceries Delivered' : 'Food Delivered';
   String get hint => this == ShopDomain.grocery
       ? 'Search milk, atta, vegetables…'
       : 'Search biryani, pizza, dosa…';
@@ -75,7 +75,7 @@ Widget _primaryButton(String label, IconData icon, VoidCallback? onTap,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (busy)
-                    const NeonLoader.inline(size: 18, semanticLabel: 'Working')
+                    const NeonLoader.inline(size: 18, semanticLabel: 'Processing')
                   else
                     Icon(icon, color: Colors.white, size: 20),
                   const SizedBox(width: 8),
@@ -129,7 +129,7 @@ class _ShopHomeScreenState extends State<ShopHomeScreen> {
   void _search(String q) {
     FocusScope.of(context).unfocus();
     if (_live != true) {
-      _snack(context, 'In-app ordering is launching soon.');
+      _snack(context, 'In-app ordering will be available soon.');
       return;
     }
     Navigator.of(context).push(MaterialPageRoute<void>(
@@ -214,7 +214,7 @@ class _ShopHomeScreenState extends State<ShopHomeScreen> {
                       Icon(Icons.receipt_long_rounded, color: Neon.violet),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: Text('My orders',
+                        child: Text('My Orders',
                             style: NeonType.manrope(16, FontWeight.w800)
                                 .copyWith(color: Neon.textHi)),
                       ),
@@ -366,14 +366,14 @@ class _ShopHomeScreenState extends State<ShopHomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('In-app ordering is launching soon',
+                  Text('In-App Ordering Available Soon',
                       style: NeonType.manrope(15.5, FontWeight.w800)
                           .copyWith(color: Neon.textHi)),
                   const SizedBox(height: 4),
                   Text(
-                      "We're connecting to ONDC, India's open shopping "
-                      'network, so you can order from stores near you and '
-                      'pay right here.',
+                      "A connection to ONDC, India's open shopping "
+                      'network, is being established so that you can order '
+                      'from nearby stores and pay within the app.',
                       style: TextStyle(
                           color: Neon.textLo, fontSize: 13, height: 1.4)),
                 ],
@@ -442,7 +442,7 @@ class _ShopResultsScreenState extends State<ShopResultsScreen> {
     } catch (_) {
       setState(() {
         _searching = false;
-        _error = "Couldn't reach the server.";
+        _error = "Unable to connect. Please check your internet connection.";
       });
     }
   }
@@ -452,17 +452,17 @@ class _ShopResultsScreenState extends State<ShopResultsScreen> {
       final ok = await showDialog<bool>(
         context: context,
         builder: (c) => AlertDialog(
-          title: const Text('Start a new cart?'),
+          title: const Text('Start a New Cart'),
           content: Text(
-              'Your cart has items from ${_cart.store!.name}. One order is '
-              'from one store.'),
+              'Your cart contains items from ${_cart.store!.name}. An order may '
+              'contain items from one store only.'),
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(c, false),
-                child: const Text('Keep')),
+                child: const Text('Keep Cart')),
             TextButton(
                 onPressed: () => Navigator.pop(c, true),
-                child: const Text('New cart')),
+                child: const Text('New Cart')),
           ],
         ),
       );
@@ -486,7 +486,7 @@ class _ShopResultsScreenState extends State<ShopResultsScreen> {
               bottom: 16 + MediaQuery.paddingOf(context).bottom,
               child: _primaryButton(
                   '${_cart.count} item${_cart.count == 1 ? '' : 's'} · '
-                  '${rupees(_cart.total)} · View cart',
+                  '${rupees(_cart.total)} · View Cart',
                   Icons.shopping_bag_rounded, () async {
                 await Navigator.of(context).push(MaterialPageRoute<void>(
                     builder: (_) => ShopCheckoutScreen(
@@ -501,7 +501,7 @@ class _ShopResultsScreenState extends State<ShopResultsScreen> {
 
   Widget _body() {
     if (_error.isNotEmpty) {
-      return _center(Icons.error_outline_rounded, "Couldn't search", _error);
+      return _center(Icons.error_outline_rounded, "Unable to search", _error);
     }
     if (_stores.isEmpty) {
       return _searching
@@ -510,15 +510,15 @@ class _ShopResultsScreenState extends State<ShopResultsScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const NeonLoader.inline(
-                      size: 28, semanticLabel: 'Finding stores'),
+                      size: 28, semanticLabel: 'Locating stores'),
                   const SizedBox(height: 12),
-                  Text('Finding stores near you…',
+                  Text('Locating stores near you…',
                       style: TextStyle(color: Neon.textLo)),
                 ],
               ),
             )
           : _center(Icons.storefront_rounded, 'No stores found',
-              'Try another search, or check back soon.');
+              'Please try a different search, or check again later.');
     }
     return ListView(
       padding: EdgeInsets.fromLTRB(
@@ -528,9 +528,9 @@ class _ShopResultsScreenState extends State<ShopResultsScreen> {
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: Row(children: [
-              const NeonLoader.inline(size: 14, semanticLabel: 'More'),
+              const NeonLoader.inline(size: 14, semanticLabel: 'Loading'),
               const SizedBox(width: 8),
-              Text('More stores are answering…',
+              Text('Further stores are responding…',
                   style: TextStyle(color: Neon.textDim, fontSize: 12.5)),
             ]),
           ),
@@ -799,14 +799,14 @@ class _ShopCheckoutScreenState extends State<ShopCheckoutScreen>
           _quote?.fulfillmentId);
       final r = await ShopApi.poll(() => ShopApi.initResult(widget.txn));
       if (r == null || r.error != null || r.total == null) {
-        throw ShopError(r?.error ?? 'The store did not confirm. Try again.');
+        throw ShopError(r?.error ?? 'The store did not confirm the order. Please try again.');
       }
       setState(() => _step = 'Opening secure payment…');
       final p = await ShopApi.pay(widget.txn);
       _orderId = p.orderId;
       final ok = await launchUrl(Uri.parse(p.url),
           mode: LaunchMode.externalApplication);
-      if (!ok) throw ShopError("Couldn't open the payment page.");
+      if (!ok) throw ShopError("Unable to open the payment page. Please try again.");
       setState(() => _step = 'Waiting for payment…');
     } on ShopError catch (e) {
       if (mounted) {
@@ -816,7 +816,7 @@ class _ShopCheckoutScreenState extends State<ShopCheckoutScreen>
       return;
     } catch (_) {
       if (mounted) {
-        _snack(context, 'Something went wrong. Try again.');
+        _snack(context, 'An unexpected error has occurred. Please try again.');
         setState(() => _working = false);
       }
       return;
@@ -843,7 +843,7 @@ class _ShopCheckoutScreenState extends State<ShopCheckoutScreen>
             (route) => route.isFirst);
         return;
       }
-      _snack(context, 'Payment not received yet. Finish paying, then come back.');
+      _snack(context, 'Payment has not yet been received. Please complete the payment and return.');
     } on ShopError catch (e) {
       if (mounted) _snack(context, e.message);
     } catch (_) {}
@@ -887,15 +887,15 @@ class _ShopCheckoutScreenState extends State<ShopCheckoutScreen>
                   if (_quoting)
                     Row(children: [
                       const NeonLoader.inline(
-                          size: 14, semanticLabel: 'Getting the bill'),
+                          size: 14, semanticLabel: 'Retrieving the bill'),
                       const SizedBox(width: 8),
-                      Text('Getting the final bill from the store…',
+                      Text('Retrieving the final bill from the store…',
                           style: TextStyle(color: Neon.textLo)),
                     ])
                   else if (q == null)
                     Row(children: [
                       Expanded(
-                        child: Text("The store didn't answer.",
+                        child: Text("The store did not respond.",
                             style: TextStyle(color: Neon.textLo)),
                       ),
                       TextButton(
@@ -934,7 +934,7 @@ class _ShopCheckoutScreenState extends State<ShopCheckoutScreen>
                                 color: Neon.success, fontSize: 12.5)),
                       ),
                     if (!q.serviceable || q.error != null)
-                      Text(q.error ?? "The store doesn't deliver here.",
+                      Text(q.error ?? "The store does not deliver to this location.",
                           style: TextStyle(color: Neon.error, fontSize: 12.5)),
                   ],
                 ],
@@ -946,14 +946,14 @@ class _ShopCheckoutScreenState extends State<ShopCheckoutScreen>
               child: Text('DELIVERY ADDRESS',
                   style: NeonType.eyebrow.copyWith(color: Neon.textLo)),
             ),
-            _field('name', 'Full name'),
-            _field('phone', 'Phone number',
+            _field('name', 'Full Name'),
+            _field('phone', 'Phone Number',
                 keyboard: TextInputType.phone,
                 check: (v) => RegExp(r'^\d{10}$').hasMatch(v)
                     ? null
-                    : 'Enter a 10-digit number'),
-            _field('building', 'House / flat / building'),
-            _field('locality', 'Street & area'),
+                    : 'Please enter a 10-digit number.'),
+            _field('building', 'House / Flat / Building'),
+            _field('locality', 'Street & Area'),
             Row(children: [
               Expanded(child: _field('city', 'City')),
               const SizedBox(width: 10),
@@ -962,7 +962,7 @@ class _ShopCheckoutScreenState extends State<ShopCheckoutScreen>
                       keyboard: TextInputType.number,
                       check: (v) => RegExp(r'^\d{6}$').hasMatch(v)
                           ? null
-                          : '6 digits')),
+                          : 'Please enter 6 digits.')),
             ]),
             _field('state', 'State'),
             const SizedBox(height: 14),
@@ -975,7 +975,7 @@ class _ShopCheckoutScreenState extends State<ShopCheckoutScreen>
               ),
             _primaryButton(
                 _orderId != null
-                    ? "I've paid — place my order"
+                    ? "Payment Complete · Place Order"
                     : q?.total != null
                         ? 'Pay ${rupees(q!.total!)}'
                         : 'Pay',
@@ -1007,7 +1007,7 @@ class _ShopCheckoutScreenState extends State<ShopCheckoutScreen>
           style: TextStyle(color: Neon.textHi),
           validator: (v) {
             final t = (v ?? '').trim();
-            if (t.isEmpty) return 'Required';
+            if (t.isEmpty) return 'This field is required.';
             return check?.call(t);
           },
           decoration: InputDecoration(
@@ -1059,7 +1059,7 @@ class _ShopOrdersScreenState extends State<ShopOrdersScreen> {
     } on ShopError catch (e) {
       if (mounted) setState(() => _error = e.message);
     } catch (_) {
-      if (mounted) setState(() => _error = "Couldn't load your orders.");
+      if (mounted) setState(() => _error = "Unable to load your orders.");
     }
   }
 
@@ -1067,18 +1067,18 @@ class _ShopOrdersScreenState extends State<ShopOrdersScreen> {
   Widget build(BuildContext context) {
     final o = _orders;
     return NeonScaffold(
-      appBar: appleAppBar(context, 'My orders'),
+      appBar: appleAppBar(context, 'My Orders'),
       body: _error.isNotEmpty
-          ? _center(Icons.receipt_long_rounded, 'No orders yet',
+          ? _center(Icons.receipt_long_rounded, 'No orders recorded',
               _error.contains('not connected')
-                  ? 'In-app ordering is launching soon.'
+                  ? 'In-app ordering will be available soon.'
                   : _error)
           : o == null
               ? const Center(
                   child: NeonLoader.inline(size: 28, semanticLabel: 'Loading'))
               : o.isEmpty
-                  ? _center(Icons.receipt_long_rounded, 'No orders yet',
-                      'Your grocery and food orders will show here.')
+                  ? _center(Icons.receipt_long_rounded, 'No orders recorded',
+                      'Your grocery and food orders will be displayed here.')
                   : RefreshIndicator(
                       onRefresh: _load,
                       child: ListView.separated(
@@ -1175,17 +1175,17 @@ class _ShopOrderScreenState extends State<ShopOrderScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
-        title: const Text('Cancel this order?'),
+        title: const Text('Cancel Order'),
         content: const Text(
-            'The store decides whether it can still be cancelled. Any '
-            'refund follows the store\'s policy.'),
+            'The store determines whether the order can still be cancelled. Any '
+            'refund is subject to the store\'s policy.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(c, false),
-              child: const Text('Keep order')),
+              child: const Text('Keep Order')),
           TextButton(
               onPressed: () => Navigator.pop(c, true),
-              child: const Text('Cancel order')),
+              child: const Text('Cancel Order')),
         ],
       ),
     );
@@ -1223,7 +1223,7 @@ class _ShopOrderScreenState extends State<ShopOrderScreen> {
                             color: Neon.success, size: 32),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: Text('Order placed! The store is on it.',
+                          child: Text('Order placed. The store is processing it.',
                               style: NeonType.manrope(16, FontWeight.w800)
                                   .copyWith(color: Neon.textHi)),
                         ),
@@ -1275,7 +1275,7 @@ class _ShopOrderScreenState extends State<ShopOrderScreen> {
                           borderRadius: BorderRadius.circular(Neon.rLg)),
                       leading: Icon(Icons.delivery_dining_rounded,
                           color: Neon.violet),
-                      title: Text(o.agentName ?? 'Delivery partner',
+                      title: Text(o.agentName ?? 'Delivery Partner',
                           style: TextStyle(color: Neon.textHi)),
                       subtitle: o.agentPhone == null
                           ? null
@@ -1293,13 +1293,13 @@ class _ShopOrderScreenState extends State<ShopOrderScreen> {
                   ],
                   const SizedBox(height: 16),
                   if (o.trackingUrl != null)
-                    _primaryButton('Track delivery', Icons.map_rounded, () {
+                    _primaryButton('Track Delivery', Icons.map_rounded, () {
                       launchUrl(Uri.parse(o.trackingUrl!),
                           mode: LaunchMode.externalApplication);
                     }),
                   if (o.paymentUrl != null) ...[
                     const SizedBox(height: 10),
-                    _primaryButton('Finish payment', Icons.lock_rounded, () {
+                    _primaryButton('Complete Payment', Icons.lock_rounded, () {
                       launchUrl(Uri.parse(o.paymentUrl!),
                           mode: LaunchMode.externalApplication);
                     }),
@@ -1310,7 +1310,7 @@ class _ShopOrderScreenState extends State<ShopOrderScreen> {
                     const SizedBox(height: 10),
                     TextButton(
                         onPressed: _cancel,
-                        child: Text('Cancel order',
+                        child: Text('Cancel Order',
                             style: TextStyle(color: Neon.errorInk))),
                   ],
                 ],

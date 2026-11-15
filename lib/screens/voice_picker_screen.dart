@@ -187,7 +187,7 @@ class _VoicePickerScreenState extends State<VoicePickerScreen> {
       final audio = wav == null ? null : _decodePcmWav(wav);
       if (audio == null) {
         AppFeedback.show(
-          "Couldn't play the sample. Check your connection and try again.",
+          "Unable to play the sample. Please check your connection and try again.",
           context: context,
           tone: FeedbackTone.error,
         );
@@ -220,7 +220,7 @@ class _VoicePickerScreenState extends State<VoicePickerScreen> {
   Widget build(BuildContext context) {
     final live = AiConfigStore.instance.current.live;
     return NeonScaffold(
-      appBar: appleAppBar(context, 'Assistant voice'),
+      appBar: appleAppBar(context, 'Assistant Voice'),
       body: ListView(
         padding: EdgeInsets.fromLTRB(
             16, 12, 16, 40 + MediaQuery.paddingOf(context).bottom),
@@ -231,10 +231,10 @@ class _VoicePickerScreenState extends State<VoicePickerScreen> {
               children: [
                 AppleRow(
                   leading: IconTile(Icons.bolt_rounded, Neon.cyan),
-                  title: 'Live voice',
+                  title: 'Live Voice',
                   subtitle: _fast
                       ? 'Fast, natural conversations'
-                      : 'Off: conversations use the classic reply voice',
+                      : 'Off: conversations use the standard reply voice',
                   trailing: Semantics(
                     label: 'Live voice',
                     child: Switch(value: _fast, onChanged: _setFast),
@@ -247,7 +247,7 @@ class _VoicePickerScreenState extends State<VoicePickerScreen> {
           Padding(
             padding: const EdgeInsets.only(left: 4, bottom: 12),
             child: Text(
-              'Preview a voice, then tap its name to use it.',
+              'Preview a voice, then tap its name to select it.',
               style: TextStyle(color: Neon.textLo, fontSize: 14),
             ),
           ),
@@ -263,8 +263,8 @@ class _VoicePickerScreenState extends State<VoicePickerScreen> {
               children: [
                 AppleRow(
                   leading: IconTile(Icons.wifi_off_rounded, Neon.textLo),
-                  title: "Couldn't load the voices",
-                  subtitle: 'Check your connection and try again.',
+                  title: "Unable to load voices",
+                  subtitle: 'Please check your connection and try again.',
                   trailing: TextButton(
                     onPressed: _loadVoices,
                     child: const Text('Retry'),
@@ -273,9 +273,9 @@ class _VoicePickerScreenState extends State<VoicePickerScreen> {
               ],
             )
           else ...[
-            _genderGroup('female', 'Female voices', Icons.female_rounded),
+            _genderGroup('female', 'Female Voices', Icons.female_rounded),
             const SizedBox(height: 12),
-            _genderGroup('male', 'Male voices', Icons.male_rounded),
+            _genderGroup('male', 'Male Voices', Icons.male_rounded),
           ],
         ],
       ),

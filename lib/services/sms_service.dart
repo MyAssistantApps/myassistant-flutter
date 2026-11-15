@@ -22,7 +22,7 @@ class SmsService {
         status = await Permission.sms.request();
       }
       if (!status.isGranted) {
-        return 'SMS permission is not granted — allow it in Settings';
+        return 'SMS permission has not been granted; please enable it in Settings';
       }
       final ok = await _channel.invokeMethod<bool>(
           'sendSms', {'to': number, 'body': body});

@@ -25,14 +25,14 @@ class _ThemeColourScreenState extends State<ThemeColourScreen> {
     return ValueListenableBuilder<Color>(
       valueListenable: AccentController.seed,
       builder: (_, seed, __) => NeonScaffold(
-        appBar: appleAppBar(context, 'Theme colour'),
+        appBar: appleAppBar(context, 'Theme Colour'),
         body: ListView(
           padding: EdgeInsets.fromLTRB(
               20, 12, 20, 40 + MediaQuery.paddingOf(context).bottom),
           children: [
             Text(
-              'Your colour paints the orb, the mic, every icon tile and '
-              'each highlight in the app. Tap one to see it straight away.',
+              'The selected colour is applied to the orb, the microphone, every icon tile and '
+              'each highlight in the app. Select a colour to apply it immediately.',
               style: TextStyle(color: Neon.textLo, fontSize: 14, height: 1.5),
             ),
             const SizedBox(height: 22),
@@ -61,7 +61,7 @@ class _ThemeColourScreenState extends State<ThemeColourScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'This is how your colour looks on buttons and the mic.',
+                      'Preview of your colour on buttons and the microphone.',
                       style: TextStyle(
                           color: Neon.onAccent,
                           fontSize: 14,

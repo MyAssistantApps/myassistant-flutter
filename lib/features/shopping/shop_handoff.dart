@@ -205,8 +205,8 @@ class ShopProgress {
     final n = next;
     if (n == null) {
       return total == 1
-          ? 'Tick it off in your list once you have bought it.'
-          : "That's the last one — tick what you bought in your list.";
+          ? 'Please mark the item as purchased in your list once you have bought it.'
+          : "This is the final item. Please mark your purchases in your list.";
     }
     final elsewhere = n.label.isNotEmpty && n.label != current.label;
     return elsewhere ? 'Next: ${n.item.name} on ${n.label}' : 'Next: ${n.item.name}';

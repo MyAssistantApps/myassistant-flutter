@@ -194,7 +194,7 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _body() {
     if (_failed) {
       return NeonErrorState(
-          message: "Couldn't load your data to search", onRetry: _load);
+          message: "Unable to load your data for search.", onRetry: _load);
     }
     final c = _corpus;
     if (c == null) {
@@ -209,7 +209,7 @@ class _SearchScreenState extends State<SearchScreen> {
       // "Search across 0 documents, 0 clients…" read like a fault.
       return _hint(
           Icons.search_rounded,
-          'Find anything',
+          'Search All Records',
           total == 0
               ? 'Search your documents, clients, reminders and chats.'
               : 'Search across ${c.documents.length} documents, ${c.clients.length} clients, '
@@ -217,7 +217,7 @@ class _SearchScreenState extends State<SearchScreen> {
     }
     final r = searchCorpus(c, q);
     if (r.isEmpty) {
-      return _hint(Icons.search_off_rounded, 'Nothing matches "$q".');
+      return _hint(Icons.search_off_rounded, 'No results found for "$q".');
     }
     return ListView(
       padding: EdgeInsets.fromLTRB(
@@ -240,7 +240,7 @@ class _SearchScreenState extends State<SearchScreen> {
           ]),
         ],
         if (r.clients.isNotEmpty) ...[
-          _section('Clients & patients', r.clients.length),
+          _section('Clients & Patients', r.clients.length),
           _group([
             for (final x in r.clients)
               _row(

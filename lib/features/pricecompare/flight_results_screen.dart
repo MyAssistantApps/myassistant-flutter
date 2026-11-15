@@ -131,7 +131,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
       if (run == _run) HapticFeedback.lightImpact();
     } catch (e) {
       if (mounted) {
-        setState(() => leg.error = e is PriceCompareException ? e.message : 'Something went wrong. Try again.');
+        setState(() => leg.error = e is PriceCompareException ? e.message : 'An unexpected error has occurred. Please try again.');
       }
     } finally {
       if (run == _run) {
@@ -253,10 +253,10 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                   if (_loadingHere)
                     ..._loading()
                   else if (_error.isNotEmpty)
-                    _message(Icons.cloud_off_rounded, "Couldn't load fares", _error, retry: true)
+                    _message(Icons.cloud_off_rounded, "Unable to Load Fares", _error, retry: true)
                   else if (a != null && shown.isEmpty)
-                    _message(Icons.filter_alt_off_rounded, 'No flights match',
-                        'Loosen the filters to see the other ${a.fares.flights.length} flights.',
+                    _message(Icons.filter_alt_off_rounded, 'No Flights Found',
+                        'Please relax the filters to view the other ${a.fares.flights.length} flights.',
                         clear: true)
                   else if (a != null) ...[
                     for (final o in shown) ...[_card(o, a.fares), const SizedBox(height: 12)],
@@ -360,8 +360,8 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
             Padding(
               padding: const EdgeInsets.only(top: 6),
               child: Text(
-                  'Whole trip from ${rupees(lows.fold<double>(0, (a, p) => a + p!))} · cheapest of each flight, '
-                  'booked separately',
+                  'Entire trip from ${rupees(lows.fold<double>(0, (a, p) => a + p!))} · lowest fare for each flight, '
+                  'each booked separately',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Neon.textLo, fontSize: 12)),
             ),
@@ -479,7 +479,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
               const SizedBox(width: 8),
             ],
             _pill(
-              w == null ? 'Set price alert' : 'Alert ${rupees(w.target)}',
+              w == null ? 'Set Price Alert' : 'Alert ${rupees(w.target)}',
               icon: w == null ? Icons.notifications_active_outlined : Icons.notifications_active_rounded,
               tinted: true,
               onTap: ready ? () => _setAlert(a) : null,
@@ -550,9 +550,9 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
     final p = 1 - math.exp(-_elapsed / 18);
     return [
       const SizedBox(height: 12),
-      Text('Finding your best fare…', style: NeonType.manrope(19, FontWeight.w800).copyWith(color: Neon.textHi)),
+      Text('Searching for the Best Fare…', style: NeonType.manrope(19, FontWeight.w800).copyWith(color: Neon.textHi)),
       const SizedBox(height: 4),
-      Text('Checking airline and booking sites for today\'s fares.',
+      Text('Checking airline and booking sites for current fares.',
           style: TextStyle(color: Neon.textLo, fontSize: 13.5)),
       const SizedBox(height: 12),
       Row(
@@ -613,7 +613,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
             const SizedBox(height: 6),
             Text(line, textAlign: TextAlign.center, style: TextStyle(color: Neon.textLo, fontSize: 13.5)),
             const SizedBox(height: 16),
-            if (retry) FilledButton.tonal(onPressed: _search, child: const Text('Try again')),
+            if (retry) FilledButton.tonal(onPressed: _search, child: const Text('Retry')),
             if (clear)
               FilledButton.tonal(
                 onPressed: () => setState(() {
@@ -621,7 +621,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                   _airlinesOff.clear();
                   _slots.clear();
                 }),
-                child: const Text('Clear filters'),
+                child: const Text('Clear Filters'),
               ),
           ],
         ),
@@ -858,7 +858,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
             ),
           const SizedBox(height: 8),
         ],
-        Text('Fares found on the web just now and can change at booking. Check the final price on the site.',
+        Text('Fares were retrieved from the web and may change at booking. Please confirm the final price on the site.',
             style: TextStyle(color: Neon.textDim, fontSize: 11.5)),
         if (a.sources.isNotEmpty) ...[
           const SizedBox(height: 12),
@@ -905,7 +905,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
   void _share(FlightAnswer a) {
     final l = _trip.legs.first;
     final top = a.fares.flights.take(3).map((o) => '• ${o.title} — ${rupees(o.price)} on ${o.best.store}').join('\n');
-    Share.share('${l.from!.city} → ${l.to!.city}, ${shortDate(_date)}\n$top', subject: 'Flight fares');
+    Share.share('${l.from!.city} → ${l.to!.city}, ${shortDate(_date)}\n$top', subject: 'Flight Fares');
   }
 
   Future<void> _setAlert(FlightAnswer a) async {
@@ -923,10 +923,10 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Tell me when this trip drops to',
+              Text('Notify When This Trip Falls To',
                   style: NeonType.manrope(18, FontWeight.w800).copyWith(color: Neon.textHi)),
               const SizedBox(height: 4),
-              Text('Lowest now ${rupees(now)} on ${a.fares.cheapest!.best.store}',
+              Text('Current lowest fare: ${rupees(now)} on${a.fares.cheapest!.best.store}',
                   style: TextStyle(color: Neon.textLo, fontSize: 13)),
               const SizedBox(height: 14),
               Wrap(
@@ -956,7 +956,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
               ),
               const SizedBox(height: 16),
               ApplePrimaryButton(
-                label: 'Set alert',
+                label: 'Set Alert',
                 icon: Icons.notifications_active_rounded,
                 onPressed: () {
                   final v = double.tryParse(c.text);
@@ -970,7 +970,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                     svc.unwatch(w.id);
                     Navigator.pop(ctx);
                   },
-                  child: const Text('Remove alert'),
+                  child: const Text('Remove Alert'),
                 ),
               ],
             ],
@@ -982,7 +982,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
     if (target == null) return;
     svc.watch(r, target);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Alert set — ${rupees(target)} or less')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Alert set for ${rupees(target)} or less.')));
     }
   }
 
@@ -1009,7 +1009,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                   Text('Filters', style: NeonType.manrope(18, FontWeight.w800).copyWith(color: Neon.textHi)),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Non-stop only'),
+                    title: const Text('Non-Stop Only'),
                     value: _nonStop,
                     onChanged: (v) => both(() => _nonStop = v),
                   ),
@@ -1052,10 +1052,10 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                           _slots.clear();
                           _airlinesOff.clear();
                         }),
-                        child: const Text('Clear all'),
+                        child: const Text('Clear All'),
                       ),
                       const Spacer(),
-                      FilledButton(onPressed: () => Navigator.pop(ctx), child: Text('Show ${_shown.length} flights')),
+                      FilledButton(onPressed: () => Navigator.pop(ctx), child: Text('Show ${_shown.length} Flights')),
                     ],
                   ),
                 ],

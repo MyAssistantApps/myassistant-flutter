@@ -455,9 +455,9 @@ class CallService {
         : ' They are reachable on ${available.join(', ')}.';
     switch (reason) {
       case 'app_not_on_contact':
-        return "$who isn't on $app with that number, so no call was placed.$alt";
+        return "$who is not on $app with that number, so no call was placed.$alt";
       case 'no_calling_apps':
-        return "$who has no calling apps linked to that number — only a normal call will reach them.";
+        return "$who has no calling apps linked to that number. Only a normal call will reach them.";
       case 'app_missing':
         return '$app is not installed on this phone, so no call was placed.';
       case 'no_contacts_permission':
@@ -472,7 +472,7 @@ class CallService {
   static String whatsappFailure(String reason, String who) {
     switch (reason) {
       case 'not_on_whatsapp':
-        return "$who isn't on WhatsApp with that number, so no call was placed.";
+        return "$who is not on WhatsApp with that number, so no call was placed.";
       case 'whatsapp_missing':
         return 'WhatsApp is not installed on this phone, so no call was placed.';
       case 'no_contacts_permission':

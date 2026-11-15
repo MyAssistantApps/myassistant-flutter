@@ -395,7 +395,7 @@ class ShoppingService extends ChangeNotifier {
       'items': [d.toJson()],
       'source': 'manual',
     });
-    if (gen != _generation) return const ShoppingResult.failed('Signed out.', canRetry: false);
+    if (gen != _generation) return const ShoppingResult.failed('You have been signed out.', canRetry: false);
     _items = [for (final i in _items) if (i.id != temp.id) i];
     if (!r.ok) {
       notifyListeners();
@@ -458,22 +458,22 @@ class ShoppingService extends ChangeNotifier {
   Future<ShoppingResult> _patch(ShoppingItem item, Map<String, dynamic> body,
       ShoppingItem Function(ShoppingItem) change) async {
     if (item.pending) {
-      return const ShoppingResult.failed('One moment — it is still being added.', canRetry: false);
+      return const ShoppingResult.failed('Please wait. The item is still being added.', canRetry: false);
     }
     final before = byId(item.id);
     if (before == null) {
-      return const ShoppingResult.failed("That's no longer on your list.", canRetry: false);
+      return const ShoppingResult.failed("That item is no longer on your list.", canRetry: false);
     }
     final gen = _generation;
     _replace(item.id, change);
     notifyListeners();
     final r = await _write('PATCH', '/items/${item.id}', body: body);
-    if (gen != _generation) return const ShoppingResult.failed('Signed out.', canRetry: false);
+    if (gen != _generation) return const ShoppingResult.failed('You have been signed out.', canRetry: false);
     if (r.status == 404) {
       _items = [for (final i in _items) if (i.id != item.id) i];
       notifyListeners();
       unawaited(_save());
-      return const ShoppingResult.failed("That's no longer on your list.", canRetry: false);
+      return const ShoppingResult.failed("That item is no longer on your list.", canRetry: false);
     }
     if (!r.ok) {
       _replace(item.id, (_) => before);
@@ -582,41 +582,41 @@ class ShoppingService extends ChangeNotifier {
 
   /// A reply as a line for the user.
   static String lineFor(ShoppingReply r) {
-    if (r.status == 0) return "Couldn't reach the server — check your connection.";
-    if (r.status == 429) return 'Too many changes at once — wait a moment, then try again.';
-    if (r.status >= 500) return 'Something went wrong on our side — try again.';
+    if (r.status == 0) return "Unable to connect. Please check your internet connection.";
+    if (r.status == 429) return 'Too many changes were made at once. Please wait a moment and try again.';
+    if (r.status >= 500) return 'A server error has occurred. Please try again.';
     switch (r.error) {
       case 'list_full':
-        return 'Your list is full (300 things) — clear the bought ones first.';
+        return 'Your list is full (300 items). Please clear the purchased items first.';
       case 'name_required':
       case 'no_items':
-        return 'Type what to buy — like “milk” or “2 kg onions”.';
+        return 'Please enter the item to purchase, e.g. “milk” or “2 kg onions”.';
       case 'name_too_long':
-        return 'That name is too long — 80 letters at most.';
+        return 'The name is too long. At most 80 characters are permitted.';
       case 'details_too_long':
-        return 'The details can be 200 letters at most.';
+        return 'The details must not exceed 200 characters.';
       case 'note_too_long':
-        return 'The note can be 200 letters at most.';
+        return 'The note must not exceed 200 characters.';
       case 'store_too_long':
-        return 'The shop name can be 40 letters at most.';
+        return 'The shop name must not exceed 40 characters.';
       case 'bad_link':
-        return 'The link has to be a web address starting with https://';
+        return 'The link must be a web address beginning with https://';
       case 'bad_quantity':
-        return "That amount doesn't look right.";
+        return "Please enter a valid amount.";
       case 'bad_unit':
-        return 'Try a unit like g, kg, ml, L, pcs or packet.';
+        return 'Please enter a unit such as g, kg, ml, L, pcs or packet.';
       case 'bad_category':
-        return "That isn't one of the list's kinds.";
+        return "That is not one of the list's categories.";
       case 'not_found':
-        return "That's no longer on your list.";
+        return "That item is no longer on your list.";
       case 'nothing_to_buy':
-        return 'Nothing left to buy on the list.';
+        return 'No items remain to purchase on the list.';
     }
     final m = r.message?.trim() ?? '';
     // The server's own sentence for a refusal it explained ("Google Pay
     // is a payment app — shopping lists open shopping apps only").
     if (r.status >= 400 && r.status < 500 && m.isNotEmpty) return m;
-    return "Couldn't do that just now — try again.";
+    return "Unable to complete the request. Please try again.";
   }
 
   static final http.Client _client = http.Client();

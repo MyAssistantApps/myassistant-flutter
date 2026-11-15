@@ -62,13 +62,13 @@ class _CasesScreenState extends State<CasesScreen> {
     final cases = _cases;
     return Scaffold(
       backgroundColor: Neon.bg,
-      appBar: appleAppBar(context, 'Cases & hearings'),
+      appBar: appleAppBar(context, 'Cases & Hearings'),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: Neon.violet,
         foregroundColor: Colors.white,
         onPressed: _new,
         icon: const Icon(Icons.add_rounded),
-        label: const Text('New case'),
+        label: const Text('New Case'),
       ),
       body: Column(children: [
         Padding(
@@ -91,7 +91,7 @@ class _CasesScreenState extends State<CasesScreen> {
         Expanded(
           child: _failed
               ? NeonErrorState(
-                  message: "Couldn't load your cases.",
+                  message: "Unable to load your cases.",
                   onRetry: () {
                     setState(() => _failed = false);
                     _load();
@@ -101,11 +101,11 @@ class _CasesScreenState extends State<CasesScreen> {
                   : cases.isEmpty
                       ? NeonEmptyState(
                           icon: Icons.gavel_rounded,
-                          title: _closed ? 'No closed cases' : 'No open cases yet',
+                          title: _closed ? 'No Closed Cases' : 'No Open Cases',
                           body: _closed
                               ? null
-                              : 'Add a case with its court and next hearing — your assistant '
-                                  'reminds the client before each one.',
+                              : 'Add a case with its court and next hearing. Your assistant '
+                                  'will remind the client before each hearing.',
                         )
                       : RefreshIndicator(
                           color: Neon.violet,
@@ -235,7 +235,7 @@ class _NewCaseSheetState extends State<_NewCaseSheet> {
     if (!mounted) return;
     if (c == null) {
       setState(() => _busy = false);
-      AppFeedback.toast("Couldn't save the case. Check your connection.");
+      AppFeedback.toast("Unable to save the case. Please check your connection.");
       return;
     }
     HapticFeedback.lightImpact();
@@ -247,12 +247,12 @@ class _NewCaseSheetState extends State<_NewCaseSheet> {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(18, 14, 18, 20),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Text('New case', style: TextStyle(color: Neon.textHi, fontSize: 19, fontWeight: FontWeight.w700)),
+        Text('New Case', style: TextStyle(color: Neon.textHi, fontSize: 19, fontWeight: FontWeight.w700)),
         const SizedBox(height: 14),
         GroupedCard(children: [
           AppleRow(
             leading: IconTile(Icons.person_rounded, Neon.accentF),
-            title: _client?.name ?? 'Choose client (optional)',
+            title: _client?.name ?? 'Select Client (Optional)',
             titleColor: _client == null ? Neon.violet : null,
             trailing: Icon(Icons.chevron_right_rounded, color: Neon.textDim),
             onTap: () async {
@@ -267,11 +267,11 @@ class _NewCaseSheetState extends State<_NewCaseSheet> {
           autofocus: true,
           textCapitalization: TextCapitalization.words,
           onChanged: (_) => setState(() {}),
-          decoration: const InputDecoration(labelText: 'Case title', hintText: 'e.g. Shetty vs Kumar — rent recovery'),
+          decoration: const InputDecoration(labelText: 'Case Title', hintText: 'e.g. Shetty vs Kumar — rent recovery'),
         ),
         const SizedBox(height: 10),
         Row(children: [
-          Expanded(child: TextField(controller: _number, decoration: const InputDecoration(labelText: 'Case number'))),
+          Expanded(child: TextField(controller: _number, decoration: const InputDecoration(labelText: 'Case Number'))),
           const SizedBox(width: 10),
           Expanded(
               child: TextField(
@@ -283,7 +283,7 @@ class _NewCaseSheetState extends State<_NewCaseSheet> {
         TextField(
             controller: _opp,
             textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(labelText: 'Opposite party')),
+            decoration: const InputDecoration(labelText: 'Opposite Party')),
         const SizedBox(height: 14),
         Text('Stage', style: TextStyle(color: Neon.textHi, fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
@@ -299,7 +299,7 @@ class _NewCaseSheetState extends State<_NewCaseSheet> {
         ]),
         const SizedBox(height: 18),
         ApplePrimaryButton(
-          label: _busy ? 'Saving…' : 'Create case',
+          label: _busy ? 'Saving…' : 'Create Case',
           onPressed: _title.text.trim().isEmpty || _busy ? null : _save,
         ),
       ]),
@@ -350,14 +350,14 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
   Future<void> _setStatus(Hearing h, String status) async {
     String? outcome;
     if (status == 'done' || status == 'adjourned') {
-      outcome = await _askText(context, status == 'done' ? 'What happened?' : 'Why adjourned?');
+      outcome = await _askText(context, status == 'done' ? 'Hearing Outcome' : 'Reason for Adjournment');
       if (outcome == null) return;
     }
     final ok = await ProService.instance.updateHearing(h.id, status: status, outcome: outcome);
-    if (!ok) AppFeedback.toast("Couldn't update. Check your connection.");
+    if (!ok) AppFeedback.toast("Unable to update the hearing. Please check your connection.");
     _load();
     if (ok && status == 'adjourned' && mounted) {
-      AppFeedback.toast('Add the next date for this case.');
+      AppFeedback.toast('Please add the next date for this case.');
       _addHearing();
     }
   }
@@ -366,7 +366,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
     final c = _c;
     if (c == null) return;
     final r = await ProService.instance.updateCase(c.id, {'status': c.status == 'open' ? 'closed' : 'open'});
-    if (r == null) AppFeedback.toast("Couldn't update. Check your connection.");
+    if (r == null) AppFeedback.toast("Unable to update the case. Please check your connection.");
     _load();
   }
 
@@ -378,7 +378,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
       appBar: appleAppBar(context, c?.title ?? 'Case', actions: [
         if (c != null)
           IconButton(
-            tooltip: c.status == 'open' ? 'Close case' : 'Reopen case',
+            tooltip: c.status == 'open' ? 'Close Case' : 'Reopen Case',
             icon: Icon(c.status == 'open' ? Icons.archive_outlined : Icons.unarchive_outlined),
             onPressed: _toggleClosed,
           ),
@@ -390,10 +390,10 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
               foregroundColor: Colors.white,
               onPressed: _addHearing,
               icon: const Icon(Icons.event_rounded),
-              label: const Text('Add hearing'),
+              label: const Text('Add Hearing'),
             ),
       body: _failed
-          ? NeonErrorState(message: "Couldn't load this case.", onRetry: _load)
+          ? NeonErrorState(message: "Unable to load this case.", onRetry: _load)
           : c == null
               ? const Center(child: NeonLoader())
               : RefreshIndicator(
@@ -404,19 +404,19 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
                     children: [
                       GroupedCard(dividerInset: 16, children: [
-                        if (c.caseNumber.isNotEmpty) AppleRow(title: 'Case number', subtitle: c.caseNumber),
+                        if (c.caseNumber.isNotEmpty) AppleRow(title: 'Case Number', subtitle: c.caseNumber),
                         if (c.court.isNotEmpty) AppleRow(title: 'Court', subtitle: c.court),
-                        if (c.oppositeParty.isNotEmpty) AppleRow(title: 'Opposite party', subtitle: c.oppositeParty),
+                        if (c.oppositeParty.isNotEmpty) AppleRow(title: 'Opposite Party', subtitle: c.oppositeParty),
                         if (c.stage.isNotEmpty) AppleRow(title: 'Stage', subtitle: c.stage),
                         AppleRow(
                           title: 'Client',
-                          subtitle: c.clientName.isEmpty ? 'Not linked' : c.clientName,
+                          subtitle: c.clientName.isEmpty ? 'Not linked to a client' : c.clientName,
                           trailing: c.clientId == null
                               ? null
                               : Row(mainAxisSize: MainAxisSize.min, children: [
                                   if (c.clientPhone.isNotEmpty)
                                     IconButton(
-                                      tooltip: 'Call client',
+                                      tooltip: 'Call Client',
                                       icon: Icon(Icons.call_rounded, color: Neon.accentE),
                                       onPressed: () => launchUrl(Uri(scheme: 'tel', path: c.clientPhone)),
                                     ),
@@ -433,7 +433,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
                         Expanded(
                           child: OutlinedButton.icon(
                             icon: const Icon(Icons.edit_note_rounded),
-                            label: const Text('Draft document'),
+                            label: const Text('Draft Document'),
                             onPressed: () => Navigator.of(context).push(MaterialPageRoute(
                                 builder: (_) => LegalDraftScreen(caseId: c.id, clientId: c.clientId, clientName: c.clientName))),
                           ),
@@ -442,9 +442,9 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
                         Expanded(
                           child: OutlinedButton.icon(
                             icon: const Icon(Icons.receipt_long_rounded),
-                            label: const Text('Bill fee'),
+                            label: const Text('Bill Fee'),
                             onPressed: c.clientId == null
-                                ? () => AppFeedback.toast('Link a client to this case first.')
+                                ? () => AppFeedback.toast('Please link a client to this case first.')
                                 : () => Navigator.of(context).push(MaterialPageRoute(
                                     builder: (_) => InvoiceEditorScreen(
                                         clientId: c.clientId, clientName: c.clientName, presetLine: 'Professional fee — ${c.caseNumber.isNotEmpty ? c.caseNumber : c.title}'))),
@@ -454,7 +454,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
                       const SizedBox(height: 22),
                       GroupLabel('Hearings · ${_hearings.length}'),
                       if (_hearings.isEmpty)
-                        Text('No hearings yet. Add the next date — your assistant reminds the client the day before.',
+                        Text('No hearings recorded. Add the next date and your assistant will remind the client the day before.',
                             style: TextStyle(color: Neon.textLo, fontSize: 13.5, height: 1.4))
                       else
                         GroupedCard(dividerInset: 16, children: [
@@ -482,8 +482,8 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
                 builder: (ctx) => SafeArea(
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
                     for (final (s, label, icon) in const [
-                      ('done', 'Hearing done', Icons.check_circle_rounded),
-                      ('adjourned', 'Adjourned — set next date', Icons.update_rounded),
+                      ('done', 'Hearing Completed', Icons.check_circle_rounded),
+                      ('adjourned', 'Adjourned: Set Next Date', Icons.update_rounded),
                       ('cancelled', 'Cancelled', Icons.event_busy_rounded),
                     ])
                       ListTile(
@@ -581,13 +581,13 @@ class _HearingSheetState extends State<_HearingSheet> {
     if (!mounted) return;
     if (r == null) {
       setState(() => _busy = false);
-      AppFeedback.toast("Couldn't save the hearing. Check your connection.");
+      AppFeedback.toast("Unable to save the hearing. Please check your connection.");
       return;
     }
     HapticFeedback.lightImpact();
     AppFeedback.toast(r.noPhone
-        ? 'Hearing saved. No client number on file, so no reminder call.'
-        : 'Hearing saved — the client gets a reminder call the day before.');
+        ? 'Hearing saved. No client number is on file, so no reminder call will be made.'
+        : 'Hearing saved. The client will receive a reminder call the day before.');
     Navigator.pop(context, true);
   }
 
@@ -596,13 +596,13 @@ class _HearingSheetState extends State<_HearingSheet> {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(18, 14, 18, 20),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Text('Add hearing', style: TextStyle(color: Neon.textHi, fontSize: 19, fontWeight: FontWeight.w700)),
+        Text('Add Hearing', style: TextStyle(color: Neon.textHi, fontSize: 19, fontWeight: FontWeight.w700)),
         const SizedBox(height: 14),
         Row(children: [
           Expanded(
             child: OutlinedButton.icon(
               icon: const Icon(Icons.event_rounded),
-              label: Text(_date == null ? 'Pick date' : '${_date!.day}/${_date!.month}/${_date!.year}'),
+              label: Text(_date == null ? 'Select Date' : '${_date!.day}/${_date!.month}/${_date!.year}'),
               onPressed: _pickDate,
             ),
           ),
@@ -622,18 +622,18 @@ class _HearingSheetState extends State<_HearingSheet> {
         TextField(
           controller: _purpose,
           textCapitalization: TextCapitalization.sentences,
-          decoration: const InputDecoration(labelText: 'Purpose (optional)', hintText: 'e.g. Cross-examination, arguments'),
+          decoration: const InputDecoration(labelText: 'Purpose (Optional)', hintText: 'e.g. Cross-examination, arguments'),
         ),
         SwitchListTile.adaptive(
           contentPadding: EdgeInsets.zero,
           value: _remind,
           onChanged: (v) => setState(() => _remind = v),
-          title: Text('Remind the client', style: TextStyle(color: Neon.textHi, fontSize: 15)),
-          subtitle: Text('Your assistant calls them the day before', style: TextStyle(color: Neon.textLo, fontSize: 12.5)),
+          title: Text('Remind the Client', style: TextStyle(color: Neon.textHi, fontSize: 15)),
+          subtitle: Text('Your assistant will call the client the day before', style: TextStyle(color: Neon.textLo, fontSize: 12.5)),
         ),
         const SizedBox(height: 10),
         ApplePrimaryButton(
-          label: _busy ? 'Saving…' : 'Save hearing',
+          label: _busy ? 'Saving…' : 'Save Hearing',
           onPressed: _date == null || _busy ? null : _save,
         ),
       ]),

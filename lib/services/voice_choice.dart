@@ -27,7 +27,7 @@ class VoiceChoice {
     if (r == null || r['rejected'] == true) {
       await LiveVoicePrefs.setVoice(previous);
       unawaited(GreetingVoice.instance.prewarm(openingLine()));
-      return (r?['message'] ?? "Couldn't save the voice.").toString();
+      return (r?['message'] ?? "Unable to save the voice.").toString();
     }
     // The server now reads replies in the new voice too: fetch the config
     // again so spoken replies stop using the old one (owner, 2026-10-31:

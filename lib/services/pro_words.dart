@@ -64,26 +64,26 @@ class ProWords {
   final String receptionist;
 
   static const doctor = ProWords._(
-    'Clinic', 'Today at clinic', 'Appointments', 'appointment', 'Book appointment',
-    'Payments', 'Patient', 'Patients', 'Clinic settings', 'Clinic name',
-    'Medical registration number', 'Qualifications (e.g. MBBS, MD)', 'Consultation fee (₹)',
-    'When you can\'t answer, your assistant offers callers your free slots and books them. '
+    'Clinic', 'Today at Clinic', 'Appointments', 'appointment', 'Book Appointment',
+    'Payments', 'Patient', 'Patients', 'Clinic Settings', 'Clinic Name',
+    'Medical Registration Number', 'Qualifications (e.g. MBBS, MD)', 'Consultation Fee (₹)',
+    'When you are unable to answer, your assistant offers callers your available slots and books them. '
         'It never gives medical advice, and sends emergencies to 108.',
   );
 
   static const advocate = ProWords._(
-    'Chambers', 'Today in chambers', 'Consultations', 'consultation', 'Book consultation',
-    'Fees', 'Client', 'Clients', 'Chamber settings', 'Chamber / firm name',
-    'Bar Council enrolment number', 'Designation (e.g. Advocate, High Court)', 'Consultation fee (₹)',
-    'When you can\'t answer, your assistant offers callers consultation slots and books them. '
+    'Chambers', 'Today in Chambers', 'Consultations', 'consultation', 'Book Consultation',
+    'Fees', 'Client', 'Clients', 'Chamber Settings', 'Chamber / Firm Name',
+    'Bar Council Enrolment Number', 'Designation (e.g. Advocate, High Court)', 'Consultation Fee (₹)',
+    'When you are unable to answer, your assistant offers callers consultation slots and books them. '
         'It never gives legal advice or discusses a case, and flags urgent matters to you.',
   );
 
   static const business = ProWords._(
-    'Office', 'Today at a glance', 'Meetings', 'meeting', 'Schedule meeting',
-    'Receivables', 'Client', 'Clients', 'Office settings', 'Company name',
-    'GSTIN', 'Your title (e.g. Managing Director)', null,
-    'When you can\'t answer, your assistant screens callers, offers meeting slots and books '
+    'Office', 'Today at a Glance', 'Meetings', 'meeting', 'Schedule Meeting',
+    'Receivables', 'Client', 'Clients', 'Office Settings', 'Company Name',
+    'GSTIN', 'Your Title (e.g. Managing Director)', null,
+    'When you are unable to answer, your assistant screens callers, offers meeting slots and books '
         'them. It never quotes prices or commits to a deal.',
   );
 

@@ -93,16 +93,16 @@ class EmailSentListState extends State<EmailSentList> {
                 children: [
                   IconTile(Icons.mic_rounded, Neon.violet, size: 44),
                   const SizedBox(height: 12),
-                  Text('Nothing sent yet',
+                  Text('No mail has been sent',
                       style: TextStyle(
                           color: Neon.textHi,
                           fontSize: 15,
                           fontWeight: FontWeight.w700)),
                   const SizedBox(height: 6),
                   Text(
-                    'Go back, tap the mic and say "send a mail to ravi@example.com '
-                    'saying I\'ll be there by six". Ask again later and just '
-                    'say "the same address" — I remember who you write to.',
+                    'To send a mail, go back, tap the microphone and say "send a mail to ravi@example.com '
+                    'saying I\'ll be there by six". On later requests you may '
+                    'say "the same address"; your assistant remembers your recipients.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                         color: Neon.textLo, fontSize: 13, height: 1.45),

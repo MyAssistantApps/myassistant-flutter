@@ -318,8 +318,8 @@ class CallHistory {
       final that = unnamed.length == 1 ? 'that number' : 'those numbers';
       final last = when(sorted.first.at, now);
       return n == 1
-          ? "$opener missed a call $last. I can't find $that in your contacts."
-          : "$opener missed $n calls, the last $last. I can't find $that in your contacts.";
+          ? "$opener missed a call $last. I cannot find $that in your contacts."
+          : "$opener missed $n calls, the last $last. I cannot find $that in your contacts.";
     }
     final items = <String>[
       for (final g in named.take(2)) '${g.latest.shortLabel} ${when(g.latest.at, now)}',
@@ -327,12 +327,12 @@ class CallHistory {
         '${named.length - 2} other${named.length - 2 == 1 ? '' : 's'}',
       if (unnamedCalls > 0)
         "$unnamedCalls from ${unnamedCalls == 1 ? 'a number' : 'numbers'} "
-            "I can't find in your contacts",
+            "I cannot find in your contacts",
     ];
     final list = items.length == 1
         ? items.first
         : '${items.sublist(0, items.length - 1).join(', ')} and ${items.last}';
-    return '$opener missed $count — $list.';
+    return '$opener missed $count: $list.';
   }
 }
 

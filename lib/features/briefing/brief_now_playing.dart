@@ -92,7 +92,7 @@ class _Strip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = p.script?.title ?? 'Your day';
+    final title = p.script?.title ?? 'Your Day';
     final s = p.state;
     final loading = s == BriefPlayState.loading;
     final done = s == BriefPlayState.done;
@@ -100,7 +100,7 @@ class _Strip extends StatelessWidget {
     final tone = failed ? NeonTone.danger : done ? NeonTone.success : NeonTone.brand;
     final offer = p.script?.offer;
     final label = switch (s) {
-      BriefPlayState.loading => 'Getting your day ready',
+      BriefPlayState.loading => 'Preparing your brief',
       BriefPlayState.playing => '$title, now playing',
       BriefPlayState.paused => '$title, paused',
       BriefPlayState.done => '$title, finished',
@@ -135,7 +135,7 @@ class _Strip extends StatelessWidget {
                     children: [
                       ExcludeSemantics(
                         child: Text(
-                          loading ? 'Getting your day ready…' : title,
+                          loading ? 'Preparing your brief…' : title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: NeonType.manrope(NeonType.footnote, FontWeight.w700)
@@ -206,7 +206,7 @@ class _Strip extends StatelessWidget {
               Align(
                 alignment: Alignment.centerLeft,
                 child: NeonPill(
-                  label: 'Try again',
+                  label: 'Retry',
                   icon: Icons.refresh_rounded,
                   tone: NeonTone.danger,
                   onPressed: () => unawaited(p.play()),

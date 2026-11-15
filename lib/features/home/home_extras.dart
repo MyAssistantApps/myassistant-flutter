@@ -81,18 +81,18 @@ abstract final class HomeExtras {
   /// Real capabilities only. A question can be tried with one tap; an
   /// action is said by the user, in their own words.
   static const tips = [
-    HomeTip('brief', 'Brief me for today', 'Your day, your messages and the weather in one go.',
+    HomeTip('brief', 'Brief me for today', 'Your schedule, messages and weather in a single summary.',
         ask: 'Give me my brief for today.'),
-    HomeTip('promises', 'What did I promise?', 'I keep track of what you tell people you will do.',
+    HomeTip('promises', 'What did I promise?', 'Your assistant tracks the commitments you make to others.',
         ask: 'What have I promised anyone recently?'),
-    HomeTip('shopping', 'Add milk to my shopping list', 'One list for anything to buy, from any conversation.'),
-    HomeTip('meeting', 'Record this meeting', 'I write the minutes, the decisions and who does what.'),
-    HomeTip('remind', 'Remind me to call Amma at 6', 'Reminders that ring, or call you, at the time.'),
-    HomeTip('news', 'Read me the news', 'Today\'s stories, read out, and explained if you ask.',
+    HomeTip('shopping', 'Add milk to my shopping list', 'A single list of items to purchase, from any conversation.'),
+    HomeTip('meeting', 'Record this meeting', 'Your assistant records the minutes, decisions and action owners.'),
+    HomeTip('remind', 'Remind me to call Amma at 6', 'Reminders that ring, or call you, at the set time.'),
+    HomeTip('news', 'Read me the news', 'Today\'s stories read aloud, and explained on request.',
         ask: 'Read me today\'s top news.'),
-    HomeTip('weather', 'Will it rain this evening?', 'The weather where you are, hour by hour.',
+    HomeTip('weather', 'Will it rain this evening?', 'The weather at your location, hour by hour.',
         ask: 'Will it rain this evening?'),
-    HomeTip('message', 'Tell Priya I\'m running late', 'Messages sent for you — I always check with you first.'),
+    HomeTip('message', 'Tell Priya I\'m running late', 'Messages sent on your behalf, always with your confirmation first.'),
   ];
 
   /// Today's tip: a different one each day, the same one all day.

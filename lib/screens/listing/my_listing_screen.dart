@@ -70,10 +70,10 @@ class _MyListingScreenState extends State<MyListingScreen> {
     if (!tabs.any((t) => t.$1 == _tab)) _tab = 0;
     return Scaffold(
       backgroundColor: Neon.bg,
-      appBar: appleAppBar(context, 'Your public page'),
+      appBar: appleAppBar(context, 'Your Public Page'),
       body: _failed
           ? NeonErrorState(
-              message: "Couldn't load your page. Check your connection.",
+              message: "Unable to load your page. Please check your internet connection.",
               onRetry: () {
                 setState(() => _failed = false);
                 _load();
@@ -177,7 +177,7 @@ class _PageTabState extends State<_PageTab> {
   String get _headlineLabel => switch (_persona) {
         'doctor' => 'Speciality (e.g. Dentist, Paediatrician)',
         'advocate' => 'Practice (e.g. Civil & property, Family law)',
-        _ => 'What you do (e.g. Sarees & silks, CA firm)',
+        _ => 'Nature of business (e.g. Sarees & silks, CA firm)',
       };
 
   String get _servicesLabel => switch (_persona) {
@@ -210,14 +210,14 @@ class _PageTabState extends State<_PageTab> {
     if (!mounted) return null;
     setState(() => _busy = false);
     if (s == null) {
-      AppFeedback.toast("Couldn't save. Check your connection.");
+      AppFeedback.toast("Unable to save. Please check your internet connection.");
       return null;
     }
     _dirty = false;
     widget.onChanged(s);
     if (!quiet) {
       HapticFeedback.lightImpact();
-      AppFeedback.toast(s.listing.published ? 'Saved — your page is updated.' : 'Saved.');
+      AppFeedback.toast(s.listing.published ? 'Changes saved. Your page has been updated.' : 'Changes saved.');
     }
     return s;
   }
@@ -234,12 +234,12 @@ class _PageTabState extends State<_PageTab> {
     if (r.state != null) {
       widget.onChanged(r.state!);
       HapticFeedback.mediumImpact();
-      AppFeedback.toast(on ? 'You\'re live — people nearby can find you now.' : 'Your page is hidden.');
+      AppFeedback.toast(on ? 'Your page is now live. People nearby can find you.' : 'Your page is hidden.');
     } else if (r.missing.isNotEmpty) {
-      AppFeedback.toast(r.message ?? 'Add: ${r.missing.map(missingLabel).join(', ')}');
+      AppFeedback.toast(r.message ?? 'Please add: ${r.missing.map(missingLabel).join(', ')}');
       await widget.reload();
     } else {
-      AppFeedback.toast("Couldn't change that. Check your connection.");
+      AppFeedback.toast("Unable to update the page status. Please check your internet connection.");
     }
   }
 
@@ -249,7 +249,7 @@ class _PageTabState extends State<_PageTab> {
       var perm = await Geolocator.checkPermission();
       if (perm == LocationPermission.denied) perm = await Geolocator.requestPermission();
       if (perm == LocationPermission.denied || perm == LocationPermission.deniedForever) {
-        AppFeedback.toast('Allow location to pin your place — or paste a Google Maps link.');
+        AppFeedback.toast('Location access is required to pin your place. Please enable it in Settings, or paste a Google Maps link.');
         return;
       }
       final pos = await Geolocator.getCurrentPosition(
@@ -262,10 +262,10 @@ class _PageTabState extends State<_PageTab> {
         _dirty = true;
       });
       AppFeedback.toast(pos.accuracy > 60
-          ? 'Pinned, but GPS was rough (±${pos.accuracy.round()} m). Check it on the map.'
-          : 'Pinned to where you are now.');
+          ? 'Location pinned, but GPS accuracy was low (±${pos.accuracy.round()} m). Please verify it on the map.'
+          : 'Pinned to your current location.');
     } catch (_) {
-      AppFeedback.toast("Couldn't get your location. Try again outdoors, or paste a map link.");
+      AppFeedback.toast("Unable to retrieve your location. Please try again outdoors, or paste a map link.");
     } finally {
       if (mounted) setState(() => _locating = false);
     }
@@ -278,10 +278,10 @@ class _PageTabState extends State<_PageTab> {
     final got = await showDialog<({double lat, double lng})>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Paste a map link'),
+        title: const Text('Paste a Map Link'),
         content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('In Google Maps, long-press your place, tap Share → Copy link, and paste it here. '
-              'Coordinates like "12.8714, 74.8432" work too.'),
+          const Text('In Google Maps, long-press your place, tap Share → Copy link, and paste the link here. '
+              'Coordinates such as "12.8714, 74.8432" are also accepted.'),
           const SizedBox(height: 12),
           TextField(controller: c, autofocus: true, maxLines: 3, minLines: 1, decoration: const InputDecoration(hintText: 'https://maps.google.com/…')),
         ]),
@@ -291,12 +291,12 @@ class _PageTabState extends State<_PageTab> {
             onPressed: () {
               final p = parseLatLng(c.text);
               if (p == null) {
-                AppFeedback.toast("That link has no map location in it. Short links (maps.app.goo.gl) — open them first, then copy the address bar.");
+                AppFeedback.toast("This link contains no map location. For short links (maps.app.goo.gl), open the link first, then copy the address from the address bar.");
                 return;
               }
               Navigator.pop(ctx, p);
             },
-            child: const Text('Use this'),
+            child: const Text('Use This'),
           ),
         ],
       ),
@@ -338,7 +338,7 @@ class _PageTabState extends State<_PageTab> {
       if (s != null) _photo = bytes;
     });
     if (s == null) {
-      AppFeedback.toast("Couldn't upload that photo. Use a JPEG or PNG under 400 KB.");
+      AppFeedback.toast("Unable to upload the photo. Please use a JPEG or PNG under 400 KB.");
     } else {
       widget.onChanged(s);
     }
@@ -368,12 +368,12 @@ class _PageTabState extends State<_PageTab> {
         GroupedCard(children: [
           ListTile(
             leading: _PhotoThumb(bytes: _photo, url: l.published && l.hasPhoto && s.url != null ? '${s.url}/photo?v=${l.updatedAt}' : null, has: l.hasPhoto),
-            title: Text(l.hasPhoto ? 'Change photo' : 'Add a photo', style: TextStyle(color: Neon.textHi, fontWeight: FontWeight.w600)),
-            subtitle: Text('Your face or your ${_w.workspace.toLowerCase()} front, so people recognise you.',
+            title: Text(l.hasPhoto ? 'Change Photo' : 'Add a Photo', style: TextStyle(color: Neon.textHi, fontWeight: FontWeight.w600)),
+            subtitle: Text('A photo of yourself or the front of your ${_w.workspace.toLowerCase()}, so that people recognise you.',
                 style: TextStyle(color: Neon.textLo, fontSize: 12.5)),
             trailing: l.hasPhoto
                 ? IconButton(
-                    tooltip: 'Remove photo',
+                    tooltip: 'Remove Photo',
                     icon: Icon(Icons.delete_outline_rounded, color: Neon.textLo),
                     onPressed: _busy
                         ? null
@@ -389,11 +389,11 @@ class _PageTabState extends State<_PageTab> {
           ),
         ]),
         const SizedBox(height: 18),
-        _section('Who you are'),
-        _field(_name, 'Name shown on the page', Icons.badge_rounded, caps: TextCapitalization.words),
+        _section('Your Details'),
+        _field(_name, 'Name displayed on the page', Icons.badge_rounded, caps: TextCapitalization.words),
         _field(_headline, _headlineLabel, Icons.workspace_premium_rounded, caps: TextCapitalization.sentences),
         const SizedBox(height: 8),
-        _section('Where'),
+        _section('Location'),
         _field(_place, _w.placeName, Icons.storefront_rounded, caps: TextCapitalization.words),
         _field(_address, 'Full address (building, street, landmark)', Icons.home_work_rounded,
             caps: TextCapitalization.sentences, lines: 2),
@@ -413,14 +413,14 @@ class _PageTabState extends State<_PageTab> {
         ),
         const SizedBox(height: 18),
         _section('Contact'),
-        _field(_phone, 'Phone for patients / clients to call', Icons.call_rounded, keyboard: TextInputType.phone),
+        _field(_phone, 'Phone number for patients / clients to call', Icons.call_rounded, keyboard: TextInputType.phone),
         _field(_wa, 'WhatsApp number (optional)', Icons.chat_rounded, keyboard: TextInputType.phone,
             suffix: _phone.text.trim().isEmpty
                 ? null
                 : TextButton(onPressed: () => _wa.text = _phone.text.trim(), child: const Text('Same'))),
         const SizedBox(height: 8),
         _section('About'),
-        _field(_about, 'A few lines about you and your ${_w.workspace.toLowerCase()}', Icons.notes_rounded,
+        _field(_about, 'A brief description of yourself and your ${_w.workspace.toLowerCase()}', Icons.notes_rounded,
             caps: TextCapitalization.sentences, lines: 4),
         _field(_services, _servicesLabel, Icons.checklist_rounded, caps: TextCapitalization.sentences, lines: 2),
         _field(_langs, 'Languages (e.g. Kannada, English, Tulu)', Icons.translate_rounded, caps: TextCapitalization.words),
@@ -431,8 +431,8 @@ class _PageTabState extends State<_PageTab> {
               _accepts = v;
               _dirty = true;
             }),
-            title: Text('Take booking requests', style: TextStyle(color: Neon.textHi, fontWeight: FontWeight.w600)),
-            subtitle: Text('A "Request booking" form on your page. You confirm each one.',
+            title: Text('Accept Booking Requests', style: TextStyle(color: Neon.textHi, fontWeight: FontWeight.w600)),
+            subtitle: Text('Adds a "Request booking" form to your page. You confirm each request.',
                 style: TextStyle(color: Neon.textLo, fontSize: 12.5)),
           ),
         ]),
@@ -440,13 +440,13 @@ class _PageTabState extends State<_PageTab> {
           const SizedBox(height: 10),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Text('Timings on the page come from ${_w.settings}: ${s.hours}',
+            child: Text('Timings shown on the page are taken from ${_w.settings}: ${s.hours}',
                 style: TextStyle(color: Neon.textDim, fontSize: 12.5)),
           ),
         ],
         const SizedBox(height: 20),
         ApplePrimaryButton(
-          label: _busy ? 'Saving…' : (l.published ? 'Save & update page' : 'Save'),
+          label: _busy ? 'Saving…' : (l.published ? 'Save & Update Page' : 'Save'),
           icon: Icons.check_rounded,
           onPressed: _busy || (!_dirty && !l.draft) ? null : () => _save(),
         ),
@@ -522,8 +522,8 @@ class _StatusCard extends StatelessWidget {
         const SizedBox(height: 10),
         Text(
           live
-              ? 'People near you find you in MyAssistant, and anyone can open your page from Google.'
-              : 'Go public and people nearby find you when they search "${_example(l.persona)}" — in MyAssistant and on Google.',
+              ? 'People near you can find you in MyAssistant, and anyone can open your page from Google.'
+              : 'Once public, people nearby can find you when they search "${_example(l.persona)}" in MyAssistant and on Google.',
           style: TextStyle(color: Neon.textHi, fontSize: 14.5, height: 1.35, fontWeight: FontWeight.w600),
         ),
         if (live && state.url != null) ...[
@@ -537,7 +537,7 @@ class _StatusCard extends StatelessWidget {
                     maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Neon.textLo, fontSize: 13)),
               ),
               IconButton(
-                tooltip: 'Copy link',
+                tooltip: 'Copy Link',
                 icon: Icon(Icons.copy_rounded, size: 19, color: Neon.textLo),
                 onPressed: () async {
                   await Clipboard.setData(ClipboardData(text: state.url!));
@@ -568,16 +568,16 @@ class _StatusCard extends StatelessWidget {
           if (dirty)
             Padding(
               padding: const EdgeInsets.only(top: 8),
-              child: Text('You have unsaved changes — save to update the page.', style: TextStyle(color: Neon.warning, fontSize: 12.5)),
+              child: Text('You have unsaved changes. Please save to update the page.', style: TextStyle(color: Neon.warning, fontSize: 12.5)),
             ),
           Align(
             alignment: Alignment.centerRight,
-            child: TextButton(onPressed: busy ? null : onUnpublish, child: Text('Take page down', style: TextStyle(color: Neon.textLo))),
+            child: TextButton(onPressed: busy ? null : onUnpublish, child: Text('Take Page Down', style: TextStyle(color: Neon.textLo))),
           ),
         ] else ...[
           if (state.missing.isNotEmpty) ...[
             const SizedBox(height: 12),
-            Text('Before you go public:', style: TextStyle(color: Neon.textLo, fontSize: 13, fontWeight: FontWeight.w600)),
+            Text('Required before going public:', style: TextStyle(color: Neon.textLo, fontSize: 13, fontWeight: FontWeight.w600)),
             const SizedBox(height: 6),
             for (final m in state.missing)
               Padding(
@@ -605,7 +605,7 @@ class _StatusCard extends StatelessWidget {
               style: FilledButton.styleFrom(backgroundColor: Neon.success, padding: const EdgeInsets.symmetric(vertical: 13)),
               onPressed: busy ? null : onPublish,
               icon: const Icon(Icons.campaign_rounded),
-              label: Text(busy ? 'Working…' : 'Go public'),
+              label: Text(busy ? 'Processing…' : 'Go Public'),
             ),
           ),
         ],
@@ -645,14 +645,14 @@ class _PinCard extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              has ? 'Map pin set · ${lat!.toStringAsFixed(5)}, ${lng!.toStringAsFixed(5)}' : 'No map pin yet',
+              has ? 'Map pin set · ${lat!.toStringAsFixed(5)}, ${lng!.toStringAsFixed(5)}' : 'No map pin set',
               style: TextStyle(color: Neon.textHi, fontWeight: FontWeight.w700),
             ),
           ),
-          if (has) TextButton(onPressed: onCheck, child: const Text('Check')),
+          if (has) TextButton(onPressed: onCheck, child: const Text('Verify')),
         ]),
         const SizedBox(height: 4),
-        Text('Stand inside your place and tap "I\'m here" — or paste its Google Maps link. This is where Directions will lead.',
+        Text('Stand inside your place and tap "I Am Here", or paste its Google Maps link. Directions will lead to this location.',
             style: TextStyle(color: Neon.textLo, fontSize: 12.5, height: 1.35)),
         const SizedBox(height: 10),
         Row(children: [
@@ -662,7 +662,7 @@ class _PinCard extends StatelessWidget {
               icon: locating
                   ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.my_location_rounded, size: 18),
-              label: Text(locating ? 'Locating…' : "I'm here"),
+              label: Text(locating ? 'Locating…' : "I Am Here"),
             ),
           ),
           const SizedBox(width: 8),
@@ -670,7 +670,7 @@ class _PinCard extends StatelessWidget {
             child: OutlinedButton.icon(
               onPressed: onPaste,
               icon: const Icon(Icons.link_rounded, size: 18),
-              label: const Text('Map link'),
+              label: const Text('Map Link'),
             ),
           ),
         ]),
@@ -754,7 +754,7 @@ class _PostsTabState extends State<_PostsTab> {
     final doctor = widget.state.listing.persona == 'doctor';
     return Stack(children: [
       if (_failed)
-        NeonErrorState(message: "Couldn't load posts.", onRetry: () {
+        NeonErrorState(message: "Unable to load posts.", onRetry: () {
           setState(() => _failed = false);
           _load();
         })
@@ -763,11 +763,11 @@ class _PostsTabState extends State<_PostsTab> {
       else if (posts.isEmpty)
         NeonEmptyState(
           icon: Icons.campaign_rounded,
-          title: 'No posts yet',
+          title: 'No posts available',
           body: doctor
-              ? 'Share updates — "Closed on Sunday", "Free BP camp on Saturday". They show on your page and to people nearby. No one is notified.'
-              : 'Share an update or an offer — "Diwali 20% off", "New stock in". It shows on your page and to people nearby. No one is notified.',
-          actionLabel: 'New post',
+              ? 'Share updates such as "Closed on Sunday" or "Free BP camp on Saturday". They appear on your page and to people nearby. No one is notified.'
+              : 'Share an update or an offer such as "Diwali 20% off" or "New stock in". It appears on your page and to people nearby. No one is notified.',
+          actionLabel: 'New Post',
           actionIcon: Icons.add_rounded,
           onAction: _new,
         )
@@ -779,7 +779,7 @@ class _PostsTabState extends State<_PostsTab> {
             children: [
               Padding(
                 padding: const EdgeInsets.only(left: 4, bottom: 10),
-                child: Text('Shown on your page and to people nearby until they expire. Nobody gets a notification.',
+                child: Text('Posts are shown on your page and to people nearby until they expire. No one is notified.',
                     style: TextStyle(color: Neon.textLo, fontSize: 12.5)),
               ),
               GroupedCard(dividerInset: 16, children: [
@@ -823,7 +823,7 @@ class _PostsTabState extends State<_PostsTab> {
             foregroundColor: Colors.white,
             onPressed: _new,
             icon: const Icon(Icons.add_rounded),
-            label: const Text('New post'),
+            label: const Text('New Post'),
           ),
         ),
     ]);
@@ -863,7 +863,7 @@ class _PostSheetState extends State<_PostSheet> {
     if (!mounted) return;
     if (p == null) {
       setState(() => _busy = false);
-      AppFeedback.toast("Couldn't post. You can have up to 10 live posts.");
+      AppFeedback.toast("Unable to publish the post. A maximum of 10 live posts is permitted.");
       return;
     }
     HapticFeedback.lightImpact();
@@ -875,7 +875,7 @@ class _PostSheetState extends State<_PostSheet> {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(18, 14, 18, 20),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Text('New post', style: TextStyle(color: Neon.textHi, fontSize: 19, fontWeight: FontWeight.w700)),
+        Text('New Post', style: TextStyle(color: Neon.textHi, fontSize: 19, fontWeight: FontWeight.w700)),
         if (widget.kinds.length > 1) ...[
           const SizedBox(height: 12),
           Wrap(spacing: 8, children: [
@@ -906,7 +906,7 @@ class _PostSheetState extends State<_PostSheet> {
           textCapitalization: TextCapitalization.sentences,
           decoration: const InputDecoration(labelText: 'Details (optional)'),
         ),
-        Text('Show for', style: TextStyle(color: Neon.textHi, fontWeight: FontWeight.w600)),
+        Text('Display for', style: TextStyle(color: Neon.textHi, fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         Wrap(spacing: 8, children: [
           for (final (d, label) in const [(3, '3 days'), (7, '1 week'), (14, '2 weeks'), (30, '1 month')])
@@ -968,7 +968,7 @@ class _RequestsTabState extends State<_RequestsTab> {
     if (t == null || !mounted) return;
     final at = DateTime(day.year, day.month, day.day, t.hour, t.minute);
     if (at.isBefore(DateTime.now())) {
-      AppFeedback.toast('Pick a time that has not passed.');
+      AppFeedback.toast('Please select a future time.');
       return;
     }
     setState(() => _busy.add(r.id));
@@ -976,11 +976,11 @@ class _RequestsTabState extends State<_RequestsTab> {
     if (!mounted) return;
     setState(() => _busy.remove(r.id));
     if (!ok) {
-      AppFeedback.toast("Couldn't book that. Check your connection.");
+      AppFeedback.toast("Unable to confirm the booking. Please check your internet connection.");
       return;
     }
     HapticFeedback.lightImpact();
-    AppFeedback.toast('Booked ${r.name} for ${_date(at)}, ${t.format(context)}. Call them to confirm.');
+    AppFeedback.toast('Booking recorded for ${r.name} on ${_date(at)}, ${t.format(context)}. Please call them to confirm.');
     _load();
   }
 
@@ -996,7 +996,7 @@ class _RequestsTabState extends State<_RequestsTab> {
   Widget build(BuildContext context) {
     final list = _list;
     if (_failed) {
-      return NeonErrorState(message: "Couldn't load requests.", onRetry: () {
+      return NeonErrorState(message: "Unable to load requests.", onRetry: () {
         setState(() => _failed = false);
         _load();
       });
@@ -1005,8 +1005,8 @@ class _RequestsTabState extends State<_RequestsTab> {
     if (list.isEmpty) {
       return const NeonEmptyState(
         icon: Icons.event_note_rounded,
-        title: 'No booking requests yet',
-        body: 'When someone taps "Request booking" on your page or in MyAssistant, it lands here and you get a notification.',
+        title: 'No booking requests received',
+        body: 'When someone selects "Request booking" on your page or in MyAssistant, the request appears here and you receive a notification.',
       );
     }
     return RefreshIndicator(
@@ -1045,7 +1045,7 @@ class _RequestsTabState extends State<_RequestsTab> {
               ]),
               if (r.preferred.isNotEmpty) ...[
                 const SizedBox(height: 6),
-                Text('Wants: ${r.preferred}', style: TextStyle(color: Neon.textHi, fontSize: 14)),
+                Text('Preferred: ${r.preferred}', style: TextStyle(color: Neon.textHi, fontSize: 14)),
               ],
               if (r.message.isNotEmpty) ...[
                 const SizedBox(height: 4),
@@ -1057,7 +1057,7 @@ class _RequestsTabState extends State<_RequestsTab> {
                   Expanded(
                     child: FilledButton(
                       onPressed: busy ? null : () => _confirm(r),
-                      child: const Text('Book a time'),
+                      child: const Text('Book a Time'),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -1084,7 +1084,7 @@ String listingCardLine(ListingState? s) {
     if (s.newRequests > 0) parts.add('${s.newRequests} new ${s.newRequests == 1 ? 'request' : 'requests'}');
     return parts.join(' · ');
   }
-  return s.missing.isEmpty ? 'Ready — tap to go public' : 'Not public yet · ${s.missing.length} to add';
+  return s.missing.isEmpty ? 'Ready · tap to go public' : 'Not yet public ·${s.missing.length} to add';
 }
 
 /// Opens the booking requests from a tapped notification (kind

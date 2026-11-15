@@ -147,8 +147,8 @@ class ShopOrder {
     if (f.contains('picked')) return 'Picked up';
     if (f.contains('packed')) return 'Packed';
     return switch (state.toLowerCase()) {
-      'awaiting_payment' => 'Waiting for payment',
-      'paid' => 'Paid — placing order',
+      'awaiting_payment' => 'Awaiting payment',
+      'paid' => 'Paid; order being placed',
       'placed' || 'created' => 'Order placed',
       'accepted' => 'Accepted by store',
       'in-progress' => 'Being prepared',
@@ -216,7 +216,7 @@ abstract final class ShopApi {
       if (d is Map<String, dynamic>) j = d;
     } catch (_) {}
     if (r.statusCode < 200 || r.statusCode >= 300) {
-      throw ShopError((j['error'] ?? 'Something went wrong (${r.statusCode})')
+      throw ShopError((j['error'] ?? 'An unexpected error has occurred (${r.statusCode}).')
           .toString());
     }
     return j;
@@ -245,7 +245,7 @@ abstract final class ShopApi {
   static Future<String> search(ShopDomain d, String q) async {
     final at = await _where();
     if (at == null) {
-      throw ShopError('Turn on location so we can find stores near you.');
+      throw ShopError('Location access is required to find stores near you. Please enable it in Settings.');
     }
     final j = await _call('POST', '/search',
         {'domain': d.name, 'q': q, 'lat': at.$1, 'lng': at.$2});

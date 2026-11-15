@@ -15,9 +15,9 @@ void main() {
 
   test('one-way: asks for what is missing, then describes the trip', () {
     var t = const FlightTrip();
-    expect(t.problem(), 'Choose where you fly from');
+    expect(t.problem(), 'Please select the departure airport');
     t = t.copyWith(legs: [FlightLeg(from: ap('BLR'), to: ap('BLR'), date: d1)]);
-    expect(t.problem(), 'From and To must be different');
+    expect(t.problem(), 'The departure and arrival airports must differ');
     t = t.copyWith(legs: [FlightLeg(from: ap('BLR'), to: ap('DEL'), date: d1)], adults: 2, infants: 1, nonStop: true);
     expect(t.problem(), isNull);
     expect(t.route, 'BLR → DEL');
@@ -28,8 +28,8 @@ void main() {
 
   test('round-trip needs a return on or after the departure', () {
     var t = FlightTrip(legs: [FlightLeg(from: ap('BOM'), to: ap('GOI'), date: d2)]).asType(TripType.roundTrip);
-    expect(t.problem(), 'Choose the return date');
-    expect(t.copyWith(returnDate: d1).problem(), "The return can't be before the departure");
+    expect(t.problem(), 'Please select the return date');
+    expect(t.copyWith(returnDate: d1).problem(), 'The return date cannot precede the departure date');
     t = t.copyWith(returnDate: DateTime(2026, 11, 28), cabin: CabinClass.business, fare: SpecialFare.student);
     expect(t.problem(), isNull);
     expect(t.route, 'BOM ⇄ GOI');
@@ -41,7 +41,7 @@ void main() {
     expect(t.legs, hasLength(2));
     expect(t.legs[1].from!.code, 'DXB');
     t = t.copyWith(legs: [t.legs[0], t.legs[1].copyWith(to: ap('LHR'), date: DateTime(2026, 11, 18))]);
-    expect(t.problem(), "Flight 2 can't leave before flight 1");
+    expect(t.problem(), 'Flight 2 cannot depart before flight 1');
     t = t.copyWith(legs: [t.legs[0], t.legs[1].copyWith(date: d2)]);
     expect(t.problem(), isNull);
     expect(t.route, 'DEL → DXB → LHR');
@@ -51,8 +51,8 @@ void main() {
 
   test('travellers: an adult per infant, nine at most', () {
     final t = FlightTrip(legs: [FlightLeg(from: ap('BLR'), to: ap('DEL'), date: d1)]);
-    expect(t.copyWith(infants: 2).problem(), 'Each infant needs an adult');
-    expect(t.copyWith(adults: 6, children: 4).problem(), 'Up to 9 travellers per booking');
+    expect(t.copyWith(infants: 2).problem(), 'Each infant must be accompanied by an adult');
+    expect(t.copyWith(adults: 6, children: 4).problem(), 'A maximum of 9 travellers is permitted per booking');
   });
 
   test('airports are found by city, code or name', () {
@@ -88,10 +88,10 @@ void main() {
     expect(find.text('FLIGHT 1'), findsOneWidget);
     expect(find.text('FLIGHT 2'), findsOneWidget);
     expect(find.text('RETURN'), findsNothing);
-    await t.dragUntilVisible(find.text('Search flights'), find.byType(ListView).first, const Offset(0, -300));
-    await t.tap(find.text('Search flights'));
+    await t.dragUntilVisible(find.text('Search Flights'), find.byType(ListView).first, const Offset(0, -300));
+    await t.tap(find.text('Search Flights'));
     await t.pump();
-    expect(find.text('Choose where you fly from for flight 1'), findsOneWidget);
+    expect(find.text('Please select the departure airport for flight 1'), findsOneWidget);
     expect(t.takeException(), isNull);
   });
 
@@ -149,7 +149,7 @@ void main() {
     await t.tap(find.text('open'));
     await t.pumpAndSettle();
     expect(find.text('Akasa Air'), findsOneWidget);
-    expect(find.text('GOOD TO KNOW'), findsOneWidget);
+    expect(find.text('KEY INFORMATION'), findsOneWidget);
     await t.dragUntilVisible(find.text('ABOUT THIS AIRCRAFT'), find.byType(ListView).first, const Offset(0, -300));
     expect(find.text('189, all economy'), findsOneWidget);
     expect(find.text('2 × CFM LEAP-1B'), findsOneWidget);

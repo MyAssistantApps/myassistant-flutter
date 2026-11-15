@@ -68,21 +68,21 @@ class _LeadsScreenState extends State<LeadsScreen> {
         .fold<double>(0, (s, l) => s + l.value);
     return Scaffold(
       backgroundColor: Neon.bg,
-      appBar: appleAppBar(context, 'Leads & deals'),
+      appBar: appleAppBar(context, 'Leads & Deals'),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: Neon.violet,
         foregroundColor: Colors.white,
         onPressed: () => _edit(),
         icon: const Icon(Icons.add_rounded),
-        label: const Text('New lead'),
+        label: const Text('New Lead'),
       ),
       body: Column(children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
           child: SegmentedButton<bool>(
             segments: const [
-              ButtonSegment(value: false, label: Text('Open pipeline')),
-              ButtonSegment(value: true, label: Text('All, incl. won/lost')),
+              ButtonSegment(value: false, label: Text('Open Pipeline')),
+              ButtonSegment(value: true, label: Text('All, incl. Won/Lost')),
             ],
             selected: {_all},
             onSelectionChanged: (s) {
@@ -97,7 +97,7 @@ class _LeadsScreenState extends State<LeadsScreen> {
         Expanded(
           child: _failed
               ? NeonErrorState(
-                  message: "Couldn't load leads.",
+                  message: "Unable to load leads.",
                   onRetry: () {
                     setState(() => _failed = false);
                     _load();
@@ -107,8 +107,8 @@ class _LeadsScreenState extends State<LeadsScreen> {
                   : leads.isEmpty
                       ? const NeonEmptyState(
                           icon: Icons.trending_up_rounded,
-                          title: 'No open deals',
-                          body: 'Add a lead with a follow-up date — it shows on your Today card when it\'s due.',
+                          title: 'No Open Deals',
+                          body: 'Add a lead with a follow-up date. It will appear on your Today card when it is due.',
                         )
                       : RefreshIndicator(
                           color: Neon.violet,
@@ -120,7 +120,7 @@ class _LeadsScreenState extends State<LeadsScreen> {
                               if (value > 0)
                                 Padding(
                                   padding: const EdgeInsets.only(left: 4, bottom: 10),
-                                  child: Text('Pipeline value ${rupees(value)}',
+                                  child: Text('Pipeline value: ${rupees(value)}',
                                       style: TextStyle(color: Neon.textLo, fontWeight: FontWeight.w600)),
                                 ),
                               GroupedCard(dividerInset: 16, children: [for (final l in leads) _row(l)]),
@@ -233,12 +233,12 @@ class _LeadSheetState extends State<_LeadSheet> {
     if (!mounted) return;
     if (r == null) {
       setState(() => _busy = false);
-      AppFeedback.toast("Couldn't save. Check your connection.");
+      AppFeedback.toast("Unable to save the lead. Please check your connection.");
       return;
     }
     HapticFeedback.lightImpact();
     if (r.stage == 'won' && widget.lead?.stage != 'won') {
-      AppFeedback.toast('Deal won — ${r.name} is now a client.');
+      AppFeedback.toast('Deal won. ${r.name} is now a client.');
     }
     Navigator.pop(context, true);
   }
@@ -249,7 +249,7 @@ class _LeadSheetState extends State<_LeadSheet> {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(18, 14, 18, 20),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Text(editing ? 'Deal' : 'New lead',
+        Text(editing ? 'Deal' : 'New Lead',
             style: TextStyle(color: Neon.textHi, fontSize: 19, fontWeight: FontWeight.w700)),
         const SizedBox(height: 12),
         TextField(
@@ -276,7 +276,7 @@ class _LeadSheetState extends State<_LeadSheet> {
         TextField(
             controller: _value,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(labelText: 'Deal value', prefixText: '₹ ')),
+            decoration: const InputDecoration(labelText: 'Deal Value', prefixText: '₹ ')),
         if (editing) ...[
           const SizedBox(height: 14),
           Text('Stage', style: TextStyle(color: Neon.textHi, fontWeight: FontWeight.w600)),
@@ -294,11 +294,11 @@ class _LeadSheetState extends State<_LeadSheet> {
           ]),
         ],
         const SizedBox(height: 14),
-        Text(editing ? 'Next follow-up (leave to keep as is)' : 'Follow up',
+        Text(editing ? 'Next Follow-Up (leave unselected to retain)' : 'Follow-Up',
             style: TextStyle(color: Neon.textHi, fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         Wrap(spacing: 8, runSpacing: 8, children: [
-          for (final (d, label) in const [(0, 'Today'), (1, 'Tomorrow'), (2, 'In 2 days'), (7, 'Next week'), (30, 'Next month')])
+          for (final (d, label) in const [(0, 'Today'), (1, 'Tomorrow'), (2, 'In 2 Days'), (7, 'Next Week'), (30, 'Next Month')])
             ChoiceChip(
               label: Text(label),
               selected: _followDays == d,
@@ -313,10 +313,10 @@ class _LeadSheetState extends State<_LeadSheet> {
             minLines: 1,
             maxLines: 4,
             textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(labelText: 'Note (optional)')),
+            decoration: const InputDecoration(labelText: 'Note (Optional)')),
         const SizedBox(height: 18),
         ApplePrimaryButton(
-          label: _busy ? 'Saving…' : (editing ? 'Save' : 'Add lead'),
+          label: _busy ? 'Saving…' : (editing ? 'Save' : 'Add Lead'),
           onPressed: _name.text.trim().isEmpty || _busy ? null : _save,
         ),
       ]),

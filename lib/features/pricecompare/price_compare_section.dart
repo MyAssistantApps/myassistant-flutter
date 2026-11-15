@@ -67,7 +67,7 @@ class _PriceCompareSectionState extends State<PriceCompareSection> {
             child: Row(
               children: [
                 Flexible(
-                  child: Text('Price compare',
+                  child: Text('Price Compare',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: NeonType.manrope(21, FontWeight.w800).copyWith(color: Neon.textHi, letterSpacing: -0.6)),
@@ -112,12 +112,14 @@ class _PriceCompareSectionState extends State<PriceCompareSection> {
     final watches = svc.watches;
     final (title, line) = hit.isNotEmpty
         ? (
-            hit.length == 1 ? 'Price dropped!' : '${hit.length} prices dropped!',
-            hit.length == 1 ? '${hit.first.product} hit your price' : 'Your alerts hit their price'
+            hit.length == 1 ? 'Price Reduced' : '${hit.length} Prices Reduced',
+            hit.length == 1
+                ? '${hit.first.product} has reached your target price.'
+                : 'Your alerts have reached their target prices.'
           )
         : watches.isNotEmpty
-            ? ('Price drop alerts', '${watches.length} alert${watches.length == 1 ? '' : 's'} watching for you')
-            : ('Price history & drop alerts', 'Buy now or wait? The AI tells you');
+            ? ('Price Drop Alerts', '${watches.length} alert${watches.length == 1 ? '' : 's'} currently active')
+            : ('Price History & Drop Alerts', 'AI guidance on whether to purchase now or wait');
     final tint = hit.isNotEmpty ? Neon.success : Neon.cyan;
     return Material(
       color: Colors.transparent,
@@ -158,7 +160,7 @@ class _PriceCompareSectionState extends State<PriceCompareSection> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('See', style: NeonType.manrope(13.5, FontWeight.w800).copyWith(color: Colors.white)),
+                    Text('View', style: NeonType.manrope(13.5, FontWeight.w800).copyWith(color: Colors.white)),
                     const SizedBox(width: 6),
                     const Icon(Icons.play_circle_fill_rounded, size: 18, color: Colors.white),
                   ],

@@ -87,11 +87,11 @@ class PriceHeroBanner extends StatelessWidget {
                     ]),
                   ),
                   const SizedBox(height: 12),
-                  Text('Same product.\nLower price.',
+                  Text('Same Product.\nLower Price.',
                       style: NeonType.manrope(27, FontWeight.w800)
                           .copyWith(color: Colors.white, letterSpacing: -0.8, height: 1.08)),
                   const SizedBox(height: 6),
-                  Text('We check every store in seconds — you just pick the cheapest.',
+                  Text('Every store is compared within seconds. Select the lowest price.',
                       style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13.5, height: 1.3)),
                   const SizedBox(height: 14),
                   const _ExampleCompare(),
@@ -150,7 +150,7 @@ class PriceHeroBanner extends StatelessWidget {
           ),
           Container(width: 1, height: 24, color: const Color(0x1A141627)),
           IconButton(
-            tooltip: 'Paste a product link',
+            tooltip: 'Paste a Product Link',
             onPressed: onPaste,
             icon: const Icon(Icons.content_paste_rounded, color: _c1, size: 21),
           ),
@@ -243,7 +243,7 @@ class PriceCategoryShowcase extends StatelessWidget {
       children: [
         _PhotoCard(
           category: PriceCategory.shopping,
-          title: 'Product compare',
+          title: 'Product Compare',
           line: 'Amazon, Flipkart, Croma & more',
           wide: true,
           selected: selected == PriceCategory.shopping,
@@ -417,9 +417,9 @@ void showPhotoCredits(BuildContext context) {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Photo credits', style: NeonType.manrope(18, FontWeight.w800).copyWith(color: Neon.textHi)),
+              Text('Photo Credits', style: NeonType.manrope(18, FontWeight.w800).copyWith(color: Neon.textHi)),
               const SizedBox(height: 4),
-              Text('From Wikimedia Commons, resized.', style: TextStyle(color: Neon.textLo, fontSize: 12.5)),
+              Text('Sourced from Wikimedia Commons and resized.', style: TextStyle(color: Neon.textLo, fontSize: 12.5)),
               const SizedBox(height: 10),
               for (final (what, who, licence) in [...photoCredits, ...airlineCredits])
                 Padding(
