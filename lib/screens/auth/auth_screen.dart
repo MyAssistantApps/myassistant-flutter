@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/log.dart';
 import '../../design/neon_tokens.dart';
 import '../../design/motion.dart';
 import '../../design/neon_widgets.dart';
@@ -72,8 +73,16 @@ class _AuthScreenState extends State<AuthScreen> {
     } on AuthException catch (e) {
       // An empty message = the user backed out of a sign-in sheet.
       setState(() => _error = e.message.isEmpty ? null : e.message);
-    } catch (_) {
-      setState(() => _error = 'An unexpected error has occurred. Please try again.');
+    } catch (e) {
+      // Recorded so a failed sign-in can be diagnosed (2026-11-15: Google
+      // refused a new app id and the screen gave no clue why).
+      AppLog.add('auth', 'sign-in failed: $e');
+      final googleConfig = e is PlatformException &&
+          e.code == 'sign_in_failed' &&
+          (e.message ?? '').contains(': 10:');
+      setState(() => _error = googleConfig
+          ? 'Google sign-in is not yet available for this app. Please use email and password.'
+          : 'An unexpected error has occurred. Please try again.');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
