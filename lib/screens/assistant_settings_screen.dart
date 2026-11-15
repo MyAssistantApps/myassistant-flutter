@@ -30,6 +30,8 @@ import '../services/mail_inbox_service.dart';
 import '../services/app_feedback.dart';
 import '../services/tester_feedback.dart';
 import '../features/widgets/widget_picker.dart';
+import '../features/home/horoscope_card.dart';
+import '../services/horoscope.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  ASSISTANT SETTINGS — how the assistant sounds and looks, plus the
@@ -60,6 +62,7 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
     // Bills by email: is it switched on for this server? (hidden if not)
     unawaited(MailInboxService.instance.refresh());
     _load();
+    unawaited(Horoscope.load());
   }
 
   @override
@@ -306,6 +309,21 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                         onTap: () => Navigator.of(context).push(
                           MaterialPageRoute(
                               builder: (_) => const ThemeColourScreen()),
+                        ),
+                      ),
+                      // TODAY'S HOROSCOPE (owner, 2026-11-15): the sign Home reads.
+                      ValueListenableBuilder<ZodiacSign?>(
+                        valueListenable: Horoscope.current,
+                        builder: (_, sign, __) => AppleRow(
+                          leading: IconTile(
+                              Icons.auto_awesome_rounded, AppleColors.indigo),
+                          title: 'Zodiac Sign',
+                          subtitle: sign == null
+                              ? 'Select a sign for your daily horoscope'
+                              : '${sign.symbol} ${sign.name} · ${sign.dates}',
+                          trailing: Icon(Icons.chevron_right_rounded,
+                              color: Neon.textDim, size: 20),
+                          onTap: () => pickZodiacSign(context),
                         ),
                       ),
                     ],

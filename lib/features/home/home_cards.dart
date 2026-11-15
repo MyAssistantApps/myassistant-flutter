@@ -32,6 +32,7 @@ import '../pricecompare/price_compare_section.dart';
 import '../shopping/shopping_list_screen.dart';
 import '../shopping/shopping_service.dart';
 import 'home_extras.dart';
+import 'horoscope_card.dart';
 import 'home_redesign.dart';
 import 'pro_banners.dart';
 import 'quick_tools.dart';
@@ -259,6 +260,10 @@ class _HomeFeedViewState extends State<HomeFeedView> {
             ),
             const SizedBox(height: 26),
             Reveal(delayMs: 130, child: _assistants()),
+            // TODAY'S HOROSCOPE (owner, 2026-11-15): after the assistant,
+            // before Popular Apps.
+            const SizedBox(height: 16),
+            const Reveal(delayMs: 133, child: HoroscopeCard()),
             // POPULAR APPS where Try now was (client, 2026-11-05): Swiggy,
             // Zomato, Blinkit…, Uber, Ola, Rapido…; Try now moved to Hub.
             const SizedBox(height: 26),
