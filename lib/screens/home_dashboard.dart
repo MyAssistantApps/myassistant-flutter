@@ -148,14 +148,15 @@ class HomeDashboard extends StatelessWidget {
                           ),
                           const SizedBox(width: 12),
                           Expanded(
+                            // An editorial serif (2026-11-15): the line reads
+                            // as something written, not a notification.
                             child: Text(
                               QuoteOfDay.line(),
-                              style: NeonType.manrope(
-                                      NeonType.rowTitle, FontWeight.w500)
-                                  .copyWith(
-                                      color: Neon.textHi,
-                                      height: 1.4,
-                                      letterSpacing: 0.1),
+                              style: GoogleFonts.cormorantGaramond(
+                                  fontSize: 21,
+                                  fontWeight: FontWeight.w600,
+                                  color: Neon.textHi,
+                                  height: 1.3),
                             ),
                           ),
                           const SizedBox(width: 8),
