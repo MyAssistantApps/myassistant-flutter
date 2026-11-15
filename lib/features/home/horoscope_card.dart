@@ -5,8 +5,29 @@ import '../../design/motion.dart';
 import '../../design/neon_tokens.dart';
 import '../../services/horoscope.dart';
 
+/// The sign's artwork (assets/zodiac/<id>.jpg — gold emblems on a violet
+/// starfield). Falls back to the sign's glyph if the image is missing.
+class ZodiacArt extends StatelessWidget {
+  const ZodiacArt(this.sign, {super.key, this.fit = BoxFit.cover, this.glyphSize = 26});
+  final ZodiacSign sign;
+  final BoxFit fit;
+  final double glyphSize;
+
+  @override
+  Widget build(BuildContext context) => Image.asset(
+        'assets/zodiac/${sign.id}.jpg',
+        fit: fit,
+        errorBuilder: (_, __, ___) => Container(
+          alignment: Alignment.center,
+          color: const Color(0xFF1B1036),
+          child: Text(sign.symbol,
+              style: TextStyle(fontSize: glyphSize, color: const Color(0xFFE6C36A))),
+        ),
+      );
+}
+
 /// Lets the user choose a zodiac sign. Returns the sign chosen, or null
-/// when the sheet is dismissed. "Clear" removes the sign.
+/// when the sheet is dismissed. "Clear Sign" removes the sign.
 Future<ZodiacSign?> pickZodiacSign(BuildContext context) async {
   HapticFeedback.selectionClick();
   final now = Horoscope.current.value;
@@ -39,36 +60,12 @@ Future<ZodiacSign?> pickZodiacSign(BuildContext context) async {
             crossAxisCount: 3,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            childAspectRatio: 1.15,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 0.82,
             children: [
-              for (final s in Horoscope.signs)
-                Material(
-                  color: s.id == now?.id
-                      ? Neon.violet.withValues(alpha: 0.22)
-                      : Neon.violet.withValues(alpha: 0.07),
-                  borderRadius: BorderRadius.circular(14),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(14),
-                    onTap: () => Navigator.pop(ctx, s.id),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(s.symbol,
-                            style: TextStyle(fontSize: 24, color: Neon.violet)),
-                        const SizedBox(height: 2),
-                        Text(s.name,
-                            style: NeonType.manrope(13.5, FontWeight.w700)
-                                .copyWith(color: Neon.textHi)),
-                        Text(s.dates,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Neon.textLo, fontSize: 10.5)),
-                      ],
-                    ),
-                  ),
-                ),
+              for (final s in Horoscope.signs) _SignTile(s, selected: s.id == now?.id,
+                  onTap: () => Navigator.pop(ctx, s.id)),
             ],
           ),
           if (now != null)
@@ -86,8 +83,73 @@ Future<ZodiacSign?> pickZodiacSign(BuildContext context) async {
   return sign;
 }
 
+class _SignTile extends StatelessWidget {
+  const _SignTile(this.sign, {required this.selected, required this.onTap});
+  final ZodiacSign sign;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: '${sign.name}, ${sign.dates}',
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            child: Stack(fit: StackFit.expand, children: [
+              ZodiacArt(sign, glyphSize: 34),
+              // A dark fade at the foot so the name reads on any artwork.
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: [0.45, 1],
+                    colors: [Colors.transparent, Color(0xE6100822)],
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 8,
+                right: 8,
+                bottom: 8,
+                child: ExcludeSemantics(
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    Text(sign.name,
+                        style: NeonType.manrope(13.5, FontWeight.w800)
+                            .copyWith(color: Colors.white)),
+                    Text(sign.dates,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.75),
+                            fontSize: 10)),
+                  ]),
+                ),
+              ),
+              if (selected)
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFE6C36A), width: 2),
+                  ),
+                ),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// TODAY'S HOROSCOPE on Home (owner, 2026-11-15): after Your Assistant,
-/// before Popular Apps. Without a sign it invites the user to choose one.
+/// before Popular Apps. The sign's artwork fills the right of the card;
+/// without a sign it invites the user to choose one.
 class HoroscopeCard extends StatefulWidget {
   const HoroscopeCard({super.key});
 
@@ -96,6 +158,9 @@ class HoroscopeCard extends StatefulWidget {
 }
 
 class _HoroscopeCardState extends State<HoroscopeCard> {
+  static const _gold = Color(0xFFE6C36A);
+  static const _night = Color(0xFF140B2B);
+
   @override
   void initState() {
     super.initState();
@@ -114,59 +179,97 @@ class _HoroscopeCardState extends State<HoroscopeCard> {
               ? 'Today\'s horoscope. Select your zodiac sign.'
               : 'Today\'s horoscope for ${r.sign.name}. ${r.outlook} '
                   'Focus: ${r.focus}. Lucky colour ${r.luckyColour}, lucky number ${r.luckyNumber}.',
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-            decoration: Neon.glassBox(Neon.rLg),
-            child: ExcludeSemantics(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 46,
-                    height: 46,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: Neon.violet.withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(12),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(Neon.rLg),
+            child: Container(
+              decoration: BoxDecoration(
+                color: _night,
+                borderRadius: BorderRadius.circular(Neon.rLg),
+                border: Border.all(color: _gold.withValues(alpha: 0.35)),
+              ),
+              child: ExcludeSemantics(
+                child: LayoutBuilder(builder: (context, box) => Stack(children: [
+                  // The artwork, filling the right of the card.
+                  Positioned(
+                    top: 0,
+                    bottom: 0,
+                    right: 0,
+                    width: box.maxWidth * 0.52,
+                    child: SizedBox.expand(
+                      child: r == null
+                          ? Image.asset('assets/zodiac/leo.jpg',
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => const SizedBox())
+                          : ZodiacArt(r.sign, glyphSize: 54),
                     ),
-                    child: r == null
-                        ? Icon(Icons.auto_awesome_rounded,
-                            color: Neon.violet, size: 24)
-                        : Text(r.sign.symbol,
-                            style: TextStyle(fontSize: 26, color: Neon.violet)),
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                            r == null
-                                ? 'Today\'s Horoscope'
-                                : 'Today\'s Horoscope · ${r.sign.name}',
-                            style: NeonType.manrope(16, FontWeight.w800)
-                                .copyWith(color: Neon.textHi)),
-                        const SizedBox(height: 4),
-                        Text(
-                            r == null
-                                ? 'Select your zodiac sign to receive your daily reading.'
-                                : r.outlook,
-                            style: TextStyle(
-                                color: Neon.textLo, fontSize: 13, height: 1.4)),
-                        if (r != null) ...[
+                  // Night fading over the artwork's left edge, under the words.
+                  const Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          stops: [0.38, 0.62, 1],
+                          colors: [_night, Color(0xB3140B2B), Color(0x00140B2B)],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+                    child: FractionallySizedBox(
+                      widthFactor: 0.66,
+                      alignment: Alignment.centerLeft,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('TODAY\'S HOROSCOPE',
+                              style: NeonType.manrope(11, FontWeight.w800)
+                                  .copyWith(color: _gold, letterSpacing: 1.4)),
+                          const SizedBox(height: 6),
+                          Text(r == null ? 'Your Daily Reading' : r.sign.name,
+                              style: NeonType.manrope(22, FontWeight.w800)
+                                  .copyWith(color: Colors.white, height: 1.1)),
+                          if (r != null)
+                            Text(r.sign.dates,
+                                style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.6),
+                                    fontSize: 11.5)),
                           const SizedBox(height: 8),
-                          Wrap(spacing: 8, runSpacing: 6, children: [
-                            _chip('Focus: ${r.focus}'),
-                            _chip('Colour: ${r.luckyColour}'),
-                            _chip('Number: ${r.luckyNumber}'),
-                          ]),
+                          Text(
+                              r == null
+                                  ? 'Select your zodiac sign to receive a personal reading every morning.'
+                                  : r.outlook,
+                              style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.85),
+                                  fontSize: 13,
+                                  height: 1.4)),
+                          const SizedBox(height: 10),
+                          if (r != null)
+                            Wrap(spacing: 6, runSpacing: 6, children: [
+                              _chip(Icons.track_changes_rounded, r.focus),
+                              _chip(Icons.palette_rounded, r.luckyColour),
+                              _chip(Icons.tag_rounded, '${r.luckyNumber}'),
+                            ])
+                          else
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: _gold,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text('Select Your Sign',
+                                  style: NeonType.manrope(13, FontWeight.w800)
+                                      .copyWith(color: _night)),
+                            ),
                         ],
-                      ],
+                      ),
                     ),
                   ),
-                  Icon(Icons.chevron_right_rounded,
-                      color: Neon.textDim, size: 22),
-                ],
+                ])),
               ),
             ),
           ),
@@ -175,14 +278,23 @@ class _HoroscopeCardState extends State<HoroscopeCard> {
     );
   }
 
-  Widget _chip(String t) => Container(
+  Widget _chip(IconData icon, String t) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: Neon.violet.withValues(alpha: 0.10),
+          color: _gold.withValues(alpha: 0.14),
           borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: _gold.withValues(alpha: 0.35)),
         ),
-        child: Text(t,
-            style: TextStyle(
-                color: Neon.violet, fontSize: 11.5, fontWeight: FontWeight.w600)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 12, color: _gold),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(t,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    color: _gold, fontSize: 11.5, fontWeight: FontWeight.w600)),
+          ),
+        ]),
       );
 }
