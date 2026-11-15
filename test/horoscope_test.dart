@@ -42,4 +42,25 @@ void main() {
       expect(t.takeException(), isNull);
     });
   }
+
+  testWidgets('the full reading lays out on a 360 px phone', (t) async {
+    SharedPreferences.setMockInitialValues({});
+    t.view.physicalSize = const Size(1080, 2400);
+    t.view.devicePixelRatio = 3;
+    addTearDown(t.view.reset);
+    late BuildContext ctx;
+    await t.pumpWidget(MaterialApp(home: Builder(builder: (c) {
+      ctx = c;
+      return const Scaffold();
+    })));
+    for (final s in Horoscope.signs) {
+      showHoroscopeReading(ctx, s);
+      await t.pump(const Duration(milliseconds: 400));
+      expect(find.text(s.name), findsOneWidget);
+      expect(find.text('FOCUS'), findsOneWidget);
+      expect(t.takeException(), isNull, reason: s.name);
+      Navigator.of(ctx).pop();
+      await t.pump(const Duration(milliseconds: 400));
+    }
+  });
 }
