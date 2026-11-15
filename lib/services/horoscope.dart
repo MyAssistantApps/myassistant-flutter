@@ -71,16 +71,16 @@ class Horoscope {
   ];
 
   static const _focus = <String>[
-    'Career and recognition',
-    'Finance and investments',
-    'Partnerships and agreements',
-    'Health and well-being',
-    'Family and home',
-    'Learning and growth',
-    'Planning and strategy',
-    'Networking and relationships',
-    'Creative work',
-    'Personal goals',
+    'Career',
+    'Finance',
+    'Partnerships',
+    'Well-being',
+    'Family',
+    'Learning',
+    'Strategy',
+    'Networking',
+    'Creativity',
+    'Personal Goals',
   ];
 
   static const _colours = <String>[
