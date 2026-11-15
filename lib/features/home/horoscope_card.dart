@@ -41,14 +41,7 @@ Future<ZodiacSign?> pickZodiacSign(BuildContext context) async {
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Container(
-            width: 38,
-            height: 4,
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-                color: Neon.textDim.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(2)),
-          ),
+          // The app's sheet theme draws the drag handle already.
           Align(
             alignment: Alignment.centerLeft,
             child: Text('Select Your Zodiac Sign',
