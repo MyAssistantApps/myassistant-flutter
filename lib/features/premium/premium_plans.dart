@@ -92,7 +92,7 @@ const premiumPlans = <PremiumPlan>[
       'AI calls on your behalf in six languages, with recordings',
       'Meeting recording: minutes, decisions, action items',
       'Deep research and arranging meetings',
-      'Photo editing by voice, Style Studio, short videos',
+      'Photo editing by voice, Style Studio, and short videos',
       'Video notes in your voice',
       'Live interpreter',
       'Notion, record books and flight fare watch',
@@ -112,7 +112,7 @@ const premiumPlans = <PremiumPlan>[
     includes: [
       'Everything in Pro',
       'Live voice conversation, 300 minutes per day',
-      'Clients and patients: outstanding amounts, recalls and their files',
+      'Clients and patients: pending dues, recalls, and records',
       'Collect payments with links: "collect ₹15,000 from Ravi"',
       'Indian law: statutes and case law, quoted',
       'All connected apps and your own tool servers',

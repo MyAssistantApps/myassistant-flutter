@@ -112,14 +112,14 @@ class _PriceCompareSectionState extends State<PriceCompareSection> {
     final watches = svc.watches;
     final (title, line) = hit.isNotEmpty
         ? (
-            hit.length == 1 ? 'Price Reduced' : '${hit.length} Prices Reduced',
+            hit.length == 1 ? 'Price Dropped' : '${hit.length} Prices Dropped',
             hit.length == 1
                 ? '${hit.first.product} has reached your target price.'
-                : 'Your alerts have reached their target prices.'
+                : 'Your price alerts have reached their targets.'
           )
         : watches.isNotEmpty
-            ? ('Price Drop Alerts', '${watches.length} alert${watches.length == 1 ? '' : 's'} currently active')
-            : ('Price History & Drop Alerts', 'AI guidance on whether to purchase now or wait');
+            ? ('Price Drop Alerts', '${watches.length} alert${watches.length == 1 ? '' : 's'} active')
+            : ('Price History & Drop Alerts', 'Buy now or wait — the AI recommends');
     final tint = hit.isNotEmpty ? Neon.success : Neon.cyan;
     return Material(
       color: Colors.transparent,

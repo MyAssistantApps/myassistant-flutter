@@ -131,7 +131,7 @@ class _StudioLookScreenState extends State<StudioLookScreen> {
             AppleRow(
               leading: IconTile(Icons.photo_library_rounded, Neon.accentC),
               title: 'Select a Photo',
-              subtitle: 'A screenshot from a shopping app is acceptable',
+              subtitle: 'A screenshot from a shopping app works too',
               trailing: const SizedBox.shrink(),
               onTap: () => Navigator.pop(c, ImageSource.gallery),
             ),
@@ -156,7 +156,7 @@ class _StudioLookScreenState extends State<StudioLookScreen> {
   Future<void> _pickFromWardrobe() async {
     final w = widget.state.wardrobe;
     if (w.isEmpty) {
-      _toast('Your wardrobe is empty. Please photograph an item instead.');
+      _toast('Your wardrobe is empty. Photograph an item instead.');
       return;
     }
     final chosen = await showAppSheet<StudioPhoto>(
@@ -221,7 +221,7 @@ class _StudioLookScreenState extends State<StudioLookScreen> {
   Future<void> _run() async {
     final missing = _missingRequired();
     if (missing != null) {
-      _toast('Please select $missing first.');
+      _toast('Select $missing first.');
       return;
     }
     HapticFeedback.mediumImpact();
@@ -252,7 +252,7 @@ class _StudioLookScreenState extends State<StudioLookScreen> {
       if (!mounted) return;
       setState(() => _error = e is StudioException
           ? (e.message.isNotEmpty ? e.message : 'Unable to create the look.')
-          : 'Unable to create the look. Please check your connection and try again.');
+          : 'Unable to create the look. Check your connection and try again.');
     } finally {
       _tick?.cancel();
       if (mounted) setState(() => _running = false);
@@ -274,7 +274,7 @@ class _StudioLookScreenState extends State<StudioLookScreen> {
       canPop: !_running,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop && _running) {
-          _toast('Processing is still in progress. The result will be saved to your files in either case.');
+          _toast('Still processing. The result will be saved to your files either way.');
         }
       },
       // Under Home's sky, with the app's detail bar (2026-09-30).
@@ -312,7 +312,7 @@ class _StudioLookScreenState extends State<StudioLookScreen> {
                   'hair' => 'A photo of the haircut, such as a salon picture or a '
                       'celebrity photo, is applied to your own face and hair.',
                   'custom' => 'Any element may be taken from it: an outfit, '
-                      'an accessory or a setting. Please specify below what to use.',
+                      'an accessory, or a setting. Specify below what to use.',
                   _ => 'A photo of the actual item preserves its exact colour, '
                       'print and texture. Without one, the look is created from your '
                       'description.',

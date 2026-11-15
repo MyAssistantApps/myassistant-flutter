@@ -128,9 +128,9 @@ class _CallsScreenState extends State<CallsScreen> {
         children: const [
           NeonEmptyState(
             icon: Icons.phone_in_talk_rounded,
-            title: 'No calls recorded',
-            body: 'To place a call and pass on a message, say "call Ravi '
-                'and tell him I\'ll be late". The response received appears here.',
+            title: 'No calls yet',
+            body: 'Say "Call Ravi and inform him I am running late". '
+                'The outcome of each call appears here.',
             tone: NeonTone.success,
           ),
         ],
@@ -217,7 +217,7 @@ class _CallsScreenState extends State<CallsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Their Response',
+                Text('Response',
                     style: NeonType.manrope(NeonType.caption, FontWeight.w700)
                         .copyWith(color: Neon.textDim, letterSpacing: 0.4)),
                 const SizedBox(height: 4),
@@ -231,7 +231,7 @@ class _CallsScreenState extends State<CallsScreen> {
         // What the caller wrote down for the user during the call.
         if (c.notes.isNotEmpty) ...[
           const SizedBox(height: 8),
-          Text('Notes Recorded',
+          Text('Call Notes',
               style: NeonType.manrope(NeonType.caption, FontWeight.w700)
                   .copyWith(color: Neon.textDim, letterSpacing: 0.4)),
           const SizedBox(height: 3),

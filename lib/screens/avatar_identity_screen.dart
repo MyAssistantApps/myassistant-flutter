@@ -44,9 +44,9 @@ class AvatarIdentityScreen extends StatefulWidget {
 String enableRefusal(String? serverError) {
   final why = (serverError ?? '').toLowerCase();
   if (why.contains('agree') || why.contains('consent')) {
-    return 'Please provide your consent first.';
+    return 'Give your consent first.';
   }
-  if (why.contains('video')) return 'Please record your video first.';
+  if (why.contains('video')) return 'Record your video first.';
   return "Unable to update this setting. Please try again.";
 }
 
@@ -72,7 +72,7 @@ class _AvatarIdentityScreenState extends State<AvatarIdentityScreen> {
     final p = await (widget.loader ?? AvatarMessageService.profile)();
     if (!mounted) return;
     if (p == null && _profile != null) {
-      AppFeedback.show("Unable to refresh. Please check your internet connection.",
+      AppFeedback.show("Unable to refresh. Check your internet connection.",
           context: context);
     }
     setState(() {
@@ -126,7 +126,7 @@ class _AvatarIdentityScreenState extends State<AvatarIdentityScreen> {
     if (sure != true) return;
     await _run(AvatarMessageService.revokeConsent,
         ok: 'Consent withdrawn. Video notes are disabled.',
-        fail: "Unable to withdraw consent. Please check your connection and try again.");
+        fail: "Unable to withdraw consent. Check your connection and try again.");
   }
 
   Future<void> _delete() async {
@@ -140,7 +140,7 @@ class _AvatarIdentityScreenState extends State<AvatarIdentityScreen> {
     if (sure != true) return;
     await _run(AvatarMessageService.deleteIdentity,
         ok: 'Data deleted. Nothing new can be made from your video.',
-        fail: "Unable to delete. Please check your connection and try again.");
+        fail: "Unable to delete. Check your connection and try again.");
   }
 
   Future<void> _setEnabled(bool on) async {
@@ -257,7 +257,7 @@ class _AvatarIdentityScreenState extends State<AvatarIdentityScreen> {
               subtitle: p.hasVideo
                   ? 'Video notes in your face and voice. When switched off, none '
                       'are made.'
-                  : 'Please record your video first.',
+                  : 'Record your video first.',
               trailing: Switch(
                 value: p.enabled,
                 onChanged:

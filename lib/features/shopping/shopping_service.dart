@@ -458,7 +458,7 @@ class ShoppingService extends ChangeNotifier {
   Future<ShoppingResult> _patch(ShoppingItem item, Map<String, dynamic> body,
       ShoppingItem Function(ShoppingItem) change) async {
     if (item.pending) {
-      return const ShoppingResult.failed('Please wait. The item is still being added.', canRetry: false);
+      return const ShoppingResult.failed('The item is still being added. Try again in a moment.', canRetry: false);
     }
     final before = byId(item.id);
     if (before == null) {
@@ -582,17 +582,17 @@ class ShoppingService extends ChangeNotifier {
 
   /// A reply as a line for the user.
   static String lineFor(ShoppingReply r) {
-    if (r.status == 0) return "Unable to connect. Please check your internet connection.";
-    if (r.status == 429) return 'Too many changes were made at once. Please wait a moment and try again.';
-    if (r.status >= 500) return 'A server error has occurred. Please try again.';
+    if (r.status == 0) return "No internet connection. Check your network and retry.";
+    if (r.status == 429) return 'Too many changes at once. Wait a moment, then retry.';
+    if (r.status >= 500) return 'A server error occurred. Please try again.';
     switch (r.error) {
       case 'list_full':
-        return 'Your list is full (300 items). Please clear the purchased items first.';
+        return 'Your list is full (300 items). Clear the purchased items first.';
       case 'name_required':
       case 'no_items':
-        return 'Please enter the item to purchase, e.g. “milk” or “2 kg onions”.';
+        return 'Enter the item to purchase, e.g. “milk” or “2 kg onions”.';
       case 'name_too_long':
-        return 'The name is too long. At most 80 characters are permitted.';
+        return 'The name is too long. Maximum 80 characters.';
       case 'details_too_long':
         return 'The details must not exceed 200 characters.';
       case 'note_too_long':
@@ -602,15 +602,15 @@ class ShoppingService extends ChangeNotifier {
       case 'bad_link':
         return 'The link must be a web address beginning with https://';
       case 'bad_quantity':
-        return "Please enter a valid amount.";
+        return "Enter a valid quantity.";
       case 'bad_unit':
-        return 'Please enter a unit such as g, kg, ml, L, pcs or packet.';
+        return 'Use a unit such as g, kg, ml, L, pcs, or packet.';
       case 'bad_category':
         return "That is not one of the list's categories.";
       case 'not_found':
         return "That item is no longer on your list.";
       case 'nothing_to_buy':
-        return 'No items remain to purchase on the list.';
+        return 'No items left to purchase on the list.';
     }
     final m = r.message?.trim() ?? '';
     // The server's own sentence for a refusal it explained ("Google Pay

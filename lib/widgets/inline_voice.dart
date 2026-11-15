@@ -1820,7 +1820,7 @@ class _TypeBarState extends State<_TypeBar> with WidgetsBindingObserver {
     final ok = await _engine.askWithPhoto(source, question: q);
     if (!ok && mounted) {
       if (q.isNotEmpty) _c.text = q;
-      AppFeedback.show("Unable to retrieve the picture. Please try again.",
+      AppFeedback.show("Unable to load the picture. Please try again.",
           context: context);
     }
   }

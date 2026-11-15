@@ -87,7 +87,7 @@ Future<UserDocument?> uploadMyDocument(BuildContext context,
     }
   } catch (_) {
     if (context.mounted) {
-      AppFeedback.show("Unable to open the item. Please check the app's permissions.",
+      AppFeedback.show("Unable to open the item. Check the app's permissions.",
           context: context, tone: FeedbackTone.error);
     }
     return null;
@@ -101,7 +101,7 @@ Future<UserDocument?> uploadMyDocument(BuildContext context,
         bytes: bytes, filename: filename, mimeType: mime);
     if (context.mounted) {
       AppFeedback.show(
-          r.notice ?? '"${r.document.title}" saved. You may ask your assistant about it at any time.',
+          r.notice ?? '"${r.document.title}" saved. Ask your assistant about it at any time.',
           context: context);
     }
     return r.document;
@@ -117,7 +117,7 @@ Future<UserDocument?> uploadMyDocument(BuildContext context,
   } catch (_) {
     if (context.mounted) {
       AppFeedback.show(
-          "Unable to upload the document. Please check your connection and try again.",
+          "Unable to upload the document. Check your connection and try again.",
           context: context,
           tone: FeedbackTone.error);
     }
@@ -211,7 +211,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       return true;
     } catch (_) {
       if (mounted) {
-        AppFeedback.show("Unable to delete. Please check your connection and try again.", context: context);
+        AppFeedback.show("Unable to delete. Check your connection and try again.", context: context);
       }
       return false;
     }
@@ -289,7 +289,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                     fontWeight: FontWeight.w700)),
           ]),
           const SizedBox(height: 2),
-          Text("Reminders will be sent 30 days and 7 days in advance, and on the day.",
+          Text("You will be reminded 30 days and 7 days before, and on the day.",
               style: TextStyle(color: Neon.textLo, fontSize: 12)),
           const SizedBox(height: 6),
           for (final d in due.take(4))
@@ -346,7 +346,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
               height: MediaQuery.of(context).size.height * 0.6,
               child: const NeonEmptyState(
                 icon: Icons.description_outlined,
-                title: 'No documents available',
+                title: 'No documents yet',
                 body: 'To add a photo or file, tap Upload, share one into '
                     'the app, or ask your assistant to save an item. '
                     'Documents filed under a client or patient appear in '

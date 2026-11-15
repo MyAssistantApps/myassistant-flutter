@@ -73,7 +73,7 @@ class _MyListingScreenState extends State<MyListingScreen> {
       appBar: appleAppBar(context, 'Your Public Page'),
       body: _failed
           ? NeonErrorState(
-              message: "Unable to load your page. Please check your internet connection.",
+              message: "Unable to load your page. Check your internet connection.",
               onRetry: () {
                 setState(() => _failed = false);
                 _load();
@@ -210,14 +210,14 @@ class _PageTabState extends State<_PageTab> {
     if (!mounted) return null;
     setState(() => _busy = false);
     if (s == null) {
-      AppFeedback.toast("Unable to save. Please check your internet connection.");
+      AppFeedback.toast("Unable to save. Check your internet connection.");
       return null;
     }
     _dirty = false;
     widget.onChanged(s);
     if (!quiet) {
       HapticFeedback.lightImpact();
-      AppFeedback.toast(s.listing.published ? 'Changes saved. Your page has been updated.' : 'Changes saved.');
+      AppFeedback.toast(s.listing.published ? 'Changes saved. Your page is updated.' : 'Changes saved.');
     }
     return s;
   }
@@ -236,10 +236,10 @@ class _PageTabState extends State<_PageTab> {
       HapticFeedback.mediumImpact();
       AppFeedback.toast(on ? 'Your page is now live. People nearby can find you.' : 'Your page is hidden.');
     } else if (r.missing.isNotEmpty) {
-      AppFeedback.toast(r.message ?? 'Please add: ${r.missing.map(missingLabel).join(', ')}');
+      AppFeedback.toast(r.message ?? 'Still required: ${r.missing.map(missingLabel).join(', ')}');
       await widget.reload();
     } else {
-      AppFeedback.toast("Unable to update the page status. Please check your internet connection.");
+      AppFeedback.toast("Unable to update the page status. Check your internet connection.");
     }
   }
 
@@ -249,7 +249,7 @@ class _PageTabState extends State<_PageTab> {
       var perm = await Geolocator.checkPermission();
       if (perm == LocationPermission.denied) perm = await Geolocator.requestPermission();
       if (perm == LocationPermission.denied || perm == LocationPermission.deniedForever) {
-        AppFeedback.toast('Location access is required to pin your place. Please enable it in Settings, or paste a Google Maps link.');
+        AppFeedback.toast('Location access is required to pin your place. Enable it in Settings, or paste a Google Maps link.');
         return;
       }
       final pos = await Geolocator.getCurrentPosition(
@@ -262,10 +262,10 @@ class _PageTabState extends State<_PageTab> {
         _dirty = true;
       });
       AppFeedback.toast(pos.accuracy > 60
-          ? 'Location pinned, but GPS accuracy was low (±${pos.accuracy.round()} m). Please verify it on the map.'
+          ? 'Location pinned, but GPS accuracy was low (±${pos.accuracy.round()} m). Verify it on the map.'
           : 'Pinned to your current location.');
     } catch (_) {
-      AppFeedback.toast("Unable to retrieve your location. Please try again outdoors, or paste a map link.");
+      AppFeedback.toast("Unable to get your location. Try again outdoors, or paste a map link.");
     } finally {
       if (mounted) setState(() => _locating = false);
     }
@@ -338,7 +338,7 @@ class _PageTabState extends State<_PageTab> {
       if (s != null) _photo = bytes;
     });
     if (s == null) {
-      AppFeedback.toast("Unable to upload the photo. Please use a JPEG or PNG under 400 KB.");
+      AppFeedback.toast("Unable to upload the photo. Use a JPEG or PNG under 400 KB.");
     } else {
       widget.onChanged(s);
     }
@@ -369,7 +369,7 @@ class _PageTabState extends State<_PageTab> {
           ListTile(
             leading: _PhotoThumb(bytes: _photo, url: l.published && l.hasPhoto && s.url != null ? '${s.url}/photo?v=${l.updatedAt}' : null, has: l.hasPhoto),
             title: Text(l.hasPhoto ? 'Change Photo' : 'Add a Photo', style: TextStyle(color: Neon.textHi, fontWeight: FontWeight.w600)),
-            subtitle: Text('A photo of yourself or the front of your ${_w.workspace.toLowerCase()}, so that people recognise you.',
+            subtitle: Text('A photo of you or your ${_w.workspace.toLowerCase()} entrance, so visitors recognise you.',
                 style: TextStyle(color: Neon.textLo, fontSize: 12.5)),
             trailing: l.hasPhoto
                 ? IconButton(
@@ -568,7 +568,7 @@ class _StatusCard extends StatelessWidget {
           if (dirty)
             Padding(
               padding: const EdgeInsets.only(top: 8),
-              child: Text('You have unsaved changes. Please save to update the page.', style: TextStyle(color: Neon.warning, fontSize: 12.5)),
+              child: Text('You have unsaved changes. Save to update your page.', style: TextStyle(color: Neon.warning, fontSize: 12.5)),
             ),
           Align(
             alignment: Alignment.centerRight,
@@ -763,7 +763,7 @@ class _PostsTabState extends State<_PostsTab> {
       else if (posts.isEmpty)
         NeonEmptyState(
           icon: Icons.campaign_rounded,
-          title: 'No posts available',
+          title: 'No posts yet',
           body: doctor
               ? 'Share updates such as "Closed on Sunday" or "Free BP camp on Saturday". They appear on your page and to people nearby. No one is notified.'
               : 'Share an update or an offer such as "Diwali 20% off" or "New stock in". It appears on your page and to people nearby. No one is notified.',
@@ -968,7 +968,7 @@ class _RequestsTabState extends State<_RequestsTab> {
     if (t == null || !mounted) return;
     final at = DateTime(day.year, day.month, day.day, t.hour, t.minute);
     if (at.isBefore(DateTime.now())) {
-      AppFeedback.toast('Please select a future time.');
+      AppFeedback.toast('Select a future time.');
       return;
     }
     setState(() => _busy.add(r.id));
@@ -976,7 +976,7 @@ class _RequestsTabState extends State<_RequestsTab> {
     if (!mounted) return;
     setState(() => _busy.remove(r.id));
     if (!ok) {
-      AppFeedback.toast("Unable to confirm the booking. Please check your internet connection.");
+      AppFeedback.toast("Unable to confirm the booking. Check your internet connection.");
       return;
     }
     HapticFeedback.lightImpact();

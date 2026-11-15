@@ -88,10 +88,10 @@ class _ClinicSettingsScreenState extends State<ClinicSettingsScreen> {
     setState(() => _saving = false);
     if (ok) {
       HapticFeedback.lightImpact();
-      AppFeedback.toast('Clinic settings saved.');
+      AppFeedback.toast('Changes saved.');
       Navigator.pop(context, true);
     } else {
-      AppFeedback.toast("Unable to save. Please check your connection.");
+      AppFeedback.toast("Unable to save. Check your connection and retry.");
     }
   }
 
@@ -129,7 +129,7 @@ class _ClinicSettingsScreenState extends State<ClinicSettingsScreen> {
       ]),
       body: _failed
           ? NeonErrorState(
-              message: "Unable to load your clinic settings.",
+              message: "Unable to load your settings.",
               onRetry: () {
                 setState(() => _failed = false);
                 _load();
@@ -142,7 +142,7 @@ class _ClinicSettingsScreenState extends State<ClinicSettingsScreen> {
                     GroupLabel(ProWords.current.workspace),
                     _field(_name, ProWords.current.placeName, Icons.business_rounded),
                     _field(_address, 'Address', Icons.place_outlined, lines: 2),
-                    _field(_phone, 'Clinic Phone Number', Icons.phone_outlined,
+                    _field(_phone, '${ProWords.current.workspace} Phone Number', Icons.phone_outlined,
                         type: TextInputType.phone),
                     if (ProWords.current.feeLabel != null)
                     _field(_fee, ProWords.current.feeLabel!, Icons.currency_rupee_rounded,
@@ -156,7 +156,7 @@ class _ClinicSettingsScreenState extends State<ClinicSettingsScreen> {
                     _field(_qual, ProWords.current.qualification, Icons.school_outlined),
                     _field(_reg, ProWords.current.regNo, Icons.verified_outlined),
                     const SizedBox(height: 18),
-                    const GroupLabel('Timings'),
+                    GroupLabel(Persona.value == 'business' ? 'Office Hours' : 'Consultation Hours'),
                     GroupedCard(children: [
                       for (final d in clinicDays) _dayRow(p, d),
                     ]),
@@ -183,7 +183,7 @@ class _ClinicSettingsScreenState extends State<ClinicSettingsScreen> {
                       SwitchListTile.adaptive(
                         value: p.receptionistBooks,
                         onChanged: (v) => setState(() => p.receptionistBooks = v),
-                        title: Text('Book ${ProWords.current.appointments.toLowerCase()} on Calls',
+                        title: Text('Schedule ${ProWords.current.appointments} from Calls',
                             style: TextStyle(color: Neon.textHi, fontSize: 15)),
                         subtitle: Text(
                             ProWords.current.receptionist,

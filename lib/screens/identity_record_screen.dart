@@ -71,8 +71,8 @@ abstract final class IdentityRecordRules {
   static const int audioBitrate = 128000;
 
   static const String tooShort =
-      'The recording was under 20 seconds, which is too short to create video notes. '
-      'Please read the whole script; it takes about 30 seconds.';
+      'The recording was under 20 seconds — too short for video notes. '
+      'Read the whole script; it takes about 30 seconds.';
 }
 
 /// How fast the words move: a slower reader picks Slower instead of
@@ -358,8 +358,8 @@ class _IdentityRecordScreenState extends State<IdentityRecordScreen>
         _resetClock();
         setState(() {
           _stage = RecordStage.preparing;
-          _notice = 'Recording stopped because the app moved to the background, '
-              'and nothing was kept. Please start again when you are ready.';
+          _notice = 'Recording stopped when the app moved to the background, '
+              'and nothing was kept. Start again when you are ready.';
         });
       case RecordStage.ready:
         _letGoOfCamera();
@@ -482,7 +482,7 @@ class _IdentityRecordScreenState extends State<IdentityRecordScreen>
     if (file == null) {
       setState(() {
         _stage = RecordStage.ready;
-        _notice = "The recording could not be kept. Please record again.";
+        _notice = "Unable to keep the recording. Please record again.";
       });
       return;
     }
@@ -626,7 +626,7 @@ class _IdentityRecordScreenState extends State<IdentityRecordScreen>
 
   Future<void> _onBack() async {
     if (_stage == RecordStage.uploading) {
-      AppFeedback.show('Your video is being saved. Please wait.', context: context);
+      AppFeedback.show('Saving your video. Please wait.', context: context);
       return;
     }
     final recording = _stage == RecordStage.recording;
@@ -635,8 +635,8 @@ class _IdentityRecordScreenState extends State<IdentityRecordScreen>
       builder: (c) => AlertDialog(
         title: const Text('Discard This Video'),
         content: Text(recording
-            ? 'The recording will stop and nothing will be saved. Do you wish to proceed?'
-            : 'Nothing will be saved. Do you wish to proceed?'),
+            ? 'The recording will stop and nothing will be saved.'
+            : 'Nothing will be saved.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(c, false),
@@ -964,7 +964,7 @@ class _IdentityRecordScreenState extends State<IdentityRecordScreen>
       RecordStage.ready => _notice ??
           'Hold the phone at eye level in a quiet, well-lit place. Tap the '
               'button, then read the words as they are highlighted.',
-      RecordStage.countdown => 'Prepare to begin. Tap again to cancel.',
+      RecordStage.countdown => 'Get ready. Tap again to cancel.',
       _ => null,
     };
     if (hint != null) return _hintText(hint);
@@ -1298,8 +1298,8 @@ class _IdentityRecordScreenState extends State<IdentityRecordScreen>
       _Block.permissionInSettings => (
           Icons.videocam_off_rounded,
           'Camera and Microphone Are Off',
-          'Please turn on Camera and Microphone for this app in Settings, then '
-              'return; this screen will resume where it left off.',
+          'Turn on Camera and Microphone for this app in Settings, then '
+              'return — this screen resumes where it left off.',
           'Open Settings',
           openAppSettings,
         ),
@@ -1314,7 +1314,7 @@ class _IdentityRecordScreenState extends State<IdentityRecordScreen>
       _Block.camera => (
           Icons.videocam_off_rounded,
           "Unable to Start the Camera",
-          'Another app may be using it. Please close that app and try again.',
+          'Another app may be using it. Close that app and retry.',
           'Retry',
           _prepare,
         ),

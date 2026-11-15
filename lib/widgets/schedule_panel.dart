@@ -287,7 +287,7 @@ class _SchedulePanelState extends State<SchedulePanel> {
                             const SizedBox(width: 6),
                             Flexible(
                               child: Text(
-                                'Retrieving details. You may ask anything about this item.',
+                                'Loading details. Ask anything about this item.',
                                 style: GoogleFonts.interTight(
                                   color: Neon.cyanInk,
                                   fontSize: 13,

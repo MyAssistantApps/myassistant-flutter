@@ -868,7 +868,7 @@ class LiveVoice {
 
   /// Said when the fast voice gives up on a turn nobody heard.
   static const missedLine =
-      "I am sorry, I did not hear that. Could you please repeat it?";
+      "I did not quite catch that. Could you please repeat it?";
 
   /// The owner's microphone level, 0..1, while she is silent (the orb).
   void Function(double level)? onLevel;
@@ -1873,7 +1873,7 @@ class LiveVoice {
   static String _toolLine(_LiveTurn t) {
     final log = t.tools?.toolLog ?? const [];
     final ok = log.isNotEmpty && log.every((e) => e['ok'] == true);
-    return ok ? 'Done.' : "I am sorry, I was unable to complete that.";
+    return ok ? 'Done.' : "I was unable to complete that.";
   }
 
   /// No word from her in [after]: the turn is handed on.

@@ -442,11 +442,11 @@ class _HomeFeedViewState extends State<HomeFeedView> {
           child: Text.rich(
             TextSpan(children: [
               TextSpan(
-                  text: "No items pending",
+                  text: "All clear",
                   style: NeonType.manrope(15.5, FontWeight.w800)
                       .copyWith(color: Neon.textHi)),
               TextSpan(
-                  text: later ? '  ·  none at present' : '  ·  none today',
+                  text: later ? '  ·  nothing pending' : '  ·  nothing pending today',
                   style: TextStyle(color: Neon.textLo, fontSize: 13)),
             ]),
             maxLines: 1,
@@ -741,7 +741,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
     final text = !svc.loaded
         ? "Unable to load your day."
         : at == null
-            ? 'Offline · displaying the most recently saved data'
+            ? 'Offline · showing your last saved briefing'
             : 'Offline · updated ${CallHistory.clock(at)}';
     return Padding(
       padding: const EdgeInsets.only(top: 8),
@@ -849,7 +849,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
       // Rain on its way is worth a reminder; heat and sun are just told.
       act: w.kind == 'rain' && from != null
           ? _Act('Set Reminder', Icons.alarm_add_rounded, () async {
-              _do.ask('Remind me to take an umbrella half an hour before '
+              _do.ask('Set a reminder to carry an umbrella half an hour before '
                   '${_hour(from)} today.');
               return true;
             })
@@ -862,8 +862,8 @@ class _HomeFeedViewState extends State<HomeFeedView> {
         tone: NeonTone.action,
         icon: Icons.shopping_basket_rounded,
         tint: Neon.accentE,
-        title: e.toBuy == 1 ? '1 item to purchase' : '${e.toBuy} items to purchase',
-        subtitle: 'Shopping list · ${e.toBuyNames.join(', ')}',
+        title: e.toBuy == 1 ? '1 item to buy' : '${e.toBuy} items to buy',
+        subtitle: 'Shopping List · ${e.toBuyNames.join(', ')}',
         onTap: () => _do.open(context, const ShoppingListScreen()),
         act: _Act('Open', Icons.chevron_right_rounded, () async {
           _do.open(context, const ShoppingListScreen());
@@ -1138,7 +1138,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
 
   void _failed(String what, VoidCallback retry) {
     if (!mounted) return;
-    AppFeedback.showRetry('$what Please check your internet connection.',
+    AppFeedback.showRetry('$what Check your internet connection.',
         context: context, onRetry: retry);
   }
 
@@ -1154,7 +1154,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
       await act();
     } catch (e) {
       AppLog.add('home', 'button on $id failed: $e');
-      _failed("The action could not be completed.", () => _run(id, act));
+      _failed("Unable to complete the action.",() => _run(id, act));
     }
     if (!mounted) return;
     setState(() => _busy.remove(id));
@@ -1242,7 +1242,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
   static String _kindName(HomeCardKind k) => switch (k) {
         HomeCardKind.meeting => 'Meeting',
         HomeCardKind.reminder => 'Reminder',
-        HomeCardKind.promise => 'Promise',
+        HomeCardKind.promise => 'Commitment',
         HomeCardKind.missedCall => 'Missed Call',
         HomeCardKind.message => 'Message',
         HomeCardKind.birthday => 'Birthday',

@@ -130,7 +130,7 @@ class _ChatNewScreenState extends State<ChatNewScreen> with WidgetsBindingObserv
             Expanded(
               child: Text(
                 _blocked
-                    ? 'Contacts access is disabled for MyAssistant. Please enable it in Settings to view the contacts you can message.'
+                    ? 'Contacts access is disabled for MyAssistant. Enable it in Settings to view the contacts you can message.'
                     : 'Allow contacts access to view which of your contacts use MyAssistant.',
                 style: TextStyle(color: Neon.textHi, fontSize: NeonType.footnote, height: 1.35),
               ),

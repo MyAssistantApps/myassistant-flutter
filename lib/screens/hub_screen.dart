@@ -133,7 +133,7 @@ class _HubScreenState extends State<HubScreen> {
             // next; everything with a date lives here.
             _Row(
               'Calendar',
-              'Reminders, bills and birthdays, organised by date',
+              'Reminders, bills, and birthdays by date',
               Icons.calendar_month_rounded,
               Neon.accentF,
               (c) => const CalendarScreen(),
@@ -141,14 +141,14 @@ class _HubScreenState extends State<HubScreen> {
             // "Office mode" (build 120): made by voice, run from here.
             _Row(
               'Shortcuts',
-              'A single word performs several actions when you say its name',
+              'One word runs several actions — say its name',
               Icons.bolt_rounded,
               Neon.accentD,
               (c) => const ShortcutsScreen(),
             ),
             _Row(
               'Reminders',
-              'All reminders recorded by your assistant',
+              'Every reminder you have scheduled',
               Icons.notifications_active_rounded,
               Neon.accentA,
               (c) => const RemindersScreen(),
@@ -157,7 +157,7 @@ class _HubScreenState extends State<HubScreen> {
             // a charger — "add this to my shopping list" in any conversation.
             _Row(
               'Shopping List',
-              'Items to purchase; say “add this to my shopping list”',
+              'Items to buy — say “Add this to my shopping list”',
               Icons.shopping_basket_rounded,
               Neon.accentE,
               (c) => const ShoppingListScreen(),
@@ -168,7 +168,7 @@ class _HubScreenState extends State<HubScreen> {
           _group(context, 'Stay Informed', [
             _Row(
               'News',
-              "Today's stories as cards; swipe to browse, tap to read",
+              "Today's headlines — swipe to browse, tap to read",
               Icons.newspaper_rounded,
               Neon.accentC,
               (c) => const NewsScreen(),
@@ -179,7 +179,7 @@ class _HubScreenState extends State<HubScreen> {
           _group(context, 'Near You', [
             _Row(
               'Professionals Near You',
-              'Doctors, advocates and shops on MyAssistant, available to call or book',
+              'Doctors, advocates, and shops — call or book',
               Icons.storefront_rounded,
               Neon.accentE,
               (c) => const NearbyProsScreen(),
@@ -188,7 +188,7 @@ class _HubScreenState extends State<HubScreen> {
           _group(context, 'Phone', [
             _Row(
               'Calls',
-              'Calls completed on your behalf, together with the responses received',
+              'Calls placed on your behalf, with outcomes',
               Icons.phone_in_talk_rounded,
               Neon.accentD,
               (c) => const CallsScreen(),
@@ -202,7 +202,7 @@ class _HubScreenState extends State<HubScreen> {
             ),
             _Row(
               'Email',
-              'Link your mailbox, then ask your assistant to read or send mail',
+              'Link your mailbox to read and send email by voice',
               Icons.alternate_email_rounded,
               Neon.accentF,
               (c) => const EmailSetupScreen(),
@@ -211,7 +211,7 @@ class _HubScreenState extends State<HubScreen> {
           _group(context, 'Connections', [
             _Row(
               'Connected Apps',
-              'Your notes app, mail and more in one place',
+              'Notes, mail, and more in one place',
               Icons.hub_rounded,
               Neon.accentA,
               (c) => const ConnectedAppsScreen(),
@@ -232,7 +232,7 @@ class _HubScreenState extends State<HubScreen> {
             if (Persona.proKind != null)
               _Row(
                 'Your Public Page',
-                'Be found nearby and on Google; posts and booking requests',
+                'Be found nearby and on Google — posts and bookings',
                 Icons.campaign_rounded,
                 Neon.accentD,
                 (c) => const MyListingScreen(),
@@ -257,7 +257,7 @@ class _HubScreenState extends State<HubScreen> {
           _group(context, 'Money', [
             _Row(
               'Finance',
-              'EMIs, incomes and repayment plans',
+              'EMIs, income, and repayment schedules',
               Icons.account_balance_wallet_rounded,
               Neon.accentB,
               (c) => const FinanceScreen(),
@@ -275,28 +275,28 @@ class _HubScreenState extends State<HubScreen> {
           _group(context, 'Games', [
             _Row(
               'Memory Pairs',
-              'Turn over the cards to find every pair',
+              'Flip the cards and match every pair',
               Icons.grid_view_rounded,
               Neon.accentB,
               (c) => const MemoryPairsScreen(),
             ),
             _Row(
               'Quick Maths',
-              'Solve as many sums as possible in 60 seconds',
+              'Solve as many sums as you can in 60 seconds',
               Icons.calculate_rounded,
               Neon.accentA,
               (c) => const QuickMathsScreen(),
             ),
             _Row(
               'Tic-Tac-Toe with Maya',
-              'Three in a row against a skilled opponent',
+              'Three in a row against a strong opponent',
               Icons.tag_rounded,
               Neon.accentD,
               (c) => const TicTacToeScreen(),
             ),
             _Row(
               'Light Trail',
-              'Observe the lights and repeat the sequence',
+              'Watch the lights and repeat the sequence',
               Icons.lightbulb_rounded,
               Neon.accentC,
               (c) => const LightTrailScreen(),
@@ -312,7 +312,7 @@ class _HubScreenState extends State<HubScreen> {
             ),
             _Row(
               'Features',
-              "What is live, what is in development and what is planned",
+              "Live, in development, and planned",
               Icons.new_releases_rounded,
               Neon.accentC,
               (c) => const FeaturesScreen(),
@@ -322,7 +322,7 @@ class _HubScreenState extends State<HubScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 8, 8, 24),
               child: Text(
-                'No features found. Please try a shorter search.',
+                'No features found. Try a shorter search.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Neon.textLo, fontSize: 14),
               ),

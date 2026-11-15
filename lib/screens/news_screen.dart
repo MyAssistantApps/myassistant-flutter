@@ -185,7 +185,7 @@ class _NewsScreenState extends State<NewsScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 2, 20, 0),
               child: Text(
-                "Unable to refresh. Displaying previously saved stories.",
+                "Unable to refresh. Showing saved stories.",
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
@@ -290,7 +290,7 @@ class _NewsScreenState extends State<NewsScreen> {
     return NeonEmptyState(
       icon: Icons.newspaper_rounded,
       title: 'No Stories Available',
-      body: 'Please check your connection and try again.',
+      body: 'Check your connection and try again.',
       action: FilledButton.icon(
         onPressed: _refreshNow,
         style: FilledButton.styleFrom(

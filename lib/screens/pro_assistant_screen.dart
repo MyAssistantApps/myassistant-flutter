@@ -70,6 +70,14 @@ class ProProfile {
   final IconData icon;
   final String lead;
 
+  /// The page title under the badge (the client's reference, 2026-11-15:
+  /// "DOCTOR'S ASSISTANT" above "My Clinic").
+  String get heading => switch (kind) {
+        ProKind.doctor => 'My Clinic',
+        ProKind.advocate => 'My Chambers',
+        ProKind.business => 'My Office',
+      };
+
   /// THE APP'S OWN COLOUR (2026-11-03): every assistant page is drawn in
   /// the theme accent, like the rest of the app — no per-profession tint.
   Color tint() => Neon.violet;
@@ -104,32 +112,32 @@ class ProProfile {
             k,
             "Doctor's",
             Icons.medical_services_rounded,
-            'Your patients, their visits and outstanding amounts, managed for you.',
+            'Manage your patients, visits, and dues effortlessly.',
             // REAL SCREENS, NOT CANNED QUESTIONS (2026-11-13): the clinic
             // workspace — today's appointments, follow-ups and payments —
             // each a tap away; the chat and mic orb stay for everything else.
             [
-              ProAction('Today at Clinic', 'Appointments, patients waiting, amounts due',
+              ProAction('Today at the Clinic', 'Appointments, waiting list, and pending dues',
                   Icons.today_rounded,
                   page: () => const ClinicScreen(), featured: true),
-              ProAction('Patients', 'The file, notes and reports of each patient',
+              ProAction('Patient Records', 'Files, clinical notes, and reports',
                   Icons.folder_shared_rounded,
                   page: () => const ClientsScreen()),
-              ProAction('Book Appointment', 'Select a patient and an available time',
+              ProAction('Book Appointment', 'Select a patient and available slot',
                   Icons.event_available_rounded,
                   run: (c) => bookAppointment(c)),
-              ProAction('Follow-Up Visits', 'Recalls: patients receive a reminder call',
+              ProAction('Follow-ups', 'Review visits with reminder calls',
                   Icons.event_repeat_rounded,
                   page: () => const ClinicScreen(initialTab: 1)),
-              ProAction('Dues Pending',
-                  'Patients with payments outstanding', Icons.payments_rounded,
+              ProAction('Pending Dues',
+                  'Patients with unsettled dues', Icons.payments_rounded,
                   page: () => const ClinicScreen(initialTab: 2)),
-              ProAction('Record Payment', 'Record a payment received from a patient',
+              ProAction('Record Payment', 'Log a payment received from a patient',
                   Icons.receipt_long_rounded,
                   run: (c) => recordPayment(c)),
               // With "Today at clinic" as the wide card on top, this makes
               // six grid tiles — an even two-up grid, no orphan.
-              ProAction('Clinic Settings', 'Timings, fee, registration no.',
+              ProAction('Practice Settings', 'Consultation hours, fee, and registration',
                   Icons.tune_rounded,
                   page: () => const ClinicSettingsScreen()),
             ],
@@ -138,29 +146,29 @@ class ProProfile {
             k,
             "Advocate's",
             Icons.gavel_rounded,
-            'Your cases, hearings and legal references, readily available.',
+            'Manage your matters, hearings, and fees effortlessly.',
             // THE ADVOCATE'S CHAMBERS (owner, 2026-11-14): real tools, like
             // the doctor's clinic — case diary, drafting, fees, bookings.
             [
-              ProAction('Today in Chambers', 'Hearings, consultations, fees due',
+              ProAction('Today in Chambers', 'Hearings, consultations, and pending fees',
                   Icons.today_rounded,
                   page: () => const ClinicScreen(), featured: true),
-              ProAction('Cases & Hearings', 'Court, case no., next date',
+              ProAction('Cases & Hearings', 'Court, case number, and next date',
                   Icons.gavel_rounded,
                   page: () => const CasesScreen()),
-              ProAction('Clients', 'The file, notes and papers of each client',
+              ProAction('Client Files', 'Briefs, notes, and case papers',
                   Icons.folder_shared_rounded,
                   page: () => const ClientsScreen()),
-              ProAction('Draft a Document', 'Notice, affidavit, agreement → PDF',
+              ProAction('Draft a Document', 'Notice, affidavit, or agreement as PDF',
                   Icons.edit_note_rounded,
                   page: () => const LegalDraftScreen()),
-              ProAction('Book Consultation', 'Select a client and an available slot',
+              ProAction('Book Consultation', 'Select a client and available slot',
                   Icons.event_available_rounded,
                   run: (c) => bookAppointment(c)),
-              ProAction('Fees Pending', 'Amounts outstanding, settled in one tap',
+              ProAction('Pending Fees', 'Unsettled fees — settle in one tap',
                   Icons.payments_rounded,
                   page: () => const ClinicScreen(initialTab: 2)),
-              ProAction('Bill a Fee', 'Fee invoice with a payment link',
+              ProAction('Raise a Fee Note', 'Fee invoice with a payment link',
                   Icons.receipt_long_rounded,
                   page: () => const InvoiceEditorScreen()),
             ],
@@ -169,29 +177,29 @@ class ProProfile {
             k,
             'Business',
             Icons.business_center_rounded,
-            'Your deals, clients, meetings and finances, managed for you.',
+            'Manage your deals, clients, and receivables effortlessly.',
             // THE EXECUTIVE DESK (owner, 2026-11-14: for top business
             // leaders): deals, invoices, receivables and meetings.
             [
-              ProAction('Today at a Glance', 'Meetings, follow-ups, receivables',
+              ProAction('Today at a Glance', 'Meetings, follow-ups, and receivables',
                   Icons.today_rounded,
                   page: () => const ClinicScreen(), featured: true),
-              ProAction('Leads & Deals', 'Pipeline and next contacts to call',
+              ProAction('Leads & Deals', 'Pipeline and next follow-ups',
                   Icons.trending_up_rounded,
                   page: () => const LeadsScreen()),
-              ProAction('Clients', 'The file, notes and documents of each client',
+              ProAction('Client Accounts', 'Files, notes, and documents',
                   Icons.folder_shared_rounded,
                   page: () => const ClientsScreen()),
               ProAction('New Invoice / Quote', 'GST-ready PDF with a payment link',
                   Icons.request_quote_rounded,
                   page: () => const InvoiceEditorScreen()),
-              ProAction('Invoices & Quotes', 'Paid, unpaid, payment links',
+              ProAction('Invoices & Quotes', 'Paid, unpaid, and payment links',
                   Icons.receipt_long_rounded,
                   page: () => const InvoicesScreen()),
-              ProAction('Receivables', 'Amounts outstanding, settled in one tap',
+              ProAction('Receivables', 'Pending collections — settle in one tap',
                   Icons.account_balance_wallet_rounded,
                   page: () => const ClinicScreen(initialTab: 2)),
-              ProAction('Schedule Meeting', 'Select a client and an available slot',
+              ProAction('Schedule Meeting', 'Select a client and available slot',
                   Icons.event_available_rounded,
                   run: (c) => bookAppointment(c)),
             ],
@@ -455,7 +463,7 @@ class _ProAssistantScreenState extends State<ProAssistantScreen> {
                                   children: [
                                     Icon(p.icon, size: 14, color: tint),
                                     const SizedBox(width: 6),
-                                    Text('ASSISTANT',
+                                    Text('${p.name.toUpperCase()} ASSISTANT',
                                         style: NeonType.manrope(
                                                 11, FontWeight.w800)
                                             .copyWith(
@@ -473,7 +481,7 @@ class _ProAssistantScreenState extends State<ProAssistantScreen> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text(p.name,
+                                        Text(p.heading,
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                             style: NeonType.manrope(
@@ -654,7 +662,7 @@ class _PhotoButton extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            Text('Add Photo',
+            Text('Add photo',
                 style: TextStyle(
                     color: Neon.textHi,
                     fontSize: 11.5,
@@ -755,27 +763,27 @@ class _FeaturedCard extends StatelessWidget {
                       // Each profession's three numbers that matter today.
                       final stats = switch (Persona.value) {
                         'advocate' => [
-                            _Stat(t?.hearingsToday.length.toString() ?? '–', 'hearings today', tint,
+                            _Stat(t?.hearingsToday.length.toString() ?? '–', 'Hearings today', tint,
                                 alert: (t?.hearingsToday.isNotEmpty ?? false)),
-                            _Stat(t?.hearingsWeek.length.toString() ?? '–', 'this week', tint),
-                            _Stat(money, 'fees due', tint, alert: owed),
+                            _Stat(t?.hearingsWeek.length.toString() ?? '–', 'This week', tint),
+                            _Stat(money, 'Fees pending', tint, alert: owed),
                           ],
                         'business' => [
-                            _Stat(t?.openAppointments.length.toString() ?? '–', 'meetings', tint),
-                            _Stat(t?.leadsDue.length.toString() ?? '–', 'follow-ups', tint,
+                            _Stat(t?.openAppointments.length.toString() ?? '–', 'Meetings', tint),
+                            _Stat(t?.leadsDue.length.toString() ?? '–', 'Follow-ups', tint,
                                 alert: (t?.leadsDue.isNotEmpty ?? false)),
-                            _Stat(money, 'receivable', tint, alert: owed),
+                            _Stat(money, 'Receivables', tint, alert: owed),
                           ],
                         _ => [
-                            _Stat(t?.openAppointments.length.toString() ?? '–', 'to see', tint),
+                            _Stat(t?.openAppointments.length.toString() ?? '–', 'Patients to see', tint),
                             _Stat(
                                 t == null
                                     ? '–'
                                     : (t.followUps.today.length + t.followUps.overdue.length).toString(),
-                                'follow-ups',
+                                'Follow-ups',
                                 tint,
                                 alert: (t?.followUps.overdue.isNotEmpty ?? false)),
-                            _Stat(money, 'pending', tint, alert: owed),
+                            _Stat(money, 'Dues pending', tint, alert: owed),
                           ],
                       };
                       return Row(children: [
@@ -928,28 +936,28 @@ class _AskCard extends StatelessWidget {
 
   List<(IconData, String, String)> get _prompts => switch (profile.kind) {
         ProKind.doctor => const [
-            (Icons.today_rounded, "Patients Due Today",
-                'Which patients are due today, and who is overdue?'),
-            (Icons.note_add_rounded, 'Add a Note',
-                'I want to add a note to a patient\'s file.'),
-            (Icons.payments_rounded, 'Outstanding Dues',
-                'Which of my patients have dues pending?'),
+            (Icons.today_rounded, 'Today\'s Patients',
+                'Which patients are scheduled today, and which follow-ups are overdue?'),
+            (Icons.note_add_rounded, 'Add Clinical Note',
+                'Add a clinical note to a patient record.'),
+            (Icons.payments_rounded, 'Pending Dues',
+                'Which patients have pending dues?'),
           ],
         ProKind.advocate => const [
             (Icons.event_note_rounded, 'Hearings This Week',
-                'What hearings do I have coming up this week?'),
+                'List my hearings scheduled for this week.'),
             (Icons.summarize_rounded, 'Summarise a Case',
-                'Summarise one of my client\'s case files for me.'),
+                'Summarise the case file of one of my clients.'),
             (Icons.gavel_rounded, 'Explain a Judgment',
-                'Explain a court judgment to me in simple words.'),
+                'Explain a court judgment in plain language.'),
           ],
         ProKind.business => const [
             (Icons.today_rounded, 'Daily Briefing',
-                'Brief me on my day: meetings, follow-ups due and money to collect.'),
+                'Brief me on today: meetings, follow-ups due, and receivables to collect.'),
             (Icons.payments_rounded, 'Receivables',
-                'Which customers still owe me money?'),
+                'Which clients have payments outstanding?'),
             (Icons.trending_up_rounded, 'Pipeline Summary',
-                'Summarise my open deals: value, stage and who to call next.'),
+                'Summarise my open deals: value, stage, and next follow-up.'),
           ],
       };
 
@@ -1200,7 +1208,7 @@ class _ProChatScreenState extends State<ProChatScreen> {
     setState(() => _dictating = false);
     if (failed.isNotEmpty) {
       AppFeedback.toast(failed == 'permission'
-          ? 'Microphone access is required to use voice typing. Please enable it in Settings.'
+          ? 'Microphone access is required to use voice typing. Enable it in Settings.'
           : "Unable to capture the audio. Please try again or type your message.");
     }
   }

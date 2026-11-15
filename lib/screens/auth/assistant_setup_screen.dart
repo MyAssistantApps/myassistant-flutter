@@ -220,7 +220,7 @@ class _AssistantSetupScreenState extends State<AssistantSetupScreen> {
           // its own sentence saying what to change; only a real network
           // failure gets the generic line.
           _error = (r?['message'] as String?) ??
-              "Unable to save the name. Please check your connection and try again.";
+              "Unable to save the name. Check your connection and try again.";
         });
       }
       return;
@@ -268,7 +268,7 @@ class _AssistantSetupScreenState extends State<AssistantSetupScreen> {
                   const SizedBox(height: 6),
                   Text(
                     'Select any name you prefer. This is the assistant you will be '
-                    'speaking with. You may rename it at any time by '
+                    'speaking with. You can rename it at any time by '
                     'telling it so.',
                     style: TextStyle(
                         color: Neon.textLo, fontSize: 15, height: 1.45),
@@ -316,7 +316,7 @@ class _AssistantSetupScreenState extends State<AssistantSetupScreen> {
                   const SizedBox(height: 4),
                   Text(
                     'Your assistant greets and speaks in this language. '
-                    'You may change it at any time by asking.',
+                    'You can change it at any time by asking.',
                     style: TextStyle(
                         color: Neon.textLo, fontSize: NeonType.footnote),
                   ),
@@ -392,7 +392,7 @@ class _AssistantSetupScreenState extends State<AssistantSetupScreen> {
                   // everywhere and reads broken. Naming is mandatory —
                   // renaming later by voice stays free.
                   Text(
-                    'Required. You may rename it at any time.',
+                    'Required. You can rename it at any time.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                         color: Neon.textLo, fontSize: NeonType.caption),

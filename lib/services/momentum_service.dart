@@ -425,7 +425,7 @@ class MomentumService extends ChangeNotifier {
   }
 
   static String _friendly(MomentumReply r) {
-    if (r.status == 0) return "Unable to save. Please check your connection.";
+    if (r.status == 0) return "Unable to save. Check your connection.";
     final e = r.error;
     if (e == null || e.isEmpty) return "Unable to save the change. Please try again.";
     if (e.contains('already has')) return 'That day already has the maximum of three.';

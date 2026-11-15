@@ -91,7 +91,7 @@ class BusesScreen extends StatelessWidget {
                     style: NeonType.manrope(28, FontWeight.w800).copyWith(
                         color: Neon.textHi, letterSpacing: -0.8)),
                 const SizedBox(height: 4),
-                Text('Please select the type of bus.',
+                Text('Select the type of bus.',
                     style: TextStyle(color: Neon.textLo, fontSize: 15)),
               ],
             ),

@@ -142,7 +142,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
       return NeonEmptyState(
         icon: Icons.folder_shared_rounded,
         title: _query.isEmpty
-            ? (Persona.isDoctor ? 'No patients recorded' : 'No clients recorded')
+            ? (Persona.isDoctor ? 'No patient records yet' : 'No clients yet')
             : 'No matches found',
         body: _query.isEmpty
             ? 'Add a patient or client to keep their documents and notes '
@@ -286,7 +286,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
       _noteCtl.clear();
       setState(() => _notes = [note, ..._notes]);
     } catch (_) {
-      _toast("Unable to save the note. Please check your connection.");
+      _toast("Unable to save the note. Check your connection.");
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -358,7 +358,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
         filename = 'case_${DateTime.now().millisecondsSinceEpoch}.jpg';
       }
     } catch (_) {
-      _toast("Unable to open the file. Please check the app's permissions.");
+      _toast("Unable to open the file. Check the app's permissions.");
       return;
     }
 
@@ -382,14 +382,14 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
         _toast('Saved to ${_client?.name ?? "this"}\'s file.');
       } else {
         await _load();
-        _toast("The document was saved but not to this file. Please check My Documents.");
+        _toast("The document was saved to My Documents, not to this file.");
       }
     } on DocumentUploadException catch (e) {
       _toast(e.message.isNotEmpty
           ? "Unable to upload the document: ${e.message}"
           : "Unable to upload the document. Nothing was saved.");
     } catch (_) {
-      _toast("Unable to upload the document. Please check your connection and try again.");
+      _toast("Unable to upload the document. Check your connection and try again.");
     } finally {
       if (mounted) {
         setState(() {
@@ -413,7 +413,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
           _documents.where((x) => x.id != d.id).toList(growable: false));
       return true;
     } catch (_) {
-      _toast("Unable to delete. Please check your connection and try again.");
+      _toast("Unable to delete. Check your connection and try again.");
       return false;
     }
   }
@@ -453,7 +453,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
             style: TextStyle(color: Neon.textHi)),
         content: Text(
           'This permanently removes the case file, its notes$docsLine. '
-          'This action cannot be undone.',
+          'This cannot be undone.',
           style: TextStyle(color: Neon.textLo, height: 1.4),
         ),
         actions: [
@@ -592,7 +592,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                     if (_notes.isEmpty)
                       _emptyRow(
                         Icons.sticky_note_2_outlined,
-                        'No notes recorded',
+                        'No notes yet',
                         tone: NeonTone.tip,
                         'Dated notes added here are read back '
                             'when you ask about ${c.name}.',
@@ -796,7 +796,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
     ];
     if (rows.length == 1) {
       rows.add(AppleRow(
-        title: 'No details recorded. Tap the pencil to add them.',
+        title: 'No details yet. Tap the pencil to add them.',
         titleColor: Neon.textDim,
         titleMaxLines: 2,
       ));
@@ -917,7 +917,7 @@ class _EditClientSheetState extends State<_EditClientSheet> {
   Future<void> _save() async {
     final name = _name.text.trim();
     if (name.isEmpty) {
-      setState(() => _error = 'Please enter a name.');
+      setState(() => _error = 'Enter a name.');
       return;
     }
     setState(() {
@@ -948,7 +948,7 @@ class _EditClientSheetState extends State<_EditClientSheet> {
       if (mounted) {
         setState(() {
           _saving = false;
-          _error = "Unable to save. Please check your connection.";
+          _error = "Unable to save. Check your connection.";
         });
       }
     }

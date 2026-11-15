@@ -82,7 +82,7 @@ class _BusSearchScreenState extends State<BusSearchScreen> {
   void _search() {
     if (_from == _to) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select two different cities.')));
+          const SnackBar(content: Text('Select two different cities.')));
       return;
     }
     HapticFeedback.mediumImpact();

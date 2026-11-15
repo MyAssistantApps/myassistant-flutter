@@ -430,7 +430,7 @@ class _QuickMathsScreenState extends State<QuickMathsScreen> {
                           ? _Result(
                               title: 'Quick Maths',
                               line:
-                                  'Solve as many sums as possible in ${widget.seconds} seconds. An incorrect answer carries no penalty other than time.',
+                                  'Solve as many sums as you can in ${widget.seconds} seconds. A wrong answer only costs you time.',
                               onAgain: _start,
                             )
                           : _Result(
@@ -581,9 +581,9 @@ class _TicTacToeScreenState extends State<TicTacToeScreen> {
     final w = ticWinner(_b);
     final line = switch (w) {
       'X' => 'You have won.',
-      'O' => 'Maya has won this game.',
-      'draw' => "The game is a draw.",
-      _ => _thinking ? 'Maya is thinking…' : 'It is your move. You are X.',
+      'O' => 'Maya wins this round.',
+      'draw' => "It is a draw.",
+      _ => _thinking ? 'Maya is thinking…' : 'Your move. You are X.',
     };
     return NeonScaffold(
       appBar: appleAppBar(context, 'Tic-Tac-Toe with Maya'),
@@ -796,7 +796,7 @@ class _LightTrailScreenState extends State<LightTrailScreen> {
                           title: _over ? 'Trail Broken' : 'Light Trail',
                           line: _over
                               ? 'You cleared $_score round${_score == 1 ? '' : 's'}.'
-                              : 'Observe the pads as they light up, then tap them in the same order. Each round adds one more.',
+                              : 'Watch the pads light up, then tap them in the same order. Each round adds one more.',
                           best: _best,
                           onAgain: _start,
                         )

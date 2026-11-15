@@ -174,8 +174,8 @@ class _StocksScreenState extends State<StocksScreen> {
         if (nothing)
           NeonEmptyState(
             icon: Icons.show_chart_rounded,
-            title: 'No market updates available',
-            body: 'Please check again later.',
+            title: 'No market updates right now',
+            body: 'Check again later.',
             actionLabel: 'Refresh',
             actionIcon: Icons.refresh_rounded,
             onAction: () {

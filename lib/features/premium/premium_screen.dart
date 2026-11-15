@@ -70,7 +70,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
     final cb = widget.onPurchase;
     if (cb == null) {
       AppFeedback.show(
-        "Payments will be available in the next update. Thank you for your interest.",
+        "Payments arrive in the next update. Thank you for your interest.",
         context: context,
       );
       return;
@@ -293,7 +293,7 @@ class _Hero extends StatelessWidget {
                         height: 1.05)),
               ),
               const SizedBox(height: 10),
-              Text('More capable. More helpful.\nAlways available.',
+              Text('More capable. More helpful.\nAlways on.',
                   style: TextStyle(color: _P.textLo, fontSize: 16, height: 1.35)),
             ],
           ),
@@ -537,7 +537,7 @@ class _PlanCard extends StatelessWidget {
         if (plan.badge != null)
           Positioned(top: -12, child: _Badge(text: plan.badge!, star: true))
         else if (plan.id == 'plus')
-          const Positioned(top: 6, child: _Badge(text: 'Entry Plan')),
+          const Positioned(top: 6, child: _Badge(text: 'Start Here')),
       ]),
     );
   }
@@ -652,7 +652,7 @@ class _TrialNote extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                   'All Pro features and ${grouped(freeTrialCredits)} credits. '
-                  "A reminder will be sent 2 days before it ends.",
+                  "We will remind you 2 days before it ends.",
                   style: TextStyle(color: _P.textLo, fontSize: 12.5, height: 1.3)),
             ]),
           ),
@@ -733,7 +733,7 @@ class _CreditPacks extends StatelessWidget {
       ),
       Padding(
         padding: const EdgeInsets.only(left: 4, bottom: 12),
-        child: Text('For AI calls, images, edits and videos. Top-ups do not expire.',
+        child: Text('For AI calls, images, edits, and videos. Top-ups never expire.',
             style: TextStyle(color: _P.textDim, fontSize: 12.5)),
       ),
       Row(children: [

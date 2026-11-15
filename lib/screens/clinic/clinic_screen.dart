@@ -61,7 +61,7 @@ class _ClinicScreenState extends State<ClinicScreen> {
                 MaterialPageRoute(builder: (_) => const ClientsScreen())),
           ),
           IconButton(
-            tooltip: 'Clinic Settings',
+            tooltip: ProWords.current.settings,
             icon: const Icon(Icons.tune_rounded),
             onPressed: () => Navigator.of(context).push(MaterialPageRoute(
                 builder: (_) => const ClinicSettingsScreen())),
@@ -134,13 +134,13 @@ class _TodayTab extends StatelessWidget {
                 const SizedBox(height: 14),
               ],
               Row(children: [
-                _Stat('${open.length}', waiting > 0 ? '$waiting waiting' : 'To See',
+                _Stat('${open.length}', waiting > 0 ? '$waiting Waiting' : (Persona.value == 'business' || Persona.value == 'advocate' ? ProWords.current.appointments : 'Consultations'),
                     Neon.violet),
                 const SizedBox(width: 10),
                 _Stat('${f.today.length + f.overdue.length}', 'Follow-ups',
                     f.overdue.isEmpty ? Neon.textLo : Neon.warning),
                 const SizedBox(width: 10),
-                _Stat(rupees(t.duesTotal), 'Pending',
+                _Stat(rupees(t.duesTotal), Persona.value == 'business' ? 'Receivables' : (Persona.value == 'advocate' ? 'Pending Fees' : 'Pending Dues'),
                     t.duesTotal > 0 ? Neon.error : Neon.textLo),
               ]),
               const SizedBox(height: 16),
@@ -153,8 +153,8 @@ class _TodayTab extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 20),
                   child: Text(
-                    'No ${ProWords.current.appointments.toLowerCase()} today. Book one above, or allow your phone '
-                    'receptionist to book callers (Clinic Settings).',
+                    '${Persona.value == 'business' || Persona.value == 'advocate' ? 'No ${ProWords.current.appointments.toLowerCase()} scheduled today. Schedule one above' : 'No scheduled patient appointments today. Schedule a consultation above'}'
+                    ' — or configure your automated receptionist to book incoming callers (${ProWords.current.settings}).',
                     style: TextStyle(color: Neon.textLo, fontSize: 13.5, height: 1.4),
                   ),
                 )
@@ -210,8 +210,8 @@ class _TodayTab extends StatelessWidget {
         Expanded(
           child: Text(
             next == null
-                ? 'No follow-ups due. ${t.patients} ${ProWords.current.person.toLowerCase()}${t.patients == 1 ? '' : 's'} on file.'
-                : 'No follow-ups due today. Next:${next.clientName}, ${followUpWhen(next.dueAt)}.',
+                ? '${Persona.value == 'business' || Persona.value == 'advocate' ? 'No follow-ups due.' : 'No follow-up consultations due.'} ${t.patients} ${ProWords.current.person.toLowerCase()}${t.patients == 1 ? '' : 's'} registered on file.'
+                : 'No follow-ups due today. Next: ${next.clientName}, ${followUpWhen(next.dueAt)}.',
             style: TextStyle(color: Neon.textHi, fontSize: 14, height: 1.35),
           ),
         ),
@@ -338,15 +338,15 @@ class _QuickActions extends StatelessWidget {
           ),
         );
     return Row(children: [
-      btn(Icons.event_available_rounded, 'Book', () => bookAppointment(context)),
+      btn(Icons.event_available_rounded, 'Schedule', () => bookAppointment(context)),
       const SizedBox(width: 8),
-      btn(Icons.event_repeat_rounded, 'Follow-up',
+      btn(Icons.event_repeat_rounded, Persona.value == 'business' ? 'Follow-up' : 'Review',
           () => scheduleFollowUp(context)),
       const SizedBox(width: 8),
-      btn(Icons.currency_rupee_rounded, 'Payment',
+      btn(Icons.currency_rupee_rounded, 'Collection',
           () => recordPayment(context)),
       const SizedBox(width: 8),
-      btn(Icons.timer_outlined, 'Late',
+      btn(Icons.timer_outlined, 'Delay',
           () => runningLate(context, patientsLeft: patientsLeft)),
     ]);
   }
@@ -372,8 +372,9 @@ class _SetupCard extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Please set up your ${ProWords.current.workspace.toLowerCase()}: timings,${ProWords.current.feeLabel == null ? 'title' : 'fee'} and ${ProWords.current.regNo.toLowerCase()}. '
-                'This takes a minute and is used for booking and prescriptions.',
+                Persona.value == 'business' || Persona.value == 'advocate'
+                    ? 'Configure your ${ProWords.current.workspace.toLowerCase()} profile — hours, ${ProWords.current.feeLabel == null ? 'title' : 'consultation fee'}, and ${ProWords.current.regNo == 'GSTIN' ? 'GSTIN' : ProWords.current.regNo.toLowerCase()}. Required for bookings and invoices.'
+                    : 'Configure practice profile — consultation hours, consultation fee, and medical council registration number. Required for patient encounters and prescriptions.',
                 style: TextStyle(color: Neon.textHi, fontSize: 13.5, height: 1.35),
               ),
             ),
@@ -398,7 +399,7 @@ class _ApptRow extends StatelessWidget {
   Future<void> _set(String status) async {
     HapticFeedback.lightImpact();
     final ok = await ClinicService.instance.setAppointmentStatus(a.id, status);
-    if (!ok) AppFeedback.toast("Unable to update. Please check your connection.");
+    if (!ok) AppFeedback.toast("Unable to update. Check your connection.");
   }
 
   void _menu(BuildContext context) {
@@ -528,10 +529,10 @@ class _VoiceHint extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'For faster entry by voice, tap the microphone and say:\n'
-              '“Follow up Ramesh in two weeks”\n'
-              '“Note for Ramesh: BP 130/85, continue meds”\n'
-              '“Ramesh paid 500”',
+              'Faster by voice — tap the mic and say:\n'
+              '“Schedule follow-up with patient Ramesh in two weeks”\n'
+              '“Clinical note for Ramesh: BP 130/85 mmHg, continue current pharmacotherapy”\n'
+              '“Record payment received from Ramesh: 500 INR”',
               style: TextStyle(color: Neon.textLo, fontSize: 13, height: 1.5),
             ),
           ),
@@ -569,7 +570,7 @@ class _FollowUpRow extends StatelessWidget {
     final ok = await ClinicService.instance.closeFollowUp(f.id, cancel: cancel);
     AppFeedback.toast(ok
         ? (cancel ? 'Follow-up cancelled.' : '${f.clientName}: marked as completed.')
-        : "Unable to update. Please check your connection.");
+        : "Unable to update. Check your connection.");
     if (ok) onChanged?.call();
   }
 

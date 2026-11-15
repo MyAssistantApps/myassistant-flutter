@@ -96,7 +96,7 @@ class _EmailSetupScreenState extends State<EmailSetupScreen> {
     final addr = _address.text.trim();
     final pass = _password.text.trim();
     if (addr.isEmpty || pass.isEmpty) {
-      setState(() => _error = 'Please enter the email address and its app password.');
+      setState(() => _error = 'Enter the email address and its app password.');
       return;
     }
     setState(() {
@@ -122,11 +122,11 @@ class _EmailSetupScreenState extends State<EmailSetupScreen> {
       } else {
         setState(() => _error =
             (body is Map ? body['error'] : null)?.toString() ??
-                'Unable to connect. Please check the address and app password.');
+                'Unable to connect. Check the address and app password.');
       }
     } catch (_) {
       setState(() =>
-          _error = 'Unable to connect. Please check your internet connection.');
+          _error = 'Unable to connect. Check your internet connection.');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -142,8 +142,8 @@ class _EmailSetupScreenState extends State<EmailSetupScreen> {
         content: Text(
           isGoogle
               ? 'This will unlink your account. Mail and calendar '
-                  'features will be unavailable until it is linked again. Do you wish to proceed?'
-              : 'Your saved credentials will be deleted from the server. Do you wish to proceed?',
+                  'features will be unavailable until it is linked again.'
+              : 'Your saved credentials will be deleted from the server.',
         ),
         actions: [
           TextButton(
@@ -440,8 +440,8 @@ class _EmailSetupScreenState extends State<EmailSetupScreen> {
         const SizedBox(height: 4),
         Text(
             _method == 'google'
-                ? 'Your mailbox is linked. Mail your assistant writes at your request appears here.'
-                : '$_connectedAddress is linked. Mail your assistant writes at your request appears here.',
+                ? 'Your mailbox is linked. Mail your assistant sends for you appears here.'
+                : '$_connectedAddress is linked. Mail your assistant sends for you appears here.',
             textAlign: TextAlign.center,
             style: TextStyle(color: Neon.textLo, fontSize: 14)),
         const SizedBox(height: 22),
@@ -451,7 +451,7 @@ class _EmailSetupScreenState extends State<EmailSetupScreen> {
         const EmailSentList(),
         const SizedBox(height: 22),
         Center(
-          child: Text('Go back, tap the microphone and name the recipient',
+          child: Text('Go back, tap the mic, and name the recipient',
               style: TextStyle(color: Neon.textDim, fontSize: 13)),
         ),
         const SizedBox(height: 30),

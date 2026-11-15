@@ -394,7 +394,7 @@ class _ReminderPopupSheetState extends State<ReminderPopupSheet> {
     if (!mounted) return;
     if (!ok) {
       setState(() => _done = false);
-      AppFeedback.showRetry("Unable to mark the reminder as completed. Please check your connection.",
+      AppFeedback.showRetry("Unable to mark the reminder as completed. Check your connection.",
           context: context, onRetry: _markDone);
       return;
     }
@@ -414,7 +414,7 @@ class _ReminderPopupSheetState extends State<ReminderPopupSheet> {
     if (ok) {
       api.changed();
     } else {
-      AppFeedback.toast("Unable to snooze the reminder. Please check your connection.", tone: FeedbackTone.error);
+      AppFeedback.toast("Unable to snooze the reminder. Check your connection.", tone: FeedbackTone.error);
     }
   }
 

@@ -187,7 +187,7 @@ class _VoicePickerScreenState extends State<VoicePickerScreen> {
       final audio = wav == null ? null : _decodePcmWav(wav);
       if (audio == null) {
         AppFeedback.show(
-          "Unable to play the sample. Please check your connection and try again.",
+          "Unable to play the sample. Check your connection and retry.",
           context: context,
           tone: FeedbackTone.error,
         );
@@ -264,7 +264,7 @@ class _VoicePickerScreenState extends State<VoicePickerScreen> {
                 AppleRow(
                   leading: IconTile(Icons.wifi_off_rounded, Neon.textLo),
                   title: "Unable to load voices",
-                  subtitle: 'Please check your connection and try again.',
+                  subtitle: 'Check your connection and retry.',
                   trailing: TextButton(
                     onPressed: _loadVoices,
                     child: const Text('Retry'),

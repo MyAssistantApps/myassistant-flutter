@@ -30,7 +30,8 @@ void main() {
       await t.pumpWidget(MaterialApp(home: ProAssistantScreen(kind: k)));
       await t.pump();
       // The hero: the profession's name over its photo.
-      expect(find.text(ProProfile.of(k).name), findsOneWidget);
+      expect(find.text('${ProProfile.of(k).name.toUpperCase()} ASSISTANT'), findsOneWidget);
+      expect(find.text(ProProfile.of(k).heading), findsOneWidget);
       // The page is a lazy list: scroll to each thing, as a user would —
       // the Doctor's page has six actions, so the chat sits below the fold.
       final scroller = find.byType(Scrollable).first;

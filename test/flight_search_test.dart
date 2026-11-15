@@ -15,9 +15,9 @@ void main() {
 
   test('one-way: asks for what is missing, then describes the trip', () {
     var t = const FlightTrip();
-    expect(t.problem(), 'Please select the departure airport');
+    expect(t.problem(), 'Select the departure airport');
     t = t.copyWith(legs: [FlightLeg(from: ap('BLR'), to: ap('BLR'), date: d1)]);
-    expect(t.problem(), 'The departure and arrival airports must differ');
+    expect(t.problem(), 'Departure and arrival airports must be different');
     t = t.copyWith(legs: [FlightLeg(from: ap('BLR'), to: ap('DEL'), date: d1)], adults: 2, infants: 1, nonStop: true);
     expect(t.problem(), isNull);
     expect(t.route, 'BLR → DEL');
@@ -28,8 +28,8 @@ void main() {
 
   test('round-trip needs a return on or after the departure', () {
     var t = FlightTrip(legs: [FlightLeg(from: ap('BOM'), to: ap('GOI'), date: d2)]).asType(TripType.roundTrip);
-    expect(t.problem(), 'Please select the return date');
-    expect(t.copyWith(returnDate: d1).problem(), 'The return date cannot precede the departure date');
+    expect(t.problem(), 'Select the return date');
+    expect(t.copyWith(returnDate: d1).problem(), 'The return date cannot be before the departure date');
     t = t.copyWith(returnDate: DateTime(2026, 11, 28), cabin: CabinClass.business, fare: SpecialFare.student);
     expect(t.problem(), isNull);
     expect(t.route, 'BOM ⇄ GOI');
@@ -51,8 +51,8 @@ void main() {
 
   test('travellers: an adult per infant, nine at most', () {
     final t = FlightTrip(legs: [FlightLeg(from: ap('BLR'), to: ap('DEL'), date: d1)]);
-    expect(t.copyWith(infants: 2).problem(), 'Each infant must be accompanied by an adult');
-    expect(t.copyWith(adults: 6, children: 4).problem(), 'A maximum of 9 travellers is permitted per booking');
+    expect(t.copyWith(infants: 2).problem(), 'Each infant must travel with an adult');
+    expect(t.copyWith(adults: 6, children: 4).problem(), 'Maximum 9 travellers per booking');
   });
 
   test('airports are found by city, code or name', () {
@@ -91,7 +91,7 @@ void main() {
     await t.dragUntilVisible(find.text('Search Flights'), find.byType(ListView).first, const Offset(0, -300));
     await t.tap(find.text('Search Flights'));
     await t.pump();
-    expect(find.text('Please select the departure airport for flight 1'), findsOneWidget);
+    expect(find.text('Select the departure airport for flight 1'), findsOneWidget);
     expect(t.takeException(), isNull);
   });
 

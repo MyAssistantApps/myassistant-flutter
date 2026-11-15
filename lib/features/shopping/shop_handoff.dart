@@ -205,7 +205,7 @@ class ShopProgress {
     final n = next;
     if (n == null) {
       return total == 1
-          ? 'Please mark the item as purchased in your list once you have bought it.'
+          ? 'Mark the item as purchased in your list once you have bought it.'
           : "This is the final item. Please mark your purchases in your list.";
     }
     final elsewhere = n.label.isNotEmpty && n.label != current.label;

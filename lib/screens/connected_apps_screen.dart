@@ -107,7 +107,7 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen>
         context: context,
         builder: (c) => AlertDialog(
           title: Text('Disconnect $name'),
-          content: const Text("Your assistant will no longer use it on your behalf. Nothing in it is deleted. Do you wish to proceed?"),
+          content: const Text("Your assistant will stop using it on your behalf. Nothing in it is deleted."),
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(c, false),
@@ -196,7 +196,7 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen>
       builder: (c) => AlertDialog(
         title: const Text('Disconnect Notion'),
         content: const Text(
-            "Your assistant will no longer read or add to your pages. Nothing in Notion is deleted. Do you wish to proceed?"),
+            "Your assistant will stop reading and adding to your pages. Nothing in Notion is deleted."),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(c, false),
@@ -232,7 +232,7 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen>
     } else {
       subtitle = _failed
           ? "Unable to connect. Please try again."
-          : 'Reads your pages and adds notes and to-dos, limited to the pages you select.';
+          : 'Read your pages and add notes and to-dos — only the pages you select.';
       button = 'Connect';
       action = _connect;
     }
@@ -281,10 +281,10 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen>
           padding: const EdgeInsets.only(left: 16, top: 6, right: 16),
           child: Text(
             n.status == 'connected'
-                ? 'For example, say: "Add milk to my Groceries page in Notion."\n'
-                    'To grant access to further pages later: in Notion, open the page, '
+                ? 'Say: "Add milk to my Groceries page in Notion."\n'
+                    'To share more pages later: in Notion, open the page, '
                     'tap ••• → Connections, and add Hari Assistant.'
-                : 'To grant access to further pages later: in Notion, open the page, '
+                : 'To share more pages later: in Notion, open the page, '
                     'tap ••• → Connections, and add Hari Assistant.',
             // textLo (2026-09-30): textDim fell under 4.5:1 on the sky.
             style: TextStyle(color: Neon.textLo, fontSize: NeonType.caption),
@@ -306,8 +306,8 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen>
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 0, 4, 18),
             child: Text(
-              'Link the apps you already use so that your assistant can work within them. '
-              'You may unlink them at any time.',
+              'Link the apps you already use so your assistant can work within them. '
+              'Unlink any time.',
               style: TextStyle(color: Neon.textLo, fontSize: 14, height: 1.4),
             ),
           ),
@@ -322,7 +322,7 @@ class _ConnectedAppsScreenState extends State<ConnectedAppsScreen>
               name: 'Google',
               subtitle: _googleLinked == true
                   ? 'Gmail and Calendar are linked. Tap to disconnect.'
-                  : 'Gmail and Google Calendar with a single sign-in',
+                  : 'Gmail and Google Calendar — one sign-in',
               connected: _googleLinked == true,
               available: _googleLinked != null,
               onTap: _toggleGoogle,

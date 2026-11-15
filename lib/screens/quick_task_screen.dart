@@ -145,7 +145,7 @@ class _QuickTaskScreenState extends State<QuickTaskScreen> {
         _Stage.failed => "Unable to submit the task. Please try again.",
         _Stage.idle => _voiceReady
             ? 'Tap the orb and state your request'
-            : 'Please type your request',
+            : 'Type your request',
       };
 
   @override

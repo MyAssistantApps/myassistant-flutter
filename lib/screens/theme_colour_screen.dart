@@ -31,8 +31,8 @@ class _ThemeColourScreenState extends State<ThemeColourScreen> {
               20, 12, 20, 40 + MediaQuery.paddingOf(context).bottom),
           children: [
             Text(
-              'The selected colour is applied to the orb, the microphone, every icon tile and '
-              'each highlight in the app. Select a colour to apply it immediately.',
+              'Your colour is applied to the orb, the mic, every icon tile, and '
+              'each highlight in the app. Tap a colour to apply it instantly.',
               style: TextStyle(color: Neon.textLo, fontSize: 14, height: 1.5),
             ),
             const SizedBox(height: 22),
@@ -61,7 +61,7 @@ class _ThemeColourScreenState extends State<ThemeColourScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Preview of your colour on buttons and the microphone.',
+                      'How your colour appears on buttons and the mic.',
                       style: TextStyle(
                           color: Neon.onAccent,
                           fontSize: 14,

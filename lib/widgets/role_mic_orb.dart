@@ -83,7 +83,7 @@ class _RoleMicOrbState extends State<RoleMicOrb> {
   }
 
   String _label(OrbMood mood) {
-    if (!_talking) return 'Tap to speak';
+    if (!_talking) return 'Tap to talk';
     return switch (mood) {
       OrbMood.speaking => 'Speaking…',
       OrbMood.connecting => 'Connecting…',

@@ -72,7 +72,7 @@ class _HotelsScreenState extends State<HotelsScreen> {
   Future<void> _open(String partner) async {
     if (_city.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please enter a city, area or hotel.')));
+          const SnackBar(content: Text('Enter a city, area or hotel.')));
       return;
     }
     HapticFeedback.selectionClick();

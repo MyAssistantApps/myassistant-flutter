@@ -380,7 +380,7 @@ class _ChatGroupScreenState extends State<ChatGroupScreen> {
                     // is the next step.
                     ? const NeonEmptyState(
                         icon: Icons.forum_outlined,
-                        title: 'No messages available',
+                        title: 'No messages yet',
                         body: 'Send a message to begin the conversation.',
                       )
                     : ListView.builder(

@@ -150,9 +150,9 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
     final msg = switch (started) {
       FeedbackStart.opened => null,
       FeedbackStart.offline =>
-        'Feedback requires an internet connection. Please check your connection and try again.',
+        'Feedback requires an internet connection. Check your network and try again.',
       FeedbackStart.unavailable =>
-        "Feedback is currently unavailable. Please try again later.",
+        "Feedback is unavailable right now. Please try again later.",
     };
     if (msg == null) return;
     AppFeedback.show(msg, context: context, tone: FeedbackTone.error);
@@ -229,7 +229,7 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                       leading: IconTile(
                           Icons.psychology_rounded, AppleColors.indigo),
                       title: 'Stored Memories',
-                      subtitle: 'Review what your assistant knows about you',
+                      subtitle: 'What your assistant knows about you',
                       trailing: Icon(Icons.chevron_right_rounded,
                           color: Neon.textDim, size: 20),
                       onTap: () => Navigator.of(context).push(
@@ -282,7 +282,7 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                         leading:
                             IconTile(Icons.palette_rounded, AppleColors.purple),
                         title: 'Theme Colour',
-                        subtitle: 'Applied to the orb, the microphone and all highlights',
+                        subtitle: 'Applied to the orb, microphone, and highlights',
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -326,7 +326,7 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                             IconTile(Icons.newspaper_rounded, AppleColors.blue),
                         title: 'News on Home',
                         subtitle:
-                            'Two headlines from the topic you read, when space permits',
+                            'Two headlines from your preferred topic, space permitting',
                         trailing: Switch(
                           value: on,
                           onChanged: (v) {
@@ -351,7 +351,7 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                       leading:
                           IconTile(Icons.graphic_eq_rounded, AppleColors.teal),
                       title: 'Assistant Voice',
-                      subtitle: 'Preview and select an OpenAI voice',
+                      subtitle: 'Preview and choose a voice',
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -454,7 +454,7 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                   child: Text(
                     'Permanent instructions the assistant follows before every '
                     'decision, e.g. "Always ask before sending messages", '
-                    '"Call me by my first name". These may also be stated in '
+                    '"Address me by my first name". You can also state these in '
                     'conversation.',
                     // textLo: textDim fell under 4.5:1 on the ambient wash.
                     style: TextStyle(
@@ -515,7 +515,7 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                     AppleRow(
                       leading: IconTile(Icons.widgets_rounded, AppleColors.purple),
                       title: 'Home-Screen Widgets',
-                      subtitle: 'Ask Bar, My Day, Shortcuts and the Orb',
+                      subtitle: 'Ask Bar, My Day, Shortcuts, and Orb',
                       onTap: () => showWidgetPicker(context),
                     ),
                   ],
@@ -535,7 +535,7 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                       leading:
                           IconTile(Icons.feedback_outlined, AppleColors.blue),
                       title: 'Send Feedback',
-                      subtitle: 'Suggest improvements to the developer',
+                      subtitle: 'Report an issue or suggest an improvement',
                       onTap: _sendFeedback,
                     ),
                   ],

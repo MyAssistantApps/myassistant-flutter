@@ -89,7 +89,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
               onTap: () {
                 Clipboard.setData(ClipboardData(text: i.paymentUrl));
                 Navigator.pop(ctx);
-                AppFeedback.toast('Payment link copied. You may paste it in WhatsApp.');
+                AppFeedback.toast('Payment link copied. Paste it into WhatsApp.');
               },
             ),
           if (!i.isQuote && !i.isPaid)
@@ -99,7 +99,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
               onTap: () async {
                 Navigator.pop(ctx);
                 final ok = await ProService.instance.markInvoicePaid(i.id);
-                AppFeedback.toast(ok ? '${i.number} marked as paid.' : "Unable to update the invoice. Please check your connection.");
+                AppFeedback.toast(ok ? '${i.number} marked as paid.' : "Unable to update the invoice. Check your connection.");
                 _load();
               },
             ),
@@ -152,8 +152,8 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                   : items.isEmpty
                       ? NeonEmptyState(
                           icon: Icons.receipt_long_rounded,
-                          title: _kind == 'quote' ? 'No Quotes Created' : 'No Invoices Created',
-                          body: 'Create one in a few steps. It is filed under the client as a PDF.',
+                          title: _kind == 'quote' ? 'No Quotes Issued' : 'No Invoices Issued',
+                          body: 'Create one in a few taps — it is filed to the client account as a PDF.',
                         )
                       : RefreshIndicator(
                           color: Neon.violet,
@@ -251,12 +251,12 @@ class _InvoiceEditorScreenState extends State<InvoiceEditorScreen> {
   Future<void> _save() async {
     final id = _clientId;
     if (id == null) {
-      AppFeedback.toast('Please select the client first.');
+      AppFeedback.toast('Select the client first.');
       return;
     }
     final items = _lines.map((l) => l.line).where((l) => l.description.trim().isNotEmpty && l.qty > 0).toList();
     if (items.isEmpty) {
-      AppFeedback.toast('Please add at least one item with a quantity.');
+      AppFeedback.toast('Add at least one line item with a quantity.');
       return;
     }
     setState(() => _busy = true);
@@ -271,7 +271,7 @@ class _InvoiceEditorScreenState extends State<InvoiceEditorScreen> {
     if (!mounted) return;
     setState(() => _busy = false);
     if (r == null) {
-      AppFeedback.toast("Unable to create the document. Please check your connection.");
+      AppFeedback.toast("Unable to create the document. Check your connection.");
       return;
     }
     HapticFeedback.lightImpact();
@@ -279,7 +279,7 @@ class _InvoiceEditorScreenState extends State<InvoiceEditorScreen> {
     if (inv.paymentUrl.isNotEmpty) {
       await Clipboard.setData(ClipboardData(text: inv.paymentUrl));
       if (!mounted) return;
-      AppFeedback.toast('${inv.number} created. Payment link copied; you may send it to $_clientName.');
+      AppFeedback.toast('${inv.number} created. Payment link copied — send it to $_clientName.');
     } else {
       AppFeedback.toast(r.paymentError != null && !inv.isQuote
           ? '${inv.number} created. (${r.paymentError})'
@@ -398,7 +398,7 @@ class _InvoiceEditorScreenState extends State<InvoiceEditorScreen> {
           ),
           if (_kind == 'invoice') ...[
             const SizedBox(height: 8),
-            Text('A payment link is attached when online payments have been set up.',
+            Text('A payment link is attached once online payments are configured.',
                 textAlign: TextAlign.center, style: TextStyle(color: Neon.textDim, fontSize: 12)),
           ],
         ],

@@ -609,7 +609,7 @@ class IdentityUploadResult {
           'approximately 30 seconds is sufficient.';
     }
     if (status == 0) {
-      return "Unable to save. Please check your connection. Your video has been kept; "
+      return "Unable to save. Check your connection. Your video has been kept; "
           'tap Retry.';
     }
     if (status == 400 && (error ?? '').isNotEmpty) {

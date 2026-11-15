@@ -442,7 +442,7 @@ class _ShopResultsScreenState extends State<ShopResultsScreen> {
     } catch (_) {
       setState(() {
         _searching = false;
-        _error = "Unable to connect. Please check your internet connection.";
+        _error = "Unable to connect. Check your internet connection.";
       });
     }
   }
@@ -951,7 +951,7 @@ class _ShopCheckoutScreenState extends State<ShopCheckoutScreen>
                 keyboard: TextInputType.phone,
                 check: (v) => RegExp(r'^\d{10}$').hasMatch(v)
                     ? null
-                    : 'Please enter a 10-digit number.'),
+                    : 'Enter a 10-digit number.'),
             _field('building', 'House / Flat / Building'),
             _field('locality', 'Street & Area'),
             Row(children: [
@@ -962,7 +962,7 @@ class _ShopCheckoutScreenState extends State<ShopCheckoutScreen>
                       keyboard: TextInputType.number,
                       check: (v) => RegExp(r'^\d{6}$').hasMatch(v)
                           ? null
-                          : 'Please enter 6 digits.')),
+                          : 'Enter 6 digits.')),
             ]),
             _field('state', 'State'),
             const SizedBox(height: 14),
@@ -1069,7 +1069,7 @@ class _ShopOrdersScreenState extends State<ShopOrdersScreen> {
     return NeonScaffold(
       appBar: appleAppBar(context, 'My Orders'),
       body: _error.isNotEmpty
-          ? _center(Icons.receipt_long_rounded, 'No orders recorded',
+          ? _center(Icons.receipt_long_rounded, 'No orders yet',
               _error.contains('not connected')
                   ? 'In-app ordering will be available soon.'
                   : _error)
@@ -1077,7 +1077,7 @@ class _ShopOrdersScreenState extends State<ShopOrdersScreen> {
               ? const Center(
                   child: NeonLoader.inline(size: 28, semanticLabel: 'Loading'))
               : o.isEmpty
-                  ? _center(Icons.receipt_long_rounded, 'No orders recorded',
+                  ? _center(Icons.receipt_long_rounded, 'No orders yet',
                       'Your grocery and food orders will be displayed here.')
                   : RefreshIndicator(
                       onRefresh: _load,

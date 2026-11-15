@@ -458,7 +458,7 @@ class AuthService extends ChangeNotifier {
       // Say which it is: their internet, or our server (2026-10-09).
       await NetStatus.instance.check();
       throw AuthException(NetStatus.instance.state.value == NetState.offline
-          ? 'No internet connection. Please check Wi-Fi or mobile data and try again.'
+          ? 'No internet connection. Check Wi-Fi or mobile data and retry.'
           : 'Unable to reach the server. Please try again shortly.');
     }
 

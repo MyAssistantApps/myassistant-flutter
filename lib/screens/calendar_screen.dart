@@ -183,7 +183,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final ok = await CalendarService.remove(e);
     if (!mounted) return;
     if (!ok) {
-      AppFeedback.showRetry("Unable to delete the entry. Please check your connection.",
+      AppFeedback.showRetry("Unable to delete the entry. Check your connection.",
           context: context, onRetry: () => _delete(e));
       return;
     }
@@ -209,7 +209,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         .catchError((Object e) {
       AppLog.add('calendar', 'add on $when failed: $e');
       if (mounted) {
-        AppFeedback.show("Unable to start. Please tap the microphone and tell your assistant.",
+        AppFeedback.show("Unable to start. Tap the mic and tell your assistant.",
             context: context);
       }
     }));
@@ -566,8 +566,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
           CalInlineState(
             icon: Icons.event_available_rounded,
             text: _selected.isBefore(_today)
-                ? 'No entries were planned.'
-                : 'No entries planned.',
+                ? 'Nothing was scheduled.'
+                : 'Nothing scheduled.',
             actionLabel: _selected.isBefore(_today) ? null : 'Add',
             onAction:
                 _selected.isBefore(_today) ? null : () => _addOn(_selected),
@@ -601,7 +601,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       else if (items.isEmpty)
         const CalInlineState(
           icon: Icons.event_available_rounded,
-          text: 'No entries in the next two months.',
+          text: 'Nothing scheduled in the next two months.',
         )
       else
         for (final e in items) CalEntryRow(e, today: _today, showDate: true),

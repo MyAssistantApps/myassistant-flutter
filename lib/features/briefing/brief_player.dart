@@ -297,7 +297,7 @@ class BriefPlayer extends ChangeNotifier {
     final s = given ?? _takeReady() ?? await _host.fetch();
     if (gen != _gen) return;
     if (s == null) {
-      error = "Unable to load your brief. Please check your internet connection.";
+      error = "Unable to load your brief. Check your internet connection.";
       _set(BriefPlayState.failed);
       return;
     }

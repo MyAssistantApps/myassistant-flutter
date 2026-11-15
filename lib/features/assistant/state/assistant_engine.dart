@@ -369,7 +369,7 @@ class AssistantEngine extends ChangeNotifier {
       _setPhase(AssistantPhase.idle, silent: true);
       notifyListeners();
       AppLog.add('orb', 'start produced no session');
-      AppFeedback.toast("I was unable to connect. Please tap the orb to try again.");
+      AppFeedback.toast("I was unable to connect. Tap the orb to try again.");
     }
   }
 
@@ -1432,14 +1432,14 @@ class AssistantEngine extends ChangeNotifier {
     final epoch = _voiceEpoch;
     if (e.code == 'permission') {
       unawaited(_stopVoice());
-      _setLocalError('Microphone access is required. Please enable it in Settings.');
+      _setLocalError('Microphone access is required. Enable it in Settings.');
       return;
     }
     _hearFailures++;
     if (e.permanent || _hearFailures >= 3) {
       unawaited(_stopVoice());
       _setLocalError(e.code == 'network'
-          ? "I was unable to reach the speech service. Please check your internet connection."
+          ? "I was unable to reach the speech service. Check your internet connection."
           : "I was unable to hear you. Please try again.");
       return;
     }
@@ -3202,7 +3202,7 @@ class AssistantEngine extends ChangeNotifier {
                     }
                     // Asked to install: the store page is open, they tap
                     // Install, and InstallWatch opens the app when it lands.
-                    AppFeedback.toast("$want is not installed. Please tap Install.",
+                    AppFeedback.toast("$want is not installed. Tap Install.",
                         spoken: true);
                     _tellModel(
                         '[SYSTEM] "$want" is not installed, so its page in the app '
@@ -3368,7 +3368,7 @@ class AssistantEngine extends ChangeNotifier {
             // The tool has already spoken by the time this runs, so the
             // only honest move left is to correct it out loud.
             AppLog.add('update', 'no context to show the update sheet');
-            AppFeedback.toast('Please open the app first, then request the update again.',
+            AppFeedback.toast('Open the app first, then request the update again.',
                 spoken: true);
             _reportDeviceFailure('check_for_update',
                 reason: 'no screen to show it on');
@@ -3819,7 +3819,7 @@ class AssistantEngine extends ChangeNotifier {
           '[SYSTEM] ERROR: the scan was NOT saved — $why. Say that '
           'plainly in one sentence; nothing was saved.');
     } catch (_) {
-      AppFeedback.toast("Unable to save the scan. Please check your internet connection.",
+      AppFeedback.toast("Unable to save the scan. Check your internet connection.",
           spoken: true);
       await _tellModel('[SYSTEM] ERROR: the scan could not be uploaded (no '
           'connection), so NOTHING was saved. Say so and suggest trying again.');
@@ -3903,7 +3903,7 @@ class AssistantEngine extends ChangeNotifier {
     if (!await CallService.instance.ensurePermission()) {
       AppFeedback.toast(
           'Contacts access is disabled, so the call to "$name" was not placed. '
-          'Please enable Contacts in Settings.',
+          'Enable Contacts in Settings.',
           tone: FeedbackTone.error,
           spoken: true);
       await _tellModel(
@@ -4605,7 +4605,7 @@ class AssistantEngine extends ChangeNotifier {
     } catch (_) {
       // fall through to the honest message
     }
-    AppFeedback.toast('The document is saved. Please open it from Hub, My Documents.');
+    AppFeedback.toast('The document is saved. Open it from Hub, My Documents.');
   }
 
   Future<void> _openExternalUrl(String url) async {
@@ -4876,7 +4876,7 @@ class AssistantEngine extends ChangeNotifier {
       on = false;
     }
     if (!on) {
-      AppFeedback.toast('Please enable "MyAssistant Screen Control" so that your assistant can work in other apps.');
+      AppFeedback.toast('Enable "MyAssistant Screen Control" so that your assistant can work in other apps.');
       try {
         await agent.openSettings();
       } catch (_) {}

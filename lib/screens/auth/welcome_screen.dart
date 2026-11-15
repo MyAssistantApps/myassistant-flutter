@@ -143,8 +143,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                       0.45,
                                       0.85,
                                       Text(
-                                        '$assistant is ready. Calls, reminders, messages '
-                                        'and your day are all managed by voice.',
+                                        '$assistant is ready to manage your calls, reminders, messages, '
+                                        'and day — all by voice.',
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
                                             color: Neon.textLo,

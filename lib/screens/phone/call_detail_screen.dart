@@ -106,7 +106,7 @@ class _CallDetailScreenState extends State<CallDetailScreen> {
     if (text.isEmpty) {
       AppFeedback.show(r == null
               ? "Unable to draft a follow-up. Please try again."
-              : 'No follow-up is required for this call.', context: context);
+              : 'No follow-up required for this call.', context: context);
     }
   }
 
@@ -148,7 +148,7 @@ class _CallDetailScreenState extends State<CallDetailScreen> {
     } catch (_) {}
     if (!ok && mounted) {
       AppFeedback.show(how == 'whatsapp'
-              ? "The chat app is not installed. Please use SMS instead."
+              ? "The chat app is not installed. Use SMS instead."
               : "Unable to open the messaging app.", context: context);
     }
   }
@@ -428,7 +428,7 @@ class _CallDetailScreenState extends State<CallDetailScreen> {
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('A summary of what was agreed, ready to send. You may edit it as required.',
+                Text('What was agreed, ready to send. Edit it as required.',
                     style: TextStyle(
                         color: Neon.textDim, fontSize: NeonType.caption)),
                 const SizedBox(height: 8),

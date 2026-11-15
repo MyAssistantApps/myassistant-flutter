@@ -45,18 +45,18 @@ abstract final class ShoppingNav {
         final r = await ShopHandoffRunner.instance.next();
         if (r.opened) return;
         if (r.step != null) {
-          AppFeedback.toast("Unable to open ${r.step!.item.name}. Please tap Next to proceed to the following item.",
+          AppFeedback.toast("Unable to open ${r.step!.item.name}. Tap Next to continue with the next item.",
               tone: FeedbackTone.error);
           return;
         }
         await open();
         AppFeedback.toast(r.finished
-            ? 'That was the final item. Please mark your purchases.'
-            : 'That shopping trip has ended. Your list is displayed.');
+            ? 'That was the final item. Mark the items you purchased.'
+            : 'That shopping session has ended. Here is your list.');
       case 'shopping:done':
         await ShopHandoffRunner.instance.end();
         await open();
-        AppFeedback.toast('Please mark the items you have purchased.');
+        AppFeedback.toast('Mark the items you have purchased.');
       default:
         await open();
     }
@@ -184,7 +184,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> with WidgetsBin
     if (merged != null) {
       AppFeedback.show(
           '${merged.name} is already on your list'
-          '${merged.amountText.isEmpty ? '' : '; the amount is now ${merged.amountText}'}.',
+          '${merged.amountText.isEmpty ? '' : ' — quantity updated to ${merged.amountText}'}.',
           context: context,
           tone: FeedbackTone.success);
     } else if (added != null && filter != null && added.category != filter) {
@@ -267,7 +267,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> with WidgetsBin
     }
     final text = r.text ?? '';
     if (text.isEmpty) {
-      AppFeedback.show('No items remain to purchase; there is nothing to share.', context: context);
+      AppFeedback.show('No items left to purchase. Nothing to share.', context: context);
       return;
     }
     try {
@@ -289,7 +289,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> with WidgetsBin
       builder: (c) => AlertDialog(
         title: const Text('Clear Entire List'),
         content: Text('All $n ${n == 1 ? 'item' : 'items'}, purchased or not, will be removed. '
-            'This action cannot be undone.'),
+            'This cannot be undone.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Keep List')),
           FilledButton(
@@ -347,8 +347,8 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> with WidgetsBin
       if (h == null) {
         AppFeedback.show(
             reply.needsGroceryApp.isNotEmpty
-                ? "No grocery app has been selected. Nothing was opened."
-                : 'No items remain to purchase. Nothing was opened.',
+                ? "No grocery app selected. Nothing was opened."
+                : 'No items left to purchase. Nothing was opened.',
             context: context);
         return;
       }
@@ -405,7 +405,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> with WidgetsBin
               ? FloatingActionButton.extended(
                   key: const Key('shop_these'),
                   heroTag: 'shop_these',
-                  tooltip: 'Opens each item in its shopping app, where you select and pay',
+                  tooltip: 'Open each item in its shopping app to select and pay',
                   onPressed: _shopping ? null : _shop,
                   // The theme's lit FAB: the page's one primary action.
                   icon: _shopping
@@ -535,7 +535,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> with WidgetsBin
               Icon(Icons.cloud_off_rounded, size: 18, color: Neon.warningInk),
               const SizedBox(width: 10),
               Expanded(
-                child: Text("Offline · displaying your most recently saved list",
+                child: Text("Offline · showing your last saved list",
                     style: TextStyle(color: Neon.textLo, fontSize: NeonType.footnote, height: 1.3)),
               ),
               TextButton(
@@ -598,7 +598,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> with WidgetsBin
               title: _filter == null
                   ? 'No items to purchase'
                   : 'No items in ${_svc.labelOf(_filter!)}',
-              body: 'To add an item, say “add milk to my shopping list” or enter it above, e.g. '
+              body: 'Say “Add one litre of milk to my shopping list” — or type it above, e.g. '
                   '“2 kg onions”, “blue kurti size M”.',
             ),
           ],
@@ -683,7 +683,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> with WidgetsBin
               const NeonSuccess(size: 28),
               const SizedBox(width: 12),
               Expanded(
-                child: Text('All items have been purchased.',
+                child: Text('All items purchased.',
                     style: NeonType.manrope(NeonType.rowTitle, FontWeight.w600)
                         .copyWith(color: Neon.textHi)),
               ),
@@ -830,7 +830,7 @@ class GroceryAppSheet extends StatelessWidget {
             Text('Select Your Grocery App',
                 style: NeonType.cardTitle.copyWith(color: Neon.textHi)),
             const SizedBox(height: 6),
-            Text('For $what. Your selection will be remembered for next time.',
+            Text('For $what. Your selection is saved for next time.',
                 style: TextStyle(color: Neon.textLo, fontSize: NeonType.body, height: 1.35)),
             const SizedBox(height: 14),
             for (final a in apps) ...[

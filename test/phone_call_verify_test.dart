@@ -67,7 +67,7 @@ void main() {
     await t.tap(find.text('Request Code by Call'));
     await t.pump();
     await t.pump(const Duration(milliseconds: 50));
-    expect(find.textContaining('A call is being placed to +919845012345'), findsOneWidget);
+    expect(find.textContaining('Calling +919845012345 now'), findsOneWidget);
     expect(find.text('6-Digit Code'), findsOneWidget);
     expect(find.textContaining('Call Again in'), findsOneWidget);
 

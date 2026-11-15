@@ -177,7 +177,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
       if (!mounted) return;
       setState(() => _error = e is StudioException && e.message.isNotEmpty
           ? e.message
-          : "Unable to create the look. Please check your internet connection and try again.");
+          : "Unable to create the look. Check your internet connection and try again.");
     } finally {
       _tick?.cancel();
       if (mounted) setState(() => _running = false);
@@ -233,7 +233,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
               if (_studio?.consented != true) ...[
                 Text(
                   'Your photos are used only to create this look, kept private '
-                  'and labelled AI-generated. You may remove them at any time in Style '
+                  'and labelled AI-generated. You can remove them at any time in Style '
                   'Studio.',
                   style: TextStyle(
                       color: Neon.textDim,
@@ -471,9 +471,9 @@ class _TryOnScreenState extends State<TryOnScreen> {
 
   Widget _button() {
     final missing = !_hasMe
-        ? 'Please add your photo to begin.'
+        ? 'Add your photo to begin.'
         : _ref == null
-            ? 'Please add a photo of ${c.refLabel.toLowerCase()}.'
+            ? 'Add a photo of ${c.refLabel.toLowerCase()}.'
             : null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

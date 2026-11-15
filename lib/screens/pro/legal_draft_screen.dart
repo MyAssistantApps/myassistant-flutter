@@ -91,7 +91,7 @@ class _LegalDraftScreenState extends State<LegalDraftScreen> {
       return;
     }
     if (!await _rec.hasPermission()) {
-      AppFeedback.toast('Microphone access is required to dictate. Please enable it in Settings.');
+      AppFeedback.toast('Microphone access is required to dictate. Enable it in Settings.');
       return;
     }
     final dir = await getTemporaryDirectory();
@@ -106,7 +106,7 @@ class _LegalDraftScreenState extends State<LegalDraftScreen> {
   Future<void> _makeDraft() async {
     final f = _facts.text.trim();
     if (f.length < 15) {
-      AppFeedback.toast('Please describe the facts in one or two sentences.');
+      AppFeedback.toast('Describe the facts in one or two sentences.');
       return;
     }
     setState(() => _drafting = true);
@@ -115,7 +115,7 @@ class _LegalDraftScreenState extends State<LegalDraftScreen> {
     if (!mounted) return;
     setState(() => _drafting = false);
     if (d == null) {
-      AppFeedback.toast("Unable to prepare the draft. Please check your connection and try again.");
+      AppFeedback.toast("Unable to prepare the draft. Check your connection and try again.");
       return;
     }
     _title.text = d.title;
@@ -154,7 +154,7 @@ class _LegalDraftScreenState extends State<LegalDraftScreen> {
     if (!mounted) return;
     setState(() => _creating = false);
     if (doc == null) {
-      AppFeedback.toast("Unable to create the PDF. Please check your connection.");
+      AppFeedback.toast("Unable to create the PDF. Check your connection.");
       return;
     }
     HapticFeedback.lightImpact();
@@ -264,7 +264,7 @@ class _LegalDraftScreenState extends State<LegalDraftScreen> {
           Icon(Icons.fact_check_rounded, color: Neon.warning, size: 20),
           const SizedBox(width: 10),
           Expanded(
-            child: Text('This is a draft for you to review and sign. You may edit any part before creating the PDF.',
+            child: Text('This is a draft for you to review and sign. You can edit any part before creating the PDF.',
                 style: TextStyle(color: Neon.textHi, fontSize: 12.5, height: 1.35)),
           ),
         ]),

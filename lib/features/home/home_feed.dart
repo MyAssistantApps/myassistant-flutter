@@ -135,7 +135,7 @@ class HomeRanker {
     kind: HomeCardKind.getStarted,
     title: 'Ask Your Assistant',
     reason: 'Get started',
-    detail: 'Example: “Remind me to call Amma at 6”',
+    detail: 'Example: “Set a reminder to call Amma at 6 PM”',
     score: 790,
   );
 
@@ -344,7 +344,7 @@ class HomeRanker {
         kind: HomeCardKind.promise,
         title: title,
         reason: when,
-        detail: who == null ? 'Promised by you' : 'Promised to $who',
+        detail: who == null ? 'Your commitment' : 'Committed to $who',
         score: score,
         promise: p,
         person: who,

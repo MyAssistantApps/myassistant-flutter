@@ -117,7 +117,7 @@ class _PatientPickerState extends State<_PatientPicker> {
     } catch (_) {
       if (mounted) {
         setState(() => _busy = false);
-        AppFeedback.toast("Unable to add the patient. Please try again.");
+        AppFeedback.toast("Unable to add the ${ProWords.current.person.toLowerCase()}. Please try again.");
       }
     }
   }
@@ -135,7 +135,7 @@ class _PatientPickerState extends State<_PatientPicker> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _handle(),
-            _title('Select ${ProWords.current.person.toLowerCase()}'),
+            _title('Select ${ProWords.current.person}'),
             TextField(
               autofocus: true,
               textCapitalization: TextCapitalization.words,
@@ -186,7 +186,7 @@ class _PatientPickerState extends State<_PatientPicker> {
                             setState(() => _failed = false);
                             _load();
                           },
-                          child: const Text("Unable to load patients. Retry")))
+                          child: const Text("Unable to load records. Retry")))
                   : _all == null
                       ? const Center(
                           child: CircularProgressIndicator(strokeWidth: 2))
@@ -295,7 +295,7 @@ class _FollowUpSheetState extends State<_FollowUpSheet> {
     final p = _patient;
     if (p == null || _busy) return;
     if (_due.isBefore(DateTime.now())) {
-      AppFeedback.toast('Please select a future time.');
+      AppFeedback.toast('Select a future time.');
       return;
     }
     setState(() => _busy = true);
@@ -308,7 +308,7 @@ class _FollowUpSheetState extends State<_FollowUpSheet> {
     if (!mounted) return;
     if (r == null) {
       setState(() => _busy = false);
-      AppFeedback.toast("Unable to schedule. Please check your connection.");
+      AppFeedback.toast("Unable to schedule. Check your connection and retry.");
       return;
     }
     HapticFeedback.lightImpact();
@@ -331,7 +331,7 @@ class _FollowUpSheetState extends State<_FollowUpSheet> {
           GroupedCard(children: [
             AppleRow(
               leading: IconTile(Icons.person_rounded, Neon.accentF),
-              title: p?.name ?? 'Select ${ProWords.current.person.toLowerCase()}',
+              title: p?.name ?? 'Select ${ProWords.current.person}',
               titleColor: p == null ? Neon.violet : null,
               subtitle: p == null ? null : (p.phone.isEmpty ? 'No phone number on file' : p.phone),
               trailing: Icon(Icons.chevron_right_rounded, color: Neon.textDim),
@@ -388,10 +388,10 @@ class _FollowUpSheetState extends State<_FollowUpSheet> {
             contentPadding: EdgeInsets.zero,
             value: _callPatient,
             onChanged: (v) => setState(() => _callPatient = v),
-            title: Text('Remind the Patient',
+            title: Text('Reminder Call',
                 style: TextStyle(color: Neon.textHi, fontSize: 15)),
             subtitle: Text(
-                'Your assistant calls them shortly before the visit.',
+                'Your assistant calls them shortly before the follow-up.',
                 style: TextStyle(color: Neon.textLo, fontSize: 12.5)),
           ),
           const SizedBox(height: 12),
@@ -449,7 +449,7 @@ class _PaymentSheetState extends State<_PaymentSheet> {
   Future<void> _save() async {
     final amt = double.tryParse(_amount.text.replaceAll(',', '').trim());
     if (_id == null || amt == null || amt <= 0 || _busy) {
-      if (amt == null || amt <= 0) AppFeedback.toast('Please enter an amount.');
+      if (amt == null || amt <= 0) AppFeedback.toast('Enter an amount.');
       return;
     }
     setState(() => _busy = true);
@@ -461,13 +461,13 @@ class _PaymentSheetState extends State<_PaymentSheet> {
     if (!mounted) return;
     if (bal == null) {
       setState(() => _busy = false);
-      AppFeedback.toast("Unable to save. Please check your connection.");
+      AppFeedback.toast("Unable to save. Check your connection and retry.");
       return;
     }
     HapticFeedback.lightImpact();
     AppFeedback.toast(bal > 0
-        ? '$_name has an outstanding balance of ₹${bal.toStringAsFixed(bal % 1 == 0 ? 0 : 2)}.'
-        : '$_name has no outstanding balance.');
+        ? '$_name has pending dues of ₹${bal.toStringAsFixed(bal % 1 == 0 ? 0 : 2)}.'
+        : '$_name has no pending dues.');
     Navigator.pop(context, true);
   }
 
@@ -479,11 +479,11 @@ class _PaymentSheetState extends State<_PaymentSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _handle(),
-          _title(_owes ? 'Add Outstanding Amount' : 'Record Payment'),
+          _title(_owes ? 'Add Pending Dues' : 'Record Payment'),
           GroupedCard(children: [
             AppleRow(
               leading: IconTile(Icons.person_rounded, Neon.accentF),
-              title: _name ?? 'Select ${ProWords.current.person.toLowerCase()}',
+              title: _name ?? 'Select ${ProWords.current.person}',
               titleColor: _name == null ? Neon.violet : null,
               trailing: Icon(Icons.chevron_right_rounded, color: Neon.textDim),
               onTap: () async {
@@ -617,12 +617,12 @@ class _BookSheetState extends State<_BookSheet> {
     if (!mounted) return;
     if (a == null) {
       setState(() => _busy = false);
-      AppFeedback.toast("Unable to book. The slot may have just been taken.");
+      AppFeedback.toast("Unable to schedule. The slot may have just been taken.");
       _loadSlots();
       return;
     }
     HapticFeedback.lightImpact();
-    AppFeedback.toast('${p.name} booked for ${_label(s)}.');
+    AppFeedback.toast('${p.name} scheduled for ${_label(s)}.');
     Navigator.pop(context, true);
   }
 
@@ -640,11 +640,11 @@ class _BookSheetState extends State<_BookSheet> {
           GroupedCard(children: [
             AppleRow(
               leading: IconTile(Icons.person_rounded, Neon.accentF),
-              title: p?.name ?? 'Select ${ProWords.current.person.toLowerCase()}',
+              title: p?.name ?? 'Select ${ProWords.current.person}',
               titleColor: p == null ? Neon.violet : null,
               subtitle: p == null
                   ? null
-                  : (p.phone.isEmpty ? 'No phone number; no reminder call' : p.phone),
+                  : (p.phone.isEmpty ? 'No phone number, so no reminder call' : p.phone),
               trailing: Icon(Icons.chevron_right_rounded, color: Neon.textDim),
               onTap: () async {
                 final c = await pickPatient(context);
@@ -700,16 +700,16 @@ class _BookSheetState extends State<_BookSheet> {
             title: Text('Reminder Call',
                 style: TextStyle(color: Neon.textHi, fontSize: 15)),
             subtitle: Text(
-                'Your assistant calls the patient a few hours before.',
+                'Your assistant calls the ${ProWords.current.person.toLowerCase()} a few hours before.',
                 style: TextStyle(color: Neon.textLo, fontSize: 12.5)),
           ),
           const SizedBox(height: 10),
           ApplePrimaryButton(
             label: _busy
-                ? 'Booking…'
+                ? 'Scheduling…'
                 : _slot == null
                     ? 'Select a Time'
-                    : 'Book ${_hm(_slot!)}',
+                    : 'Schedule ${_hm(_slot!)}',
             onPressed: p == null || _slot == null || _busy ? null : _save,
           ),
         ],
@@ -722,7 +722,7 @@ class _BookSheetState extends State<_BookSheet> {
     if (_slotsFailed) {
       return TextButton(
           onPressed: _loadSlots,
-          child: const Text("Unable to load available times. Retry"));
+          child: const Text("Unable to load available slots. Retry"));
     }
     if (s == null) {
       return const Padding(
@@ -739,7 +739,7 @@ class _BookSheetState extends State<_BookSheet> {
           border: Border.all(color: Neon.line),
         ),
         child: Text(
-          'No times are available on this day. Please check your timings in ${ProWords.current.settings}, or select another day.',
+          'No slots available on this day. Check your hours in ${ProWords.current.settings}, or select another day.',
           style: TextStyle(color: Neon.textLo, fontSize: 13),
         ),
       );
@@ -784,10 +784,10 @@ class _LateSheetState extends State<_LateSheet> {
     if (!mounted) return;
     Navigator.pop(context);
     AppFeedback.toast(n == null
-        ? "Unable to call patients. Calling may not yet be set up on the server."
+        ? "Unable to call ${ProWords.current.people.toLowerCase()}. Calling may not yet be set up on the server."
         : n == 0
-            ? 'No remaining patients today have a phone number.'
-            : 'Calling $n patient${n == 1 ? '' : 's'} to advise that you are $_min minutes late.');
+            ? "None of today's remaining ${ProWords.current.people.toLowerCase()} has a phone number."
+            : 'Calling $n ${ProWords.current.person.toLowerCase()}${n == 1 ? '' : 's'} to inform them you are running $_min minutes late.');
   }
 
   @override
@@ -802,8 +802,8 @@ class _LateSheetState extends State<_LateSheet> {
           _title('Running Late'),
           Text(
             widget.patientsLeft == 0
-                ? 'No further patients are booked today.'
-                : 'Your assistant will call the ${widget.patientsLeft} patient'
+                ? 'No further ${ProWords.current.people.toLowerCase()} scheduled today.'
+                : 'Your assistant will call the ${widget.patientsLeft} ${ProWords.current.person.toLowerCase()}'
                     '${widget.patientsLeft == 1 ? '' : 's'} still expected today and '
                     'inform them of the delay.',
             style: TextStyle(color: Neon.textLo, fontSize: 14, height: 1.4),
@@ -815,7 +815,7 @@ class _LateSheetState extends State<_LateSheet> {
           ]),
           const SizedBox(height: 18),
           ApplePrimaryButton(
-            label: _busy ? 'Calling…' : 'Notify Patients',
+            label: _busy ? 'Calling…' : 'Notify ${ProWords.current.people}',
             onPressed: widget.patientsLeft == 0 || _busy ? null : _go,
           ),
         ],

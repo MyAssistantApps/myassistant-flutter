@@ -101,7 +101,7 @@ class _MeetingPrepSheetState extends State<MeetingPrepSheet> {
       AppFeedback.show("A reminder has been set for 10 minutes before the meeting.",
           context: context, tone: FeedbackTone.success);
     } else {
-      AppFeedback.showRetry("Unable to set the reminder. Please check your internet connection.",
+      AppFeedback.showRetry("Unable to set the reminder. Check your internet connection.",
           context: context, onRetry: () => unawaited(_remind()));
     }
   }
@@ -139,7 +139,7 @@ class _MeetingPrepSheetState extends State<MeetingPrepSheet> {
         padding: const EdgeInsets.symmetric(vertical: 24),
         child: NeonErrorState(
           message: "Unable to prepare this meeting.",
-          hint: 'Please check your internet connection and try again.',
+          hint: 'Check your internet connection and try again.',
           onRetry: () => unawaited(_load()),
         ),
       );

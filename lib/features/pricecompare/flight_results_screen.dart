@@ -256,7 +256,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                     _message(Icons.cloud_off_rounded, "Unable to Load Fares", _error, retry: true)
                   else if (a != null && shown.isEmpty)
                     _message(Icons.filter_alt_off_rounded, 'No Flights Found',
-                        'Please relax the filters to view the other ${a.fares.flights.length} flights.',
+                        'Relax the filters to view the other ${a.fares.flights.length} flights.',
                         clear: true)
                   else if (a != null) ...[
                     for (final o in shown) ...[_card(o, a.fares), const SizedBox(height: 12)],

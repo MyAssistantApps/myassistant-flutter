@@ -112,16 +112,16 @@ class PriceService extends ChangeNotifier {
   Future<PriceAnswer> compare(PriceCategory category, String query, {double? budget}) async {
     await load();
     final q = query.trim();
-    if (q.isEmpty) throw const PriceCompareException('Please enter the item to compare.');
+    if (q.isEmpty) throw const PriceCompareException('Enter the item to compare.');
     final prompt = promptFor(category, q, budget: budget, now: DateTime.now());
     final ({String text, List<SourceLink> sources, String? suggestionsHtml}) out;
     try {
       out = await (ask ?? _askGemini)(prompt);
     } on TimeoutException {
-      throw const PriceCompareException('The request timed out. Please check your internet connection and try again.');
+      throw const PriceCompareException('The request timed out. Check your internet connection and try again.');
     } catch (e) {
       AppLog.add('price', 'look-up failed: $e');
-      throw const PriceCompareException("Unable to reach the price search. Please check your internet connection and try again.");
+      throw const PriceCompareException("Unable to reach the price search. Check your internet connection and try again.");
     }
     final result = PriceResult.parse(out.text, category: category, query: q, at: DateTime.now());
     if (result == null) {
@@ -137,7 +137,7 @@ class PriceService extends ChangeNotifier {
   /// on the stores we cover, with photo, price, rating and store.
   Future<List<ProductHit>> searchProducts(String query) async {
     final q = query.trim();
-    if (q.isEmpty) throw const PriceCompareException('Please enter the item to search for.');
+    if (q.isEmpty) throw const PriceCompareException('Enter the item to search for.');
     final stores = PriceStores.shopping.map((s) => s.name).join(', ');
     final now = DateTime.now();
     final prompt =
@@ -151,10 +151,10 @@ Prices are numbers in rupees. Leave out mrp, rating, reviews, image or url you c
     try {
       out = await (ask ?? _askGemini)(prompt);
     } on TimeoutException {
-      throw const PriceCompareException('The request timed out. Please check your internet connection and try again.');
+      throw const PriceCompareException('The request timed out. Check your internet connection and try again.');
     } catch (e) {
       AppLog.add('price', 'product search failed: $e');
-      throw const PriceCompareException("Unable to reach the price search. Please check your internet connection and try again.");
+      throw const PriceCompareException("Unable to reach the price search. Check your internet connection and try again.");
     }
     var hits = ProductHit.listFrom(out.text);
     if (hits.isEmpty) {
@@ -201,10 +201,10 @@ Prices are numbers in rupees. Leave out mrp, rating, reviews, image or url you c
     try {
       out = await (ask ?? _askGemini)(prompt);
     } on TimeoutException {
-      throw const PriceCompareException('The request timed out. Please check your internet connection and try again.');
+      throw const PriceCompareException('The request timed out. Check your internet connection and try again.');
     } catch (e) {
       AppLog.add('price', 'flight look-up failed: $e');
-      throw const PriceCompareException("Unable to reach the fare search. Please check your internet connection and try again.");
+      throw const PriceCompareException("Unable to reach the fare search. Check your internet connection and try again.");
     }
     var fares = FlightFares.parse(out.text);
     var sources = out.sources;
@@ -266,7 +266,7 @@ Times are local 24-hour times; always give both depart and arrive and the durati
   /// (one or more: name, price seen, store), with what is good and bad
   /// about each and better buys worth a look, checked on the web.
   Future<ProductAdvice> recommend(List<({String name, double? price, String store})> products) async {
-    if (products.isEmpty) throw const PriceCompareException('Please open a product first.');
+    if (products.isEmpty) throw const PriceCompareException('Open a product first.');
     final list = [
       for (final (i, p) in products.indexed)
         '${i + 1}. ${p.name}${p.price == null ? '' : ' — ${rupees(p.price!)}'} on ${p.store}',
@@ -295,7 +295,7 @@ Answer with ONLY this JSON (no markdown):
       throw const PriceCompareException('The request timed out. Please try again.');
     } catch (e) {
       AppLog.add('price', 'recommend failed: $e');
-      throw const PriceCompareException("Unable to reach the AI service. Please check your internet connection and try again.");
+      throw const PriceCompareException("Unable to reach the AI service. Check your internet connection and try again.");
     }
     final a = ProductAdvice.parse(out.text, count: products.length);
     if (a == null) throw const PriceCompareException("The AI was unable to provide a recommendation. Please try again.");

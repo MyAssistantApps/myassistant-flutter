@@ -104,7 +104,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
       if (!mounted) return;
       setState(() => _transcribing = false);
       if (text == null || text.isEmpty) {
-        AppFeedback.toast("Unable to hear the dictation. Please try again or type it.");
+        AppFeedback.toast("Unable to transcribe the dictation. Please try again or type it.");
         return;
       }
       final cur = _dictation.text.trim();
@@ -113,7 +113,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
       return;
     }
     if (!await _rec.hasPermission()) {
-      AppFeedback.toast('Microphone access is required to dictate. Please enable it in Settings.');
+      AppFeedback.toast('Microphone access is required to dictate. Enable it in Settings.');
       return;
     }
     final dir = await getTemporaryDirectory();
@@ -134,7 +134,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
     if (!mounted) return;
     setState(() => _parsing = false);
     if (r == null) {
-      AppFeedback.toast("Unable to read the dictation. Please check your connection, or add the medicines manually.");
+      AppFeedback.toast("Unable to read the dictation. Check your connection, or add the medicines manually.");
       return;
     }
     setState(() {
@@ -148,13 +148,13 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
       }
       _dictation.clear();
     });
-    if (r.meds.isEmpty) AppFeedback.toast('No medicines were identified. Please add them below.');
+    if (r.meds.isEmpty) AppFeedback.toast('No medicines identified. Add them below.');
   }
 
   Future<void> _create() async {
     final meds = _rows.map((r) => r.toItem()).where((m) => m.name.trim().isNotEmpty).toList();
     if (meds.isEmpty && _advice.text.trim().isEmpty) {
-      AppFeedback.toast('Please add at least one medicine or some advice.');
+      AppFeedback.toast('Add at least one medicine or advice.');
       return;
     }
     final missingDose = meds.where((m) => m.dose.trim().isEmpty || m.frequency.trim().isEmpty).toList();
@@ -162,10 +162,10 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
       final go = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Some Fields Are Empty'),
+          title: const Text('Dosage Incomplete'),
           content: Text(
               '${missingDose.map((m) => m.name).join(', ')} '
-              '${missingDose.length == 1 ? 'has' : 'have'} no dose or frequency. Do you wish to print regardless?'),
+              '${missingDose.length == 1 ? 'has' : 'have'} no dose or frequency.'),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Amend')),
             TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Print Anyway')),
@@ -187,7 +187,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
     if (!mounted) return;
     setState(() => _creating = false);
     if (doc == null) {
-      AppFeedback.toast("Unable to create the prescription. Please check your connection.");
+      AppFeedback.toast("Unable to create the prescription. Check your connection.");
       return;
     }
     HapticFeedback.lightImpact();
@@ -216,8 +216,8 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
               borderRadius: BorderRadius.circular(12),
               child: ListTile(
                 leading: Icon(Icons.info_outline_rounded, color: Neon.warning),
-                title: const Text('Add Your Registration Number'),
-                subtitle: const Text('It appears on every prescription. Clinic settings →'),
+                title: const Text('Add Registration Number'),
+                subtitle: const Text('Printed on every prescription. Practice Settings →'),
                 onTap: () async {
                   await Navigator.of(context).push(MaterialPageRoute(
                       builder: (_) => const ClinicSettingsScreen()));
@@ -237,7 +237,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
                   textCapitalization: TextCapitalization.sentences,
                   decoration: const InputDecoration(
                     labelText: 'Dictate or type',
-                    hintText: 'e.g. Paracetamol 650 TDS 3 days after food, review in a week',
+                    hintText: 'e.g. Paracetamol 650 mg TDS for 3 days after food, review in one week',
                     alignLabelWithHint: true,
                   ),
                   onSubmitted: (_) => _parse(),
@@ -266,7 +266,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
               padding: const EdgeInsets.only(top: 6),
               child: Text(
                 _recording
-                    ? 'Listening… Tap Stop when finished'
+                    ? 'Listening… tap Stop when finished'
                     : _transcribing
                         ? 'Transcribing…'
                         : 'Reading the prescription…',

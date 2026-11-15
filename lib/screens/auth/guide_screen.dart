@@ -31,27 +31,27 @@ class _GuideScreenState extends State<GuideScreen> {
     return [
       (
         icon: Icons.graphic_eq_rounded,
-        title: 'Voice-First Interaction',
+        title: 'Talk, Not Type',
         body: 'Tap the orb at the bottom of the home screen and speak. '
-            '$a listens, responds aloud and continues the conversation.',
+            '$a listens, responds aloud, and keeps the conversation going.',
       ),
       (
         icon: Icons.task_alt_rounded,
-        title: '$a Completes Tasks for You',
-        body: 'Place calls, deliver messages, set reminders, plan your finances, '
-            'create images and speeches, all by voice command.',
+        title: '$a Gets Things Done',
+        body: 'Place calls, send messages, set reminders, plan your finances, '
+            'and create images and speeches — all by voice.',
       ),
       (
         icon: Icons.space_dashboard_rounded,
         title: 'Your Day at a Glance',
-        body: 'Home displays your agenda, promises, messages and headlines. '
-            'The Hub contains finance, markets, clients and more.',
+        body: 'Home shows your agenda, commitments, messages, and headlines. '
+            'The Hub holds finance, markets, clients, and more.',
       ),
       (
         icon: Icons.tune_rounded,
         title: 'Personalise Your Assistant',
         body: 'Select a voice under the You tab and add your own '
-            'rules. Alternatively, say "your name is Nova now" and $a renames '
+            'rules — or say "Your name is Nova now" and $a renames '
             'itself.',
       ),
     ];

@@ -87,7 +87,7 @@ class _PriceResultScreenState extends State<PriceResultScreen> {
         _suggestions = a.suggestions;
       });
     } catch (e) {
-      if (mounted) setState(() => _error = e is PriceCompareException ? e.message : 'An unexpected error has occurred. Please try again.');
+      if (mounted) setState(() => _error = e is PriceCompareException ? e.message : 'An unexpected error occurred. Please try again.');
     } finally {
       _tick?.cancel();
       if (mounted) setState(() => _busy = false);
@@ -234,15 +234,15 @@ class _PriceResultScreenState extends State<PriceResultScreen> {
       ],
       if (_sources.isNotEmpty || _suggestions.isNotEmpty) ...[
         const SizedBox(height: 26),
-        _title('Sources of These Prices'),
+        _title('Price Sources'),
         const SizedBox(height: 10),
         _sourcesBox(),
       ],
       const SizedBox(height: 16),
       Text(
         c == PriceCategory.cabs
-            ? 'Fares are estimates retrieved from the web; the app displays the actual fare before booking.'
-            : 'Prices as retrieved from the web ${_when(r.at)}. Prices change frequently; the store displays the final price.',
+            ? 'Fares are estimates from the web; the app shows the actual fare before you book.'
+            : 'Prices sourced from the web ${_when(r.at)}. Prices change often — the store shows the final price at checkout.',
         style: TextStyle(color: Neon.textDim, fontSize: NeonType.caption, height: 1.4),
       ),
     ];
@@ -318,7 +318,7 @@ class _PriceResultScreenState extends State<PriceResultScreen> {
               Icon(Icons.verified_rounded, size: 15, color: Neon.success),
               const SizedBox(width: 6),
               Flexible(
-                child: Text('Compared ${r.offers.length}${r.offers.length == 1 ? 'store' : 'stores'} · ${_when(r.at)}',
+                child: Text('Compared ${r.offers.length} ${r.offers.length == 1 ? 'store' : 'stores'} · ${_when(r.at)}',
                     style: TextStyle(color: Neon.textLo, fontSize: 13)),
               ),
             ],
@@ -444,13 +444,13 @@ class _PriceResultScreenState extends State<PriceResultScreen> {
                   Expanded(
                     child: Text.rich(
                       TextSpan(children: [
-                        const TextSpan(text: 'Saving of '),
+                        const TextSpan(text: 'You save '),
                         TextSpan(text: rupees(r.saving), style: const TextStyle(fontWeight: FontWeight.w900)),
                         TextSpan(
                             text: switch (r.category) {
-                          PriceCategory.hotels => ' per night compared with the costliest hotel found',
-                          PriceCategory.cabs => ' compared with the costliest ride option',
-                          _ => ' compared with ${r.highest!.store}, the costliest store',
+                          PriceCategory.hotels => ' per night versus the highest-priced hotel found',
+                          PriceCategory.cabs => ' versus the highest fare found',
+                          _ => ' versus ${r.highest!.store}, the highest-priced store',
                         }),
                       ]),
                       style: TextStyle(color: Neon.textHi, fontSize: 13.5),
@@ -467,7 +467,7 @@ class _PriceResultScreenState extends State<PriceResultScreen> {
                   PriceCategory.hotels => 'Book on ${low.store}',
                   PriceCategory.cabs => 'Ride with ${low.store}',
                   PriceCategory.grocery => 'Order on ${low.store}',
-                  _ => 'Purchase on ${low.store}',
+                  _ => 'Buy on ${low.store}',
                 },
                 icon: Icons.shopping_cart_checkout_rounded,
                 onPressed: () => openInShopBrowser(context, link, widget.category)),
@@ -486,18 +486,18 @@ class _PriceResultScreenState extends State<PriceResultScreen> {
           Icons.thumb_up_alt_rounded,
           switch (r.category) { PriceCategory.hotels => 'BOOK NOW', PriceCategory.cabs => 'GOOD FARE', _ => 'BUY NOW' },
           switch (r.category) {
-            PriceCategory.hotels => 'A favourable time to book',
-            PriceCategory.cabs => 'Fares are currently at normal levels',
-            _ => 'A favourable time to purchase',
+            PriceCategory.hotels => 'A good time to book',
+            PriceCategory.cabs => 'Fares are normal right now',
+            _ => 'A good time to buy',
           },
         ),
       PriceVerdict.wait => (
           Neon.warning,
           Icons.hourglass_top_rounded,
           'WAIT',
-          r.category == PriceCategory.cabs ? 'Fares appear high; please check again later' : 'The price may fall shortly',
+          r.category == PriceCategory.cabs ? 'Fares are high — check again shortly' : 'The price is likely to drop soon',
         ),
-      PriceVerdict.okay => (Neon.cyan, Icons.balance_rounded, 'FAIR PRICE', 'Neither discounted nor overpriced'),
+      PriceVerdict.okay => (Neon.cyan, Icons.balance_rounded, 'FAIR PRICE', 'In line with the market price'),
     };
     final pick = r.bestPick.isEmpty
         ? null
@@ -710,14 +710,14 @@ class _PriceResultScreenState extends State<PriceResultScreen> {
     final now = r.lowest!.price;
     final (color, line) = () {
       final lo = h.lowest, avg = h.average;
-      if (lo != null && now <= lo * 1.02) return (Neon.success, 'Excellent price: at or near the lowest recorded.');
+      if (lo != null && now <= lo * 1.02) return (Neon.success, 'Excellent price — at or near its lowest recorded.');
       if (avg != null && avg > 0 && now < avg) {
-        return (Neon.success, 'Favourable price: ${((avg - now) / avg * 100).round()}% below the usual price.');
+        return (Neon.success, 'Good price — ${((avg - now) / avg * 100).round()}% below its typical price.');
       }
       if (avg != null && avg > 0 && now > avg * 1.05) {
-        return (Neon.warning, 'High price: ${((now - avg) / avg * 100).round()}% above the usual price. An alert is recommended.');
+        return (Neon.warning, 'High price — ${((now - avg) / avg * 100).round()}% above its typical price. Set a price alert.');
       }
-      if (avg != null) return (Neon.cyan, 'Approximately the usual price.');
+      if (avg != null) return (Neon.cyan, 'Close to its typical price.');
       return (Neon.textLo, '');
     }();
     final lo = h.lowest, hi = h.highest;
@@ -822,9 +822,9 @@ class _PriceResultScreenState extends State<PriceResultScreen> {
           const SizedBox(height: 10),
           Text(
             [
-              if (!h.isEmpty) h.note.isEmpty ? 'Lowest, usual and highest prices as reported on the web.' : h.note,
-              if (h.isEmpty) 'No price history was found on the web for this product. Please set an alert to track it.',
-              if (points.length >= 2) 'The line shows the prices recorded by this device during its own checks.',
+              if (!h.isEmpty) h.note.isEmpty ? 'Lowest, typical, and highest prices as reported on the web.' : h.note,
+              if (h.isEmpty) 'No price history found for this product. Set a price alert to track it.',
+              if (points.length >= 2) 'The line plots prices recorded by this device on its own checks.',
             ].join(' '),
             style: TextStyle(color: Neon.textDim, fontSize: 11.5, height: 1.35),
           ),
@@ -906,8 +906,8 @@ class _PriceResultScreenState extends State<PriceResultScreen> {
                 const SizedBox(height: 2),
                 Text(
                   w == null
-                      ? 'Receive a notification when the price falls to your target.'
-                      : 'Checked on each day Price Compare is opened.',
+                      ? 'Get notified when the price drops to your target.'
+                      : 'Checked daily when you open Price Compare.',
                   style: TextStyle(color: Neon.textLo, fontSize: 12.5, height: 1.35),
                 ),
               ],
@@ -916,7 +916,7 @@ class _PriceResultScreenState extends State<PriceResultScreen> {
           const SizedBox(width: 8),
           if (w != null)
             IconButton(
-              tooltip: 'Remove Alert',
+              tooltip: 'Remove alert',
               onPressed: () => svc.unwatch(w.id),
               icon: Icon(Icons.delete_outline_rounded, color: Neon.textLo),
             ),
@@ -944,10 +944,10 @@ class _PriceResultScreenState extends State<PriceResultScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Notify When the Price Falls To',
+              Text('Set Your Target Price',
                   style: NeonType.manrope(18, FontWeight.w800).copyWith(color: Neon.textHi)),
               const SizedBox(height: 4),
-              Text('Currently ${rupees(now)} on${r.lowest!.store}', style: TextStyle(color: Neon.textLo, fontSize: 13)),
+              Text('Currently ${rupees(now)} on ${r.lowest!.store}', style: TextStyle(color: Neon.textLo, fontSize: 13)),
               const SizedBox(height: 14),
               Wrap(
                 spacing: 8,

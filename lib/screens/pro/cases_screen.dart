@@ -104,8 +104,8 @@ class _CasesScreenState extends State<CasesScreen> {
                           title: _closed ? 'No Closed Cases' : 'No Open Cases',
                           body: _closed
                               ? null
-                              : 'Add a case with its court and next hearing. Your assistant '
-                                  'will remind the client before each hearing.',
+                              : 'Add a matter with its court and next date of hearing — your assistant '
+                                  'reminds the client before each hearing.',
                         )
                       : RefreshIndicator(
                           color: Neon.violet,
@@ -235,7 +235,7 @@ class _NewCaseSheetState extends State<_NewCaseSheet> {
     if (!mounted) return;
     if (c == null) {
       setState(() => _busy = false);
-      AppFeedback.toast("Unable to save the case. Please check your connection.");
+      AppFeedback.toast("Unable to save the case. Check your connection.");
       return;
     }
     HapticFeedback.lightImpact();
@@ -354,10 +354,10 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
       if (outcome == null) return;
     }
     final ok = await ProService.instance.updateHearing(h.id, status: status, outcome: outcome);
-    if (!ok) AppFeedback.toast("Unable to update the hearing. Please check your connection.");
+    if (!ok) AppFeedback.toast("Unable to update the hearing. Check your connection.");
     _load();
     if (ok && status == 'adjourned' && mounted) {
-      AppFeedback.toast('Please add the next date for this case.');
+      AppFeedback.toast('Add the next date of hearing for this case.');
       _addHearing();
     }
   }
@@ -366,7 +366,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
     final c = _c;
     if (c == null) return;
     final r = await ProService.instance.updateCase(c.id, {'status': c.status == 'open' ? 'closed' : 'open'});
-    if (r == null) AppFeedback.toast("Unable to update the case. Please check your connection.");
+    if (r == null) AppFeedback.toast("Unable to update the case. Check your connection.");
     _load();
   }
 
@@ -410,7 +410,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
                         if (c.stage.isNotEmpty) AppleRow(title: 'Stage', subtitle: c.stage),
                         AppleRow(
                           title: 'Client',
-                          subtitle: c.clientName.isEmpty ? 'Not linked to a client' : c.clientName,
+                          subtitle: c.clientName.isEmpty ? 'No client linked' : c.clientName,
                           trailing: c.clientId == null
                               ? null
                               : Row(mainAxisSize: MainAxisSize.min, children: [
@@ -444,7 +444,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
                             icon: const Icon(Icons.receipt_long_rounded),
                             label: const Text('Bill Fee'),
                             onPressed: c.clientId == null
-                                ? () => AppFeedback.toast('Please link a client to this case first.')
+                                ? () => AppFeedback.toast('Link a client to this case first.')
                                 : () => Navigator.of(context).push(MaterialPageRoute(
                                     builder: (_) => InvoiceEditorScreen(
                                         clientId: c.clientId, clientName: c.clientName, presetLine: 'Professional fee — ${c.caseNumber.isNotEmpty ? c.caseNumber : c.title}'))),
@@ -454,7 +454,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
                       const SizedBox(height: 22),
                       GroupLabel('Hearings · ${_hearings.length}'),
                       if (_hearings.isEmpty)
-                        Text('No hearings recorded. Add the next date and your assistant will remind the client the day before.',
+                        Text('No hearings listed. Add the next date of hearing — your assistant reminds the client the day before.',
                             style: TextStyle(color: Neon.textLo, fontSize: 13.5, height: 1.4))
                       else
                         GroupedCard(dividerInset: 16, children: [
@@ -483,7 +483,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
                     for (final (s, label, icon) in const [
                       ('done', 'Hearing Completed', Icons.check_circle_rounded),
-                      ('adjourned', 'Adjourned: Set Next Date', Icons.update_rounded),
+                      ('adjourned', 'Adjourned — Set Next Date', Icons.update_rounded),
                       ('cancelled', 'Cancelled', Icons.event_busy_rounded),
                     ])
                       ListTile(
@@ -581,13 +581,13 @@ class _HearingSheetState extends State<_HearingSheet> {
     if (!mounted) return;
     if (r == null) {
       setState(() => _busy = false);
-      AppFeedback.toast("Unable to save the hearing. Please check your connection.");
+      AppFeedback.toast("Unable to save the hearing. Check your connection.");
       return;
     }
     HapticFeedback.lightImpact();
     AppFeedback.toast(r.noPhone
-        ? 'Hearing saved. No client number is on file, so no reminder call will be made.'
-        : 'Hearing saved. The client will receive a reminder call the day before.');
+        ? 'Hearing saved. No client number on file, so no reminder call.'
+        : 'Hearing saved. The client receives a reminder call the day before.');
     Navigator.pop(context, true);
   }
 
@@ -629,7 +629,7 @@ class _HearingSheetState extends State<_HearingSheet> {
           value: _remind,
           onChanged: (v) => setState(() => _remind = v),
           title: Text('Remind the Client', style: TextStyle(color: Neon.textHi, fontSize: 15)),
-          subtitle: Text('Your assistant will call the client the day before', style: TextStyle(color: Neon.textLo, fontSize: 12.5)),
+          subtitle: Text('Your assistant calls the client the day before', style: TextStyle(color: Neon.textLo, fontSize: 12.5)),
         ),
         const SizedBox(height: 10),
         ApplePrimaryButton(

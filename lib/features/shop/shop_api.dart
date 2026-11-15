@@ -245,7 +245,7 @@ abstract final class ShopApi {
   static Future<String> search(ShopDomain d, String q) async {
     final at = await _where();
     if (at == null) {
-      throw ShopError('Location access is required to find stores near you. Please enable it in Settings.');
+      throw ShopError('Location access is required to find stores near you. Enable it in Settings.');
     }
     final j = await _call('POST', '/search',
         {'domain': d.name, 'q': q, 'lat': at.$1, 'lng': at.$2});

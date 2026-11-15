@@ -132,7 +132,7 @@ class _FocusScreenState extends State<FocusScreen> with WidgetsBindingObserver {
             s.kind == FocusKind.rest
                 ? 'The break will end now.'
                 : done == 0
-                    ? 'Less than a minute has elapsed.'
+                    ? 'Less than a minute has passed.'
                     : done == 1
                         ? '1 minute will be logged.'
                         : '$done minutes will be logged.',
@@ -223,8 +223,8 @@ class _FocusScreenState extends State<FocusScreen> with WidgetsBindingObserver {
           },
         ),
         const SizedBox(height: 12),
-        Text('Your phone may remain locked. The countdown appears in the notifications, '
-            'and you will be notified when the time is up.',
+        Text('Your phone can stay locked. The countdown appears in your notifications, '
+            'and you will be alerted when time is up.',
             style: TextStyle(color: Neon.textLo, fontSize: NeonType.footnote, height: 1.35)),
       ],
     );
@@ -365,10 +365,10 @@ class _FocusScreenState extends State<FocusScreen> with WidgetsBindingObserver {
     final title = rest
         ? 'Break Complete'
         : s.completed
-            ? 'Focus session complete. A five-minute break is recommended.'
+            ? 'Focus session complete. Take a five-minute break.'
             : 'Focus Session Ended';
     final line = rest
-        ? 'You may begin another focus session.'
+        ? 'Ready for the next focus session?'
         : s.minutes == 0
             ? 'No full minute of focus was logged.'
             : s.minutes == 1

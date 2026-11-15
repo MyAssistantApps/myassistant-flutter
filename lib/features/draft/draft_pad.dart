@@ -186,7 +186,7 @@ class DraftPad extends ChangeNotifier {
       return true;
     } catch (e) {
       AppLog.add('draft', 'save failed: $e');
-      AppFeedback.show("Unable to save the draft. Please check your internet connection and try again.",
+      AppFeedback.show("Unable to save the draft. Check your internet connection and try again.",
           tone: FeedbackTone.error);
       return false;
     }

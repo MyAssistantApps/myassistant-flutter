@@ -156,7 +156,7 @@ class ShortcutsService extends ChangeNotifier {
   ShortcutRunReply _runReply(ShortcutsReply r) {
     if (!r.ok) {
       return ShortcutRunReply(
-          error: r.status == 410 ? 'This request has expired. Please tap Run again.' : lineFor(r.error, r.data));
+          error: r.status == 410 ? 'This request has expired. Tap Run again.' : lineFor(r.error, r.data));
     }
     final run = ((r.json!['run'] as Map?) ?? const {}).cast<String, dynamic>();
     final confirm = (run['confirm'] as Map?)?['summary'] as String?;
@@ -197,7 +197,7 @@ class ShortcutsService extends ChangeNotifier {
         return 'This task is already a shortcut.';
       case 'nothing_to_save':
       case 'too_old':
-        return 'Please perform the task once more, then save it.';
+        return 'Perform the task once more, then save it.';
       case 'money_app':
         return "Tasks in money apps cannot be saved.";
       default:

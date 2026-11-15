@@ -77,7 +77,7 @@ class _MeetingRecorderScreenState extends State<MeetingRecorderScreen> {
   String? _pausedBecause;
 
   static const _duringCall =
-      'Please end the call first. The microphone is in use during a call.';
+      'End the call first — the microphone is in use.';
 
   @override
   void initState() {
@@ -116,7 +116,7 @@ class _MeetingRecorderScreenState extends State<MeetingRecorderScreen> {
       await Future.delayed(const Duration(milliseconds: 600));
     }
     if (!await _rec.hasPermission()) {
-      _snack('Microphone access is required to record. Please enable it in Settings.');
+      _snack('Microphone access is required to record. Enable it in Settings.');
       return;
     }
     final dir = await getTemporaryDirectory();
@@ -276,7 +276,7 @@ class _MeetingRecorderScreenState extends State<MeetingRecorderScreen> {
       context: context,
       builder: (c) => AlertDialog(
         title: const Text('Discard Recording'),
-        content: const Text("This recording has not been uploaded and cannot be recovered. Do you wish to proceed?"),
+        content: const Text("This recording has not been uploaded and cannot be recovered."),
         actions: [
           TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Keep')),
           TextButton(onPressed: () => Navigator.pop(c, true), child: const Text('Discard')),
@@ -315,7 +315,7 @@ class _MeetingRecorderScreenState extends State<MeetingRecorderScreen> {
         context: context,
         builder: (c) => AlertDialog(
           title: const Text('Leave Without Uploading'),
-          content: const Text("This recording has not been uploaded and will be lost. Do you wish to proceed?"),
+          content: const Text("This recording has not been uploaded and will be lost."),
           actions: [
             TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Stay')),
             TextButton(onPressed: () => Navigator.pop(c, true), child: const Text('Leave')),
@@ -380,11 +380,11 @@ class _MeetingRecorderScreenState extends State<MeetingRecorderScreen> {
                 const SizedBox(height: 8),
                 Text(
                   switch (_stage) {
-                    _Stage.ready => 'Please place the phone in the middle of the table.',
-                    _Stage.recording => 'Recording. Please keep this screen open.',
+                    _Stage.ready => 'Place the phone in the centre of the table.',
+                    _Stage.recording => 'Recording — keep this screen open.',
                     _Stage.paused => _pausedBecause ?? 'Paused',
-                    _Stage.uploading => 'Uploading. The minutes will be ready in a few minutes.',
-                    _Stage.failed => 'Not yet uploaded. Your recording remains saved on this phone.',
+                    _Stage.uploading => 'Uploading — your minutes will be ready shortly.',
+                    _Stage.failed => 'Not yet uploaded. Your recording is safe on this phone.',
                   },
                   textAlign: TextAlign.center,
                   // On air says so in the danger tone's words.

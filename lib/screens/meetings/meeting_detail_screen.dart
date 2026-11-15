@@ -187,7 +187,7 @@ class _MeetingDetailScreenState extends State<MeetingDetailScreen> {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-                'Your minutes are being prepared. This takes a few minutes. You may '
+                'Your minutes are being prepared. This takes a few minutes. You can '
                 'leave this screen; you will be notified when they are ready.',
                 style: TextStyle(color: Neon.textLo, fontSize: NeonType.body, height: 1.45)),
           ),

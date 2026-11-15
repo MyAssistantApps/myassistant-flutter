@@ -79,7 +79,7 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
       if (t.isEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context)
-              .showSnackBar(const SnackBar(content: Text('Please copy a product link from Amazon or Flipkart first.')));
+              .showSnackBar(const SnackBar(content: Text('Copy a product link from Amazon or Flipkart first.')));
         }
         return;
       }
@@ -125,10 +125,10 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
           children: [
             _searchCard(),
             const SizedBox(height: 22),
-            _sectionTitle('Shop Within the App'),
+            _sectionTitle('Shop in the App'),
             Padding(
               padding: const EdgeInsets.fromLTRB(4, 2, 4, 10),
-              child: Text('Open a store here. On a product page, tap Compare to view its price across all stores.',
+              child: Text('Open a store here. On any product page, tap Compare to view its price across stores.',
                   style: TextStyle(color: Neon.textLo, fontSize: 13, height: 1.35)),
             ),
             _shopStores(),
@@ -155,8 +155,8 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
             ],
             const SizedBox(height: 22),
             Text(
-              'Prices are retrieved from the web using Google Search and may change at any time. The store '
-              'displays the final price before payment. Alerts are checked each time Price Compare is opened.',
+              'Prices are sourced from the web via Google Search and may change at any time — the store '
+              'shows the final price at checkout. Price alerts are checked each time you open Price Compare.',
               style: TextStyle(color: Neon.textDim, fontSize: NeonType.caption, height: 1.4),
             ),
             Align(
@@ -276,7 +276,7 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
                     NeonType.manrope(30, FontWeight.w800).copyWith(color: Neon.textHi, letterSpacing: -1, height: 1.1),
               ),
               const SizedBox(height: 8),
-              Text('Prices across all stores, price history and an AI purchase recommendation.',
+              Text('Prices across stores, price history, and an AI buy-or-wait recommendation.',
                   style: TextStyle(color: Neon.textLo, fontSize: 14, height: 1.35)),
             ],
           ),
@@ -328,7 +328,7 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
               ),
               if (_cat == PriceCategory.shopping || _cat == PriceCategory.grocery)
                 IconButton(
-                  tooltip: 'Paste a Product Link',
+                  tooltip: 'Paste a product link',
                   onPressed: _paste,
                   icon: Icon(Icons.content_paste_rounded, color: Neon.textLo, size: 21),
                 ),
@@ -476,7 +476,7 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
           autofocus: true,
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          decoration: const InputDecoration(prefixText: '₹ ', hintText: 'Considered in the AI recommendation'),
+          decoration: const InputDecoration(prefixText: '₹ ', hintText: 'Factored into the AI recommendation'),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, ''), child: const Text('Clear')),

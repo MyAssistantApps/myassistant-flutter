@@ -157,7 +157,7 @@ class NeonErrorState extends StatelessWidget {
     this.icon = Icons.cloud_off_rounded,
   });
 
-  static const defaultHint = 'Please check your internet connection and try again.';
+  static const defaultHint = 'Check your internet connection and try again.';
 
   @override
   Widget build(BuildContext context) {

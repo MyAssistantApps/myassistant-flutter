@@ -177,7 +177,7 @@ class ShareIntakeService {
   Future<void> _handle(List<SharedMediaFile> files) async {
     if (files.isEmpty) return;
     if (!AuthService.instance.isSignedIn) {
-      AppFeedback.toast('Please sign in, then share it again. Nothing was saved.');
+      AppFeedback.toast('Sign in, then share it again. Nothing was saved.');
       return;
     }
     // ONE PHOTO: maybe it is for a card (2026-09-26 — his daughter's old
@@ -300,7 +300,7 @@ class ShareIntakeService {
           ? 'The file is too large to save (maximum 20 MB).'
           : 'The files are too large to save (maximum 20 MB each).');
     } else if (failed > 0) {
-      AppFeedback.toast("Unable to save. Please check your internet connection.");
+      AppFeedback.toast("Unable to save. Check your internet connection.");
     } else if (refusal != null) {
       AppFeedback.toast(refusal);
     } else if (skipped > 0) {
@@ -378,7 +378,7 @@ class ShareIntakeService {
         .toList();
     final title = (u['title'] ?? 'Document').toString();
     if (events.isEmpty) {
-      AppFeedback.toast('"$title" has been read and saved. You may ask your assistant about '
+      AppFeedback.toast('"$title" has been read and saved. Ask your assistant about '
           'it at any time.');
       return;
     }

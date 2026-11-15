@@ -166,7 +166,7 @@ class _FlightSearchScreenState extends State<FlightSearchScreen> {
     final f = _from, t = _to;
     if (f == null || t == null || f.code == t.code) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Please select two different airports.')));
+          content: Text('Select two different airports.')));
       return;
     }
     if (!_domestic && f.india && t.india) {
@@ -572,7 +572,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
     setState(() {
       _loading = false;
       if (r == null) {
-        _error = "Unable to connect. Please check your internet connection.";
+        _error = "Unable to connect. Check your internet connection.";
         return;
       }
       _configured = r['configured'] != false;

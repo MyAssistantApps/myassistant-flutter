@@ -143,7 +143,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
     if (items.isEmpty) {
       return NeonEmptyState(
         icon: Icons.account_balance_wallet_rounded,
-        title: 'No finance items recorded',
+        title: 'No finance items yet',
         body: 'To add your EMIs, incomes and expenses, use the + button or '
             'tell ${AssistantIdentity.name}: "I have a bike EMI of '
             '₹3,500 at 11 percent".',
@@ -294,7 +294,7 @@ class _AddItemDialogState extends State<_AddItemDialog> {
   Future<void> _save() async {
     final amount = double.tryParse(_amount.text.trim());
     if (_name.text.trim().isEmpty || amount == null || amount <= 0) {
-      setState(() => _problem = 'Please enter a name and an amount greater than zero.');
+      setState(() => _problem = 'Enter a name and an amount greater than zero.');
       return;
     }
     setState(() {
@@ -323,7 +323,7 @@ class _AddItemDialogState extends State<_AddItemDialog> {
     } else {
       setState(() {
         _saving = false;
-        _problem = "Unable to save. Please check the values and your connection.";
+        _problem = "Unable to save. Check the values and your connection.";
       });
     }
   }

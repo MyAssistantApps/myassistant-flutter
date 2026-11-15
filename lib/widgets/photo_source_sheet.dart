@@ -175,9 +175,9 @@ abstract final class PhotoSourceSheet {
             style: NeonType.manrope(NeonType.title3, FontWeight.w700).copyWith(color: Neon.textHi)),
         content: Text(
           camera
-              ? 'Camera access is required to take a picture. Please enable it in Settings. '
+              ? 'Camera access is required to take a picture. Enable it in Settings. '
                   'Alternatively, select a photo from your gallery.'
-              : 'Photo access is required to select a photo. Please enable it in Settings.',
+              : 'Photo access is required to select a photo. Enable it in Settings.',
           style: TextStyle(color: Neon.textHi, fontSize: NeonType.rowTitle, height: 1.35),
         ),
         actions: [

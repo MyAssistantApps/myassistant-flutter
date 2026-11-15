@@ -70,7 +70,7 @@ abstract final class ShoppingShare {
         final read = _choice(
             ctx,
             Icons.chrome_reader_mode_rounded,
-            isLink ? 'Read and Summarise the Link' : 'Describe This Content',
+            isLink ? 'Summarise This Link' : 'Summarise This Text',
             'read',
             primary: !shopFirst);
         return SafeArea(

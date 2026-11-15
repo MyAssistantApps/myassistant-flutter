@@ -57,7 +57,7 @@ class _ProfessionScreenState extends State<ProfessionScreen> {
     if (!ok) {
       setState(() {
         _busy = false;
-        _error = "Unable to save. Please check your connection and try again.";
+        _error = "Unable to save. Check your connection and try again.";
       });
       return;
     }
@@ -67,8 +67,8 @@ class _ProfessionScreenState extends State<ProfessionScreen> {
     if (Persona.value != c) {
       setState(() {
         _busy = false;
-        _error = "This server does not yet support professions; it requires "
-            'the latest backend update. Your selection was not saved.';
+        _error = "Profession selection requires the latest server update; "
+            'your selection was not saved.';
       });
       AppFeedback.toast(_error!);
       return;
@@ -169,7 +169,7 @@ class _ProfessionScreenState extends State<ProfessionScreen> {
               style: TextStyle(
                   color: Neon.textHi, fontSize: 15, fontWeight: FontWeight.w600)),
           const SizedBox(height: 4),
-          Text('Optional. Helps your assistant communicate with your patients.',
+          Text('Optional. Helps your assistant speak to patients accurately.',
               style: TextStyle(color: Neon.textDim, fontSize: 12.5)),
           const SizedBox(height: 10),
           Wrap(

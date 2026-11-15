@@ -69,11 +69,11 @@ class _ConsultNoteScreenState extends State<ConsultNoteScreen> {
   Future<void> _toggleRecord() async {
     if (_recording) return _stop();
     if (!_consent) {
-      AppFeedback.toast('Please confirm that the patient has agreed to the recording.');
+      AppFeedback.toast('Confirm patient consent before recording.');
       return;
     }
     if (!await _rec.hasPermission()) {
-      AppFeedback.toast('Microphone access is required to record. Please enable it in Settings.');
+      AppFeedback.toast('Microphone access is required to record. Enable it in Settings.');
       return;
     }
     final dir = await getTemporaryDirectory();
@@ -120,7 +120,7 @@ class _ConsultNoteScreenState extends State<ConsultNoteScreen> {
   Future<void> _draft() async {
     final t = _transcript.text.trim();
     if (t.length < 20) {
-      AppFeedback.toast('Please add more of the consultation before drafting.');
+      AppFeedback.toast('Add more of the consultation before drafting.');
       return;
     }
     setState(() => _drafting = true);
@@ -129,7 +129,7 @@ class _ConsultNoteScreenState extends State<ConsultNoteScreen> {
     if (!mounted) return;
     setState(() => _drafting = false);
     if (r == null) {
-      AppFeedback.toast("Unable to draft the note. Please check your connection and try again.");
+      AppFeedback.toast("Unable to draft the clinical note. Check your connection and try again.");
       return;
     }
     final n = r.note;
@@ -158,7 +158,7 @@ class _ConsultNoteScreenState extends State<ConsultNoteScreen> {
     if (!mounted) return;
     setState(() => _saving = false);
     if (!ok) {
-      AppFeedback.toast("Unable to save. Please check your internet connection.");
+      AppFeedback.toast("Unable to save. Check your internet connection.");
       return;
     }
     HapticFeedback.lightImpact();
@@ -267,7 +267,7 @@ class _ConsultNoteScreenState extends State<ConsultNoteScreen> {
             _transcribing
                 ? 'Transcribing…'
                 : _recording
-                    ? 'Recording  $_clock  · Tap to stop'
+                    ? 'Recording  $_clock  · tap to stop'
                     : 'Tap to record the consultation',
             style: TextStyle(
                 color: _recording ? Neon.error : Neon.textLo,
@@ -284,13 +284,13 @@ class _ConsultNoteScreenState extends State<ConsultNoteScreen> {
           textCapitalization: TextCapitalization.sentences,
           decoration: const InputDecoration(
             labelText: 'Consultation transcript or notes',
-            hintText: 'Recordings appear here. You may also type, or dictate using the keyboard microphone.',
+            hintText: 'Recordings appear here. You can also type, or dictate with the keyboard microphone.',
             alignLabelWithHint: true,
           ),
         ),
         const SizedBox(height: 16),
         ApplePrimaryButton(
-          label: _drafting ? 'Drafting the note…' : 'Draft Note',
+          label: _drafting ? 'Drafting clinical note…' : 'Draft Note',
           icon: Icons.auto_awesome_rounded,
           onPressed: _drafting || _recording || _transcribing ||
                   _transcript.text.trim().length < 20
@@ -319,8 +319,8 @@ class _ConsultNoteScreenState extends State<ConsultNoteScreen> {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Draft: please review every line before saving. '
-              'It records only what was said; please correct any errors.',
+              'Draft — review every line before saving. '
+              'It records only what was said; correct any errors.',
               style: TextStyle(color: Neon.textHi, fontSize: 12.5, height: 1.35),
             ),
           ),
@@ -351,12 +351,12 @@ class _ConsultNoteScreenState extends State<ConsultNoteScreen> {
       ],
       if (n.redFlags.isNotEmpty) ...[
         const SizedBox(height: 12),
-        Text('Warning signs explained to the patient:${n.redFlags.join('; ')}',
+        Text('Red flags explained to the patient: ${n.redFlags.join('; ')}',
             style: TextStyle(color: Neon.textLo, fontSize: 13)),
       ],
       if (n.followUpDays != null && n.followUpDays! > 0) ...[
         const SizedBox(height: 8),
-        Text('Review in ${n.followUpDays} days',
+        Text('Follow-up consultation in ${n.followUpDays} days',
             style: TextStyle(color: Neon.textHi, fontSize: 14, fontWeight: FontWeight.w600)),
       ],
       const SizedBox(height: 18),

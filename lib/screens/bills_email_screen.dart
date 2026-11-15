@@ -117,7 +117,7 @@ class _BillsEmailScreenState extends State<BillsEmailScreen> {
     if (yes != true) return;
     await _run(() async => await _svc.rotate() != null,
         ok: 'New address created.',
-        fail: "Unable to get a new address. This may be done 5 times a day.");
+        fail: "Unable to get a new address. The limit is 5 per day.");
   }
 
   @override
@@ -159,7 +159,7 @@ class _BillsEmailScreenState extends State<BillsEmailScreen> {
 
   List<Widget> _off() => [
         Text(
-          "Obtain your own address for bills, tickets and policy renewals. Forward them to it and "
+          "Get a dedicated address for bills, tickets, and policy renewals. Forward them to it and "
           "your assistant will save them in My Documents and remind you before they are due.",
           style: TextStyle(color: Neon.textHi, fontSize: 15, height: 1.4),
         ),
@@ -256,7 +256,7 @@ class _BillsEmailScreenState extends State<BillsEmailScreen> {
         ),
         AppleRow(
           title: 'Get a New Address',
-          subtitle: 'Use this if you begin receiving mail from unknown senders.',
+          subtitle: 'Use this if you start receiving mail from unknown senders.',
           onTap: _busy ? null : _confirmRotate,
         ),
       ]),
@@ -265,7 +265,7 @@ class _BillsEmailScreenState extends State<BillsEmailScreen> {
       GroupedCard(children: [
         for (final (i, t) in const [
           'Copy your address.',
-          'In your email app, forward a bill to it, or set up automatic forwarding for emails from your electricity, phone or insurance company.',
+          'In your email app, forward a bill to it — or set up automatic forwarding from your electricity, phone, or insurance provider.',
           'If your email service sends a confirmation code, it appears below.',
         ].indexed)
           Padding(
@@ -285,7 +285,7 @@ class _BillsEmailScreenState extends State<BillsEmailScreen> {
         GroupedCard(children: [
           AppleRow(
             leading: IconTile(Icons.inbox_rounded, Neon.cyan),
-            title: 'No emails received. Forward a bill to begin.',
+            title: 'No emails yet. Forward a bill to begin.',
             titleMaxLines: 2,
           ),
         ])
@@ -297,7 +297,7 @@ class _BillsEmailScreenState extends State<BillsEmailScreen> {
   }
 
   Widget _footer(MailInboxState? s) => Text(
-        'Only people who know this address can send to it. Your assistant never pays, replies or clicks links from these emails.'
+        'Only people who know this address can send to it. Your assistant never pays, replies to, or opens links in these emails.'
         '${s == null ? '' : ' Limit: ${s.perDay} emails a day, ${s.maxMb} MB each.'}',
         style: TextStyle(color: Neon.textLo, fontSize: NeonType.footnote, height: 1.4),
       );

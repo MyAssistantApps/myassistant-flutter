@@ -73,7 +73,7 @@ class BusinessCardFlow {
         error = (body['error'] ?? "Unable to read the card.").toString();
       }
     } catch (_) {
-      error = "Unable to read the card. Please check your internet connection.";
+      error = "Unable to read the card. Check your internet connection.";
     }
     if (reading && context.mounted) {
       Navigator.of(context, rootNavigator: true).pop();

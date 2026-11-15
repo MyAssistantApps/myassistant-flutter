@@ -47,8 +47,8 @@ class _AuthScreenState extends State<AuthScreen> {
     super.initState();
     // Arrived here because the session ended, not by choice: say so kindly.
     if (AuthService.instance.sessionEnded) {
-      _error = 'For your security, you have been signed out. Please sign in again. '
-          'Everything you saved has been retained.';
+      _error = 'For your security, you have been signed out. Sign in again to continue. '
+          'All your data is intact.';
     }
   }
 
@@ -135,8 +135,8 @@ class _AuthScreenState extends State<AuthScreen> {
                       const SizedBox(height: 6),
                       Text(
                         _isSignUp
-                            ? 'Your personal assistant, available wherever you are.'
-                            : 'Please sign in to continue.',
+                            ? 'Your personal assistant — wherever you are.'
+                            : 'Sign in to continue.',
                         style: TextStyle(
                             color: Neon.textLo, fontSize: 15, height: 1.4),
                       ),
@@ -155,7 +155,7 @@ class _AuthScreenState extends State<AuthScreen> {
                               textInputAction: TextInputAction.next,
                               textCapitalization: TextCapitalization.words,
                               decoration: const InputDecoration(
-                                labelText: 'Your Name',
+                                labelText: 'Full Name',
                                 prefixIcon: Icon(Icons.person_outline_rounded),
                               ),
                               // Mandatory: the assistant addresses the
@@ -163,7 +163,7 @@ class _AuthScreenState extends State<AuthScreen> {
                               // account reads broken from minute one.
                               validator: (v) =>
                                   (v == null || v.trim().length < 2)
-                                      ? 'Please enter your name.'
+                                      ? 'Enter your name.'
                                       : null,
                             ),
                             const SizedBox(height: 14),
@@ -218,7 +218,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           if (t.isEmpty ||
                               !t.contains('@') ||
                               !t.contains('.')) {
-                            return 'Please enter a valid email address.';
+                            return 'Enter a valid email address.';
                           }
                           return null;
                         },
@@ -243,9 +243,9 @@ class _AuthScreenState extends State<AuthScreen> {
                           ),
                         ),
                         validator: (v) {
-                          if ((v ?? '').isEmpty) return 'Please enter your password.';
+                          if ((v ?? '').isEmpty) return 'Enter your password.';
                           if (_isSignUp && v!.length < 8) {
-                            return 'Password must contain at least 8 characters.';
+                            return 'Use at least 8 characters.';
                           }
                           return null;
                         },
@@ -417,8 +417,8 @@ class _AuthScreenState extends State<AuthScreen> {
                                 }),
                         child: Text(
                           _isSignUp
-                              ? 'Already have an account? Sign in here'
-                              : 'Do not have an account? Register here',
+                              ? 'Already have an account? Sign In'
+                              : 'New to MyAssistant? Create Account',
                         ),
                       ),
                       const SizedBox(height: 8),

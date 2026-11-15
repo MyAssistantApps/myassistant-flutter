@@ -85,7 +85,7 @@ class _ShoppingEditSheetState extends State<ShoppingEditSheet> {
     String? amountError;
     String? linkError;
     if (name.isEmpty) {
-      nameError = 'Please enter the item to purchase.';
+      nameError = 'Enter the item to purchase.';
     } else if (name.length > shoppingNameMax) {
       nameError = 'At most 80 characters are permitted. Please place the remainder in the details.';
     } else if (name != _item.name) {
@@ -95,7 +95,7 @@ class _ShoppingEditSheetState extends State<ShoppingEditSheet> {
     if (amount != _spaces(_item.amountText)) {
       final a = parseAmount(amount);
       if (a == null) {
-        amountError = 'Please enter a valid amount, such as “2 kg”, “1 packet” or “3”.';
+        amountError = 'Enter a valid amount, such as “2 kg”, “1 packet” or “3”.';
       } else {
         patch['quantity'] = a.quantity;
         patch['unit'] = a.unit;
@@ -107,7 +107,7 @@ class _ShoppingEditSheetState extends State<ShoppingEditSheet> {
     if (store != (_item.store ?? '')) patch['store'] = store.isEmpty ? null : store;
     final link = cleanShoppingLink(_link.text);
     if (link == null) {
-      linkError = 'Please enter a web address beginning with https://';
+      linkError = 'Enter a web address beginning with https://';
     } else if (link != (_item.link ?? '')) {
       patch['link'] = link.isEmpty ? null : link;
     }

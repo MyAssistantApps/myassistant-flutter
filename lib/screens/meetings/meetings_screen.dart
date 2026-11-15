@@ -113,8 +113,8 @@ class _RecordedMeetingsScreenState extends State<RecordedMeetingsScreen> {
           NeonEmptyState(
             icon: Icons.groups_rounded,
             title: 'No Meetings Recorded',
-            body: 'To record a meeting, tap Record a Meeting or say "record this meeting". '
-                'Minutes, decisions and action items are provided when it ends.',
+            body: 'Tap Record a Meeting or say "Record the minutes of this meeting". '
+                'Minutes, decisions, and action items are ready when it ends.',
             actionLabel: 'Record a Meeting',
             actionIcon: Icons.fiber_manual_record_rounded,
             onAction: _record,
@@ -344,7 +344,7 @@ class _MeetingsScreenState extends State<MeetingsScreen> {
               leading: Icon(Icons.group_add_rounded, color: Neon.violet),
               title: Text('New Group',
                   style: TextStyle(color: Neon.textHi, fontWeight: FontWeight.w600)),
-              subtitle: Text('A shared conversation for your team, family or friends',
+              subtitle: Text('A shared conversation for your team, family, or friends',
                   style: TextStyle(color: Neon.textLo)),
               onTap: () => Navigator.of(c).pop('group'),
             ),
@@ -444,13 +444,13 @@ class _MeetingsScreenState extends State<MeetingsScreen> {
           const SizedBox(height: 22),
           _section('Groups'),
           if (groups.isEmpty)
-            _emptyRow('No groups available', 'New Group', _newGroup)
+            _emptyRow('No groups yet', 'New Group', _newGroup)
           else
             _grouped([for (final g in groups) _groupTile(g)]),
           const SizedBox(height: 18),
           _section('Chats'),
           if (_threads.isEmpty)
-            _emptyRow('No chats available', 'New Chat', _newChat)
+            _emptyRow('No conversations yet', 'New Chat', _newChat)
           else
             _grouped([for (final t in _threads) _threadTile(t)]),
         ],

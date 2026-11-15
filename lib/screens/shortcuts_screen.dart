@@ -140,7 +140,7 @@ class _ShortcutsScreenState extends State<ShortcutsScreen> {
       context: context,
       builder: (c) => AlertDialog(
         title: Text('Delete “${s.name}”'),
-        content: const Text('This shortcut will be permanently removed and its name will no longer run it. Do you wish to proceed?'),
+        content: const Text('This shortcut will be permanently deleted.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(c, false),
@@ -175,7 +175,7 @@ class _ShortcutsScreenState extends State<ShortcutsScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 16),
-          child: Text('A shortcut performs several actions when you say its name.',
+          child: Text('A shortcut runs several actions when you say its name.',
               style: TextStyle(
                   color: Neon.textLo,
                   fontSize: NeonType.footnote,
@@ -195,7 +195,7 @@ class _ShortcutsScreenState extends State<ShortcutsScreen> {
         else if (list.isEmpty)
           const NeonEmptyState(
             icon: Icons.bolt_rounded,
-            title: 'No shortcuts available',
+            title: 'No shortcuts yet',
             body: 'To create a shortcut, say "Create a shortcut called office mode that '
                 'puts my phone on silent and gives me directions to '
                 'office."',
@@ -204,7 +204,7 @@ class _ShortcutsScreenState extends State<ShortcutsScreen> {
           for (final s in list) _card(s),
         if (_svc.full)
           _note(
-              'The limit of ${_svc.maxShortcuts} shortcuts has been reached. Please remove one to add another.'),
+              'You have reached the limit of ${_svc.maxShortcuts} shortcuts. Remove one to add another.'),
       ],
     );
   }

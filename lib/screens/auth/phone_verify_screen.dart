@@ -106,7 +106,7 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
   Future<void> _typed() async {
     final digits = _phone.text.replaceAll(RegExp(r'\D'), '');
     if (digits.length < 6) {
-      setState(() => _error = 'Please enter your phone number.');
+      setState(() => _error = 'Enter your phone number.');
       return;
     }
     setState(() {
@@ -125,7 +125,7 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
   Future<void> _callMe() async {
     final digits = _phone.text.replaceAll(RegExp(r'\D'), '');
     if (_calledTo == null && digits.length < 10) {
-      setState(() => _error = 'Please enter your 10-digit mobile number.');
+      setState(() => _error = 'Enter your 10-digit mobile number.');
       return;
     }
     final to = _calledTo ?? _e164;
@@ -161,7 +161,7 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
     final code = _code.text.replaceAll(RegExp(r'\D'), '');
     if (to == null) return;
     if (code.length != 6) {
-      setState(() => _error = 'Please enter the 6-digit code from the call.');
+      setState(() => _error = 'Enter the 6-digit code from the call.');
       return;
     }
     setState(() {
@@ -185,18 +185,18 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
           'assistant. Google confirms the number of the SIM in this phone '
           'with your network; no code is required.';
     }
-    if (!m.reached) return 'Unable to connect. Please check your internet connection.';
+    if (!m.reached) return 'Unable to connect. Check your internet connection.';
     if (m.call) {
       final to = _calledTo;
       return to == null
           ? 'Your number allows friends and family to reach you through their assistant. '
-              "Your number will be called and a 6-digit code read out."
-          : "A call is being placed to $to. Please answer, note the 6-digit code and "
+              "We will call your number and read out a 6-digit code."
+          : "Calling $to now. Answer, note the 6-digit code, and "
               'enter it below.';
     }
     if (m.typed) {
       return "Your network is not yet able to confirm numbers automatically. For "
-          'testing, please enter your number instead.';
+          'testing, enter your number instead.';
     }
     return "Your network is not yet able to confirm numbers automatically, so this "
         'step is currently unavailable on this phone.';

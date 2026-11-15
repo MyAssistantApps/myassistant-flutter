@@ -269,7 +269,7 @@ class _McpServersScreenState extends State<McpServersScreen> {
       builder: (c) => AlertDialog(
         title: Text('Remove $name?', style: TextStyle(color: Neon.textHi)),
         content: Text(
-            'Its tools will no longer be available to your assistant, and stored credentials will be deleted. Do you wish to proceed?',
+            'Its tools will no longer be available to your assistant, and stored credentials will be deleted.',
             style: TextStyle(color: Neon.textLo)),
         actions: [
           TextButton(

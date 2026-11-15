@@ -114,7 +114,7 @@ class _StudioScreenState extends State<StudioScreen> {
         content: const Text(
             'Your saved photos of yourself will be deleted from the server, '
             'and Style Studio will stop using them. Looks you have already '
-            'created will remain in your files. Do you wish to proceed?'),
+            'created remain in your files.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(c, false),
@@ -273,7 +273,7 @@ class _StudioScreenState extends State<StudioScreen> {
     final s = _state;
     if (s == null) return;
     if (r.needsModel && s.myPhotos.isEmpty) {
-      _toast('Please add a photo of yourself first. It is required for every look.');
+      _toast('Add a photo of yourself first — every look uses it.');
       await _addMyPhoto();
       if (!mounted || (_state?.myPhotos.isEmpty ?? true)) return;
     }
@@ -352,7 +352,7 @@ class _StudioScreenState extends State<StudioScreen> {
         onRetry: _load,
       );
 
-  static const _offline = "Unable to load Style Studio. Please check your connection.";
+  static const _offline = "Unable to load Style Studio. Check your connection.";
 
   Widget _body() {
     final s = _state!;
@@ -407,9 +407,9 @@ class _StudioScreenState extends State<StudioScreen> {
                   color: Neon.textHi)),
           const SizedBox(height: 12),
           Text(
-            'Style Studio applies a new outfit, a different haircut or a '
-            'professional backdrop to a photo of you, allowing you to preview '
-            'the result before you purchase, book or print.',
+            'Style Studio applies a new outfit, a different haircut, or a '
+            'professional backdrop to your photo — preview the result '
+            'before you buy, book, or print.',
             style: TextStyle(color: Neon.textLo, fontSize: 15, height: 1.45),
           ),
           const SizedBox(height: 24),
@@ -433,7 +433,7 @@ class _StudioScreenState extends State<StudioScreen> {
                 _point(Icons.auto_fix_high_rounded,
                     'Every result is AI-generated and labelled as such in your files.'),
                 _point(Icons.delete_outline_rounded,
-                    'You can remove your photos at any time: the privacy button in the corner deletes them.'),
+                    'You can remove your photos at any time — the privacy button in the corner deletes them.'),
               ],
             ),
           ),
@@ -479,7 +479,7 @@ class _StudioScreenState extends State<StudioScreen> {
             Expanded(
               child: Text(
                 'New looks are currently unavailable. '
-                'All other features remain available.',
+                'All other features work as usual.',
                 style: TextStyle(color: Neon.textLo, fontSize: 13, height: 1.35),
               ),
             ),
@@ -508,8 +508,8 @@ class _StudioScreenState extends State<StudioScreen> {
           Padding(
             padding: const EdgeInsets.only(top: 10, left: 2),
             child: Text(
-              'Please add one clear, well-lit photo with your face and shoulders visible. Every '
-              'look uses it, so this is required only once.',
+              'One clear, well-lit photo — face and shoulders visible. Every '
+              'look uses it, so you add it only once.',
               style: TextStyle(color: Neon.textLo, fontSize: 13, height: 1.4),
             ),
           ),

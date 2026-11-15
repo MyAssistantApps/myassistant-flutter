@@ -57,7 +57,7 @@ class _AccountSectionState extends State<AccountSection> {
         subject: 'MyAssistant Data',
       );
     } catch (_) {
-      _snack("Unable to export your data. Please check your connection and try again.");
+      _snack("Unable to export your data. Check your connection and try again.");
     } finally {
       if (mounted) setState(() => _busy = _exporting = false);
     }
@@ -70,7 +70,7 @@ class _AccountSectionState extends State<AccountSection> {
         backgroundColor: Neon.surface,
         title: const Text('Sign Out'),
         content: const Text(
-            'Your data remains on your account. You may sign in again at any time to resume.'),
+            'Your data stays with your account. Sign in again at any time to resume.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
           TextButton(onPressed: () => Navigator.pop(c, true), child: const Text('Sign Out')),
@@ -93,7 +93,7 @@ class _AccountSectionState extends State<AccountSection> {
         content: const Text(
             'This permanently erases everything your assistant holds for you (memories, reminders, '
             'documents, clients, call notes and messages) and disconnects your linked accounts. '
-            'It cannot be undone.\n\nTo retain a copy, please use "Export My Data" first.'),
+            'This cannot be undone.\n\nTo keep a copy, use "Export My Data" first.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Keep My Account')),
           TextButton(
@@ -119,7 +119,7 @@ class _AccountSectionState extends State<AccountSection> {
       if (mounted) Navigator.of(context).popUntil((r) => r.isFirst);
     } catch (_) {
       if (mounted) setState(() => _busy = false);
-      _snack("Your account was not deleted. Please check your connection and try again.");
+      _snack("Unable to delete your account. Check your connection and try again.");
     }
   }
 
@@ -167,7 +167,7 @@ class _AccountSectionState extends State<AccountSection> {
             ),
             AppleRow(
               title: 'Export My Data',
-              subtitle: 'All data your assistant holds for you, as a file',
+              subtitle: 'Download everything your assistant holds for you',
               trailing: _exporting
                   ? const NeonLoader.inline()
                   : Icon(Icons.ios_share_rounded, size: 18, color: Neon.textDim),

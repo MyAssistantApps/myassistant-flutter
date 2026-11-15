@@ -76,7 +76,7 @@ class _OverlaySectionState extends State<OverlaySection> with WidgetsBindingObse
     final s = status ?? _s;
     if (on && !s.overlay) {
       _wanted = 'replies';
-      _say('Please allow "Display over other apps" for MyAssistant, then return to the app.');
+      _say('Allow "Display over other apps" for MyAssistant, then return to the app.');
       await OverlayBridge.openOverlaySettings();
       return;
     }
@@ -117,7 +117,7 @@ class _OverlaySectionState extends State<OverlaySection> with WidgetsBindingObse
     final s = status ?? _s;
     if (on && !s.overlay) {
       _wanted = 'bubble';
-      _say('Please allow "Display over other apps" for MyAssistant, then return to the app.');
+      _say('Allow "Display over other apps" for MyAssistant, then return to the app.');
       await OverlayBridge.openOverlaySettings();
       return;
     }

@@ -229,7 +229,7 @@ class _ChatScreenState extends State<ChatScreen> {
                               const SizedBox(height: 32),
                               NeonEmptyState(
                                 icon: Icons.forum_outlined,
-                                title: 'No chats available',
+                                title: 'No conversations yet',
                                 body: 'Say "send a message to <name>" or "send '
                                     'my <document> to <name>". All messages '
                                     'appear here.',
@@ -599,7 +599,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
         }
         _jumpToEnd();
       } else if (mounted) {
-        AppFeedback.show("Unable to send. The recipient may not be using the app.", context: context);
+        AppFeedback.show("Unable to send. The recipient may not be on MyAssistant.", context: context);
       }
     } catch (_) {
       if (mounted) {

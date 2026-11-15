@@ -132,12 +132,12 @@ void main() {
     await t.pump(const Duration(milliseconds: 600));
     expect(find.text('BEST PRICE'), findsOneWidget);
     expect(find.text('BUY NOW'), findsOneWidget);
-    expect(find.textContaining('Saving of'), findsOneWidget);
+    expect(find.textContaining('You save'), findsOneWidget);
     await t.scrollUntilVisible(find.text('Price at Each Store'), 300);
     expect(find.text('CHEAPEST'), findsOneWidget);
     expect(find.text('+₹2,000 more'), findsOneWidget);
     await t.scrollUntilVisible(find.text('NOW'), 300);
-    expect(find.textContaining('below the usual price'), findsOneWidget);
+    expect(find.textContaining('below its typical price'), findsOneWidget);
     expect(t.takeException(), isNull);
   });
 

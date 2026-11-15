@@ -325,7 +325,7 @@ class AppUpdateService {
         final granted = await Permission.requestInstallPackages.request();
         if (!granted.isGranted) {
           throw Exception(
-              'please allow "Install unknown apps" for this app on the settings '
+              'allow "Install unknown apps" for this app on the settings '
               'page, then return and tap Retry');
         }
       }
@@ -552,7 +552,7 @@ class _UpdateSheetState extends State<_UpdateSheet> {
                 const SizedBox(height: 8),
                 Text(
                   'The app will close and reopen automatically in a moment. '
-                  'No data will be lost; the update is being completed.',
+                  'No data is lost — the update is finishing.',
                   style: TextStyle(
                       color: Neon.textLo, fontSize: 13, height: 1.35),
                 ),

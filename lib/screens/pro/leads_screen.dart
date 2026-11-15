@@ -108,7 +108,7 @@ class _LeadsScreenState extends State<LeadsScreen> {
                       ? const NeonEmptyState(
                           icon: Icons.trending_up_rounded,
                           title: 'No Open Deals',
-                          body: 'Add a lead with a follow-up date. It will appear on your Today card when it is due.',
+                          body: 'Add a lead with a follow-up date — it appears on your Today card when due.',
                         )
                       : RefreshIndicator(
                           color: Neon.violet,
@@ -233,7 +233,7 @@ class _LeadSheetState extends State<_LeadSheet> {
     if (!mounted) return;
     if (r == null) {
       setState(() => _busy = false);
-      AppFeedback.toast("Unable to save the lead. Please check your connection.");
+      AppFeedback.toast("Unable to save the lead. Check your connection.");
       return;
     }
     HapticFeedback.lightImpact();
@@ -294,7 +294,7 @@ class _LeadSheetState extends State<_LeadSheet> {
           ]),
         ],
         const SizedBox(height: 14),
-        Text(editing ? 'Next Follow-Up (leave unselected to retain)' : 'Follow-Up',
+        Text(editing ? 'Reschedule Follow-Up (Optional)' : 'Follow-Up',
             style: TextStyle(color: Neon.textHi, fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         Wrap(spacing: 8, runSpacing: 8, children: [

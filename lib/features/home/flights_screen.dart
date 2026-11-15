@@ -55,7 +55,7 @@ class FlightsScreen extends StatelessWidget {
                     style: NeonType.manrope(30, FontWeight.w800).copyWith(
                         color: Neon.textHi, letterSpacing: -0.8)),
                 const SizedBox(height: 4),
-                Text('Please select the type of flight.',
+                Text('Select the type of flight.',
                     style: TextStyle(color: Neon.textLo, fontSize: 15)),
               ],
             ),

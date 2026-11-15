@@ -197,10 +197,10 @@ final class BrainError extends BrainEvent {
   /// Plain words for any failure.
   factory BrainError.from(Object e) {
     if (e is TimeoutException) {
-      return const BrainError('timeout', 'I am sorry, that took longer than expected. Please try again.');
+      return const BrainError('timeout', 'That took longer than expected. Please try again.');
     }
     if (e is CloudBlockedException) {
-      return const BrainError('blocked', "I am sorry, I am unable to assist with that request.");
+      return const BrainError('blocked', "I am unable to assist with that request.");
     }
     // The server's model proxy: a rate limit or exhausted credits arrive
     // as a 429 (or a 'quota' message in a stream) — a kind "busy" line,
@@ -221,7 +221,7 @@ final class BrainError extends BrainEvent {
       return const BrainError('location', "The assistant is not available in your location.");
     }
     if (e is SocketException || e is http.ClientException) {
-      return const BrainError('offline', "I am unable to connect. Please check your internet connection and try again.");
+      return const BrainError('offline', "I am unable to reach the internet. Check your connection and try again.");
     }
     if (e is FirebaseAIException) {
       final m = e.message.toLowerCase();
@@ -229,9 +229,9 @@ final class BrainError extends BrainEvent {
         return const BrainError(
             'denied', "I was unable to connect. Please try again shortly.");
       }
-      return const BrainError('server', "I am sorry, I was unable to connect. Please try again shortly.");
+      return const BrainError('server', "I was unable to connect just now. Please try again shortly.");
     }
-    return const BrainError('failed', "I am sorry, an unexpected error has occurred. Please try again.");
+    return const BrainError('failed', "I ran into an unexpected error. Please try again.");
   }
 }
 
@@ -448,7 +448,7 @@ class AssistantBrain {
       'everything else helpfully and briefly.'
       '${mode == BrainMode.voice ? ' Speak naturally in short sentences, with no lists or formatting.' : ''}';
 
-  static const emptyReply = "I am sorry, I was unable to prepare an answer. Please try again.";
+  static const emptyReply = "I was unable to prepare an answer. Please try again.";
 
   /// When the assistant opens: fetch the config and warm the model
   /// connection, so the first turn waits for neither. Best effort.

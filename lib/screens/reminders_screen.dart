@@ -82,7 +82,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
           AppLog.add('reminders', '$text -> $e');
           if (!mounted) return;
           undo?.call();
-          AppFeedback.showRetry('${failed ?? "Unable to save the change."} Please check your connection.',
+          AppFeedback.showRetry('${failed ?? "Unable to save the change."} Check your connection.',
               context: context, onRetry: retry ?? () {});
         });
     if (undo == null) {
@@ -185,8 +185,8 @@ class _RemindersScreenState extends State<RemindersScreen> {
           const SizedBox(height: 80),
           NeonEmptyState(
             icon: Icons.notifications_none_rounded,
-            title: 'No reminders recorded',
-            body: 'To create a reminder, say "remind me to call the bank at 5" or select New Reminder.',
+            title: 'No reminders scheduled',
+            body: 'Say "Set a reminder to call the bank at 5 PM" — or tap New Reminder.',
             actionLabel: 'New Reminder',
             actionIcon: Icons.add_rounded,
             onAction: _create,
@@ -288,7 +288,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
           ),
         if (r.isAlarm && !r.done)
           Tooltip(
-            message: 'Sounds as an alarm',
+            message: 'Rings as an alarm',
             child: Padding(
               padding: const EdgeInsets.only(left: 6),
               child: Icon(Icons.alarm_rounded, size: 18, color: Neon.pink),
@@ -444,7 +444,7 @@ class _NewReminderSheetState extends State<_NewReminderSheet> {
       if (mounted) {
         setState(() {
           _saving = false;
-          _error = "Unable to save the reminder. Please check your connection.";
+          _error = "Unable to save the reminder. Check your connection.";
         });
       }
     }
@@ -466,7 +466,7 @@ class _NewReminderSheetState extends State<_NewReminderSheet> {
             autofocus: true,
             textCapitalization: TextCapitalization.sentences,
             style: TextStyle(color: Neon.textHi),
-            decoration: const InputDecoration(hintText: 'Enter the reminder details'),
+            decoration: const InputDecoration(hintText: 'What should you be reminded of?'),
             onChanged: (_) => setState(() {}),
             onSubmitted: (_) => _save(),
           ),

@@ -46,7 +46,7 @@ class ReminderNotifications {
   static const _alarmChannel = AndroidNotificationDetails(
     'hari_reminders_alarm',
     'Wake-Up Reminders',
-    channelDescription: 'Reminders for which you requested a wake-up alarm',
+    channelDescription: 'Reminders set to ring as a wake-up alarm',
     importance: Importance.max,
     priority: Priority.high,
     category: AndroidNotificationCategory.alarm,
@@ -60,7 +60,7 @@ class ReminderNotifications {
   static const _softChannel = AndroidNotificationDetails(
     'hari_reminders_soft',
     'Reminders',
-    channelDescription: 'General reminders created by your assistant at your request',
+    channelDescription: 'Everyday reminders set through your assistant',
     importance: Importance.defaultImportance,
     priority: Priority.defaultPriority,
     category: AndroidNotificationCategory.reminder,
@@ -168,13 +168,13 @@ class ReminderNotifications {
       await android?.createNotificationChannel(const AndroidNotificationChannel(
         'hari_reminders_soft',
         'Reminders',
-        description: 'General reminders created by your assistant at your request',
+        description: 'Everyday reminders set through your assistant',
         importance: Importance.defaultImportance,
       ));
       await android?.createNotificationChannel(const AndroidNotificationChannel(
         'hari_reminders_alarm',
         'Wake-Up Reminders',
-        description: 'Reminders for which you requested a wake-up alarm. These sound as an alarm.',
+        description: 'Reminders set to ring as a wake-up alarm.',
         importance: Importance.max,
       ));
       await android?.createNotificationChannel(const AndroidNotificationChannel(
@@ -359,7 +359,7 @@ class ReminderNotifications {
           android: AndroidNotificationDetails(
             'hari_focus',
             'Focus Timer',
-            channelDescription: 'Countdown displayed during a focus session',
+            channelDescription: 'The countdown during a focus session',
             importance: Importance.low,
             priority: Priority.low,
             ongoing: true,
@@ -378,18 +378,18 @@ class ReminderNotifications {
       );
       await _plugin.zonedSchedule(
         focusDoneId,
-        rest ? 'Break complete' : 'Focus session complete. A five-minute break is recommended.',
+        rest ? 'Break Over' : 'Focus Session Complete',
         rest
-            ? 'You may begin another focus session.'
+            ? 'Ready for the next focus session?'
             : label.isEmpty
-                ? 'Well done. Take a brief rest before resuming.'
-                : 'Well done on $label. Take a brief rest before resuming.',
+                ? 'Well done. Take a five-minute break.'
+                : 'Well done on $label. Take a five-minute break.',
         tz.TZDateTime.from(endsAt, tz.local),
         const NotificationDetails(
           android: AndroidNotificationDetails(
             'hari_focus_done',
             'Focus Finished',
-            channelDescription: 'Alerts when a focus session or a break ends',
+            channelDescription: 'When a focus session or break ends',
             importance: Importance.high,
             priority: Priority.high,
             category: AndroidNotificationCategory.reminder,

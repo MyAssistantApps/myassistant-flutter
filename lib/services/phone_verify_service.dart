@@ -90,7 +90,7 @@ class PhoneVerifyService {
       AppLog.add('phone', 'verification call requested');
       return null;
     } catch (_) {
-      return 'Unable to reach the server. Please check your connection.';
+      return 'Unable to reach the server. Check your connection.';
     }
   }
 
@@ -127,7 +127,7 @@ class PhoneVerifyService {
       AppLog.add('phone', 'verified via $path');
       return null;
     } catch (_) {
-      return 'Unable to reach the server. Please check your connection.';
+      return 'Unable to reach the server. Check your connection.';
     }
   }
 
@@ -136,7 +136,7 @@ class PhoneVerifyService {
         'cancelled' => 'The confirmation was closed. Tap Confirm to try again.',
         'unsupported' => "Your network does not yet support automatic number confirmation.",
         'not_enabled' => 'Number confirmation is not yet enabled for this app.',
-        'network' => 'Unable to connect. Please check your internet connection.',
+        'network' => 'Unable to connect. Check your internet connection.',
         _ => 'Unable to confirm your number. Please try again.',
       };
 }

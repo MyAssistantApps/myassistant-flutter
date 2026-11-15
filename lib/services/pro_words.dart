@@ -64,26 +64,26 @@ class ProWords {
   final String receptionist;
 
   static const doctor = ProWords._(
-    'Clinic', 'Today at Clinic', 'Appointments', 'appointment', 'Book Appointment',
-    'Payments', 'Patient', 'Patients', 'Clinic Settings', 'Clinic Name',
+    'Clinic', 'Today at the Clinic', 'Appointments', 'appointment', 'Book Appointment',
+    'Payments', 'Patient', 'Patients', 'Practice Settings', 'Clinic Name',
     'Medical Registration Number', 'Qualifications (e.g. MBBS, MD)', 'Consultation Fee (₹)',
-    'When you are unable to answer, your assistant offers callers your available slots and books them. '
-        'It never gives medical advice, and sends emergencies to 108.',
+    'When you cannot take a call, your automated receptionist offers callers your available slots and books them. '
+        'It never gives medical advice, and directs emergencies to 108.',
   );
 
   static const advocate = ProWords._(
     'Chambers', 'Today in Chambers', 'Consultations', 'consultation', 'Book Consultation',
-    'Fees', 'Client', 'Clients', 'Chamber Settings', 'Chamber / Firm Name',
+    'Fees', 'Client', 'Clients', 'Chambers Settings', 'Chamber / Firm Name',
     'Bar Council Enrolment Number', 'Designation (e.g. Advocate, High Court)', 'Consultation Fee (₹)',
-    'When you are unable to answer, your assistant offers callers consultation slots and books them. '
-        'It never gives legal advice or discusses a case, and flags urgent matters to you.',
+    'When you cannot take a call, your automated receptionist offers callers consultation slots and books them. '
+        'It never gives legal advice or discusses a matter, and flags urgent matters to you.',
   );
 
   static const business = ProWords._(
     'Office', 'Today at a Glance', 'Meetings', 'meeting', 'Schedule Meeting',
     'Receivables', 'Client', 'Clients', 'Office Settings', 'Company Name',
     'GSTIN', 'Your Title (e.g. Managing Director)', null,
-    'When you are unable to answer, your assistant screens callers, offers meeting slots and books '
+    'When you cannot take a call, your automated receptionist screens callers, offers meeting slots, and books '
         'them. It never quotes prices or commits to a deal.',
   );
 

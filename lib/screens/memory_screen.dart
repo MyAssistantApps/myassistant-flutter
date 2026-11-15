@@ -115,7 +115,7 @@ class _MemoryScreenState extends State<MemoryScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Forget This Item'),
-        content: Text('"$what"\n\nYour assistant will no longer use it. This action cannot be undone. Do you wish to proceed?'),
+        content: Text('"$what"\n\nYour assistant will no longer use this. This cannot be undone.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           TextButton(
@@ -136,7 +136,7 @@ class _MemoryScreenState extends State<MemoryScreen> {
     if (!mounted) return;
     if (r == null) {
       setState(() => _memories = before);
-      AppFeedback.show("Unable to remove the item. Please check your connection.",
+      AppFeedback.show("Unable to remove the item. Check your connection.",
           context: context, tone: FeedbackTone.error);
     } else {
       AppFeedback.show('Memory removed.', context: context, tone: FeedbackTone.success);
@@ -152,7 +152,7 @@ class _MemoryScreenState extends State<MemoryScreen> {
     if (!mounted) return;
     if (r == null) {
       setState(() => _rules = before);
-      AppFeedback.show("Unable to remove the rule. Please check your connection.",
+      AppFeedback.show("Unable to remove the rule. Check your connection.",
           context: context, tone: FeedbackTone.error);
     } else {
       AppFeedback.show('Rule removed.', context: context, tone: FeedbackTone.success);
@@ -187,10 +187,10 @@ class _MemoryScreenState extends State<MemoryScreen> {
           padding: const EdgeInsets.fromLTRB(4, 0, 4, 20),
           child: Text(
             total == 0
-                ? 'Nothing has been recorded. Tell your assistant about yourself, for example "I am vegetarian" or '
-                    '"remember my sister lives in Pune", and the details will appear here.'
-                : 'Details your assistant has learned about you from your conversations. '
-                    'Tap any item to remove it. To add or correct a detail, inform your assistant.',
+                ? 'Nothing stored yet. Tell your assistant about yourself — for example "I am vegetarian" or '
+                    '"Remember that my sister lives in Pune" — and it will appear here.'
+                : 'What your assistant has learned about you from your conversations. '
+                    'Tap an item to remove it. To add or correct a detail, tell your assistant.',
             style: TextStyle(color: Neon.textLo, fontSize: 14, height: 1.4),
           ),
         ),

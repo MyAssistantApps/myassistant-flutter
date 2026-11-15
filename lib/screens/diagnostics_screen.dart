@@ -61,7 +61,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
     if (!mounted) return;
     AppFeedback.show(
         'Server set to ${ApiService.baseUrl}. '
-        'Please restart the app to re-establish all connections.',
+        'Restart the app to reconnect all services.',
         context: context);
     setState(() {});
   }
@@ -171,7 +171,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
               AppleRow(
                 leading: IconTile(Icons.extension_rounded, AppleColors.teal),
                 title: 'Connected Tools',
-                subtitle: 'Additional tools available to your assistant (advanced)',
+                subtitle: 'Additional tools for your assistant (advanced)',
                 onTap: () => Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => const McpServersScreen())),
               ),

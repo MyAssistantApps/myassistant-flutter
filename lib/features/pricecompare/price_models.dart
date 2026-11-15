@@ -59,7 +59,7 @@ enum PriceCategory {
       'e.g. Goa, 2 nights from 12 Dec'),
   cabs(
       'Cabs', 'Uber, Ola, Rapido', Icons.local_taxi_rounded, -86, 'From → To', 'e.g. Indiranagar to Bengaluru airport'),
-  grocery('Grocery', 'Blinkit, Zepto, Instamart', Icons.local_grocery_store_rounded, 120, 'Enter the item required',
+  grocery('Grocery', 'Blinkit, Zepto, Instamart', Icons.local_grocery_store_rounded, 120, 'Search for a grocery item',
       'e.g. Amul butter 500g, Aashirvaad atta 5kg');
 
   const PriceCategory(this.label, this.line, this.icon, this.hue, this.ask, this.example);

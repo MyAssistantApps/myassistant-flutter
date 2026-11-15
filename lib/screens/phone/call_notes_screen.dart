@@ -115,18 +115,18 @@ class _CallNotesScreenState extends State<CallNotesScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('One Further Step on Your Phone',
+            Text('One More Step on Your Phone',
                 style: GoogleFonts.interTight(
                     color: Neon.textHi,
                     fontSize: 17,
                     fontWeight: FontWeight.w700)),
             const SizedBox(height: 10),
             Text(
-              'Please enable your phone\'s own call recording:\n\n'
+              'Enable your phone\'s built-in call recording:\n\n'
               '1. The call settings screen opens next.\n'
               '2. Tap "Record calls" or "Recording".\n'
               '3. Enable "Auto record calls".\n\n'
-              'Thereafter, every recorded call is analysed here '
+              'From then on, every recorded call is analysed here '
               'automatically.',
               style:
                   TextStyle(color: Neon.textLo, fontSize: 14, height: 1.5),
@@ -139,7 +139,7 @@ class _CallNotesScreenState extends State<CallNotesScreen> {
                   Navigator.pop(ctx);
                   final ok = await svc.openSystemCallSettings();
                   if (!ok && mounted) {
-                    AppFeedback.show('Please open your Phone app → Settings → Record calls.', context: context);
+                    AppFeedback.show('Open your Phone app → Settings → Record calls.', context: context);
                   }
                 },
                 child: const Text('Open Call Settings'),
@@ -259,12 +259,12 @@ class _CallNotesScreenState extends State<CallNotesScreen> {
               if (groups.isEmpty)
                 NeonEmptyState(
                   icon: Icons.phone_callback_rounded,
-                  title: on ? 'No Analysed Calls Available' : 'No Call Notes Available',
+                  title: on ? 'No Analysed Calls' : 'No Call Notes',
                   body: on
-                      ? 'After your next recorded call, open the app and the call '
-                          'will appear here.'
-                      : 'To receive notes, reminders and answers from your calls, '
-                          'enable AI Call Analysis above.',
+                      ? 'Your next recorded call appears here once you '
+                          'open the app.'
+                      : 'Enable AI Call Analysis above for notes, reminders, '
+                          'and answers from your calls.',
                   tone: on ? NeonTone.success : NeonTone.brand,
                 )
               else
