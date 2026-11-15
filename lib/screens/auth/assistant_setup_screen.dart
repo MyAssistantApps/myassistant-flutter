@@ -17,6 +17,7 @@ import 'guide_screen.dart';
 import 'permissions_screen.dart';
 import 'profession_screen.dart';
 import 'welcome_screen.dart';
+import '../../services/demo_mode.dart';
 import '../../features/home/horoscope_card.dart';
 import '../../services/horoscope.dart';
 
@@ -148,7 +149,7 @@ class _AssistantSetupGateState extends State<AssistantSetupGate> {
 
   @override
   Widget build(BuildContext context) {
-    if (_needed != null && _personaNeeded) {
+    if (_needed != null && _personaNeeded && !kDemoApp) {
       return ProfessionScreen(
           onDone: () => setState(() => _personaNeeded = false));
     }

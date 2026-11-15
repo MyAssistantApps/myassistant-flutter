@@ -21,6 +21,7 @@ import '../../services/app_feedback.dart';
 import '../../services/auth_service.dart';
 import '../../services/brief_service.dart';
 import '../../services/persona.dart';
+import '../../services/demo_mode.dart';
 import '../../services/call_history.dart';
 import '../../services/missed_calls_service.dart';
 import '../../widgets/neon_cards.dart';
@@ -474,7 +475,9 @@ class _HomeFeedViewState extends State<HomeFeedView> {
   Widget _assistants() {
     return ValueListenableBuilder<String>(
       valueListenable: Persona.notifier,
-      builder: (context, _, __) => _assistantsFor(_proKindOf(Persona.proKind)),
+      builder: (context, _, __) => kDemoApp
+          ? _assistantsFor(null, demo: true)
+          : _assistantsFor(_proKindOf(Persona.proKind)),
     );
   }
 
@@ -485,23 +488,35 @@ class _HomeFeedViewState extends State<HomeFeedView> {
         _ => null,
       };
 
-  Widget _assistantsFor(ProKind? mine) {
+  /// Demo build: every assistant; opening one switches the profession to it.
+  Future<void> _openDemo(ProKind k) async {
+    if (Persona.value != k.name && !await Persona.save(k.name)) {
+      AppFeedback.toast('Unable to open this assistant. Check your connection.');
+      return;
+    }
+    if (!mounted) return;
+    _do.open(context, ProAssistantScreen(kind: k));
+  }
+
+  Widget _assistantsFor(ProKind? mine, {bool demo = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (mine != null) ...[
+        if (mine != null || demo) ...[
           Semantics(
             header: true,
             child: Padding(
               padding: const EdgeInsets.only(left: Neon.s1, bottom: 10),
-              child: Text('Your Assistant',
+              child: Text(demo ? 'Professional Assistants' : 'Your Assistant',
                   style: NeonType.manrope(21, FontWeight.w800)
                       .copyWith(color: Neon.textHi, letterSpacing: -0.6)),
             ),
           ),
           ProBanners(
-              kinds: [mine],
-              onOpen: (k) => _do.open(context, ProAssistantScreen(kind: k))),
+              kinds: demo ? ProKind.values : [mine!],
+              onOpen: (k) => demo
+                  ? _openDemo(k)
+                  : _do.open(context, ProAssistantScreen(kind: k))),
           const SizedBox(height: 12),
         ],
         Tappable(
