@@ -49,7 +49,9 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.myassistant.myassistant"
+        // THE INVESTOR DEMO (2026-11-15) installs beside the production app:
+        // its own id, registered in Firebase (project hari-62ec0).
+        applicationId = "com.myassistant.myassistant.demo"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         // Android 8 (API 26): the documented minimum for Firebase Phone
