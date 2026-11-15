@@ -101,12 +101,15 @@ Future<ZodiacSign?> pickZodiacSign(BuildContext context) async {
     context: context,
     isScrollControlled: true,
     backgroundColor: _ink,
+    showDragHandle: false,
     shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
     builder: (ctx) => SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const _Handle(),
+          const SizedBox(height: 12),
           Text('YOUR ZODIAC SIGN', style: _overline()),
           const SizedBox(height: 6),
           Text('Select Your Sign', style: _serif(28)),
@@ -205,6 +208,7 @@ Future<void> showHoroscopeReading(BuildContext context, ZodiacSign sign) {
     context: context,
     isScrollControlled: true,
     backgroundColor: _ink,
+    showDragHandle: false,
     clipBehavior: Clip.antiAlias,
     shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
@@ -212,15 +216,18 @@ Future<void> showHoroscopeReading(BuildContext context, ZodiacSign sign) {
       top: false,
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         SizedBox(
-          height: 250,
+          height: 286,
           child: CosmicSky(
             seed: Horoscope.signs.indexOf(sign) + 101,
             signId: sign.id,
-            constellationBox: const Rect.fromLTRB(.18, .08, .82, .7),
-            child: Align(
+            // Kept above the name block so no star lands on the words.
+            constellationBox: const Rect.fromLTRB(.2, .1, .8, .54),
+            child: Stack(children: [
+              const Align(alignment: Alignment.topCenter, child: _Handle()),
+              Align(
               alignment: Alignment.bottomCenter,
               child: Padding(
-                padding: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.only(bottom: 18),
                 child: Column(mainAxisSize: MainAxisSize.min, children: [
                   Text('${d.day} ${_month(d.month)} · TODAY', style: _overline()),
                   const SizedBox(height: 6),
@@ -232,6 +239,7 @@ Future<void> showHoroscopeReading(BuildContext context, ZodiacSign sign) {
                 ]),
               ),
             ),
+            ]),
           ),
         ),
         Padding(
@@ -244,13 +252,13 @@ Future<void> showHoroscopeReading(BuildContext context, ZodiacSign sign) {
                     .copyWith(height: 1.3, fontWeight: FontWeight.w600)),
             const SizedBox(height: 18),
             Row(children: [
-              Expanded(child: _Fact('FOCUS', r.focus)),
+              Expanded(child: _Fact('FOCUS', r.focus, icon: Icons.track_changes_rounded)),
               const SizedBox(width: 10),
               Expanded(
-                  child: _Fact('LUCKY COLOUR', r.luckyColour,
+                  child: _Fact('COLOUR', r.luckyColour,
                       swatch: _swatches[r.luckyColour])),
               const SizedBox(width: 10),
-              Expanded(child: _Fact('LUCKY NUMBER', '${r.luckyNumber}', big: true)),
+              Expanded(child: _Fact('NUMBER', '${r.luckyNumber}', big: true)),
             ]),
             const SizedBox(height: 14),
             Center(
@@ -270,45 +278,72 @@ Future<void> showHoroscopeReading(BuildContext context, ZodiacSign sign) {
   );
 }
 
+class _Handle extends StatelessWidget {
+  const _Handle();
+  @override
+  Widget build(BuildContext context) => Container(
+        width: 38,
+        height: 4,
+        margin: const EdgeInsets.only(top: 10),
+        decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.35),
+            borderRadius: BorderRadius.circular(2)),
+      );
+}
+
+/// One fact tile: a one-line label, and the value along the bottom —
+/// every tile the same shape so the three line up.
 class _Fact extends StatelessWidget {
-  const _Fact(this.label, this.value, {this.swatch, this.big = false});
+  const _Fact(this.label, this.value, {this.swatch, this.icon, this.big = false});
   final String label;
   final String value;
   final Color? swatch;
+  final IconData? icon;
   final bool big;
 
   @override
   Widget build(BuildContext context) => Container(
-        height: 92,
-        padding: const EdgeInsets.all(12),
+        height: 96,
+        padding: const EdgeInsets.fromLTRB(12, 12, 10, 12),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label, style: _overline(color: Colors.white.withValues(alpha: 0.55))
-              .copyWith(fontSize: 9, letterSpacing: 1.4)),
+          Text(label,
+              maxLines: 1,
+              style: _overline(color: Colors.white.withValues(alpha: 0.55))
+                  .copyWith(fontSize: 9.5, letterSpacing: 1.6)),
           const Spacer(),
-          if (swatch != null) ...[
-            Container(
-              width: 18,
-              height: 18,
-              decoration: BoxDecoration(
-                color: swatch,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
+          if (big)
+            Text(value, style: _serif(34, color: _gold))
+          else
+            Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+              if (swatch != null)
+                Container(
+                  width: 14,
+                  height: 14,
+                  margin: const EdgeInsets.only(right: 7),
+                  decoration: BoxDecoration(
+                    color: swatch,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
+                  ),
+                )
+              else if (icon != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: Icon(icon, size: 15, color: _gold),
+                ),
+              Expanded(
+                child: Text(value,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: NeonType.manrope(13, FontWeight.w700)
+                        .copyWith(color: Colors.white, height: 1.2)),
               ),
-            ),
-            const SizedBox(height: 6),
-          ],
-          Text(value,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: big
-                  ? _serif(30, color: _gold)
-                  : NeonType.manrope(12.5, FontWeight.w700)
-                      .copyWith(color: Colors.white, height: 1.2)),
+            ]),
         ]),
       );
 }
