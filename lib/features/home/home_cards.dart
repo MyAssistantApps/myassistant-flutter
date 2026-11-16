@@ -35,6 +35,7 @@ import 'home_extras.dart';
 import 'home_redesign.dart';
 import 'pro_banners.dart';
 import 'quick_tools.dart';
+import 'upload_files_card.dart';
 import 'popular_apps.dart';
 import 'quick_apps.dart';
 import 'home_feed.dart';
@@ -485,45 +486,13 @@ class _HomeFeedViewState extends State<HomeFeedView> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (mine != null) ...[
-          Semantics(
-            header: true,
-            child: Padding(
-              padding: const EdgeInsets.only(left: Neon.s1, bottom: 10),
-              child: Text('Your Assistant',
-                  style: NeonType.manrope(21, FontWeight.w800)
-                      .copyWith(color: Neon.textHi, letterSpacing: -0.6)),
-            ),
-          ),
           ProBanners(
               kinds: [mine],
               onOpen: (k) => _do.open(context, ProAssistantScreen(kind: k))),
           const SizedBox(height: 12),
         ],
-        Tappable(
-          onTap: () => _do.open(context, const DocumentsScreen()),
-          semanticLabel: 'My Documents',
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: Neon.glassBox(Neon.rLg),
-            child: ExcludeSemantics(
-              child: Row(
-                children: [
-                  Icon(Icons.description_rounded,
-                      color: Neon.violet, size: 22),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text('My Documents',
-                        style: NeonType.manrope(
-                                NeonType.body, FontWeight.w700)
-                            .copyWith(color: Neon.textHi)),
-                  ),
-                  Icon(Icons.chevron_right_rounded,
-                      color: Neon.textDim, size: 22),
-                ],
-              ),
-            ),
-          ),
-        ),
+        UploadFilesCard(
+            onTap: () => _do.open(context, const DocumentsScreen())),
       ],
     );
   }
