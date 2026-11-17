@@ -41,9 +41,15 @@ class _ClinicScreenState extends State<ClinicScreen> {
   @override
   void initState() {
     super.initState();
-    ClinicService.instance.refresh(force: true);
-    // Profile tells Today whether to show the one-time setup prompt.
-    ClinicService.instance.loadProfile();
+    // After the first frame: refresh() notifies at once (loading = true),
+    // and notifying while this screen is still being built is an error
+    // (2026-11-17).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ClinicService.instance.refresh(force: true);
+      // Profile tells Today whether to show the one-time setup prompt.
+      ClinicService.instance.loadProfile();
+    });
   }
 
   @override
