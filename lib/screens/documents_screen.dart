@@ -10,6 +10,7 @@ import '../models/user_document.dart';
 import '../services/api_service.dart';
 import '../services/document_events.dart';
 import '../widgets/document_tile.dart';
+import '../widgets/my_photo_card.dart';
 import '../services/app_feedback.dart';
 import 'pro_assistant_screen.dart';
 import '../ai/assistant_role.dart';
@@ -127,18 +128,19 @@ Future<UserDocument?> uploadMyDocument(BuildContext context,
   return null;
 }
 
-/// A chat for questions about saved documents. The assistant already
-/// searches the user's documents when a question is about them.
-void askAboutDocuments(BuildContext context) {
+/// A chat for questions about saved documents, answered by the Documents
+/// Assistant, which knows every file in [docs] (owner, 2026-11-17).
+void askAboutDocuments(BuildContext context, {List<UserDocument>? docs}) {
   Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (_) => const ProChatScreen(
+      builder: (_) => ProChatScreen(
             // kind only picks a banner photo, which the chat never shows.
-            profile: ProProfile(
+            profile: const ProProfile(
                 ProKind.business,
                 'Documents',
                 Icons.description_rounded,
                 'Ask any question about your saved documents.',
                 []),
+            role: documentsRoleFor(docs),
           )));
 }
 
@@ -226,33 +228,11 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     // 2026-09-30: under the app's sky; loading, empty and the grid
     // replace one another softly.
     return NeonScaffold(
-      appBar: appleAppBar(context, 'My Documents', actions: [
-        // The Documents Assistant's own mic (owner, 2026-11-02).
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: RoleMicOrb(
-              role: documentsRole,
-              tint: Neon.violet,
-              size: 34,
-              labelColor: Neon.textLo),
-        ),
-        IconButton(
-          tooltip: 'Ask About Your Documents',
-          icon: const Icon(Icons.forum_rounded),
-          onPressed: () => askAboutDocuments(context),
-        ),
-      ]),
+      // The mic and chat moved down beside Upload, as one dock
+      // (owner, 2026-11-17).
+      appBar: appleAppBar(context, 'My Documents'),
       body: StateSwitch.of(_body(docs)),
-      floatingActionButton: ValueListenableBuilder<bool>(
-        valueListenable: documentUploading,
-        builder: (context, busy, _) => FloatingActionButton.extended(
-          onPressed: busy ? null : () => uploadMyDocument(context),
-          icon: busy
-              ? const NeonLoader.inline(semanticLabel: 'Uploading')
-              : const Icon(Icons.upload_file_rounded),
-          label: Text(busy ? 'Uploading…' : 'Upload'),
-        ),
-      ),
+      bottomNavigationBar: _DocumentsDock(docs: docs),
     );
   }
 
@@ -342,15 +322,20 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
+            // The user's own photo, used across the app (2026-11-16).
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: MyPhotoCard(),
+            ),
             SizedBox(
-              height: MediaQuery.of(context).size.height * 0.6,
+              height: MediaQuery.of(context).size.height * 0.5,
               child: const NeonEmptyState(
                 icon: Icons.description_outlined,
-                title: 'No documents yet',
-                body: 'To add a photo or file, tap Upload, share one into '
-                    'the app, or ask your assistant to save an item. '
-                    'Documents filed under a client or patient appear in '
-                    'their case file instead.',
+                title: 'No files uploaded yet',
+                body: 'Keep your important files in one secure place. Tap '
+                    'Add a Document, share a file into the app, or ask your '
+                    'assistant to save one. Files filed under a client or '
+                    'patient appear in their case file.',
               ),
             ),
           ],
@@ -369,6 +354,11 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
+          // The user's own photo, used across the app (2026-11-16).
+          const SliverPadding(
+            padding: EdgeInsets.fromLTRB(16, 8, 16, 10),
+            sliver: SliverToBoxAdapter(child: MyPhotoCard()),
+          ),
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 6),
             sliver: SliverToBoxAdapter(
@@ -384,7 +374,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
               sliver: SliverToBoxAdapter(child: _renewalsCard(docs)),
             ),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
             sliver: SliverGrid(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: columns,
@@ -416,8 +406,204 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
   }
 }
 
-/// Who the mic orb on My documents talks as.
+/// Who the mic orb on My documents talks as, before the list has loaded.
 const documentsRole = AssistantRole(
     'the Documents Assistant',
     'You help the owner with their saved documents: finding, reading and '
         'explaining them, and the renewals coming up.');
+
+/// THE DOCUMENTS ASSISTANT, WITH THE WHOLE SHELF IN MIND (owner,
+/// 2026-11-17: "should have full context about the documents stored and
+/// when asked to show them immediately"). Every saved file, with its type,
+/// dates and summary, goes into the role, so the assistant answers what is
+/// stored without searching first, and opens a file the moment it is asked
+/// to show one. The files themselves stay on the server; only this
+/// description travels with the conversation.
+AssistantRole documentsRoleFor(List<UserDocument>? docs) {
+  if (docs == null) return documentsRole;
+  final b = StringBuffer(
+      'You help the owner with their saved documents: finding, reading and '
+      'explaining them, and the renewals coming up. ');
+  if (docs.isEmpty) {
+    b.write('The owner has no documents saved yet. Say so plainly and tell '
+        'them to tap Add a Document at the bottom of this page.');
+    return AssistantRole('the Documents Assistant', b.toString());
+  }
+  b.write("These are ALL ${docs.length} documents saved on the owner's "
+      'account, newest first. Answer questions about what is stored from '
+      'this list directly. ');
+  b.write('When the owner asks to see, show, open or pull up a document, '
+      'call find_document AT ONCE with its exact title as the query and '
+      'show true, so it opens on their screen immediately. Do not ask which '
+      'one unless two documents match equally. To answer a question about '
+      'what a document SAYS, call find_document with show false and read '
+      'it. Never invent a document that is not on this list.\n');
+  var budget = 7000;
+  for (final d in docs) {
+    final parts = <String>[
+      if (d.category.isNotEmpty) d.category,
+      if (d.docDate.isNotEmpty) 'dated ${d.docDate}',
+      if (d.expiresOn.isNotEmpty) 'expires ${d.expiresOn}',
+      'saved ${_ymd(d.createdAt)}',
+    ];
+    var summary = d.summary.trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (summary.length > 180) summary = '${summary.substring(0, 177)}...';
+    final note = d.note.trim();
+    final line = '- "${d.title}" (${parts.join(', ')})'
+        '${summary.isEmpty ? '' : ': $summary'}'
+        "${note.isEmpty ? '' : " Owner's note: $note"}\n";
+    if (line.length > budget) {
+      b.write('- ...and ${docs.length - docs.indexOf(d)} more; use '
+          'search_documents for those.\n');
+      break;
+    }
+    budget -= line.length;
+    b.write(line);
+  }
+  return AssistantRole('the Documents Assistant', b.toString());
+}
+
+String _ymd(int ms) {
+  final t = DateTime.fromMillisecondsSinceEpoch(ms);
+  return '${t.year}-${t.month.toString().padLeft(2, '0')}-${t.day.toString().padLeft(2, '0')}';
+}
+
+/// THE DOCUMENTS DOCK (owner, 2026-11-17: "bring them to bottom, make them
+/// as one group"): the Documents Assistant's mic, the chat about your files
+/// and Add a Document, together on one glass card at the foot of
+/// the page.
+class _DocumentsDock extends StatelessWidget {
+  const _DocumentsDock({required this.docs});
+
+  /// What is saved, so the mic and the chat know every file.
+  final List<UserDocument>? docs;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Neon.violet;
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(26),
+            color: Color.alphaBlend(c.withValues(alpha: 0.10),
+                Color.lerp(Neon.bg, Colors.black, Neon.isDark ? 0.3 : 0)!)
+                .withValues(alpha: 0.94),
+            border: Border.all(color: c.withValues(alpha: 0.35)),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.35),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8)),
+              BoxShadow(
+                  color: c.withValues(alpha: 0.18),
+                  blurRadius: 30,
+                  spreadRadius: -6),
+            ],
+          ),
+          child: Row(
+            children: [
+              RoleMicOrb(
+                  role: documentsRoleFor(docs),
+                  tint: c,
+                  size: 44,
+                  labelColor: Neon.textLo),
+              const SizedBox(width: 12),
+              _ChatButton(tint: c, docs: docs),
+              Container(
+                width: 1,
+                height: 44,
+                margin: const EdgeInsets.symmetric(horizontal: 12),
+                color: Neon.textHi.withValues(alpha: 0.10),
+              ),
+              const Expanded(child: _UploadButton()),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// "Type to ask": the chat about your files, a pair to the mic beside it.
+class _ChatButton extends StatelessWidget {
+  const _ChatButton({required this.tint, required this.docs});
+  final Color tint;
+  final List<UserDocument>? docs;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tappable(
+      onTap: () => askAboutDocuments(context, docs: docs),
+      semanticLabel: 'Ask About Your Documents in chat',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.black.withValues(alpha: 0.35),
+              border: Border.all(
+                  color: tint.withValues(alpha: 0.7), width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                    color: tint.withValues(alpha: 0.35), blurRadius: 14),
+              ],
+            ),
+            child: Icon(Icons.forum_rounded, size: 20, color: Neon.textHi),
+          ),
+          const SizedBox(height: 6),
+          Text('Type to ask',
+              style: TextStyle(
+                  color: Neon.textLo,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+}
+
+/// The page's main action: a standard filled button, one line, icon and
+/// label (owner, 2026-11-17: "very standard" design).
+class _UploadButton extends StatelessWidget {
+  const _UploadButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: documentUploading,
+      builder: (context, busy, _) => SizedBox(
+        height: 52,
+        child: FilledButton.icon(
+          onPressed: busy ? null : () => uploadMyDocument(context),
+          style: FilledButton.styleFrom(
+            backgroundColor: Neon.accentFill,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: Neon.accentFill.withValues(alpha: 0.55),
+            disabledForegroundColor: Colors.white70,
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14)),
+            textStyle: NeonType.manrope(14.5, FontWeight.w700),
+          ),
+          icon: busy
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white))
+              : const Icon(Icons.add_rounded, size: 22),
+          label: Text(busy ? 'Uploading…' : 'Add a Document',
+              maxLines: 1, overflow: TextOverflow.ellipsis),
+        ),
+      ),
+    );
+  }
+}

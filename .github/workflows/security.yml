@@ -1,0 +1,31 @@
+# SECURITY CHECKS — every push, every pull request and once a week.
+#
+# Added 2026-11-15 after the production OpenAI key was stolen. This repo is
+# public and its APK is downloadable, so no provider secret may ever be in
+# it: gitleaks scans the WHOLE history and fails on anything new. Findings
+# already in history were reviewed and baselined by fingerprint in
+# .gitleaksignore (read automatically) — the one real key there (Simli) is
+# marked ROTATE and must be revoked at the provider.
+name: security
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  schedule:
+    - cron: "23 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: gitleaks (full history)
+        run: |
+          docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.24.3 \
+            detect --source /repo --redact --verbose --exit-code 1

@@ -37,6 +37,7 @@ import 'horoscope_card.dart';
 import 'home_redesign.dart';
 import 'pro_banners.dart';
 import 'quick_tools.dart';
+import 'upload_files_card.dart';
 import 'popular_apps.dart';
 import 'quick_apps.dart';
 import 'home_feed.dart';
@@ -502,67 +503,20 @@ class _HomeFeedViewState extends State<HomeFeedView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (mine != null || demo) ...[
-          Semantics(
-            header: true,
-            child: Padding(
-              padding: const EdgeInsets.only(left: Neon.s1, bottom: 10),
-              child: Text(demo ? 'Professional Assistants' : 'Your Assistant',
-                  style: NeonType.manrope(21, FontWeight.w800)
-                      .copyWith(color: Neon.textHi, letterSpacing: -0.6)),
-            ),
-          ),
+        // Investor demo: all three assistants side by side, at once
+        // (owner, 2026-11-17: "let 3 assistants appear there instead of
+        // only one"). Production: the user's own assistant only.
+        if (demo) ...[
+          ProAssistantTrio(onOpen: _openDemo),
+          const SizedBox(height: 12),
+        ] else if (mine != null) ...[
           ProBanners(
-              kinds: demo ? ProKind.values : [mine!],
-              onOpen: (k) => demo
-                  ? _openDemo(k)
-                  : _do.open(context, ProAssistantScreen(kind: k))),
+              kinds: [mine],
+              onOpen: (k) => _do.open(context, ProAssistantScreen(kind: k))),
           const SizedBox(height: 12),
         ],
-        Tappable(
-          onTap: () => _do.open(context, const DocumentsScreen()),
-          semanticLabel: 'My Documents',
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
-            decoration: Neon.glassBox(Neon.rLg),
-            child: ExcludeSemantics(
-              child: Row(
-                children: [
-                  // A lit tile (2026-11-15), like the app's other entries.
-                  Container(
-                    width: 46,
-                    height: 46,
-                    decoration: BoxDecoration(
-                      gradient: Neon.tile(Neon.violet),
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: Neon.halo(Neon.violet),
-                    ),
-                    child: const Icon(Icons.folder_copy_rounded,
-                        color: Colors.white, size: 23),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('My Documents',
-                            style: NeonType.manrope(16, FontWeight.w800)
-                                .copyWith(color: Neon.textHi)),
-                        const SizedBox(height: 2),
-                        Text('IDs, bills, and reports — ask about any of them',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Neon.textLo, fontSize: 12.5)),
-                      ],
-                    ),
-                  ),
-                  Icon(Icons.chevron_right_rounded,
-                      color: Neon.textDim, size: 22),
-                ],
-              ),
-            ),
-          ),
-        ),
+        UploadFilesCard(
+            onTap: () => _do.open(context, const DocumentsScreen())),
       ],
     );
   }
