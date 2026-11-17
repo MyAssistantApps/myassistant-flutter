@@ -1102,9 +1102,13 @@ class _AskCard extends StatelessWidget {
 /// first message is the action's question; the owner types the rest.
 class ProChatScreen extends StatefulWidget {
   const ProChatScreen(
-      {super.key, required this.profile, this.first, this.photo});
+      {super.key, required this.profile, this.first, this.photo, this.role});
   final ProProfile profile;
   final String? first;
+
+  /// Who answers in this chat (the Documents Assistant, for instance). The
+  /// previous role comes back when the chat closes. Null leaves it as is.
+  final AssistantRole? role;
 
   /// A photo the user just added: the chat opens on it, asking what to do.
   final UserDocument? photo;
@@ -1129,10 +1133,17 @@ class _ProChatScreenState extends State<ProChatScreen> {
   bool _dictating = false;
   final _level = ValueNotifier<double>(0);
 
+  AssistantRole? _prevRole;
+
   @override
   void initState() {
     super.initState();
     _engine.addListener(_changed);
+    final role = widget.role;
+    if (role != null) {
+      _prevRole = AssistantRole.current.value;
+      unawaited(_engine.useRole(role));
+    }
     _photo = widget.photo;
     final first = widget.first;
     if (first != null && first.trim().isNotEmpty) {
@@ -1143,6 +1154,7 @@ class _ProChatScreenState extends State<ProChatScreen> {
   @override
   void dispose() {
     _engine.removeListener(_changed);
+    if (widget.role != null) unawaited(_engine.useRole(_prevRole));
     unawaited(_listener?.cancel().catchError((_) {}));
     _level.dispose();
     _inputFocus.dispose();

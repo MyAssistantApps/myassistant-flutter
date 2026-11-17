@@ -1,0 +1,15 @@
+# Findings already in the PUBLIC history, reviewed 2026-11-15. A baseline,
+# not an excuse: entries marked ROTATE are real keys that must be revoked at
+# the provider (deleting them from git does not un-leak them). Everything
+# else is a cache-key NAME that the generic rule mistakes for a secret.
+# New findings still fail CI. Add a line here only after the same review.
+# false positive: a SharedPreferences key name (lib/features/pricecompare/price_service.dart)
+336b92f79cfe953ba5d1eed9d034170ed4508cbd:lib/features/pricecompare/price_service.dart:generic-api-key:57
+# false positive: a SharedPreferences key name (lib/features/home/weather_forecast.dart)
+90f63d7dc8f23062c7ced79bdab20b3c6acd1386:lib/features/home/weather_forecast.dart:generic-api-key:159
+# false positive: a SharedPreferences key name (lib/features/home/weather_forecast.dart)
+90f63d7dc8f23062c7ced79bdab20b3c6acd1386:lib/features/home/weather_forecast.dart:generic-api-key:160
+# false positive: a SharedPreferences key name (lib/services/momentum_service.dart)
+0e91edd8877684de52d2be6f7b52d6d29661d5cc:lib/services/momentum_service.dart:generic-api-key:64
+# ROTATE: real key, removed from source, still in history (lib/core/config.dart)
+4c3062b2f7502509682e64475cc6b3e735c8c1c5:lib/core/config.dart:generic-api-key:6

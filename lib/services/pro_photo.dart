@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'auth_service.dart';
+import 'my_photo.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  PRO PHOTO — the professional's OWN photo on their assistant (owner,
@@ -29,14 +30,15 @@ class ProPhoto {
     return File('${dir.path}/pro_photo_${uid}_$kind.jpg');
   }
 
-  /// The user's own photo for [kind], or null to show the default.
+  /// The user's own photo for [kind]: the one set for this profession,
+  /// else their app-wide photo ([MyPhoto], 2026-11-16), else null to show
+  /// the default.
   static Future<File?> current(String kind) async {
     try {
       final f = await _fileFor(kind);
-      return await f.exists() ? f : null;
-    } catch (_) {
-      return null;
-    }
+      if (await f.exists()) return f;
+    } catch (_) {}
+    return MyPhoto.current();
   }
 
   /// Camera or gallery → stored as this account's photo. Returns false when

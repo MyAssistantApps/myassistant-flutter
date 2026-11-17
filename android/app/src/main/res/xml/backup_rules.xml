@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 and below. The session token (flutter_secure_storage) never
+     leaves the device in a backup: its Keystore key does not travel, so a
+     restored copy is useless anyway and a stolen backup must not carry it.
+     Everything else still backs up, so on-device data survives a new phone. -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
+    <exclude domain="sharedpref" path="FlutterSecureKeyStorage.xml" />
+</full-backup-content>
