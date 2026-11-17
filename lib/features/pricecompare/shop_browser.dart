@@ -692,6 +692,7 @@ class _StoreIcon extends StatelessWidget {
 const _brandLogos = {
   'acko',
   'agoda',
+  'airbnb',
   'ajio',
   'amazon',
   'apollo247',
