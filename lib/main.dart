@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 
-import 'ai/identity.dart';
+import 'ai/config.dart' show AiConfigStore;
 import 'services/overlay_bridge.dart';
 import 'core/bundled_fonts.dart';
 import 'design/accent_controller.dart';
@@ -54,13 +54,16 @@ Future<void> main() async {
   // from build 107 has never downloaded. They load while the rest of
   // startup runs, and runApp waits at most 400 ms for them (NeonType).
   final fonts = NeonType.preload();
+  // A fresh /ai/config on every sign-in; sign-out empties it, so the next
+  // account never inherits this one's shortcuts or voice.
+  AuthService.instance.onSignIn(() async {
+    await AiConfigStore.instance.refresh();
+  });
+  AuthService.instance.onSignOut(() async => AiConfigStore.instance.clear());
   try {
     await Firebase.initializeApp();
     // Crashes, unhandled errors, turn traces and usage — from here on.
     unawaited(Telemetry.instance.enable());
-    // The assistant's AI Logic identity: App Check now, the Firebase user
-    // on every sign-in (lib/ai/identity.dart). Not awaited.
-    unawaited(AiIdentity.instance.start());
     // The notification listener and floating mic keep their own copy of
     // the session (lib/services/overlay_bridge.dart).
     OverlayBridge.install();

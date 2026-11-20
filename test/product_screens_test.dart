@@ -28,7 +28,7 @@ void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
     PriceService.instance.ask = (p) async =>
-        (text: p.contains('"products"') ? _grid : _page, sources: const <SourceLink>[], suggestionsHtml: null);
+        (text: p.contains('"products"') ? _grid : _page, sources: const <SourceLink>[]);
   });
 
   Future<void> big(WidgetTester t, Widget w) async {

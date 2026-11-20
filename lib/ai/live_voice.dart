@@ -92,54 +92,18 @@ class LiveSetup {
     required this.voice,
     required this.system,
     this.tools = const [],
-    this.live = const AiLive(),
   });
 
   final String model;
   final String voice;
   final String system;
   final List<AiToolSpec> tools;
-
-  /// The voice-activity settings (silence, padding, sensitivities).
-  final AiLive live;
-
-  List<Tool>? get sdkTools => tools.isEmpty
-      ? null
-      : [
-          Tool.functionDeclarations(
-              [for (final t in tools) liveDeclarationFor(t)]),
-        ];
-
-  static Sensitivity _sensitivity(String s) =>
-      s == 'low' ? Sensitivity.low : Sensitivity.high;
-
-  LiveGenerationConfig get generationConfig => LiveGenerationConfig(
-        responseModalities: [ResponseModalities.audio],
-        speechConfig: SpeechConfig(voiceName: voice),
-        inputAudioTranscription: AudioTranscriptionConfig(),
-        outputAudioTranscription: AudioTranscriptionConfig(),
-        // A long conversation outlives the 15-minute audio context without
-        // this: the oldest turns slide out instead.
-        contextWindowCompression:
-            ContextWindowCompressionConfig(slidingWindow: SlidingWindow()),
-        realtimeInputConfig: RealtimeInputConfig(
-          automaticActivityDetection: ActivityDetectionConfig(
-            startSensitivity: _sensitivity(live.startSensitivity),
-            endSensitivity: _sensitivity(live.endSensitivity),
-            prefixPaddingMS: live.prefixMs,
-            silenceDurationMS: live.silenceMs,
-          ),
-          activityHandling: ActivityHandling.interrupt,
-        ),
-        // Feeling in her voice, matched to theirs (the client, 2026-09-30).
-        enableAffectiveDialog: live.affectiveDialog ? true : null,
-      );
 }
 
 // ---------------------------------------------------------------- the wire
 
-/// What the Live session says, as [LiveVoice] needs it (firebase_ai's
-/// messages mapped, or a test's).
+/// What the Live session says, as [LiveVoice] needs it (the OpenAI
+/// Realtime events mapped, or a test's).
 sealed class LiveIn {
   const LiveIn();
 }
@@ -182,7 +146,7 @@ final class LiveInToolCall extends LiveIn {
 }
 
 /// The model is working on their request out of the phone's sight
-/// (GPT-Live's backend thinking or searching): [tool] names what it is
+/// (the server-side tool or search running): [tool] names what it is
 /// doing when known (web_search), null for thinking.
 final class LiveInWorking extends LiveIn {
   const LiveInWorking([this.tool]);
@@ -213,38 +177,6 @@ final class LiveInPing extends LiveIn {
   const LiveInPing();
 }
 
-/// One firebase_ai message as a [LiveIn].
-LiveIn liveInFrom(LiveServerMessage m) => switch (m) {
-      LiveServerContent(
-        :final modelTurn,
-        :final turnComplete,
-        :final interrupted,
-        :final inputTranscription,
-        :final outputTranscription,
-      ) =>
-        LiveInContent(
-          audio: [
-            for (final p in modelTurn?.parts ?? const <Part>[])
-              if (p is InlineDataPart &&
-                  p.mimeType.toLowerCase().startsWith('audio/'))
-                (p.bytes, SpeechEngine.sampleRateOf(p.mimeType)),
-          ],
-          heard: inputTranscription?.text,
-          said: outputTranscription?.text,
-          turnComplete: turnComplete == true,
-          interrupted: interrupted == true,
-        ),
-      LiveServerToolCall(:final functionCalls) =>
-        LiveInToolCall(functionCalls ?? const []),
-      LiveServerToolCallCancellation(:final functionIds) =>
-        LiveInToolCancel(functionIds ?? const []),
-      GoingAwayNotice(:final timeLeft) => LiveInGoAway(timeLeft),
-      SessionResumptionUpdate(:final newHandle, :final resumable) =>
-        LiveInResumption(handle: newHandle, resumable: resumable == true),
-      // The only other kind firebase_ai parses: setupComplete.
-      _ => const LiveInReady(),
-    };
-
 /// One open Live session.
 abstract interface class LiveSessionPort {
   /// What the server says, until the connection closes.
@@ -262,135 +194,9 @@ abstract interface class CancellableReply {
   void cancelReply();
 }
 
-/// Opens Live sessions (firebase_ai, or a test's).
+/// Opens Live sessions (OpenAI Realtime, or a test's).
 abstract interface class LiveConnector {
   Future<LiveSessionPort> connect(LiveSetup setup, {String? resumeHandle});
-}
-
-/// The real thing: firebase_ai's LiveGenerativeModel on the Gemini
-/// Developer API, with the same App Check and Firebase user as every other
-/// model call ([FirebaseModelPort.defaultAi]).
-class FirebaseLiveConnector implements LiveConnector {
-  FirebaseLiveConnector({FirebaseAI Function()? ai})
-      : _ai = ai ?? FirebaseModelPort.defaultAi;
-
-  final FirebaseAI Function() _ai;
-
-  @override
-  Future<LiveSessionPort> connect(LiveSetup setup,
-      {String? resumeHandle}) async {
-    final model = _ai().liveGenerativeModel(
-      model: setup.model,
-      liveGenerationConfig: setup.generationConfig,
-      tools: setup.sdkTools,
-      systemInstruction:
-          setup.system.trim().isEmpty ? null : Content.system(setup.system),
-    );
-    final session = await model.connect(
-      sessionResumption: resumeHandle == null
-          ? SessionResumptionConfig()
-          : SessionResumptionConfig.resume(resumeHandle),
-    );
-    return _FirebaseLiveSession(session);
-  }
-}
-
-class _FirebaseLiveSession implements LiveSessionPort {
-  _FirebaseLiveSession(this._s) {
-    _s.onFrame = _alive;
-    _listen();
-  }
-
-  final LiveSession _s;
-  final _out = StreamController<LiveIn>();
-  StreamSubscription<LiveServerResponse>? _sub;
-  bool _closed = false;
-  bool _errored = false;
-  int _relistens = 0;
-  final _clock = Stopwatch()..start();
-  int _pingMs = -1000;
-
-  /// Every frame from the server (third_party/firebase_ai's onFrame): the
-  /// session is alive, whatever the frame was.
-  void _alive() {
-    final ms = _clock.elapsedMilliseconds;
-    if (ms - _pingMs < 500 || _out.isClosed) return;
-    _pingMs = ms;
-    _out.add(const LiveInPing());
-  }
-
-  /// receive() ends on an error. Our copy of firebase_ai no longer makes
-  /// one of a message it does not know (gemini-3.8-live sends ~30 a turn:
-  /// voiceActivity, keep-alives — upstream each one ENDED receive() and lost
-  /// what came right behind it, third_party/README.md). A server error is
-  /// still one, and the socket may be open after it: listened to again. A
-  /// closed socket, or an end without an error, is the real end.
-  void _listen() {
-    _sub = _s.receive().listen(
-      (r) {
-        _relistens = 0;
-        if (!_out.isClosed) _out.add(liveInFrom(r.message));
-      },
-      onError: (Object e) {
-        final closed = e is LiveWebSocketClosedException;
-        _errored = !closed;
-        AppLog.add(
-            'live',
-            closed
-                ? 'the socket closed: $e'
-                : 'server error: ${AssistantBrain.describeError(e)}');
-      },
-      onDone: () {
-        if (_closed) return;
-        if (_errored && _relistens++ < 20) {
-          _errored = false;
-          _listen();
-          return;
-        }
-        if (!_out.isClosed) _out.close();
-      },
-    );
-  }
-
-  @override
-  Stream<LiveIn> get messages => _out.stream;
-
-  /// Sends; a socket found closed ends the session at once, so the voice
-  /// reconnects instead of talking into nothing.
-  void _quiet(Future<void> Function() send) {
-    void failed(Object e) {
-      if (e is! LiveWebSocketClosedException || _closed || _out.isClosed)
-        return;
-      AppLog.add('live', 'sending into a closed socket: the session is over');
-      unawaited(_sub?.cancel());
-      unawaited(_out.close());
-    }
-
-    try {
-      send().catchError(failed);
-    } catch (e) {
-      failed(e);
-    }
-  }
-
-  @override
-  void sendAudio(Uint8List pcm16) => _quiet(() =>
-      _s.sendAudioRealtime(InlineDataPart('audio/pcm;rate=16000', pcm16)));
-
-  @override
-  void sendText(String text) => _quiet(() => _s.sendTextRealtime(text));
-
-  @override
-  void sendToolResponses(List<FunctionResponse> responses) =>
-      _quiet(() => _s.sendToolResponse(responses));
-
-  @override
-  Future<void> close() async {
-    _closed = true;
-    await _sub?.cancel();
-    if (!_out.isClosed) await _out.close();
-    await _s.close();
-  }
 }
 
 // ---------------------------------------------------------------- events
@@ -568,8 +374,8 @@ class LiveVoicePrefs {
   }
 }
 
-/// A short sample of a classic speech voice. GPT Live samples are served
-/// by the backend so they match the selected Live voice exactly.
+/// A short sample of a classic speech voice. Live voice samples are served
+/// by the backend (liveVoices.js) so they match the selected voice exactly.
 class LiveVoicePreview {
   static final _cache = <String, List<SpeechChunk>>{};
 
@@ -750,7 +556,7 @@ class LiveVoice {
         _deviceContext = deviceContext,
         _enabled = enabled ?? (() => LiveVoicePrefs.enabled);
 
-  /// The real wiring: firebase_ai, the backend, the app's config.
+  /// The real wiring: OpenAI Realtime, the backend, the app's config.
   factory LiveVoice.standard({
     required AssistantBrain brain,
     required PcmPlayer player,
@@ -758,7 +564,7 @@ class LiveVoice {
     void Function(LiveTurnAudio audio)? onTurnAudio,
   }) =>
       LiveVoice(
-        connector: SwitchingLiveConnector(),
+        connector: OpenAiLiveConnector(),
         server: ToolServer(),
         brain: brain,
         player: player,
@@ -822,7 +628,7 @@ class LiveVoice {
   bool _micOn = false;
 
   /// The opening clip asked for the mic track to be held. Remembered even
-  /// before the mic is open: on GPT-Live the mic opens only after the
+  /// before the mic is open: the mic opens only after the realtime
   /// connection, usually after the clip started, and opening it unheld let
   /// the model hear its own "Hello" and greet again.
 
@@ -946,7 +752,7 @@ class LiveVoice {
           .whenComplete(() => _connecting = null);
     }
     if (_session != null || _reconnecting) {
-      // A GPT-Live session kept on standby after stop() is this new
+      // A realtime session kept on standby after stop() is this new
       // conversation's: it is not stopped any more.
       if (_session != null) _stopped = false;
       return Future.value(true);
@@ -1020,7 +826,6 @@ class LiveVoice {
         voice: LiveVoicePrefs.voiceFor(cfg),
         system: systemFor(ctx),
         tools: [...ctx.tools, ...local],
-        live: cfg,
       );
       _setup = setup;
       final openStarted = _now();

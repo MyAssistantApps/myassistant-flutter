@@ -58,9 +58,8 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        // Real phones only: x86/x86_64 are emulator ABIs, and with the
-        // onnxruntime + webrtc native libs they were ~70 MB of dead
-        // weight in every shared APK.
+        // Real phones only: x86/x86_64 are emulator ABIs, and their plugin
+        // native libs are dead weight in every shared APK.
         // Except an emulator-only `flutter run` (it passes just android-x64
         // or android-x86): that build needs the x86 libs to start at all.
         if (!emulatorOnlyBuild) {
@@ -100,8 +99,8 @@ android {
     }
 
     // The abiFilters above are overridden by the Flutter gradle plugin,
-    // so plugin .so files (onnxruntime 25 MB, webrtc 16 MB, sherpa 5 MB)
-    // still shipped for the emulator-only x86_64 ABI. Packaging excludes
+    // so plugin .so files still shipped for the emulator-only x86_64
+    // ABI. Packaging excludes
     // are applied last and actually stick.
     packaging {
         jniLibs {

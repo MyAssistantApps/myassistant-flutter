@@ -20,7 +20,6 @@ import '../../../models/vision_result.dart';
 import '../../../widgets/document_tile.dart'
     show openDocument, openDocumentFile, documentGlyph, documentTypeLabel;
 import '../../../services/api_service.dart';
-import '../../../ai/search_suggestions.dart';
 import '../state/assistant_state.dart';
 import 'package:video_player/video_player.dart';
 import '../../../services/app_feedback.dart';
@@ -216,59 +215,6 @@ class ToolCard extends StatelessWidget {
 }
 
 /// One web search hit — tappable to open the source.
-/// GOOGLE'S SEARCH SUGGESTIONS for a Google-Search-grounded answer — the
-/// Gemini API's grounding terms require them beside the answer. Each chip
-/// opens that Google search.
-class SearchSuggestionChips extends StatelessWidget {
-  final List<SearchSuggestion> suggestions;
-  const SearchSuggestionChips({super.key, required this.suggestions});
-
-  @override
-  Widget build(BuildContext context) {
-    if (suggestions.isEmpty) return const SizedBox.shrink();
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.search_rounded, size: 15, color: Neon.textLo),
-            const SizedBox(width: 4),
-            Text('Google',
-                style: TextStyle(color: Neon.textLo, fontSize: 12, fontWeight: FontWeight.w700)),
-          ],
-        ),
-        for (final s in suggestions)
-          Semantics(
-            button: true,
-            label: 'Search Google for ${s.label}',
-            child: InkWell(
-              borderRadius: BorderRadius.circular(18),
-              onTap: () {
-                final u = Uri.tryParse(s.url);
-                if (u != null) launchUrl(u, mode: LaunchMode.externalApplication);
-              },
-              child: Container(
-                constraints: const BoxConstraints(minHeight: 36),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Neon.surfaceHigh,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Text(s.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: Neon.textHi, fontSize: 13)),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
 class SearchResultCard extends StatelessWidget {
   final SearchResult result;
   const SearchResultCard({super.key, required this.result});

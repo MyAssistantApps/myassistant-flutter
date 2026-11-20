@@ -56,7 +56,7 @@ OrbMood orbMoodFor(AssistantEngine e, {bool micPaused = false}) {
   if (e.greetingPlaying) return OrbMood.speaking;
   if (p == AssistantPhase.speaking) return OrbMood.speaking;
   // Until her first word (2026-10-06, the owner: "add the connecting
-  // animation"): the ~1.5 s GPT-Live takes to start shows as connecting.
+  // animation"): the ~1.5 s the realtime voice takes to connect shows as connecting.
   if (e.connecting) return OrbMood.connecting;
   if (p == AssistantPhase.responding ||
       p == AssistantPhase.searching ||
@@ -2115,7 +2115,6 @@ class _AnswerAfterglowState extends State<AnswerAfterglow> {
       engine.pendingConfirmation != null ||
       engine.presentedText != null ||
       engine.searchResults.isNotEmpty ||
-      engine.searchSuggestions.isNotEmpty ||
       engine.generatedImage != null;
 
   @override

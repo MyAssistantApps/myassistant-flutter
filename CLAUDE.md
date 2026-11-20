@@ -63,7 +63,7 @@ existing ones, which is why the workflow checks the key.
 ## Secrets — both repos are PUBLIC
 
 Never commit `google-services.json`, `.env*` files, keystores,
-`android/key.properties` or `android/app-check-debug-token.txt`. They live
+`android/key.properties`. They live
 in the team Bitwarden vault and `./setup.sh` writes them locally.
 
 ## Checks before pushing

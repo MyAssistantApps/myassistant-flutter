@@ -8,7 +8,6 @@ import 'package:web_socket_channel/io.dart';
 
 import '../core/log.dart';
 import '../services/api_service.dart';
-import 'config.dart';
 import 'live_voice.dart';
 
 /// THE FAST VOICE ON OPENAI REALTIME (2026-10-02, the owner: "completely
@@ -409,24 +408,3 @@ class OpenAiLiveSession implements LiveSessionPort, CancellableReply {
   }
 }
 
-/// Picks the fast voice's connector by the served provider, per session:
-/// our server's OpenAI Realtime, or Firebase AI Logic when the app has no
-/// server config yet.
-class SwitchingLiveConnector implements LiveConnector {
-  SwitchingLiveConnector({
-    LiveConnector? gemini,
-    LiveConnector? openai,
-    bool Function()? viaServer,
-  })  : _gemini = gemini ?? FirebaseLiveConnector(),
-        _openai = openai ?? OpenAiLiveConnector(),
-        _viaServer =
-            viaServer ?? (() => AiConfigStore.instance.current.viaServer);
-
-  final LiveConnector _gemini;
-  final LiveConnector _openai;
-  final bool Function() _viaServer;
-
-  @override
-  Future<LiveSessionPort> connect(LiveSetup setup, {String? resumeHandle}) =>
-      (_viaServer() ? _openai : _gemini).connect(setup, resumeHandle: resumeHandle);
-}

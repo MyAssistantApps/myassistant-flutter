@@ -1,17 +1,16 @@
-/// THE ASSISTANT'S BRAIN — one turn, end to end, on Firebase AI Logic.
+/// THE ASSISTANT'S BRAIN — one turn, end to end.
 ///
-/// Owner, 2026-09-29: the app talks to the models itself (no /live proxy,
-/// no /chat/stream): Gemini in the cloud through firebase_ai for every turn
-/// (Gemini Nano on the phone was removed the same night on the owner's
-/// word), Gemini TTS for the voice. The server stays the tool server:
-/// context, tools, recording.
+/// The brain runs in the app (no /live proxy, no /chat/stream): every model
+/// request goes through [ModelPorts.cloud] to our server's POST
+/// /ai/generate, which answers with OpenAI in firebase_ai's wire shape.
+/// The server is also the tool server: context, tools, recording.
 ///
 /// A turn: POST /ai/context -> route (router.dart) -> cloud with the tool
 /// loop (every tool through POST /ai/tool; device actions handed to the
 /// engine and their outcome fed back to the model; a fallback model when
-/// the first one fails or stalls) | Google-Search-grounded cloud | a
-/// shortcut run with no model -> POST /ai/turn (its claim-checked reply is
-/// the one used) -> in voice mode, speech.dart says it.
+/// the first one fails or stalls) | a shortcut run with no model -> POST
+/// /ai/turn (its claim-checked reply is the one used) -> in voice mode,
+/// speech.dart says it.
 ///
 /// HOW THE ENGINE CALLS IT (for wiring into assistant_engine.dart)
 ///
@@ -31,7 +30,7 @@
 ///           // The reply asks "…?"; the user's next "yes" turn carries the
 ///           // approval token automatically. A Confirm button can simply
 ///           // call brain.turn(text: 'Yes').
-///         case BrainFinalText(:final text, :final sources):  // the reply
+///         case BrainFinalText(:final text):  // the reply
 ///         case BrainSpokenAudio(:final pcm, :final sampleRate):
 ///           // Voice mode: already queued on the AudioSink given to the
 ///           // brain; use it for caption timing (or play it yourself when
@@ -44,7 +43,7 @@
 /// runs in the app (local_tools.dart): declared to the cloud model beside
 /// the server's tools, executed here instead of POST /ai/tool.
 ///
-/// GEMINI LIVE (2026-09-30, live_voice.dart): the fast voice runs its model
+/// THE LIVE VOICE (2026-09-30, live_voice.dart): the fast voice runs its model
 /// in a Live session, but every tool it calls still comes through here —
 /// `brain.openToolTurn(...)` gives one Live turn the same /ai/tool path,
 /// the same pending-yes approvals, local tools and device actions, as the
@@ -153,8 +152,6 @@ final class BrainFinalText extends BrainEvent {
     required this.text,
     required this.route,
     this.corrected = false,
-    this.sources = const [],
-    this.searchSuggestionsHtml,
     this.turnId,
   });
   final String text;
@@ -164,12 +161,6 @@ final class BrainFinalText extends BrainEvent {
   /// The server's name for this turn (null when the server never named
   /// it): the recorded audio is filed under it for review.
   final String? turnId;
-
-  /// Pages a Google-Search-grounded reply used.
-  final List<SourceLink> sources;
-
-  /// Google's Search-suggestions chip (to show with a grounded reply).
-  final String? searchSuggestionsHtml;
 }
 
 /// Voice mode: one sentence of the reply as PCM16 mono.
@@ -376,7 +367,7 @@ class AssistantBrain {
         _deviceContext = deviceContext,
         _now = now ?? DateTime.now;
 
-  /// The real wiring: firebase_ai, the backend, the shared config store.
+  /// The real wiring: the server's model port, the backend, the shared config store.
   /// [sink] is the app's PCM player.
   factory AssistantBrain.standard({
     AudioSink? sink,
@@ -517,7 +508,7 @@ class AssistantBrain {
     } catch (_) {}
   }
 
-  /// THE TOOLS OF ONE GEMINI LIVE TURN (2026-09-30). The Live session
+  /// THE TOOLS OF ONE LIVE TURN (2026-09-30). The Live session
   /// (live_voice.dart) speaks for itself, but a tool it calls runs exactly
   /// as a cascade turn's: server tools through POST /ai/tool with the
   /// pending-yes approvals (a token rides only on a later turn's yes),
@@ -628,18 +619,11 @@ class AssistantBrain {
       final feed = speak && _speech != null ? _VoiceFeed(_speech) : null;
       t.onCancel(() => feed?.stream?.cancel());
       var reply = '';
-      var sources = const <SourceLink>[];
-      String? suggestions;
       final toolLog = <Map<String, Object?>>[];
 
       switch (decision.route) {
         case AiRoute.shortcut:
           reply = await _shortcut(t, ctx, decision.shortcut!, words, toolLog);
-        case AiRoute.search:
-          final done = await _searchTurn(t, ctx, config, history, words, all, feed, voice: speak);
-          reply = done.text;
-          sources = done.sources;
-          suggestions = done.searchSuggestionsHtml;
         case AiRoute.cloud:
           reply = await _cloudTurn(t, ctx, config, history, words, all, toolLog, feed,
               conversation: decision.reason == 'conversation', voice: speak);
@@ -704,8 +688,6 @@ class AssistantBrain {
         text: reply,
         route: engine,
         corrected: corrected,
-        sources: sources,
-        searchSuggestionsHtml: suggestions,
         turnId: t.tid,
       ));
       if (feed != null) {
@@ -791,8 +773,7 @@ class AssistantBrain {
           maxToolRounds: config.limits.maxToolRounds,
           roundTimeout: timeouts.cloudRound,
           firstTimeout: timeouts.cloudFirst,
-          generationConfig:
-              thinkingFor(config, model, conversation: conversation, voice: voice),
+          generationConfig: replyCapFor(conversation: conversation, voice: voice),
         );
     final text = StringBuffer();
     var shown = '';
@@ -830,60 +811,20 @@ class AssistantBrain {
   /// uncapped one kept the voice waiting on text nobody would listen to).
   static const voiceReplyTokens = 400;
 
-  /// The same for a spoken turn that may use tools or search: room for the
-  /// low thinking level as well, which counts against the cap.
+  /// The same for a spoken turn that may use tools.
   static const voiceToolReplyTokens = 1024;
 
-  /// Models that cannot think "minimal" (3.8 Flash thinks low at least).
-  static bool _noMinimal(String model) => RegExp(r'3\.8-flash(?!-lite)').hasMatch(model);
-
-  /// One step deeper, never above medium.
-  static ThinkingLevel? _deeper(ThinkingLevel? l) => switch (l) {
-        ThinkingLevel.minimal => ThinkingLevel.low,
-        ThinkingLevel.low => ThinkingLevel.medium,
-        _ => l,
-      };
-
-  /// The configured thinking level for [model]: the conversation model's
-  /// own; a fallback answers without (it is there to be quick).
-  ///
-  /// 2026-09-30 (voice audit): a plain [conversation] turn — no tool or
-  /// fresh-fact word — thinks minimally; the tool routes keep the
-  /// configured level. A [voice] reply is capped ([voiceReplyTokens]).
-  static GenerationConfig? thinkingFor(
-    AiConfig config,
-    String model, {
+  /// The reply cap for a turn: a [voice] reply is capped
+  /// ([voiceReplyTokens] for a plain [conversation] turn,
+  /// [voiceToolReplyTokens] otherwise); a typed one is not.
+  static GenerationConfig? replyCapFor({
     bool conversation = false,
     bool voice = false,
-  }) {
-    final cap = !voice
-        ? null
-        : conversation
-            ? voiceReplyTokens
-            : voiceToolReplyTokens;
-    if (model != config.models.cloud) {
-      return cap == null ? null : GenerationConfig(maxOutputTokens: cap);
-    }
-    var level = switch (config.models.thinking.trim().toLowerCase()) {
-      'minimal' => ThinkingLevel.minimal,
-      'low' => ThinkingLevel.low,
-      'medium' => ThinkingLevel.medium,
-      'high' => ThinkingLevel.high,
-      _ => null,
-    };
-    if (conversation) {
-      level = _noMinimal(model) || !voice ? ThinkingLevel.low : ThinkingLevel.minimal;
-    } else if (!voice) {
-      // A turn nobody is waiting to hear is not racing a silence: think one
-      // step deeper than configured, never above medium.
-      level = _deeper(level);
-    }
-    if (level == null && cap == null) return null;
-    return GenerationConfig(
-      maxOutputTokens: cap,
-      thinkingConfig: level == null ? null : ThinkingConfig.withThinkingLevel(level),
-    );
-  }
+  }) =>
+      !voice
+          ? null
+          : GenerationConfig(
+              maxOutputTokens: conversation ? voiceReplyTokens : voiceToolReplyTokens);
 
   /// Logs that [what] was asked (with [tools] tools); the returned
   /// callback logs, once, how long the first answer took.
@@ -1005,56 +946,6 @@ class AssistantBrain {
       });
     }
     return done.future;
-  }
-
-  Future<CloudFinished> _searchTurn(
-    _Turn t,
-    AiContext ctx,
-    AiConfig config,
-    List<ChatTurn> history,
-    String words,
-    List<AiAttachment> all,
-    _VoiceFeed? feed, {
-    bool voice = false,
-  }) async {
-    final attachments = await t.guard(_withBytes(all));
-    final text = StringBuffer();
-    var shown = '';
-    CloudFinished? finished;
-    await _hedged(
-      t,
-      config,
-      'search',
-      0,
-      (model) => _cloud.search(CloudRequest(
-        model: model,
-        text: words,
-        system: AssistantRole.apply(ctx.system),
-        history: history,
-        attachments: attachments,
-        roundTimeout: timeouts.cloudRound,
-        firstTimeout: timeouts.cloudFirst,
-        generationConfig: thinkingFor(config, model, voice: voice),
-      )),
-      (e) {
-        switch (e) {
-          case CloudTextDelta(text: final delta):
-            _appendDelta(text, delta);
-            final now = SpeechMarkup.stripPartial(text.toString());
-            if (now != shown) {
-              t.emit(BrainPartialText(
-                  now, now.startsWith(shown) ? now.substring(shown.length) : now));
-              shown = now;
-            }
-            feed?.update(text.toString());
-          case CloudToolStarted():
-            break;
-          case CloudFinished():
-            finished = e;
-        }
-      },
-    );
-    return finished ?? CloudFinished(text: text.toString());
   }
 
   // ------------------------------------------------------------ tools
@@ -1355,7 +1246,7 @@ class _VoiceFeed {
   }
 }
 
-/// The tool side of one Gemini Live turn ([AssistantBrain.openToolTurn]):
+/// The tool side of one Live turn ([AssistantBrain.openToolTurn]):
 /// what the Live model calls runs here exactly as in a cascade turn.
 abstract interface class BrainToolTurn {
   /// What ran this turn, as /ai/turn is told ({name, ok, outcome?, local?}).

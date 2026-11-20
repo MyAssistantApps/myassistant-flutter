@@ -3,7 +3,7 @@
 // partial words for the captions and the end of speech for the turn.
 //
 // When the phone has no recogniser at all, the words are recorded instead
-// and written down by a cloud model through Firebase AI Logic
+// and written down by a cloud model through our server
 // (config.models.cloudFast): the fallback, never the first choice.
 import 'dart:async';
 import 'dart:io';

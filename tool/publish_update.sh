@@ -70,19 +70,6 @@ if [ "$(unzip -l "$APK" 2>/dev/null | grep -c "lib/armeabi-v7a/")" = "0" ]; then
   exit 1
 fi
 
-# APP CHECK (Firebase AI Logic enforces it from 2026-11-02). This script
-# publishes the APK as built — never a rebuild (App Distribution must get
-# THIS file) — so the debug token has to be in it already: tool/build_apk.sh
-# passes --dart-define=APP_CHECK_DEBUG_TOKEN from the git-ignored
-# android/app-check-debug-token.txt. The token itself is never printed.
-if [ -s "$(dirname "$0")/../android/app-check-debug-token.txt" ]; then
-  echo "→ App Check: debug token file present (compiled in by tool/build_apk.sh)"
-else
-  echo "→ warning: no android/app-check-debug-token.txt — unless this APK was built" >&2
-  echo "  with --dart-define=APP_CHECK_DEBUG_TOKEN, AI Logic will refuse it once" >&2
-  echo "  App Check is enforced. Add the file and rebuild with tool/build_apk.sh." >&2
-fi
-
 # THE APK MUST DECLARE THE CODE WE ARE ADVERTISING. The app decides it is
 # out of date by comparing /config's latestVersionCode against its OWN
 # embedded versionCode. Publish 24 while the file still says 23 and every

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Owner only: store the secrets .github/workflows/distribute.yml needs.
 # Run from anywhere after `gh auth login`. Nothing is printed or committed.
-# Needs ./setup.sh to have run first (team debug keystore, App Check token,
-# backend firebase-adminsdk.json).
+# Needs ./setup.sh to have run first (team debug keystore, backend
+# firebase-adminsdk.json).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 REPO=MyAssistantApps/myassistant-flutter
@@ -15,5 +15,4 @@ keytool -list -v -keystore "$KS" -storepass android 2>/dev/null \
 
 base64 -w0 "$KS" | gh secret set DEBUG_KEYSTORE_BASE64 -R "$REPO"
 gh secret set FIREBASE_SERVICE_ACCOUNT -R "$REPO" < ../myassistant-backend/firebase-adminsdk.json
-tr -d '[:space:]' < android/app-check-debug-token.txt | gh secret set APP_CHECK_DEBUG_TOKEN -R "$REPO"
 gh secret list -R "$REPO"

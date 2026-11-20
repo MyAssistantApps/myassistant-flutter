@@ -15,7 +15,7 @@ import android.os.Looper
  * recorded one is played as media and the live conversation as a call, so
  * make sure both volume levels are the same").
  *
- * GPT-Live's voice arrives over WebRTC and plays as voice communication;
+ * The realtime voice plays as voice communication;
  * the app's own player plays as media — two volume sliders. So the cached
  * "Hello Sir" is played here as voice communication, on the loudspeaker
  * like the live voice: one volume, one route, the same loudness.

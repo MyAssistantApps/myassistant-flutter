@@ -5,11 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../../ai/search_suggestions.dart';
 import '../../ai/types.dart';
 import '../../design/motion.dart';
 import '../../design/neon_tokens.dart';
-import '../assistant/widgets/action_cards.dart' show SearchSuggestionChips;
 import 'price_models.dart';
 import 'price_service.dart';
 import 'price_widgets.dart';
@@ -553,7 +551,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   final svc = PriceService.instance;
   PriceResult? _r;
   List<SourceLink> _sources = const [];
-  List<SearchSuggestion> _suggestions = const [];
   bool _busy = false;
   String _error = '';
   int _photo = 0;
@@ -596,7 +593,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       setState(() {
         _r = a.result;
         _sources = a.sources;
-        _suggestions = a.suggestions;
       });
     } catch (e) {
       if (!mounted) return;
@@ -905,7 +901,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               ),
             ),
         ],
-        if (_suggestions.isNotEmpty) ...[const SizedBox(height: 8), SearchSuggestionChips(suggestions: _suggestions)],
         const SizedBox(height: 14),
         Text('Prices as retrieved from the web; the store displays the final price before payment.',
             style: TextStyle(color: _inkDim, fontSize: 11.5)),

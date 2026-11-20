@@ -14,7 +14,6 @@ import '../../../ai/brain.dart';
 import '../../../ai/listen.dart';
 import '../../../ai/live_voice.dart';
 import '../../../ai/model_port.dart';
-import '../../../ai/search_suggestions.dart';
 import '../../../ai/speech.dart' show SpeechEngine;
 import '../../../ai/types.dart' show AgentTurn, AiToolSpec;
 import '../../../core/log.dart';
@@ -99,10 +98,9 @@ class AssistantEngine extends ChangeNotifier {
   static final AssistantEngine instance = AssistantEngine._();
 
   // ---------------- THE BRAIN ----------------
-  // Owner, 2026-09-29: the app talks to the models itself, through Firebase
-  // AI Logic — Gemini in the cloud for every turn (Nano was removed the
-  // same night), Gemini TTS for the voice — and the server is the tool
-  // server (lib/ai/brain.dart). Every spoken, typed and tapped
+  // The brain runs in the app and asks our server's models for every turn
+  // and for the voice; the server is also the tool server
+  // (lib/ai/brain.dart). Every spoken, typed and tapped
   // request is ONE brain turn: its words become the captions, its device
   // actions run through [_onEvent] exactly as they always did (and are
   // always answered), and its reply is spoken sentence by sentence through
@@ -466,10 +464,6 @@ class AssistantEngine extends ChangeNotifier {
 
   String? searchQuery;
   List<SearchResult> searchResults = const [];
-
-  /// Google's search suggestions for a grounded answer, shown as chips
-  /// beside its sources (the grounding terms require them).
-  List<SearchSuggestion> searchSuggestions = const [];
 
   /// Saved documents recalled by this turn ("pull up patient Ramesh's
   /// file") — shown as cards while the reply is spoken.
@@ -1020,7 +1014,7 @@ class AssistantEngine extends ChangeNotifier {
     // Keep the realtime opener short and deterministic. The realtime voice
     // says this itself after the mic is live; no separately recorded clip.
     final line = _openingLine;
-    // GPT-Live speaks first only when told plainly to begin now (OpenAI's
+    // The realtime model speaks first only when told plainly to begin now (OpenAI's
     // guide: say what to say, that it starts immediately, then listen).
     final said = await _live.greet(
         '[SYSTEM] Speak first, right now, in English: say exactly '
@@ -1745,7 +1739,7 @@ class AssistantEngine extends ChangeNotifier {
       case LiveSpeaking():
         _liveTurnBegins();
         _finishTools();
-        // GPT-Live's voice plays on the call, not our player: her words
+        // The realtime voice plays on the call, not our player: her words
         // are what turn the orb to speaking.
         if (phase != AssistantPhase.speaking)
           _setPhase(AssistantPhase.speaking, silent: true);
@@ -2139,7 +2133,7 @@ class AssistantEngine extends ChangeNotifier {
           case final BrainFinalText fin:
             _uploadHeard(fin.turnId);
             _finishTools();
-            live = _onFinal(fin, words, live);
+            live = _onFinal(fin, live);
           case BrainSpokenAudio():
             // Already queued on the player; the orb follows the player.
             break;
@@ -2181,8 +2175,7 @@ class AssistantEngine extends ChangeNotifier {
     return entry;
   }
 
-  TranscriptEntry? _onFinal(
-      BrainFinalText e, String asked, TranscriptEntry? live) {
+  TranscriptEntry? _onFinal(BrainFinalText e, TranscriptEntry? live) {
     connected = true;
     _turnFailures = 0;
     final text = e.text.trim();
@@ -2194,33 +2187,8 @@ class AssistantEngine extends ChangeNotifier {
       return null;
     }
     _captionLine('hari', text);
-    // A Google-Search-grounded answer shows the pages it used and Google's
-    // search suggestions beside it (the grounding terms require both).
-    if (e.sources.isNotEmpty || (e.searchSuggestionsHtml ?? '').isNotEmpty) {
-      searchQuery = asked;
-      searchResults = [
-        for (final s in e.sources.take(5))
-          SearchResult(
-            title:
-                (s.title ?? '').trim().isEmpty ? _host(s.uri) : s.title!.trim(),
-            url: s.uri,
-            snippet: '',
-            source: (s.title ?? '').trim().isEmpty ? '' : s.title!.trim(),
-          ),
-      ];
-      searchSuggestions = parseSearchSuggestions(e.searchSuggestionsHtml);
-    }
     _refreshBriefSoon();
     return _liveReply(live, text);
-  }
-
-  static String _host(String url) {
-    try {
-      final h = Uri.parse(url).host;
-      return h.startsWith('www.') ? h.substring(4) : h;
-    } catch (_) {
-      return url;
-    }
   }
 
   void _onBrainError(String code, String message, bool fatal) {
@@ -2496,7 +2464,6 @@ class AssistantEngine extends ChangeNotifier {
     // Web results belong to the conversation they answered.
     searchQuery = null;
     searchResults = const [];
-    searchSuggestions = const [];
     translatorActive = false; // the interpreter never outlives the screen
     _clearCaption();
     activityLabel.value = null;
@@ -2540,7 +2507,7 @@ class AssistantEngine extends ChangeNotifier {
   /// "<name> ji". The server tells the model the same thing, so the voice
   /// and this greeting never disagree.
   /// The opening line (2026-10-06): "Hello Madam." when the profile says
-  /// female, "Hello Sir." otherwise. GPT-Live gets the same from the server.
+  /// female, "Hello Sir." otherwise. The realtime voice is told the same line in greet().
   static String openingLine({String? gender}) =>
       (gender ?? '').trim().toLowerCase() == 'female' ? 'Hello Madam.' : 'Hello Sir.';
 
@@ -4962,12 +4929,9 @@ class AssistantEngine extends ChangeNotifier {
 
   /// User closed the web results.
   void dismissSearchResults() {
-    if (searchResults.isEmpty &&
-        searchQuery == null &&
-        searchSuggestions.isEmpty) return;
+    if (searchResults.isEmpty && searchQuery == null) return;
     searchQuery = null;
     searchResults = const [];
-    searchSuggestions = const [];
     notifyListeners();
   }
 
@@ -5028,7 +4992,6 @@ class AssistantEngine extends ChangeNotifier {
   /// that a live session manages itself.
   void _clearAnswerCards() {
     if (searchResults.isEmpty &&
-        searchSuggestions.isEmpty &&
         documentCards.isEmpty &&
         presentedText == null &&
         generatedImage == null) {
@@ -5036,7 +4999,6 @@ class AssistantEngine extends ChangeNotifier {
     }
     searchQuery = null;
     searchResults = const [];
-    searchSuggestions = const [];
     documentCards = const [];
     presentedTitle = null;
     presentedText = null;
@@ -5049,7 +5011,6 @@ class AssistantEngine extends ChangeNotifier {
     errorMessage = null;
     searchQuery = null;
     searchResults = const [];
-    searchSuggestions = const [];
     documentCards = const [];
     generatedImage = null;
     generatedImagePrompt = '';

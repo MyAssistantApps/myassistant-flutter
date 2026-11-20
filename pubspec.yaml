@@ -15,23 +15,16 @@ dependencies:
   http: ^1.2.2
   # The fast voice's own socket to OpenAI Realtime (lib/ai/openai_live.dart).
   web_socket_channel: ^3.0.1
-  # Live mode: bidirectional audio stream to the backend /live proxy.
   http_parser: ^4.0.2   # MediaType for vision multipart uploads
 
   # Brand typography — Sora (headlines) + Inter (body) per UI Design V1.0
   google_fonts: ^6.2.1
 
-  # Voice — wake word watch + speech capture + spoken replies (A2, M1)
+  # Voice — device speech capture (tap-to-talk)
   speech_to_text: ^7.0.0
 
-  # Cloud neural TTS playback — plays the warm Gemini voice (WAV from the
-  # backend /tts endpoint). flutter_tts stays as an offline fallback.
+  # Cloud neural TTS playback (WAV from the backend /tts endpoint).
   audioplayers: ^6.1.0
-
-  # NOTE: there is no wake word today. Porcupine was removed (2026-09-12) —
-  # it was declared but never imported, so it only added native weight.
-  # VoiceService still carries an STT-based wake-word helper, but nothing
-  # calls it: the app is tap-to-talk. Re-add a wake engine when that changes.
 
   # Local storage for session + cached config
   shared_preferences: ^2.3.2
@@ -44,7 +37,7 @@ dependencies:
 
   # Cloud speech-to-text (Whisper via backend /stt) — records the
   # question as m4a; auto language detection, replaces flaky on-device
-  # regional recognition. Device STT stays as wake word + fallback.
+  # regional recognition. Device STT stays as fallback.
   record: ^6.1.1
   path_provider: ^2.1.4
 
@@ -71,7 +64,6 @@ dependencies:
   flutter_timezone: ^3.0.1
 
   url_launcher: ^6.3.0
-           # opens App Store on iOS
 
   # Sign-in (F1) — email + Google + Apple, verified by the backend
   google_sign_in: ^6.2.1
@@ -96,18 +88,10 @@ dependencies:
   convert: ^3.1.2
   device_info_plus: ^12.4.0
   workmanager: ^0.10.10
-  # THE ASSISTANT'S BRAIN (owner, 2026-09-29): Firebase AI Logic. The
-  # conversation, speech out and cloud answers run in the app (lib/ai/)
-  # through firebase_ai; Gemini Nano on the phone goes through NanoBridge.kt.
+  # THE ASSISTANT'S WIRE FORMAT: the conversation, speech out and cloud
+  # answers (lib/ai/) are built and parsed with firebase_ai's types and
+  # serializer, and sent to our own server (server_model_port.dart).
   firebase_ai: ^4.0.0
-  # Required by AI Logic from 2026-11-02: every request carries an App
-  # Check token (debug provider on App Distribution builds, Play Integrity
-  # otherwise — lib/ai/identity.dart).
-  firebase_app_check: ^0.4.8
-  # ONLY for the AI Logic identity: a custom token minted by our backend
-  # (POST /ai/firebase-token), so per-user rate limits apply. Phone/SMS
-  # sign-in stays removed (test/phone_verify_test.dart guards it).
-  firebase_auth: ^6.7.0
 
   # flutter_sound's log level type (quieting its per-call debug trace).
   logger: ^2.0.0
@@ -180,5 +164,3 @@ flutter:
     # Manrope + Space Grotesk, every weight, so text never starts in a
     # fallback font and swaps (lib/core/bundled_fonts.dart).
     - assets/google_fonts/
-    # On-device speaker-ID model (sherpa-onnx CAM++ zh/en) — voice
-    # enrollment + owner-only listening. Runs fully offline.

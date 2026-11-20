@@ -9,8 +9,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../ai/config.dart';
 import '../ai/live_voice.dart' show LiveVoicePrefs;
-import '../ai/model_port.dart';
-import '../ai/speech.dart';
+import '../ai/speech.dart' show AudioSink;
 import '../core/log.dart';
 import 'api_service.dart';
 import 'audio/pcm_player.dart';
@@ -19,11 +18,11 @@ import 'audio/pcm_player.dart';
 ///
 /// His call, 2026-09-20: "I want the agent's own voice… let the API say
 /// it, or record the same voice instead of playing some low quality
-/// audio." So it is SYNTHESISED ONCE by the same Gemini TTS the assistant
-/// speaks through (lib/ai/speech.dart, Firebase AI Logic — the voice and
-/// language from /ai/config), cached on disk, and played through the app's
-/// PCM player on every later tap: one model call per voice, instant and
-/// identical after that. No model writes it — the words are fixed.
+/// audio." So the backend SYNTHESISES IT ONCE in the live voice the
+/// assistant talks in (GET /ai/voices/:voice/greeting-v6), it is cached on
+/// disk, and played through the app's PCM player on every later tap: one
+/// fetch per voice, instant and identical after that. No model writes it —
+/// the words are fixed.
 ///
 /// IT NEVER FALLS BACK TO THE DEVICE VOICE. A greeting that sounds wrong
 /// is what he asked to remove, so an uncached greeting is simply silent
@@ -31,49 +30,37 @@ import 'audio/pcm_player.dart';
 /// time.
 class GreetingVoice {
   GreetingVoice({
-    SpeechEngine? speech,
     AudioSink? sink,
     AiConfig Function()? config,
     Future<Directory> Function()? directory,
-  })  : _speechOverride = speech,
-        _sinkOverride = sink,
+  })  : _sinkOverride = sink,
         _config = config ?? (() => AiConfigStore.instance.current),
         _directory = directory ?? getApplicationSupportDirectory;
 
   static final GreetingVoice instance = GreetingVoice();
 
-  final SpeechEngine? _speechOverride;
   final AudioSink? _sinkOverride;
   final AiConfig Function() _config;
   final Future<Directory> Function() _directory;
   final Set<String> _prewarming = {};
 
-  SpeechEngine? _speechMade;
-  SpeechEngine get _speech =>
-      _speechOverride ??
-      (_speechMade ??= SpeechEngine(port: ModelPorts.cloud(), config: _config));
   AudioSink get _sink => _sinkOverride ?? PcmPlayer.instance;
 
   static const _magic = [0x50, 0x43, 0x4D, 0x31]; // "PCM1", then the rate
 
   /// THE VOICE SHE TALKS IN: the one picked in Settings (or the server's
-  /// default), for GPT-Live and for OpenAI Realtime alike. The greeting is
-  /// made once per voice by the backend and cached on each phone. It was
-  /// fixed to "marin" before, so the hello never matched a pick.
-  String? _liveVoice() {
-    final c = _config();
-    if (!c.viaServer) return null;
-    return LiveVoicePrefs.voiceFor(c.live);
-  }
+  /// default) for the OpenAI Realtime voice. The greeting is made once per
+  /// voice by the backend and cached on each phone. It was fixed to
+  /// "marin" before, so the hello never matched a pick.
+  String _liveVoice() => LiveVoicePrefs.voiceFor(_config().live);
 
   /// One file per wording AND voice: a new voice is a new greeting.
   Future<File> _fileFor(String text) async {
-    final m = _config().models;
     final live = _liveVoice();
+    // The 'gptlive' prefix is a historical name kept so cached greetings
+    // stay valid. v6: the faster hello (2026-11-04).
     final key = sha1
-        .convert(utf8.encode(live != null
-            ? 'gptlive-v6|$live|$text' // v6: the faster hello (2026-11-04)
-            : '${m.tts}|${m.ttsVoice}|${m.ttsLanguage}|$text'))
+        .convert(utf8.encode('gptlive-v6|$live|$text'))
         .toString()
         .substring(0, 16);
     return File('${(await _directory()).path}/greet_$key.pcm');
@@ -88,41 +75,23 @@ class GreetingVoice {
       // A truncated or empty file is worse than none — make it again.
       if (await f.exists() && await f.length() > 2000) return;
       final live = _liveVoice();
-      if (live != null) {
-        final wav = await ApiService.getBytes(
-            '/ai/voices/$live/greeting-v6?line=${Uri.encodeQueryComponent(line)}');
-        if (wav == null ||
-            wav.length < 2044 ||
-            utf8.decode(wav.sublist(0, 4), allowMalformed: true) != 'RIFF') {
-          return;
-        }
-        final rate =
-            ByteData.sublistView(wav, 24, 28).getUint32(0, Endian.little);
-        final head = ByteData(8);
-        for (var i = 0; i < 4; i++) {
-          head.setUint8(i, _magic[i]);
-        }
-        head.setUint32(4, rate, Endian.little);
-        await f.writeAsBytes([...head.buffer.asUint8List(), ...wav.sublist(44)],
-            flush: true);
-        AppLog.add('greeting', 'cached "$line" in the live voice $live');
+      final wav = await ApiService.getBytes(
+          '/ai/voices/$live/greeting-v6?line=${Uri.encodeQueryComponent(line)}');
+      if (wav == null ||
+          wav.length < 2044 ||
+          utf8.decode(wav.sublist(0, 4), allowMalformed: true) != 'RIFF') {
         return;
       }
-      final pcm = BytesBuilder(copy: false);
-      var rate = 24000;
-      await for (final c in _speech.synthesizeChunks(line)) {
-        pcm.add(c.pcm);
-        rate = c.sampleRate;
-      }
-      if (pcm.length < 2000) return;
+      final rate =
+          ByteData.sublistView(wav, 24, 28).getUint32(0, Endian.little);
       final head = ByteData(8);
       for (var i = 0; i < 4; i++) {
         head.setUint8(i, _magic[i]);
       }
       head.setUint32(4, rate, Endian.little);
-      await f.writeAsBytes([...head.buffer.asUint8List(), ...pcm.takeBytes()],
+      await f.writeAsBytes([...head.buffer.asUint8List(), ...wav.sublist(44)],
           flush: true);
-      AppLog.add('greeting', 'cached "$line"');
+      AppLog.add('greeting', 'cached "$line" in the live voice $live');
     } catch (e) {
       AppLog.add('greeting', 'prewarm failed: $e');
     } finally {
@@ -176,7 +145,7 @@ class GreetingVoice {
 
   /// THE RECORDED OPENING, PLAYED LIKE THE LIVE VOICE (2026-10-06): on the
   /// voice-call stream and the loudspeaker (VoiceClip.kt), so it has the
-  /// same volume as GPT-Live's audio after it. False when nothing is
+  /// same volume as the realtime voice's audio after it. False when nothing is
   /// cached (it is fetched for next time) or it could not play.
   Future<bool> playOnCall(String text) async {
     if (text.trim().isEmpty) return false;

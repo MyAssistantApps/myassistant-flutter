@@ -9,8 +9,6 @@ import '../../design/apple_kit.dart';
 import '../../design/motion.dart';
 import '../../design/neon_tokens.dart';
 import '../../design/neon_widgets.dart';
-import '../assistant/widgets/action_cards.dart' show SearchSuggestionChips;
-import '../../ai/search_suggestions.dart';
 import 'compare_views.dart';
 import 'price_models.dart';
 import 'price_service.dart';
@@ -21,8 +19,8 @@ import 'shop_browser.dart';
 ///  ONE COMPARISON, BuyHatke's order (2026-11-04, owner): the lowest price
 ///  first, then the AI's "buy now or wait", every store's price (cheapest
 ///  first, each opening that store), the price history, the offers and
-///  coupons, and the price alert. The pages the prices came from and
-///  Google's suggestions close it (Gemini API grounding terms).
+///  coupons, and the price alert. The pages the prices came from close
+///  it.
 /// ─────────────────────────────────────────────────────────────────────────
 class PriceResultScreen extends StatefulWidget {
   const PriceResultScreen({super.key, required this.category, required this.query, this.budget, this.earlier});
@@ -42,7 +40,6 @@ class _PriceResultScreenState extends State<PriceResultScreen> {
   final svc = PriceService.instance;
   PriceResult? _result;
   List<SourceLink> _sources = const [];
-  List<SearchSuggestion> _suggestions = const [];
   bool _busy = false;
   String _error = '';
   int _elapsed = 0;
@@ -84,7 +81,6 @@ class _PriceResultScreenState extends State<PriceResultScreen> {
       setState(() {
         _result = a.result;
         _sources = a.sources;
-        _suggestions = a.suggestions;
       });
     } catch (e) {
       if (mounted) setState(() => _error = e is PriceCompareException ? e.message : 'An unexpected error occurred. Please try again.');
@@ -232,7 +228,7 @@ class _PriceResultScreenState extends State<PriceResultScreen> {
         const SizedBox(height: 22),
         _alertCard(r),
       ],
-      if (_sources.isNotEmpty || _suggestions.isNotEmpty) ...[
+      if (_sources.isNotEmpty) ...[
         const SizedBox(height: 26),
         _title('Price Sources'),
         const SizedBox(height: 10),
@@ -1021,10 +1017,6 @@ class _PriceResultScreenState extends State<PriceResultScreen> {
                   ),
                 ),
               ),
-            if (_suggestions.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              SearchSuggestionChips(suggestions: _suggestions),
-            ],
           ],
         ),
       );

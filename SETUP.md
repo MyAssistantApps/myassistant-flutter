@@ -81,10 +81,3 @@ flutter run --dart-define-from-file=.env.dev.json
 
 For hot reload from another terminal, see `tool/dev_run.sh` and
 `tool/hot.sh`.
-
-## App Check / Firebase AI Logic
-
-Debug builds need an App Check debug token or Firebase AI Logic refuses
-them. Put it in `android/app-check-debug-token.txt` (git-ignored); the
-scripts in `tool/` pass it in. Get one from a maintainer, or register your
-own in Firebase console → App Check → Apps → Manage debug tokens.

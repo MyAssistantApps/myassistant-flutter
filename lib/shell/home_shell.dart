@@ -342,7 +342,6 @@ class _HomeShellState extends State<HomeShell>
       e.scheduleItems.isNotEmpty ||
       voiceSessionOnScreen(e) ||
       e.searchResults.isNotEmpty ||
-      e.searchSuggestions.isNotEmpty ||
       e.presentedText != null ||
       e.generatedImage != null;
 
@@ -358,7 +357,7 @@ class _HomeShellState extends State<HomeShell>
       e.dismissPresentedText();
     } else if (e.generatedImage != null) {
       e.dismissGeneratedImage();
-    } else if (e.searchResults.isNotEmpty || e.searchSuggestions.isNotEmpty) {
+    } else if (e.searchResults.isNotEmpty) {
       e.dismissSearchResults();
     }
   }

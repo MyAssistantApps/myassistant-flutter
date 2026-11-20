@@ -418,8 +418,8 @@ class AuthService extends ChangeNotifier {
   void onSignOut(Future<void> Function() hook) => _signOutHooks.add(hook);
 
   /// The other side: run once there is a session — a restored one at
-  /// launch, or a fresh sign-in. The AI brain signs its Firebase identity
-  /// in here (lib/ai/identity.dart). Not awaited: nothing waits on them.
+  /// launch, or a fresh sign-in. The AI config refreshes itself here
+  /// (main.dart). Not awaited: nothing waits on them.
   final List<Future<void> Function()> _signInHooks = [];
   void onSignIn(Future<void> Function() hook) => _signInHooks.add(hook);
 

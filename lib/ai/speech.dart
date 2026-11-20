@@ -1,5 +1,5 @@
-// SPEECH OUT — Gemini TTS through Firebase AI Logic (firebase_ai: a TTS
-// model, responseModalities audio + SpeechConfig voice/language): every
+// SPEECH OUT — the server's TTS through a [ModelPort] (firebase_ai's wire
+// shape: responseModalities audio + SpeechConfig voice/language): every
 // spoken reply is voiced here; model, voice and language come from
 // /ai/config.
 //
