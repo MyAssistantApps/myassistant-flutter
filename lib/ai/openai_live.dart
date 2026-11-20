@@ -63,7 +63,14 @@ class OpenAiLiveConnector implements LiveConnector {
     if (secret.isEmpty) throw StateError('no realtime key from the server');
     final model = (minted?['model'] ?? setup.model).toString();
     final session = _open(model, secret);
-    await session.ready.timeout(const Duration(seconds: 12));
+    try {
+      await session.ready.timeout(const Duration(seconds: 12));
+    } catch (_) {
+      // A socket that never said hello is still open (and pinging) and
+      // its realtime session still billed; each retry used to add one.
+      await session.close();
+      rethrow;
+    }
     AppLog.add('live', 'realtime setup token=${mintMs}ms socketReady=${clock.elapsedMilliseconds - mintMs}ms');
     return session;
   }

@@ -35,6 +35,13 @@ class _EmailSetupScreenState extends State<EmailSetupScreen> {
   String _connectedAddress = '';
   String _error = '';
 
+  @override
+  void dispose() {
+    _address.dispose();
+    _password.dispose();
+    super.dispose();
+  }
+
   static String get _base => ApiService.baseUrl;
   static Map<String, String> get _headers => ApiService.authHeaders;
 

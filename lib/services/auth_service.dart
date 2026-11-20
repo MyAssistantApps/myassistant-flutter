@@ -227,6 +227,10 @@ class AuthService extends ChangeNotifier {
         Uri.parse('${ApiService.baseUrl}/auth/me'),
         headers: {'Authorization': 'Bearer $token'},
       ).timeout(const Duration(seconds: 8));
+      // The user may have signed out (or in as someone else) while this
+      // ran in the background: a late answer about the OLD token must not
+      // restore it, nor sign out the new session.
+      if (ApiService.sessionToken != token) return;
       if (r.statusCode == 200) {
         final body = jsonDecode(r.body);
         final m = body['user'];
@@ -369,6 +373,8 @@ class AuthService extends ChangeNotifier {
   /// (sliding renewal) — keep it so regular users are never signed out.
   void _adoptRenewedToken(dynamic body) {
     final fresh = body is Map ? body['token'] : null;
+    // Never resurrect a session that was signed out meanwhile.
+    if (ApiService.sessionToken == null) return;
     if (fresh is String && fresh.isNotEmpty && fresh != ApiService.sessionToken) {
       ApiService.sessionToken = fresh;
       _storage.write(key: _tokenKey, value: fresh).catchError((_) {});
@@ -389,7 +395,8 @@ class AuthService extends ChangeNotifier {
       ).timeout(const Duration(seconds: 8));
       // Only an authoritative 401 signs the user out; network errors and
       // 5xx keep the session — the account may be fine and the server not.
-      if (r.statusCode == 401) {
+      // And only for the token that was checked: a newer sign-in stands.
+      if (r.statusCode == 401 && ApiService.sessionToken == token) {
         sessionEnded = true; // the login screen explains why
         await _clear();
         notifyListeners(); // AuthGate swaps to the login screen
