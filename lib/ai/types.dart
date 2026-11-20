@@ -210,12 +210,3 @@ const agentLabels = <String, String>{
   'memory': 'Memory',
   'records': 'Records',
 };
-
-/// The short name for a label, where a long one would not fit (the orb).
-String agentShortName(String label) => const {
-      'Communication': 'Comms',
-      'Information': 'Info',
-      'Shopping and money': 'Shopping',
-      'Phone control': 'Phone',
-    }[label] ??
-    label;

@@ -657,10 +657,10 @@ class AssistantEngine extends ChangeNotifier {
   /// specialists it chose — and which of them runs the current tool.
   /// Null between turns and when the manager stayed out of it.
   /// [done]: the specialist ids that have finished their part; [over]:
-  /// the reply is out — the hand-off stays on screen a moment, all done.
+  /// the reply is out — the turn stays on screen a moment, all done.
   final ValueNotifier<AgentTurn?> agentControl = ValueNotifier(null);
 
-  /// The turn the hand-off lane shows; cleared shortly after it ends.
+  /// Clears [agentControl] shortly after the turn ends.
   Timer? _agentClear;
 
   /// The status line's words for the phase: while a tool runs
@@ -4859,23 +4859,6 @@ class AssistantEngine extends ChangeNotifier {
     await _tellModel('[SYSTEM] The task in $app ${r.ok ? 'is finished' : 'did not finish'}: '
         '${r.summary} Tell me that in one short sentence, in my language.'
         '${r.ok ? '' : ' Do not say it was done.'}');
-  }
-
-  /// When the conversation was last closed for a task rather than by the
-  /// owner: its last line ("On it…") is not an answer to keep on screen.
-  DateTime? _quietEndAt;
-
-  /// True once, just after a conversation closed for a task — read by the
-  /// answer card (AnswerAfterglow). Stale after a few seconds, so a close
-  /// nobody was watching cannot hide a later, real answer.
-  @visibleForTesting
-  void debugMarkQuietEnd() => _quietEndAt = DateTime.now();
-
-  bool takeQuietEnd() {
-    final at = _quietEndAt;
-    _quietEndAt = null;
-    return at != null &&
-        DateTime.now().difference(at) < const Duration(seconds: 5);
   }
 
   /// "Scan this visiting card" — the camera, the server's reading, and the

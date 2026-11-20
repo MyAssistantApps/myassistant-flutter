@@ -5,12 +5,10 @@ import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../features/shopping/shop_handoff.dart';
-import '../models/momentum.dart';
 import '../models/reminder.dart';
 import '../core/log.dart';
 import 'api_service.dart';
 import 'focus_service.dart';
-import 'habit_alarms.dart';
 
 /// Turns backend reminders into LOCAL notifications, so "remind me to
 /// call amma at 5" actually rings the phone at 5 — even if the app is
@@ -66,18 +64,8 @@ class ReminderNotifications {
     category: AndroidNotificationCategory.reminder,
   );
 
-  // MOMENTUM (2026-09-25). Habit reminders get their own channel, so they
-  // can be quietened without silencing real reminders; the focus countdown
-  // is LOW importance (it sits in the shade, it never pops or sounds), and
-  // only its end rings.
-  static const _habitChannel = AndroidNotificationDetails(
-    'hari_habits',
-    'Habit Reminders',
-    channelDescription: 'Daily reminders for the habits you track',
-    importance: Importance.defaultImportance,
-    priority: Priority.defaultPriority,
-    category: AndroidNotificationCategory.reminder,
-  );
+  // The focus countdown is LOW importance (it sits in the shade, it never
+  // pops or sounds), and only its end rings.
   static const int focusCountdownId = 0x3F0F0C01;
   static const int focusDoneId = 0x3F0F0C02;
 
@@ -93,7 +81,7 @@ class ReminderNotifications {
   /// due while the app is open.
   final ValueNotifier<List<Reminder>> synced = ValueNotifier(const []);
 
-  /// Where a tapped notification goes ('momentum', 'focus'). The shell sets
+  /// Where a tapped notification goes ('focus', 'reminder:<id>'). The shell sets
   /// it once it can navigate; a tap that launched the app waits for it.
   static void Function(String payload)? _onOpen;
   static String? _launchPayload;
@@ -149,7 +137,7 @@ class ReminderNotifications {
           android: AndroidInitializationSettings('@mipmap/ic_launcher'),
           iOS: DarwinInitializationSettings(),
         ),
-        // A tap on a habit reminder or the focus timer opens its screen.
+        // A tap on a reminder or the focus timer opens its screen.
         onDidReceiveNotificationResponse: _tapped,
       );
       try {
@@ -200,7 +188,7 @@ class ReminderNotifications {
     if (!_ready) return;
     try {
       await _plugin.show(
-        // Below the habit and focus ids, whatever the clock says.
+        // Below the focus ids, whatever the clock says.
         DateTime.now().millisecondsSinceEpoch & 0x3EFFFFFF,
         title,
         body,
@@ -299,42 +287,6 @@ class ReminderNotifications {
       }
     } catch (_) {}
     return AndroidScheduleMode.exactAllowWhileIdle;
-  }
-
-  /// Re-arms every habit reminder after the habits (or today's ticks)
-  /// changed, without touching reminders or the focus timer.
-  Future<void> armHabits(List<MomentumHabit> habits) async {
-    if (!_ready) await init();
-    if (!_ready) return;
-    try {
-      for (final p in await _plugin.pendingNotificationRequests()) {
-        if (HabitAlarms.isHabitAlarm(p.id)) await _plugin.cancel(p.id);
-      }
-      await _armHabits(habits, await _scheduleMode());
-    } catch (e) {
-      AppLog.add('habit', 'arm failed: $e');
-    }
-  }
-
-  Future<void> _armHabits(List<MomentumHabit> habits, AndroidScheduleMode mode) async {
-    var armed = 0;
-    for (final a in HabitAlarms.plan(habits, DateTime.now())) {
-      try {
-        await _plugin.zonedSchedule(
-          a.id,
-          a.title,
-          a.body,
-          tz.TZDateTime.from(a.at, tz.local),
-          const NotificationDetails(android: _habitChannel, iOS: DarwinNotificationDetails()),
-          androidScheduleMode: mode,
-          payload: 'momentum',
-        );
-        armed++;
-      } catch (e) {
-        AppLog.add('habit', 'schedule failed for ${a.id}: $e');
-      }
-    }
-    if (armed > 0) AppLog.add('habit', 'armed $armed habit reminder(s)');
   }
 
   static String _clock(DateTime t) {
