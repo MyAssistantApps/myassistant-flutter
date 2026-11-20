@@ -1,4 +1,4 @@
-# IN-APP UPDATE — every push to hardening builds the app and publishes it to
+# IN-APP UPDATE — every push to production builds the app and publishes it to
 # the backend's update channel (owner, 2026-11-14). Installed apps see
 # "Update available" on their next launch (GET /config → latestVersionCode,
 # GET /app/latest.apk). App Distribution is no longer used.
@@ -15,7 +15,7 @@
 name: in-app update
 on:
   push:
-    branches: [hardening]
+    branches: [production]
     paths-ignore:
       - "**.md"
       - "docs/**"
@@ -34,6 +34,9 @@ env:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    # Release secrets live on this environment, which only the protected
+    # production branch may use — a teammate's branch cannot read them.
+    environment: production
     steps:
       - uses: actions/checkout@v4
 
@@ -70,6 +73,9 @@ jobs:
           printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
 
       - run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos
 
       - name: Tests
         run: flutter test
