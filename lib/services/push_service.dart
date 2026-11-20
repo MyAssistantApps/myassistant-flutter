@@ -14,10 +14,8 @@ import 'notification_service.dart';
 import 'avatar_message_service.dart';
 import 'brief_service.dart';
 import 'call_service.dart';
-import '../screens/bills_email_screen.dart' show BillsEmailNav;
 import '../screens/listing/my_listing_screen.dart' show ListingNav;
 import 'listing_service.dart';
-import 'document_events.dart';
 
 /// Registers this device with the backend so other people's agents can
 /// reach the user.
@@ -90,9 +88,6 @@ class PushService {
           AppLog.add('push', 'scheduled call arrived (foreground)');
           _placeScheduledCall(m);
         }
-        // Bills by email: a document arrived — open lists reload.
-        final isMail = m.data['kind'] == 'mail_filed' || m.data['kind'] == 'mail_confirm';
-        if (isMail) DocumentEvents.bump();
         // A booking request from the public page: the badge moves at once.
         final isListing = m.data['kind'] == 'listing_request';
         if (isListing) ListingService.instance.newRequests.value++;
@@ -154,7 +149,7 @@ class PushService {
           ReminderNotifications.instance.showNow(
             n.title ?? 'MyAssistant',
             n.body ?? '',
-            payload: isMail ? 'bills_email' : (isListing ? ListingNav.payload : (group ?? dm)),
+            payload: isListing ? ListingNav.payload : (group ?? dm),
           );
         }
       });
@@ -181,10 +176,6 @@ class PushService {
           final g = _dmPayload(m);
           if (g != null) ReminderNotifications.route(g);
         }
-        if (m.data['kind'] == 'mail_filed' || m.data['kind'] == 'mail_confirm') {
-          AppLog.add('push', 'bills email opened');
-          unawaited(BillsEmailNav.open());
-        }
         if (m.data['kind'] == 'listing_request') unawaited(ListingNav.open());
       });
       // Cold start FROM the notification (app was killed).
@@ -208,10 +199,6 @@ class PushService {
         if (m != null && m.data['kind'] == 'direct_message') {
           final g = _dmPayload(m);
           if (g != null) ReminderNotifications.route(g);
-        }
-        if (m != null && (m.data['kind'] == 'mail_filed' || m.data['kind'] == 'mail_confirm')) {
-          AppLog.add('push', 'bills email launched the app');
-          unawaited(BillsEmailNav.open());
         }
         if (m != null && m.data['kind'] == 'listing_request') unawaited(ListingNav.open());
       });

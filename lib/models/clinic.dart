@@ -169,7 +169,7 @@ class Appointment {
   /// booked | arrived | done | cancelled | no_show
   final String status;
 
-  /// app | voice | receptionist
+  /// app | voice (receptionist on older rows)
   final String source;
   final bool remindPatient;
   final bool reminded;
@@ -225,7 +225,6 @@ class ClinicProfile {
   String qualification;
   ClinicHours hours;
   int slotMin;
-  bool receptionistBooks;
   final bool configured;
 
   ClinicProfile({
@@ -237,7 +236,6 @@ class ClinicProfile {
     required this.qualification,
     required this.hours,
     required this.slotMin,
-    required this.receptionistBooks,
     required this.configured,
   });
 
@@ -260,7 +258,6 @@ class ClinicProfile {
       qualification: (j['qualification'] ?? '').toString(),
       hours: hours,
       slotMin: (j['slotMin'] as num?)?.toInt() ?? 15,
-      receptionistBooks: j['receptionistBooks'] == true,
       configured: j['configured'] == true,
     );
   }
@@ -274,7 +271,6 @@ class ClinicProfile {
         'qualification': qualification,
         'hours': hours,
         'slotMin': slotMin,
-        'receptionistBooks': receptionistBooks,
       };
 }
 

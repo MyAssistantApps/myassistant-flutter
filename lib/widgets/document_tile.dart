@@ -403,7 +403,7 @@ class DocumentGridTile extends StatelessWidget {
                   children: [
                     Positioned.fill(
                         child: DocumentThumb(document: d, radius: 10)),
-                    // Bills by email: it came from an outside sender.
+                    // It came by email from an outside sender.
                     if (d.fromEmail)
                       Positioned(
                         top: 4,

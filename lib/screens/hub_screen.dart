@@ -211,7 +211,7 @@ class _HubScreenState extends State<HubScreen> {
           _group(context, 'Connections', [
             _Row(
               'Connected Apps',
-              'Notes, mail, and more in one place',
+              'Google and mail in one place',
               Icons.hub_rounded,
               Neon.accentA,
               (c) => const ConnectedAppsScreen(),

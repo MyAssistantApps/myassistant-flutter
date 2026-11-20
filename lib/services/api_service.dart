@@ -701,7 +701,7 @@ class ApiService {
 
   // ---------------- AGENT CALLS ----------------
   // "Call Allen Lobo and ask him what time he'll be home": the BACKEND
-  // places the call (Plivo — India-capable) and the AI talks on it; the app polls the
+  // places the call and the AI talks on it; the app polls the
   // call state and speaks the contact's answer back to the user.
 
   /// Starts an agent call. Returns the call id, or throws:
@@ -1046,7 +1046,7 @@ class ApiService {
 /// The backend answered 402 pro_required — this feature needs Pro.
 class ProRequired implements Exception {}
 
-/// The backend has no telephony (Plivo) configured — agent calls are
+/// The backend has no telephony configured — agent calls are
 /// unavailable; the app falls back to placing a normal direct call.
 class AgentCallUnavailable implements Exception {}
 

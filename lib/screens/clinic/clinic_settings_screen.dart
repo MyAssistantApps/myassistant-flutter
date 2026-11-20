@@ -13,10 +13,8 @@ import '../../services/persona.dart';
 /// ─────────────────────────────────────────────────────────────────────────
 ///  CLINIC SETTINGS — set once, used everywhere.
 ///
-///  The timings drive the free slots (booking sheet AND the phone
-///  receptionist); name, address, fee and timings are what the receptionist
-///  may tell callers; qualification and registration number go on every
-///  prescription letterhead. Each day is a row with up to two sessions,
+///  The timings drive the free slots on the booking sheet; qualification
+///  and registration number go on every prescription letterhead. Each day is a row with up to two sessions,
 ///  because an Indian OPD is usually "morning + evening".
 /// ─────────────────────────────────────────────────────────────────────────
 class ClinicSettingsScreen extends StatefulWidget {
@@ -176,19 +174,6 @@ class _ClinicSettingsScreenState extends State<ClinicSettingsScreen> {
                           selectedColor: Neon.violet.withValues(alpha: 0.15),
                           onSelected: (_) => setState(() => p.slotMin = m),
                         ),
-                    ]),
-                    const SizedBox(height: 22),
-                    const GroupLabel('Phone Receptionist'),
-                    GroupedCard(children: [
-                      SwitchListTile.adaptive(
-                        value: p.receptionistBooks,
-                        onChanged: (v) => setState(() => p.receptionistBooks = v),
-                        title: Text('Schedule ${ProWords.current.appointments} from Calls',
-                            style: TextStyle(color: Neon.textHi, fontSize: 15)),
-                        subtitle: Text(
-                            ProWords.current.receptionist,
-                            style: TextStyle(color: Neon.textLo, fontSize: 12.5, height: 1.35)),
-                      ),
                     ]),
                   ],
                 ),

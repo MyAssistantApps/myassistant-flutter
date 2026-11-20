@@ -31,7 +31,6 @@ import '../services/notification_service.dart';
 import '../services/avatar_message_service.dart';
 import '../services/push_service.dart';
 import 'focus_nav.dart';
-import '../screens/bills_email_screen.dart' show BillsEmailNav;
 import '../core/log.dart';
 import '../services/auth_service.dart';
 import '../services/overlay_bridge.dart';
@@ -61,15 +60,12 @@ import '../services/device_control_service.dart';
 import '../features/reminders/reminder_popup.dart';
 
 /// Where a tapped notification goes, by its payload: a video note left in
-/// the tray opens the notes again, a Bills by email one opens that screen
-/// (build 120), a focus one opens Focus; anything else just opens the app.
-/// [billsEmail] is for tests.
-Future<void> openNotificationPayload(String what,
-    {Future<void> Function()? billsEmail}) {
+/// the tray opens the notes again, a focus one opens Focus; anything else
+/// just opens the app.
+Future<void> openNotificationPayload(String what) {
   if (what == AvatarMessageService.videoNotePayload) {
     return PushService.instance.openVideoNotes();
   }
-  if (what == 'bills_email') return (billsEmail ?? BillsEmailNav.open)();
   // The shopping trip's notification and its Next / Done (build 124).
   if (what == ReminderNotifications.shoppingPayload ||
       what.startsWith('${ReminderNotifications.shoppingPayload}:')) {
@@ -1017,11 +1013,8 @@ class _HomeShellState extends State<HomeShell>
                 name: AuthService.instance.user?.name);
           }
         },
-        // HOLD used to open the conversation screen with the avatar face.
-        // That screen is gone, and face mode is off server-side anyway
-        // (features.face_mode is false), so a hold would have opened an
-        // empty room. It ends the conversation instead — the one thing a
-        // deliberate long press on a live mic should reliably do.
+        // HOLD ends the conversation — the one thing a deliberate long
+        // press on a live mic should reliably do.
         onLongPress: () async {
           HapticFeedback.heavyImpact();
           final engine = AssistantEngine.instance;

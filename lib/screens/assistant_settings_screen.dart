@@ -24,9 +24,6 @@ import 'voice_picker_screen.dart';
 import 'avatar_identity_screen.dart';
 import 'memory_screen.dart';
 import 'overlay_section.dart';
-import 'bills_email_screen.dart';
-import '../models/mail_inbox.dart';
-import '../services/mail_inbox_service.dart';
 import '../services/app_feedback.dart';
 import '../services/tester_feedback.dart';
 import '../features/widgets/widget_picker.dart';
@@ -59,8 +56,6 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
   @override
   void initState() {
     super.initState();
-    // Bills by email: is it switched on for this server? (hidden if not)
-    unawaited(MailInboxService.instance.refresh());
     _load();
     unawaited(Horoscope.load());
   }
@@ -410,9 +405,6 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // "Video avatar → Avatar face" was here. It appeared whenever
-                // the server listed faces, but the app has no video renderer
-                // (face mode is off), so a pick changed nothing visible.
                 const GroupLabel('Your Avatar Identity'),
                 GroupedCard(
                   dividerInset: 60,
@@ -431,40 +423,6 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                   ],
                 ),
                 const SizedBox(height: 24),
-
-                // Bills by email (build 120): only when the server says it
-                // is switched on — until then there is nothing to show.
-                ValueListenableBuilder<MailInboxState?>(
-                  valueListenable: MailInboxService.instance.state,
-                  builder: (context, s, _) => s?.available != true
-                      ? const SizedBox.shrink()
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const GroupLabel('Documents'),
-                            GroupedCard(
-                              dividerInset: 60,
-                              children: [
-                                AppleRow(
-                                  leading: IconTile(
-                                      Icons.forward_to_inbox_rounded,
-                                      AppleColors.blue),
-                                  title: 'Bills by Email',
-                                  subtitle:
-                                      "Forward bills and tickets; your assistant will file "
-                                      'them and remind you',
-                                  onTap: () => Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                        builder: (_) =>
-                                            const BillsEmailScreen()),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 24),
-                          ],
-                        ),
-                ),
 
                 const GroupLabel('Standing Rules'),
                 Padding(

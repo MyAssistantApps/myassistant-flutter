@@ -46,7 +46,6 @@ import '../../../screens/voice_picker_screen.dart';
 import '../../../models/shortcut.dart';
 import '../../../services/shortcut_runner.dart';
 import '../../../services/turn_audio_uploader.dart';
-import '../../../screens/bills_email_screen.dart';
 import '../../../models/user_document.dart';
 import '../../../models/vision_result.dart';
 import '../../../models/news_item.dart';
@@ -3521,17 +3520,6 @@ class AssistantEngine extends ChangeNotifier {
               : 'Translator off.');
         }
         break;
-
-      case 'open_video':
-        // Face-to-face video rode the live socket, which is gone: said
-        // plainly rather than opening an empty room.
-        _reportDeviceFailure('open_video',
-            reason: 'face-to-face video is not in this version');
-        await _tellModel(
-            '[SYSTEM] ERROR: face-to-face video is not available in '
-            'this version of the app, so nothing opened. Say that plainly in '
-            'one sentence.');
-        break;
     }
     notifyListeners();
   }
@@ -4734,12 +4722,10 @@ class AssistantEngine extends ChangeNotifier {
         // "Send a video note to …" with no video recorded yet: the server
         // opens the place to record it (send_video_note, 2026-09-26).
         'avatar_identity' => (_) => const AvatarIdentityScreen(),
-        // "Connect my Notion" (build 120).
+        // "Open my connected apps" (build 120).
         'connected_apps' => (_) => const ConnectedAppsScreen(),
         // "Show my shortcuts" (build 120).
         'shortcuts' => (_) => const ShortcutsScreen(),
-        // "What's my bills email" (bills_email tool, build 120).
-        'bills_email' => (_) => const BillsEmailScreen(),
         // "Show my shopping list" (shopping_list_show, build 124), or one
         // kind of it ("my grocery list").
         'shopping_list' => (_) => ShoppingListScreen(
