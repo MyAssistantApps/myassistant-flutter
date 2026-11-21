@@ -134,6 +134,12 @@ class ConnectService {
         const {'ok': false, 'error': 'the request did not reach the server'});
   }
 
+  /// I have seen an urgent alert: its repeat pings stop and the sender is
+  /// told. Without [id], every open urgent alert.
+  static Future<void> ackUrgent([int? id]) async {
+    await ApiService.postJson('/connect/urgent/ack', {if (id != null) 'id': id});
+  }
+
   /// After the call: the host gets a short summary from the transcript.
   static Future<void> end(int id, List<Map<String, String>> transcript) async {
     await ApiService.postJson('/connect/$id/end', {'transcript': transcript});

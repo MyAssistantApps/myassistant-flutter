@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/foundation.dart' show ValueNotifier, visibleForTesting;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -165,6 +167,26 @@ class ReminderNotifications {
         description: 'Reminders set to ring as a wake-up alarm.',
         importance: Importance.max,
       ));
+      // URGENT ALERTS from a contact's assistant (2026-11-21): the first
+      // ping on its own channel, the repeats (5 min unseen) at ALARM volume
+      // with a long vibration, so they are heard over a silent ringer.
+      await android?.createNotificationChannel(const AndroidNotificationChannel(
+        urgentChannel,
+        'Urgent Alerts',
+        description: 'An urgent message from a contact, sent through their assistant',
+        importance: Importance.max,
+      ));
+      await android?.createNotificationChannel(AndroidNotificationChannel(
+        urgentLoudChannel,
+        'Urgent Alerts (Not Yet Seen)',
+        description: 'Repeats an urgent alert, louder, until you open it',
+        importance: Importance.max,
+        sound: const UriAndroidNotificationSound('content://settings/system/alarm_alert'),
+        audioAttributesUsage: AudioAttributesUsage.alarm,
+        enableVibration: true,
+        vibrationPattern: Int64List.fromList([0, 900, 300, 900, 300, 900]),
+        enableLights: true,
+      ));
       await android?.createNotificationChannel(const AndroidNotificationChannel(
         'hari_default',
         'Messages & Alerts',
@@ -204,6 +226,41 @@ class ReminderNotifications {
           iOS: DarwinNotificationDetails(),
         ),
         payload: payload,
+      );
+    } catch (_) {}
+  }
+
+  static const urgentChannel = 'hari_urgent';
+  static const urgentLoudChannel = 'hari_urgent_loud';
+
+  /// An urgent alert while the app is open (Android does not show the push
+  /// itself then). The same id each time, so a repeat replaces the banner
+  /// and rings again; [loud] uses the alarm-volume channel.
+  Future<void> showUrgent(int alertId, String title, String body,
+      {bool loud = false}) async {
+    if (!_ready) await init();
+    if (!_ready) return;
+    try {
+      await _plugin.show(
+        0x3F000000 + (alertId & 0xFFFFF),
+        title,
+        body,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            loud ? urgentLoudChannel : urgentChannel,
+            loud ? 'Urgent Alerts (Not Yet Seen)' : 'Urgent Alerts',
+            importance: Importance.max,
+            priority: Priority.max,
+            category: AndroidNotificationCategory.alarm,
+            audioAttributesUsage:
+                loud ? AudioAttributesUsage.alarm : AudioAttributesUsage.notification,
+            fullScreenIntent: loud,
+            visibility: NotificationVisibility.public,
+          ),
+          iOS: const DarwinNotificationDetails(
+              interruptionLevel: InterruptionLevel.timeSensitive),
+        ),
+        payload: 'urgent:$alertId',
       );
     } catch (_) {}
   }

@@ -72,6 +72,10 @@ Future<void> openNotificationPayload(String what) {
     return ShoppingNav.fromNotification(what);
   }
   if (what == 'focus') return FocusNav.open();
+  // An urgent alert shown while the app was open (2026-11-21).
+  if (what.startsWith('urgent:')) {
+    return PushService.instance.openUrgent(int.tryParse(what.substring(7)));
+  }
   if (what == ListingNav.payload) return ListingNav.open();
   // A direct message (2026-10-04): that person's chat.
   if (what.startsWith('dm:')) {
