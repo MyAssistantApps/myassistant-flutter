@@ -15,6 +15,8 @@ import 'avatar_message_service.dart';
 import 'brief_service.dart';
 import 'call_service.dart';
 import '../screens/bills_email_screen.dart' show BillsEmailNav;
+import '../screens/listing/my_listing_screen.dart' show ListingNav;
+import 'listing_service.dart';
 import 'document_events.dart';
 
 /// Registers this device with the backend so other people's agents can
@@ -74,11 +76,11 @@ class PushService {
             // here once nothing is using the speaker and mic and the app
             // is unlocked (showPending waits; after ten minutes it leaves
             // a notification instead).
-            AppFeedback.toast('New video note from your circle.');
+            AppFeedback.toast('A new video note has been received from your circle.');
             unawaited(AvatarMessageService.instance.showPending());
           } else {
             AppFeedback.toast(
-                'New message from your circle — tap the mic and I\'ll read it.');
+                'A new message has been received from your circle. Tap the microphone to hear it.');
           }
           BriefService.instance.refresh(force: true);
         }
@@ -91,6 +93,9 @@ class PushService {
         // Bills by email: a document arrived — open lists reload.
         final isMail = m.data['kind'] == 'mail_filed' || m.data['kind'] == 'mail_confirm';
         if (isMail) DocumentEvents.bump();
+        // A booking request from the public page: the badge moves at once.
+        final isListing = m.data['kind'] == 'listing_request';
+        if (isListing) ListingService.instance.newRequests.value++;
         // EVERYTHING ELSE (admin notices, update announcements, task
         // outcomes…): Android does not display pushes for a foregrounded
         // app — the app must. Silently dropping them here is why "send
@@ -149,7 +154,7 @@ class PushService {
           ReminderNotifications.instance.showNow(
             n.title ?? 'MyAssistant',
             n.body ?? '',
-            payload: isMail ? 'bills_email' : (group ?? dm),
+            payload: isMail ? 'bills_email' : (isListing ? ListingNav.payload : (group ?? dm)),
           );
         }
       });
@@ -180,6 +185,7 @@ class PushService {
           AppLog.add('push', 'bills email opened');
           unawaited(BillsEmailNav.open());
         }
+        if (m.data['kind'] == 'listing_request') unawaited(ListingNav.open());
       });
       // Cold start FROM the notification (app was killed).
       FirebaseMessaging.instance.getInitialMessage().then((m) {
@@ -207,6 +213,7 @@ class PushService {
           AppLog.add('push', 'bills email launched the app');
           unawaited(BillsEmailNav.open());
         }
+        if (m != null && m.data['kind'] == 'listing_request') unawaited(ListingNav.open());
       });
       _listenerAttached = true;
     } catch (e) {
@@ -235,8 +242,8 @@ class PushService {
     if (_warnedNotifications) return;
     _warnedNotifications = true;
     AppFeedback.toast(
-        'Notifications are off for this app — enable them in phone '
-        'Settings → Apps so messages and calls can reach you.');
+        'Notifications are disabled for this app. Please enable them in phone '
+        'Settings → Apps so that messages and calls can reach you.');
   }
 
   /// A scheduled call landing on the phone: resolve the contact locally
@@ -250,17 +257,17 @@ class PushService {
     try {
       final matches = await CallService.instance.findContacts(name);
       if (matches.isEmpty || matches.first.phones.isEmpty) {
-        AppFeedback.toast("Couldn't find $name in your contacts to call.");
+        AppFeedback.toast("Unable to find $name in your contacts to place the call.");
         AppLog.add('push', 'scheduled call: no contact for "$name"');
         return;
       }
       final number = matches.first.phones.first.number;
       final ok = await CallService.instance.call(number);
       AppLog.add('push', 'scheduled call: dial ${ok ? 'started' : 'FAILED'}');
-      if (!ok) AppFeedback.toast("Couldn't start the call to $name.");
+      if (!ok) AppFeedback.toast("Unable to start the call to $name.");
     } catch (e) {
       AppLog.add('push', 'scheduled call failed: $e');
-      AppFeedback.toast("Couldn't start the call to $name.");
+      AppFeedback.toast("Unable to start the call to $name.");
     }
   }
 

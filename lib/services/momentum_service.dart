@@ -211,7 +211,7 @@ class MomentumService extends ChangeNotifier {
     final s = _view;
     if (t.isEmpty) return Future.value(false);
     if (s != null && s.priorities.length >= maxPriorities) {
-      lastError = 'Today already has three.';
+      lastError = 'Today already has the maximum of three.';
       return Future.value(false);
     }
     final temp = _tempId--;
@@ -271,7 +271,7 @@ class MomentumService extends ChangeNotifier {
     final t = _clean(title);
     if (t.isEmpty) return Future.value(false);
     if ((_view?.habits.length ?? 0) >= maxHabits) {
-      lastError = 'Twelve habits is the most — remove one first.';
+      lastError = 'The maximum is twelve habits. Please remove one first.';
       return Future.value(false);
     }
     final temp = _tempId--;
@@ -425,10 +425,10 @@ class MomentumService extends ChangeNotifier {
   }
 
   static String _friendly(MomentumReply r) {
-    if (r.status == 0) return "Couldn't save — check your connection.";
+    if (r.status == 0) return "Unable to save. Check your connection.";
     final e = r.error;
-    if (e == null || e.isEmpty) return "Couldn't save that — please try again.";
-    if (e.contains('already has')) return 'That day already has three.';
+    if (e == null || e.isEmpty) return "Unable to save the change. Please try again.";
+    if (e.contains('already has')) return 'That day already has the maximum of three.';
     return e[0].toUpperCase() + e.substring(1);
   }
 
@@ -495,13 +495,13 @@ class MomentumService extends ChangeNotifier {
         if (fresh.isNotEmpty) {
           seen.addAll(fresh.map((m) => 'ms:${m.id}'));
           milestone = fresh.last.id;
-          line = '${fresh.last.label} — well done.';
+          line = '${fresh.last.label}. Well done.';
         }
       }
       final allKey = 'all:${s.day}';
       if (s.priorities.length == maxPriorities && s.allDone && !seen.contains(allKey)) {
         seen.add(allKey);
-        line ??= 'All three done — a winning day.';
+        line ??= 'All three completed. A successful day.';
       }
       final list = seen.toList();
       await prefs.setStringList(_celebratedKey, list.length > 80 ? list.sublist(list.length - 80) : list);

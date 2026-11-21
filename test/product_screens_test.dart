@@ -46,7 +46,7 @@ void main() {
 
   testWidgets('the results grid shows each product with its rating and price', (t) async {
     await big(t, const ProductSearchScreen(query: 'iPhone 16'));
-    expect(find.text('Showing results for “iPhone 16”'), findsOneWidget);
+    expect(find.text('Results for “iPhone 16”'), findsOneWidget);
     expect(find.text('4.5 (2.85K)'), findsOneWidget);
     expect(find.text('₹76,999'), findsOneWidget);
     expect(find.text('Popularity'), findsOneWidget);
@@ -55,15 +55,15 @@ void main() {
 
   testWidgets('the product page shows price vs average, score, stores, deals and the bottom bar', (t) async {
     await big(t, const ProductDetailScreen(query: 'pixel 10'));
-    expect(find.textContaining('lower than average price'), findsOneWidget);
+    expect(find.textContaining('below the average price'), findsOneWidget);
     expect(find.text('SCORE'), findsOneWidget);
     expect(find.text('Set Alert'), findsOneWidget);
     expect(find.textContaining('Buy Now'), findsOneWidget);
     final list = find.byType(Scrollable).first;
-    await t.scrollUntilVisible(find.text('Never miss a price drop'), 300, scrollable: list);
+    await t.scrollUntilVisible(find.text('Price Drop Alert'), 300, scrollable: list);
     await t.scrollUntilVisible(find.text('More Store Prices'), 300, scrollable: list);
     await t.scrollUntilVisible(find.text('LOWEST'), 300, scrollable: list);
-    await t.scrollUntilVisible(find.text('Deals in this category'), 300, scrollable: list);
+    await t.scrollUntilVisible(find.text('Deals in This Category'), 300, scrollable: list);
     expect(t.takeException(), isNull);
   });
 
@@ -83,12 +83,13 @@ void main() {
 
   testWidgets('the Price compare page: categories, search pill, examples and stores fit', (t) async {
     await big(t, const PriceCompareScreen());
-    expect(find.text('Shopping'), findsWidgets);
-    expect(find.text('Grocery'), findsWidgets);
-    expect(find.text('Try'), findsOneWidget);
+    // Only Product compare is offered now (owner, 2026-11-14).
+    expect(find.text('Grocery'), findsNothing);
+    expect(find.text('Flights'), findsNothing);
+    expect(find.text('Examples'), findsOneWidget);
     expect(find.text('iPhone 16 128GB'), findsOneWidget);
-    expect(find.text('Add budget'), findsOneWidget);
-    expect(find.text('Checks'), findsOneWidget);
+    expect(find.text('Add Budget'), findsOneWidget);
+    expect(find.text('Stores'), findsOneWidget);
     expect(t.takeException(), isNull);
   });
 }

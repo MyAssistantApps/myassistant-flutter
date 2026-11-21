@@ -141,7 +141,7 @@ object InstallWatch {
             val nm = app.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             if (Build.VERSION.SDK_INT >= 26 && nm.getNotificationChannel(CHANNEL) == null) {
                 nm.createNotificationChannel(
-                    NotificationChannel(CHANNEL, "Apps you asked to open",
+                    NotificationChannel(CHANNEL, "Requested Apps",
                         NotificationManager.IMPORTANCE_HIGH))
             }
             launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -154,8 +154,8 @@ object InstallWatch {
             }
             nm.notify(pkg.hashCode(), b
                 .setSmallIcon(R.drawable.ic_stat_hari)
-                .setContentTitle("$label is installed")
-                .setContentText("Tap to open it.")
+                .setContentTitle("$label Is Installed")
+                .setContentText("Tap to open the app.")
                 .setAutoCancel(true)
                 .setContentIntent(pi)
                 .build())

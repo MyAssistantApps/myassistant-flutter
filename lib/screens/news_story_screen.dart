@@ -102,11 +102,11 @@ class NewsStoryScreen extends StatelessWidget {
       // The turn runs until the reading ends, so the note goes up as it
       // starts; a failure replaces it.
       final turn = AssistantEngine.instance.askAssistant(listenRequest(item));
-      AppFeedback.toast('Reading it out…', tone: FeedbackTone.progress);
+      AppFeedback.toast('Reading aloud…', tone: FeedbackTone.progress);
       await turn;
     } catch (e) {
       AppLog.add('news', 'listen failed: $e');
-      AppFeedback.toast("Couldn't read that out. Try again.",
+      AppFeedback.toast("Unable to read the story aloud. Please try again.",
           tone: FeedbackTone.error);
     }
   }
@@ -119,7 +119,7 @@ class NewsStoryScreen extends StatelessWidget {
       );
     } catch (e) {
       AppLog.add('news', 'share failed: $e');
-      AppFeedback.toast("Couldn't share that.", tone: FeedbackTone.error);
+      AppFeedback.toast("Unable to share the story.", tone: FeedbackTone.error);
     }
   }
 
@@ -131,7 +131,7 @@ class NewsStoryScreen extends StatelessWidget {
         ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
       } catch (_) {}
     }
-    if (!ok) AppFeedback.toast("Couldn't open the article.");
+    if (!ok) AppFeedback.toast("Unable to open the article.");
   }
 
   @override
@@ -240,7 +240,7 @@ class NewsStoryScreen extends StatelessWidget {
                 if (body.isEmpty) ...[
                   const SizedBox(height: 14),
                   Text(
-                    'Tap Listen and I will read it to you, or open the article.',
+                    'Tap Listen to have your assistant read the story aloud, or open the article.',
                     style: NeonType.manrope(NeonType.body, FontWeight.w500)
                         .copyWith(color: Neon.textLo, height: 1.45),
                   ),
@@ -273,10 +273,10 @@ class NewsStoryScreen extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _SecondaryButton(
-                        label: 'Open article',
+                        label: 'Open Article',
                         icon: Icons.open_in_new_rounded,
                         onPressed: canOpen ? _openArticle : null,
-                        tooltip: canOpen ? null : 'No link for this story',
+                        tooltip: canOpen ? null : 'No link is available for this story',
                       ),
                     ),
                     const SizedBox(width: 10),

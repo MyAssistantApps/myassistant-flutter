@@ -96,7 +96,7 @@ object Overlay {
         // light (OrbView.BODY): that room is its margin from the screen edge.
         val size = dp(ctx, 74f).toInt()
         val orb = OrbView(ctx.applicationContext, halo = true)
-        orb.contentDescription = "Talk to the assistant"
+        orb.contentDescription = "Speak to your assistant"
         val lp = overlayParams(size, size).apply {
             gravity = Gravity.TOP or Gravity.START
             x = ctx.resources.displayMetrics.widthPixels - size - dp(ctx, 2f).toInt()
@@ -158,7 +158,7 @@ object Overlay {
         val c = ctx.applicationContext
         val h = dp(c, 28f).toInt()
         val tv = label ?: TextView(c).apply {
-            text = "Speak now"
+            text = "Speak Now"
             setTextColor(Color.WHITE); textSize = 12.5f
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER; maxLines = 1
@@ -264,7 +264,7 @@ object Overlay {
     fun showInfo(ctx: Context, appName: String, say: String, remembered: Boolean) {
         if (busy) return
         build(ctx, appName, say)
-        status?.text = if (remembered) "Saved to your memory" else ""
+        status?.text = if (remembered) "Saved to memory" else ""
         status?.visibility = if (remembered) View.VISIBLE else View.GONE
         button(leftBtn, "Dismiss") { dismiss(ctx) }
         rightBtn?.visibility = View.GONE
@@ -363,15 +363,15 @@ object Overlay {
         val c = ctx.applicationContext
         autoHide?.let { main.removeCallbacks(it) }
         if (c.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            status?.text = "Allow the microphone in the app first"; hideIn(c, 8000); return
+            status?.text = "Please enable microphone access in the app"; hideIn(c, 8000); return
         }
         if (!SpeechRecognizer.isRecognitionAvailable(c)) {
-            status?.text = "Speech recognition is not available on this phone"; hideIn(c, 8000); return
+            status?.text = "Speech recognition is unavailable on this device"; hideIn(c, 8000); return
         }
         busy = true
         MicService.acquire(c, "reply")
         orbSmall?.listening = true
-        status?.text = "Listening — say your reply"
+        status?.text = "Listening. Please speak your reply"
         rightBtn?.visibility = View.GONE
         button(leftBtn, "Dismiss") { dismiss(c) }
         val sr = SpeechRecognizer.createSpeechRecognizer(c)
@@ -418,7 +418,7 @@ object Overlay {
     }
 
     private fun missed(c: Context, action: Notification.Action) {
-        status?.text = "Didn't catch that"
+        status?.text = "Unable to capture the audio"
         button(rightBtn, "Reply") { listen(c, action) }
         hideIn(c, 10_000)
     }
@@ -452,7 +452,7 @@ object Overlay {
         pendingSend = null
         busy = false
         val ok = HariNotificationListener.Sender.send(c, action, text)
-        status?.text = if (ok) "Sent ✓" else "Couldn't send — open the app to reply"
+        status?.text = if (ok) "Sent ✓" else "Unable to send. Please open the app to reply"
         leftBtn?.visibility = View.GONE; rightBtn?.visibility = View.GONE
         hideIn(c, if (ok) 1500 else 5000)
     }

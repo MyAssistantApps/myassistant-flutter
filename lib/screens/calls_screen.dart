@@ -50,7 +50,7 @@ class _CallsScreenState extends State<CallsScreen> {
       });
     } catch (_) {
       if (mounted) {
-        AppFeedback.show("Couldn't play the recording", context: context, tone: FeedbackTone.error);
+        AppFeedback.show("Unable to play the recording.", context: context, tone: FeedbackTone.error);
       }
     }
   }
@@ -74,10 +74,10 @@ class _CallsScreenState extends State<CallsScreen> {
       final have = _calls;
       if (have != null && have.isNotEmpty) {
         // The list on screen is still good: say the refresh missed.
-        AppFeedback.show("Couldn't refresh.",
+        AppFeedback.show("Unable to refresh.",
             context: context, tone: FeedbackTone.error);
       } else {
-        setState(() => _error = "Couldn't load your calls");
+        setState(() => _error = "Unable to load your calls.");
       }
     }
   }
@@ -129,8 +129,8 @@ class _CallsScreenState extends State<CallsScreen> {
           NeonEmptyState(
             icon: Icons.phone_in_talk_rounded,
             title: 'No calls yet',
-            body: 'Ask me to call someone and pass on a message — "call Ravi '
-                'and tell him I\'ll be late". What they say back appears here.',
+            body: 'Say "Call Ravi and inform him I am running late". '
+                'The outcome of each call appears here.',
             tone: NeonTone.success,
           ),
         ],
@@ -173,7 +173,7 @@ class _CallsScreenState extends State<CallsScreen> {
             const SizedBox(width: 9),
             Expanded(
               child: Text(
-                c.contact.isEmpty ? 'Someone' : c.contact,
+                c.contact.isEmpty ? 'Unknown' : c.contact,
                 style: NeonType.manrope(NeonType.callout, FontWeight.w700)
                     .copyWith(color: Neon.textHi),
               ),
@@ -194,10 +194,10 @@ class _CallsScreenState extends State<CallsScreen> {
           const SizedBox(height: 4),
           Text(
             c.missed
-                ? 'They did not pick up.'
+                ? 'The call was not answered.'
                 : c.reason.isNotEmpty
                     ? c.reason
-                    : 'The call did not go through.',
+                    : 'The call could not be completed.',
             style: NeonType.manrope(NeonType.footnote, FontWeight.w600)
                 .copyWith(color: tint, height: 1.35),
           ),
@@ -217,7 +217,7 @@ class _CallsScreenState extends State<CallsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('They said',
+                Text('Response',
                     style: NeonType.manrope(NeonType.caption, FontWeight.w700)
                         .copyWith(color: Neon.textDim, letterSpacing: 0.4)),
                 const SizedBox(height: 4),
@@ -231,7 +231,7 @@ class _CallsScreenState extends State<CallsScreen> {
         // What the caller wrote down for the user during the call.
         if (c.notes.isNotEmpty) ...[
           const SizedBox(height: 8),
-          Text('Noted for you',
+          Text('Call Notes',
               style: NeonType.manrope(NeonType.caption, FontWeight.w700)
                   .copyWith(color: Neon.textDim, letterSpacing: 0.4)),
           const SizedBox(height: 3),
@@ -249,7 +249,7 @@ class _CallsScreenState extends State<CallsScreen> {
                 Icon(_playingId == c.id ? Icons.stop_circle_rounded : Icons.play_circle_fill_rounded,
                     color: tint, size: 20),
                 const SizedBox(width: 6),
-                Text(_playingId == c.id ? 'Stop' : 'Hear the call',
+                Text(_playingId == c.id ? 'Stop' : 'Play Recording',
                     style: NeonType.manrope(NeonType.footnote, FontWeight.w600)
                         .copyWith(color: tint)),
               ],
@@ -260,7 +260,7 @@ class _CallsScreenState extends State<CallsScreen> {
           const SizedBox(height: 8),
           Row(
             children: [
-              Text(open ? 'Hide the call' : 'Read the whole call',
+              Text(open ? 'Hide Transcript' : 'View Full Transcript',
                   style: NeonType.manrope(NeonType.footnote, FontWeight.w600)
                       .copyWith(color: tint)),
               ExpandChevron(open: open, color: tint, size: 17),
@@ -329,17 +329,17 @@ class _CallsScreenState extends State<CallsScreen> {
     return RimCard(
       tone: c.answered ? null : tone,
       onTap: toggle,
-      tapHint: open ? 'hide the call' : 'read the whole call',
+      tapHint: open ? 'hide the transcript' : 'view the full transcript',
       child: body,
     );
   }
 
   String _headline(CallOutcome c) {
     if (c.detail.isNotEmpty) return c.detail;
-    if (c.inProgress) return 'On the call now…';
-    if (c.missed) return 'They did not pick up.';
+    if (c.inProgress) return 'Call in progress…';
+    if (c.missed) return 'The call was not answered.';
     if (c.reason.isNotEmpty) return c.reason;
-    return 'The call did not go through.';
+    return 'The call could not be completed.';
   }
 
   String _when(int ms) {

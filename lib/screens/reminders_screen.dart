@@ -53,9 +53,9 @@ class _RemindersScreenState extends State<RemindersScreen> {
     } catch (_) {
       if (!mounted) return;
       if (_items == null) {
-        setState(() => _error = "Couldn't load your reminders");
+        setState(() => _error = "Unable to load your reminders.");
       } else {
-        AppFeedback.show("Couldn't refresh.",
+        AppFeedback.show("Unable to refresh.",
             context: context, tone: FeedbackTone.error);
       }
     }
@@ -82,7 +82,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
           AppLog.add('reminders', '$text -> $e');
           if (!mounted) return;
           undo?.call();
-          AppFeedback.showRetry('${failed ?? "Couldn't save that."} Check your connection.',
+          AppFeedback.showRetry('${failed ?? "Unable to save the change."} Check your connection.',
               context: context, onRetry: retry ?? () {});
         });
     if (undo == null) {
@@ -104,12 +104,12 @@ class _RemindersScreenState extends State<RemindersScreen> {
     final i = items.indexOf(r);
     setState(() => items[i] = _with(r, done: !r.done));
     final nowDone = !r.done;
-    _snack(nowDone ? 'Done — nice.' : 'Moved back to your list',
+    _snack(nowDone ? 'Marked as completed.' : 'Marked as pending.',
         undo: () => setState(() {
               final j = items.indexWhere((x) => x.id == r.id);
               if (j >= 0) items[j] = r;
             }),
-        failed: "Couldn't update that reminder.",
+        failed: "Unable to update the reminder.",
         retry: () {
           final j = items.indexWhere((x) => x.id == r.id);
           if (j >= 0) _toggleDone(items[j]);
@@ -122,9 +122,9 @@ class _RemindersScreenState extends State<RemindersScreen> {
     final items = _items!;
     final i = items.indexOf(r);
     setState(() => items.removeAt(i));
-    _snack('Reminder removed',
+    _snack('Reminder removed.',
         undo: () => setState(() => items.insert(i.clamp(0, items.length), r)),
-        failed: "Couldn't remove that reminder.",
+        failed: "Unable to remove the reminder.",
         retry: () {
           if (mounted && _items != null && _items!.contains(r)) _delete(r);
         },
@@ -142,7 +142,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
     if (made == true) {
       await _load();
       _afterChange();
-      if (mounted) _snack('Reminder set');
+      if (mounted) _snack('Reminder created.');
     }
   }
 
@@ -155,7 +155,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _create,
         icon: const Icon(Icons.add_rounded),
-        label: const Text('New reminder'),
+        label: const Text('New Reminder'),
       ),
       body: SafeArea(child: StateSwitch.of(_body())),
     );
@@ -185,9 +185,9 @@ class _RemindersScreenState extends State<RemindersScreen> {
           const SizedBox(height: 80),
           NeonEmptyState(
             icon: Icons.notifications_none_rounded,
-            title: 'No reminders yet',
-            body: 'Say "remind me to call the bank at 5", or tap New reminder.',
-            actionLabel: 'New reminder',
+            title: 'No reminders scheduled',
+            body: 'Say "Set a reminder to call the bank at 5 PM" — or tap New Reminder.',
+            actionLabel: 'New Reminder',
             actionIcon: Icons.add_rounded,
             onAction: _create,
           ),
@@ -209,7 +209,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
             TextButton.icon(
               onPressed: () => setState(() => _showDone = !_showDone),
               icon: ExpandChevron(open: _showDone, color: Neon.textLo),
-              label: Text('${_showDone ? 'Hide' : 'Show'} done (${done.length})',
+              label: Text('${_showDone ? 'Hide' : 'Show'} Completed (${done.length})',
                   style: TextStyle(color: Neon.textLo)),
             ),
             Collapse(
@@ -229,7 +229,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
       children: [
         Semantics(
           button: true,
-          label: r.done ? 'Mark not done' : 'Mark done',
+          label: r.done ? 'Mark as Pending' : 'Mark as Completed',
           child: PressScale(
             scale: 0.9,
             child: InkResponse(
@@ -280,7 +280,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
         ),
         if (r.calls && !r.done)
           Tooltip(
-            message: 'Your assistant will call you',
+            message: 'Your assistant will call you at this time',
             child: Padding(
               padding: const EdgeInsets.only(left: 6),
               child: Icon(Icons.phone_in_talk_rounded, size: 18, color: Neon.cyan),
@@ -288,7 +288,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
           ),
         if (r.isAlarm && !r.done)
           Tooltip(
-            message: 'Rings like an alarm',
+            message: 'Rings as an alarm',
             child: Padding(
               padding: const EdgeInsets.only(left: 6),
               child: Icon(Icons.alarm_rounded, size: 18, color: Neon.pink),
@@ -407,8 +407,8 @@ class _NewReminderSheetState extends State<_NewReminderSheet> {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     return [
-      ('In 1 hour', now.add(const Duration(hours: 1))),
-      if (now.hour < 18) ('This evening', today.add(const Duration(hours: 19))),
+      ('In 1 Hour', now.add(const Duration(hours: 1))),
+      if (now.hour < 18) ('This Evening', today.add(const Duration(hours: 19))),
       ('Tomorrow 9 am', today.add(const Duration(days: 1, hours: 9))),
     ];
   }
@@ -444,7 +444,7 @@ class _NewReminderSheetState extends State<_NewReminderSheet> {
       if (mounted) {
         setState(() {
           _saving = false;
-          _error = "Couldn't save it — check your connection.";
+          _error = "Unable to save the reminder. Check your connection.";
         });
       }
     }
@@ -459,14 +459,14 @@ class _NewReminderSheetState extends State<_NewReminderSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('New reminder', style: NeonType.cardTitle.copyWith(color: Neon.textHi)),
+          Text('New Reminder', style: NeonType.cardTitle.copyWith(color: Neon.textHi)),
           const SizedBox(height: 12),
           TextField(
             controller: _text,
             autofocus: true,
             textCapitalization: TextCapitalization.sentences,
             style: TextStyle(color: Neon.textHi),
-            decoration: const InputDecoration(hintText: 'What should I remind you about?'),
+            decoration: const InputDecoration(hintText: 'What should you be reminded of?'),
             onChanged: (_) => setState(() {}),
             onSubmitted: (_) => _save(),
           ),
@@ -484,21 +484,21 @@ class _NewReminderSheetState extends State<_NewReminderSheet> {
               ActionChip(
                 avatar: const Icon(Icons.event_rounded, size: 18),
                 label: Text(_when == null || _quick().any((q) => q.$2 == _when)
-                    ? 'Pick date & time'
+                    ? 'Select Date & Time'
                     : dueLabel(_when!, now)),
                 onPressed: _pick,
               ),
               if (_when != null)
                 ActionChip(
                   avatar: const Icon(Icons.close_rounded, size: 18),
-                  label: const Text('No time'),
+                  label: const Text('No Time'),
                   onPressed: () => setState(() => _when = null),
                 ),
             ],
           ),
           if (_when != null) ...[
             const SizedBox(height: 10),
-            Text('Reminds you ${dueLabel(_when!, now).replaceFirst(',', ' at')}',
+            Text('Reminder scheduled for ${dueLabel(_when!, now).replaceFirst(',', ' at')}.',
                 style: TextStyle(color: Neon.textLo, fontSize: NeonType.footnote)),
           ],
           if (_error != null) ...[
@@ -513,7 +513,7 @@ class _NewReminderSheetState extends State<_NewReminderSheet> {
             style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
             child: _saving
                 ? const NeonLoader.inline(size: 20, semanticLabel: 'Saving')
-                : const Text('Save reminder'),
+                : const Text('Save Reminder'),
           ),
         ],
       ),

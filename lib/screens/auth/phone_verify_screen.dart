@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../design/neon_tokens.dart';
@@ -16,8 +19,9 @@ import '../../services/phone_verify_service.dart';
 ///
 /// No SMS code (owner, 2026-09-29): Google confirms the number of the SIM
 /// in this phone with its carrier (PhoneVerifyService). Where the carrier
-/// does not take part, the server's testing switch (a typed number) is the
-/// only other way, shown only while the server offers it.
+/// does not take part (India), our caller rings the number and reads a
+/// 6-digit code to type back (2026-11-14). The server's testing switch (a
+/// typed number) shows only while the server still offers it.
 ///
 /// Styled as part of ONE onboarding flow with the auth and naming screens:
 /// plain ground, left-aligned headline, theme fields, ink primary button.
@@ -35,6 +39,14 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
   late final PhoneVerifyService _svc =
       widget.service ?? PhoneVerifyService.instance;
   final _phone = TextEditingController();
+  final _code = TextEditingController();
+
+  /// The number a code was called to; non-null = waiting for the code.
+  String? _calledTo;
+
+  /// Seconds before "Call me again" is offered.
+  int _cooldown = 0;
+  Timer? _tick;
 
   /// Default matches the backend's DEFAULT_PHONE_REGION.
   final _dial = TextEditingController(text: '+91');
@@ -63,6 +75,8 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
 
   @override
   void dispose() {
+    _tick?.cancel();
+    _code.dispose();
     _phone.dispose();
     _dial.dispose();
     super.dispose();
@@ -92,7 +106,7 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
   Future<void> _typed() async {
     final digits = _phone.text.replaceAll(RegExp(r'\D'), '');
     if (digits.length < 6) {
-      setState(() => _error = 'Enter your phone number first.');
+      setState(() => _error = 'Enter your phone number.');
       return;
     }
     setState(() {
@@ -108,21 +122,84 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
     }
   }
 
+  Future<void> _callMe() async {
+    final digits = _phone.text.replaceAll(RegExp(r'\D'), '');
+    if (_calledTo == null && digits.length < 10) {
+      setState(() => _error = 'Enter your 10-digit mobile number.');
+      return;
+    }
+    final to = _calledTo ?? _e164;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final err = await _svc.requestCall(to);
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      _error = err;
+      if (err == null) {
+        _calledTo = to;
+        _code.clear();
+        _startCooldown();
+      }
+    });
+  }
+
+  void _startCooldown() {
+    _tick?.cancel();
+    _cooldown = 45;
+    _tick = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) return t.cancel();
+      setState(() => _cooldown--);
+      if (_cooldown <= 0) t.cancel();
+    });
+  }
+
+  Future<void> _submitCode() async {
+    final to = _calledTo;
+    final code = _code.text.replaceAll(RegExp(r'\D'), '');
+    if (to == null) return;
+    if (code.length != 6) {
+      setState(() => _error = 'Enter the 6-digit code from the call.');
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final err = await _svc.verifyCallCode(to, code);
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      _error = err;
+    });
+    if (err == null) HapticFeedback.mediumImpact();
+  }
+
   String get _lead {
     final m = _methods;
     if (m == null) return 'Checking your SIM…';
     if (m.sim) {
-      return 'This is how friends and family reach you through their '
+      return 'Your number allows friends and family to reach you through their '
           'assistant. Google confirms the number of the SIM in this phone '
-          'with your network — there is no code to type.';
+          'with your network; no code is required.';
     }
-    if (!m.reached) return 'Could not reach the server. Check your connection.';
+    if (!m.reached) return 'Unable to connect. Check your internet connection.';
+    if (m.call) {
+      final to = _calledTo;
+      return to == null
+          ? 'Your number allows friends and family to reach you through their assistant. '
+              "We will call your number and read out a 6-digit code."
+          : "Calling $to now. Answer, note the 6-digit code, and "
+              'enter it below.';
+    }
     if (m.typed) {
-      return "Your network can't confirm numbers automatically yet. For "
+      return "Your network is not yet able to confirm numbers automatically. For "
           'testing, enter your number instead.';
     }
-    return "Your network can't confirm numbers automatically yet, so this "
-        'step is not available on this phone for now.';
+    return "Your network is not yet able to confirm numbers automatically, so this "
+        'step is currently unavailable on this phone.';
   }
 
   @override
@@ -145,7 +222,7 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
                   ),
                   const SizedBox(height: 22),
                   Text(
-                    'Verify your number',
+                    'Verify Your Number',
                     style: GoogleFonts.interTight(
                       fontSize: 26,
                       fontWeight: FontWeight.w700,
@@ -160,7 +237,9 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
                         color: Neon.textLo, fontSize: 15, height: 1.45),
                   ),
                   const SizedBox(height: 26),
-                  if (_methods?.typed == true && _methods?.sim == false)
+                  if (_methods?.sim == false &&
+                      ((_methods?.call == true && _calledTo == null) ||
+                          (_methods?.call != true && _methods?.typed == true)))
                     Row(
                       children: [
                         SizedBox(
@@ -179,12 +258,33 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
                             keyboardType: TextInputType.phone,
                             autofocus: true,
                             decoration: const InputDecoration(
-                              labelText: 'Phone number',
+                              labelText: 'Phone Number',
                               prefixIcon: Icon(Icons.phone_outlined),
                             ),
                           ),
                         ),
                       ],
+                    ),
+                  if (_methods?.sim == false && _calledTo != null)
+                    TextField(
+                      controller: _code,
+                      autofocus: true,
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      textAlign: TextAlign.center,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      onChanged: (v) {
+                        if (v.length == 6 && !_busy) _submitCode();
+                      },
+                      style: GoogleFonts.interTight(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 10,
+                          color: Neon.textHi),
+                      decoration: const InputDecoration(
+                        labelText: '6-Digit Code',
+                        counterText: '',
+                      ),
                     ),
                   if (_error != null) ...[
                     const SizedBox(height: 14),
@@ -215,17 +315,21 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
                     const GlowCta(
                       label: '',
                       busy: true,
-                      busyLabel: 'Checking your number',
+                      busyLabel: 'Verifying Your Number',
                       onPressed: null,
                     )
                   else if (_methods!.sim)
                     GlowCta(
-                      label: 'Confirm with my SIM',
+                      label: 'Confirm with SIM',
                       onPressed: _viaSim,
                     )
+                  else if (_methods!.call && _calledTo != null)
+                    GlowCta(label: 'Verify', onPressed: _submitCode)
+                  else if (_methods!.call)
+                    GlowCta(label: 'Request Code by Call', onPressed: _callMe)
                   else if (_methods!.typed)
                     GlowCta(
-                      label: 'Use this number (testing)',
+                      label: 'Use This Number (Testing)',
                       onPressed: _typed,
                     )
                   else
@@ -234,14 +338,49 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
                     // on a network that cannot confirm it checks again (a
                     // new SIM, or the testing switch turned on).
                     GlowCta(
-                      label: _methods!.reached ? 'Check again' : 'Try again',
+                      label: _methods!.reached ? 'Check Again' : 'Retry',
                       onPressed: _check,
+                    ),
+                  if (_methods?.call == true &&
+                      _methods?.sim == false &&
+                      _calledTo != null)
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      children: [
+                        TextButton(
+                          onPressed: _busy
+                              ? null
+                              : () => setState(() {
+                                    _calledTo = null;
+                                    _error = null;
+                                  }),
+                          child: const Text('Change Number'),
+                        ),
+                        TextButton(
+                          onPressed: _busy || _cooldown > 0 ? null : _callMe,
+                          child: Text(_cooldown > 0
+                              ? 'Call Again in ${_cooldown}s'
+                              : 'Call Again'),
+                        ),
+                      ],
+                    ),
+                  // While the server still has its testing switch on, a
+                  // typed number stays possible — as the quiet option.
+                  if (_methods?.call == true &&
+                      _methods?.sim == false &&
+                      _methods?.typed == true &&
+                      _calledTo == null)
+                    TextButton(
+                      onPressed: _busy ? null : _typed,
+                      child: Text('Testing: Use This Number Without a Call',
+                          style: TextStyle(
+                              color: Neon.textLo, fontSize: NeonType.footnote)),
                     ),
                   const SizedBox(height: 6),
                   TextButton(
                     onPressed:
                         _busy ? null : () => AuthService.instance.signOut(),
-                    child: Text('Sign out',
+                    child: Text('Sign Out',
                         style: TextStyle(
                             color: Neon.textLo, fontSize: NeonType.footnote)),
                   ),

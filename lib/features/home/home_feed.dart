@@ -133,9 +133,9 @@ class HomeRanker {
   static const getStarted = HomeCard(
     id: 'get-started',
     kind: HomeCardKind.getStarted,
-    title: 'Ask me anything',
-    reason: 'Start here',
-    detail: 'Try: “Remind me to call Amma at 6”',
+    title: 'Ask Your Assistant',
+    reason: 'Get started',
+    detail: 'Example: “Set a reminder to call Amma at 6 PM”',
     score: 790,
   );
 
@@ -344,7 +344,7 @@ class HomeRanker {
         kind: HomeCardKind.promise,
         title: title,
         reason: when,
-        detail: who == null ? 'You promised this' : 'You promised $who',
+        detail: who == null ? 'Your commitment' : 'Committed to $who',
         score: score,
         promise: p,
         person: who,
@@ -359,7 +359,7 @@ class HomeRanker {
     yield HomeCard(
       id: 'message:${m.from}:${m.text.length}:${m.text.substring(0, math.min(24, m.text.length))}',
       kind: HomeCardKind.message,
-      title: named ? 'Message from ${m.from}' : 'A message for you',
+      title: named ? 'Message from ${m.from}' : 'New message received',
       reason: messages.length > 1 ? '${messages.length} waiting' : 'Waiting',
       detail: m.text,
       score: 600,

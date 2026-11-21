@@ -36,7 +36,7 @@ class BusinessCardFlow {
       );
     } catch (_) {
       if (context.mounted) {
-        AppFeedback.show("Couldn't open the camera.", context: context);
+        AppFeedback.show("Unable to open the camera.", context: context);
       }
       return null;
     }
@@ -70,10 +70,10 @@ class BusinessCardFlow {
       if (r.statusCode == 200) {
         person = (body['person'] as Map).cast<String, dynamic>();
       } else {
-        error = (body['error'] ?? "Couldn't read that card.").toString();
+        error = (body['error'] ?? "Unable to read the card.").toString();
       }
     } catch (_) {
-      error = "Couldn't read that card — check your connection.";
+      error = "Unable to read the card. Check your internet connection.";
     }
     if (reading && context.mounted) {
       Navigator.of(context, rootNavigator: true).pop();
@@ -162,7 +162,7 @@ class _CardResultSheetState extends State<CardResultSheet> {
           ) ??
           false;
     } catch (_) {}
-    if (!ok) _say("Couldn't open your contacts app.");
+    if (!ok) _say("Unable to open your contacts app.");
   }
 
   Future<void> _hello() async {
@@ -180,7 +180,7 @@ class _CardResultSheetState extends State<CardResultSheet> {
     try {
       ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     } catch (_) {}
-    if (!ok) _say("Couldn't open the chat app — is it installed?");
+    if (!ok) _say("Unable to open the chat app. Please confirm that it is installed.");
   }
 
   Future<void> _call() async {
@@ -247,7 +247,7 @@ class _CardResultSheetState extends State<CardResultSheet> {
               child: FilledButton.icon(
                 onPressed: _addToContacts,
                 icon: const Icon(Icons.person_add_alt_1_rounded),
-                label: const Text('Add to phone contacts'),
+                label: const Text('Add to Phone Contacts'),
               ),
             ),
             const SizedBox(height: 8),
@@ -256,7 +256,7 @@ class _CardResultSheetState extends State<CardResultSheet> {
                 child: OutlinedButton.icon(
                   onPressed: _hello,
                   icon: Icon(Icons.chat_rounded, color: Neon.success),
-                  label: const Text('Say hello'),
+                  label: const Text('Send Greeting'),
                 ),
               ),
               if (_phone.isNotEmpty) ...[

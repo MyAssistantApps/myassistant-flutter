@@ -47,7 +47,7 @@ String enableRefusal(String? serverError) {
     return 'Give your consent first.';
   }
   if (why.contains('video')) return 'Record your video first.';
-  return "Couldn't change that — try again.";
+  return "Unable to update this setting. Please try again.";
 }
 
 class _AvatarIdentityScreenState extends State<AvatarIdentityScreen> {
@@ -72,7 +72,7 @@ class _AvatarIdentityScreenState extends State<AvatarIdentityScreen> {
     final p = await (widget.loader ?? AvatarMessageService.profile)();
     if (!mounted) return;
     if (p == null && _profile != null) {
-      AppFeedback.show("Couldn't refresh — check your connection.",
+      AppFeedback.show("Unable to refresh. Check your internet connection.",
           context: context);
     }
     setState(() {
@@ -113,34 +113,34 @@ class _AvatarIdentityScreenState extends State<AvatarIdentityScreen> {
   }
 
   Future<void> _consent() => _run(AvatarMessageService.grantConsent,
-      ok: 'Thank you. Now record your video.',
-      fail: "Couldn't save your consent — try again.");
+      ok: 'Thank you. Please record your video.',
+      fail: "Unable to save your consent. Please try again.");
 
   Future<void> _withdraw() async {
     final sure = await _confirm(
-      title: 'Withdraw consent?',
-      body: 'Video notes stop at once, and nothing new is made from your '
-          'video. The video itself stays until you delete it.',
+      title: 'Withdraw Consent',
+      body: 'Video notes will stop immediately, and nothing new will be made from your '
+          'video. The video itself remains until you delete it.',
       action: 'Withdraw',
     );
     if (sure != true) return;
     await _run(AvatarMessageService.revokeConsent,
-        ok: 'Consent withdrawn. Video notes are off.',
-        fail: "Couldn't withdraw — check your connection and try again.");
+        ok: 'Consent withdrawn. Video notes are disabled.',
+        fail: "Unable to withdraw consent. Check your connection and try again.");
   }
 
   Future<void> _delete() async {
     final sure = await _confirm(
-      title: 'Delete everything?',
-      body: 'Your video and your consent are removed from our servers, and '
+      title: 'Delete Everything',
+      body: 'Your video and your consent will be removed from our servers, and '
           'no new video notes can be made from them. Notes already delivered '
-          'stay with the people who got them.',
+          'remain with their recipients.',
       action: 'Delete',
     );
     if (sure != true) return;
     await _run(AvatarMessageService.deleteIdentity,
-        ok: 'Deleted. Nothing new can be made from your video.',
-        fail: "Couldn't delete — check your connection and try again.");
+        ok: 'Data deleted. Nothing new can be made from your video.',
+        fail: "Unable to delete. Check your connection and try again.");
   }
 
   Future<void> _setEnabled(bool on) async {
@@ -151,7 +151,7 @@ class _AvatarIdentityScreenState extends State<AvatarIdentityScreen> {
     setState(() => _busy = false);
     if (r.ok) {
       // Nothing goes "as text" instead: with this off, no note is made.
-      _toast(on ? 'Video notes on.' : 'Video notes off.');
+      _toast(on ? 'Video notes enabled.' : 'Video notes disabled.');
     } else {
       _toast(enableRefusal(r.error), tone: FeedbackTone.error);
     }
@@ -192,12 +192,12 @@ class _AvatarIdentityScreenState extends State<AvatarIdentityScreen> {
   Widget build(BuildContext context) {
     final p = _profile;
     return NeonScaffold(
-      appBar: appleAppBar(context, 'Send messages as you'),
+      appBar: appleAppBar(context, 'Send Messages as You'),
       body: LoadSwitch(
         loading: _loading,
         child: p == null
             ? NeonErrorState(
-                message: "Couldn't load your video settings",
+                message: "Unable to load your video settings.",
                 onRetry: _retry,
               )
             : _content(p),
@@ -213,18 +213,18 @@ class _AvatarIdentityScreenState extends State<AvatarIdentityScreen> {
         Padding(
           padding: const EdgeInsets.fromLTRB(4, 4, 4, 20),
           child: Text(
-            'Say “send a video note to …” and your assistant writes the '
-            'words. The person gets a short clip of you saying them, in '
+            'Say “send a video note to …” and your assistant composes the '
+            'words. The recipient receives a short clip of you saying them, in '
             'your face and voice. Every clip is marked as made by AI.',
             style: TextStyle(
                 color: Neon.textLo, fontSize: NeonType.body, height: 1.45),
           ),
         ),
         if (!p.consented) ...[
-          const GroupLabel('Before you start'),
+          const GroupLabel('Before You Begin'),
           _consentCard(),
         ] else ...[
-          const GroupLabel('Your video'),
+          const GroupLabel('Your Video'),
           // Actions sit on rows of their own: as buttons on the right they
           // squeezed "Recorded" and "Consent given" to "Rec…" and "Con…" at
           // the largest text (review, 2026-09-26).
@@ -233,7 +233,7 @@ class _AvatarIdentityScreenState extends State<AvatarIdentityScreen> {
             if (p.hasVideo)
               AppleRow(
                 leading: IconTile(Icons.videocam_rounded, AppleColors.blue),
-                title: 'Record again',
+                title: 'Record Again',
                 titleMaxLines: 2,
                 onTap: _busy ? null : _record,
               ),
@@ -241,13 +241,13 @@ class _AvatarIdentityScreenState extends State<AvatarIdentityScreen> {
           if (!p.hasVideo) ...[
             const SizedBox(height: 12),
             ApplePrimaryButton(
-              label: 'Record your video',
+              label: 'Record Your Video',
               icon: Icons.videocam_rounded,
               onPressed: _busy ? null : _record,
             ),
           ],
           const SizedBox(height: 24),
-          const GroupLabel('Video notes'),
+          const GroupLabel('Video Notes'),
           GroupedCard(children: [
             AppleRow(
               // The name the assistant says when it is off ("Turn on Send
@@ -255,7 +255,7 @@ class _AvatarIdentityScreenState extends State<AvatarIdentityScreen> {
               title: 'Send as you',
               titleMaxLines: 2,
               subtitle: p.hasVideo
-                  ? 'Video notes in your face and voice. When off, none '
+                  ? 'Video notes in your face and voice. When switched off, none '
                       'are made.'
                   : 'Record your video first.',
               trailing: Switch(
@@ -270,15 +270,15 @@ class _AvatarIdentityScreenState extends State<AvatarIdentityScreen> {
           GroupedCard(dividerInset: 60, children: [
             AppleRow(
               leading: IconTile(Icons.verified_user_rounded, AppleColors.green),
-              title: 'Consent given',
+              title: 'Consent Given',
               subtitle: p.consentedAt == null
-                  ? 'Only for video notes you ask for.'
+                  ? 'Only for video notes you request.'
                   : 'On ${_date(p.consentedAt!)}. Only for video notes you '
-                      'ask for.',
+                      'request.',
             ),
             AppleRow(
               leading: IconTile(Icons.block_rounded, AppleColors.orange),
-              title: 'Withdraw consent',
+              title: 'Withdraw Consent',
               titleMaxLines: 2,
               onTap: _busy ? null : _withdraw,
             ),
@@ -288,7 +288,7 @@ class _AvatarIdentityScreenState extends State<AvatarIdentityScreen> {
         // Always here, consent or not: whatever is stored can be removed.
         GroupedCard(children: [
           AppleRow(
-            title: 'Delete everything',
+            title: 'Delete Everything',
             titleColor: Neon.errorInk,
             subtitle: 'Your video and your consent, from our servers.',
             onTap: _busy ? null : _delete,
@@ -314,7 +314,7 @@ class _AvatarIdentityScreenState extends State<AvatarIdentityScreen> {
             // team makes each note from the video, by hand.
             _point(
                 Icons.cloud_done_rounded,
-                "It's saved on our servers. Each note is made from it by our "
+                "It is saved on our servers. Each note is made from it by our "
                 'team, only when you ask, so it can take a little while.'),
             _point(
                 Icons.lock_rounded,
@@ -356,9 +356,9 @@ class _AvatarIdentityScreenState extends State<AvatarIdentityScreen> {
     if (!p.hasVideo) {
       return AppleRow(
         leading: IconTile(Icons.videocam_rounded, AppleColors.blue),
-        title: 'No video yet',
-        subtitle: 'About 30 seconds of you reading a short script. The '
-            'words scroll on screen as you go.',
+        title: 'No Video Recorded',
+        subtitle: 'Approximately 30 seconds of you reading a short script. The '
+            'words scroll on screen as you read.',
       );
     }
     final when = v?.createdAt == null ? null : _date(v!.createdAt!);

@@ -52,45 +52,45 @@ class _AppLockSectionState extends State<AppLockSection> {
         );
     final first = await once(title);
     if (first == null || !confirm) return first;
-    final again = await once('Enter it once more');
+    final again = await once('Re-enter Your PIN');
     if (again == null) return null;
     if (again != first) {
-      _snack("The PINs didn't match — try again.");
+      _snack("The PINs did not match. Please try again.");
       return null;
     }
     return first;
   }
 
   Future<void> _turnOn() async {
-    final pin = await _askPin(title: 'Choose a 4-digit PIN', confirm: true);
+    final pin = await _askPin(title: 'Create a 4-Digit PIN', confirm: true);
     if (pin == null) return;
     // Fingerprint / face when the phone has it; the PIN is the fallback.
     if (await _lock.deviceHasBiometrics()) {
       final ok = await _lock.tryBiometric();
       if (!ok) {
-        _snack("Fingerprint wasn't confirmed — the lock stays off.");
+        _snack("Fingerprint was not confirmed. App lock remains disabled.");
         return;
       }
     }
     await _lock.enable(pin);
     HapticFeedback.mediumImpact();
-    _snack('App lock is on.');
+    _snack('App lock enabled.');
   }
 
   Future<void> _turnOff() async {
     // Only the owner switches it off: fingerprint, else the PIN.
     var ok = await _lock.tryBiometric();
     if (!ok) {
-      final pin = await _askPin(title: 'Enter your app PIN');
+      final pin = await _askPin(title: 'Enter Your App PIN');
       if (pin == null) return;
       ok = await _lock.tryPin(pin);
     }
     if (!ok) {
-      _snack('That PIN is not right.');
+      _snack('The PIN entered is incorrect.');
       return;
     }
     await _lock.disable();
-    _snack('App lock is off.');
+    _snack('App lock disabled.');
   }
 
   @override
@@ -98,14 +98,14 @@ class _AppLockSectionState extends State<AppLockSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const GroupLabel('Privacy & security'),
+        const GroupLabel('Privacy & Security'),
         GroupedCard(
           dividerInset: 60,
           children: [
             AppleRow(
               leading: IconTile(Icons.fingerprint_rounded, AppleColors.green),
-              title: 'App lock',
-              subtitle: 'Fingerprint or PIN to open the app',
+              title: 'App Lock',
+              subtitle: 'Fingerprint or PIN required to open the app',
               trailing: Switch(
                 value: _lock.enabled,
                 onChanged: (v) {
@@ -121,9 +121,9 @@ class _AppLockSectionState extends State<AppLockSection> {
         Padding(
           padding: const EdgeInsets.only(left: 16, top: 6, right: 16),
           child: Text(
-            'Locks when you have been away for more than a minute. Your PIN '
+            'The app locks when you have been away for more than a minute. Your PIN '
             'stays on this phone.\n'
-            "When off, voice recordings aren't kept and your chats stay "
+            "When off, voice recordings are not kept and your chats stay "
             'private. The assistant works the same.',
             // textLo (2026-09-30): textDim fell under 4.5:1 on the sky.
             style: TextStyle(color: Neon.textLo, fontSize: NeonType.caption),

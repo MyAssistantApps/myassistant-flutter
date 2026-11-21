@@ -196,7 +196,7 @@ class _LatestPill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: 'Jump to the latest words',
+      label: 'Go to the latest words',
       // A lit pill (2026-09-30): the night's raised surface with the
       // assistant's cyan rim and a soft glow, so it reads as a control over
       // the words, not another line of them.

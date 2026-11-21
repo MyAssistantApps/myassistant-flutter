@@ -183,7 +183,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final ok = await CalendarService.remove(e);
     if (!mounted) return;
     if (!ok) {
-      AppFeedback.showRetry("Couldn't delete that. Check your connection.",
+      AppFeedback.showRetry("Unable to delete the entry. Check your connection.",
           context: context, onRetry: () => _delete(e));
       return;
     }
@@ -209,7 +209,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         .catchError((Object e) {
       AppLog.add('calendar', 'add on $when failed: $e');
       if (mounted) {
-        AppFeedback.show("Couldn't start that. Tap the mic and tell me.",
+        AppFeedback.show("Unable to start. Tap the mic and tell your assistant.",
             context: context);
       }
     }));
@@ -537,7 +537,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           if (!_selected.isBefore(_today)) ...[
             const SizedBox(width: 6),
             IconButton(
-              tooltip: 'Add to this day',
+              tooltip: 'Add to This Day',
               onPressed: () => _addOn(_selected),
               style: IconButton.styleFrom(
                 minimumSize: const Size(44, 44),
@@ -566,8 +566,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
           CalInlineState(
             icon: Icons.event_available_rounded,
             text: _selected.isBefore(_today)
-                ? 'Nothing was planned.'
-                : 'Nothing planned yet.',
+                ? 'Nothing was scheduled.'
+                : 'Nothing scheduled.',
             actionLabel: _selected.isBefore(_today) ? null : 'Add',
             onAction:
                 _selected.isBefore(_today) ? null : () => _addOn(_selected),
@@ -582,26 +582,26 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return [
       const CalSectionHeader(
         icon: Icons.upcoming_rounded,
-        title: 'Coming up',
+        title: 'Upcoming',
         tone: NeonTone.brand,
       ),
       if (items.isEmpty && loading)
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 16),
           child: Center(
-              child: NeonLoader.inline(semanticLabel: 'Loading what is coming up')),
+              child: NeonLoader.inline(semanticLabel: 'Loading upcoming entries')),
         )
       else if (items.isEmpty && _upWorldFailed)
         CalInlineState(
           icon: Icons.cloud_off_rounded,
           tone: NeonTone.danger,
-          text: "Couldn't load what's coming up.",
+          text: "Unable to load upcoming entries.",
           onRetry: () => _loadUpcoming(force: true),
         )
       else if (items.isEmpty)
         const CalInlineState(
           icon: Icons.event_available_rounded,
-          text: 'A clear two months ahead.',
+          text: 'Nothing scheduled in the next two months.',
         )
       else
         for (final e in items) CalEntryRow(e, today: _today, showDate: true),
@@ -621,7 +621,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return [
       CalSectionHeader(
         icon: Icons.beach_access_rounded,
-        title: 'Holidays & festivals in $month',
+        title: 'Holidays & Festivals in $month',
         tone: NeonTone.danger,
         trailing: holidays == 0
             ? null
@@ -631,7 +631,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         CalInlineState(
           icon: Icons.cloud_off_rounded,
           tone: NeonTone.danger,
-          text: "Couldn't load this month's holidays.",
+          text: "Unable to load this month's holidays.",
           onRetry: () => _loadMonthWorld(_y, _m, force: true),
         )
       else if (list.isEmpty && !_world.containsKey(k))
@@ -651,8 +651,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
           padding: const EdgeInsets.only(top: 2, bottom: Neon.s2),
           child: Text(
               _region == 'IN'
-                  ? 'Central Government list. Eid and Muharram depend on the moon.'
-                  : "Kerala Government list. Eid and Muharram depend on the moon.",
+                  ? 'Central Government list. Eid and Muharram are subject to the sighting of the moon.'
+                  : "Kerala Government list. Eid and Muharram are subject to the sighting of the moon.",
               style: TextStyle(
                   color: Neon.textLo, fontSize: NeonType.caption, height: 1.4)),
         ),
@@ -669,7 +669,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return [
       CalSectionHeader(
         icon: Icons.public_rounded,
-        title: 'Around the world in ${calMonths[_m - 1]}',
+        title: 'Around the World in ${calMonths[_m - 1]}',
         tone: NeonTone.tip,
       ),
       for (final e in list) CalEntryRow(e, today: _today, showDate: true),

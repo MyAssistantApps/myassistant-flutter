@@ -63,7 +63,7 @@ class _BusSearchScreenState extends State<BusSearchScreen> {
       context: context,
       isScrollControlled: true,
       builder: (_) =>
-          _CityPicker(title: from ? 'Leaving from' : 'Going to'),
+          _CityPicker(title: from ? 'Departure City' : 'Destination City'),
     );
     if (c != null) setState(() => from ? _from = c : _to = c);
   }
@@ -82,7 +82,7 @@ class _BusSearchScreenState extends State<BusSearchScreen> {
   void _search() {
     if (_from == _to) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Pick two different cities.')));
+          const SnackBar(content: Text('Select two different cities.')));
       return;
     }
     HapticFeedback.mediumImpact();
@@ -95,7 +95,7 @@ class _BusSearchScreenState extends State<BusSearchScreen> {
   Widget build(BuildContext context) {
     final k = widget.kind;
     return NeonScaffold(
-      appBar: appleAppBar(context, '${k.title} buses'),
+      appBar: appleAppBar(context, '${k.title} Buses'),
       body: ListView(
         padding: EdgeInsets.fromLTRB(
             16, 8, 16, 28 + MediaQuery.paddingOf(context).bottom),
@@ -198,7 +198,7 @@ class _BusSearchScreenState extends State<BusSearchScreen> {
                       const Icon(Icons.search_rounded,
                           color: Colors.white, size: 22),
                       const SizedBox(width: 8),
-                      Text('Search buses',
+                      Text('Search Buses',
                           style: NeonType.manrope(16, FontWeight.w800)
                               .copyWith(color: Colors.white)),
                     ],
@@ -280,7 +280,7 @@ class _CityPickerState extends State<_CityPicker> {
               onChanged: (v) => setState(() => _q = v),
               style: TextStyle(color: Neon.textHi),
               decoration: InputDecoration(
-                hintText: 'Search a city',
+                hintText: 'Search for a city',
                 prefixIcon: Icon(Icons.search_rounded, color: Neon.textDim),
                 filled: true,
                 fillColor: Neon.glassFill.colors.first,
@@ -346,7 +346,7 @@ class BusResultsScreen extends StatelessWidget {
         mode: LaunchMode.externalApplication);
     if (!ok && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Couldn't open that site.")));
+          const SnackBar(content: Text("Unable to open the website.")));
     }
   }
 
@@ -391,15 +391,15 @@ class BusResultsScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Live seats & fares coming soon',
+                        Text('Live Seats and Fares Coming Soon',
                             style: NeonType.manrope(16, FontWeight.w800)
                                 .copyWith(color: Neon.textHi)),
                         const SizedBox(height: 4),
                         Text(
-                            "We're in talks with bus booking API providers "
-                            'to show live buses, seats and fares right here. '
-                            'Until then, book on the trusted sites below — '
-                            'your route is already filled in where they '
+                            "Discussions with bus booking providers are in progress "
+                            'to display live buses, seats and fares here. '
+                            'In the meantime, please book through the trusted sites below. '
+                            'Your route is entered in advance where they '
                             'allow it.',
                             style: TextStyle(
                                 color: Neon.textLo,

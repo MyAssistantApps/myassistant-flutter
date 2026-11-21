@@ -39,7 +39,7 @@ abstract final class HabitAlarms {
         if (!d.isAfter(now)) continue;
         if (k == 0 && h.doneToday) continue;
         final name = h.emoji.isEmpty ? h.title : '${h.emoji} ${h.title}';
-        out.add(HabitAlarm(idFor(h.id, k), d, name, 'A small tick keeps it going.'));
+        out.add(HabitAlarm(idFor(h.id, k), d, name, 'Mark it as completed to maintain your progress.'));
       }
     }
     return out;

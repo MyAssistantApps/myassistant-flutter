@@ -250,9 +250,9 @@ class _ShopBrowserScreenState extends State<ShopBrowserScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Open another store', style: NeonType.manrope(18, FontWeight.w800).copyWith(color: _ink)),
+              Text('Open Another Store',style: NeonType.manrope(18, FontWeight.w800).copyWith(color: _ink)),
               const SizedBox(height: 4),
-              const Text('Open the same product on two sites, then Ask AI which to buy.',
+              const Text('Open the same product on two sites, then select Ask AI for a recommendation.',
                   style: TextStyle(color: _inkLo, fontSize: 13)),
               const SizedBox(height: 16),
               GridView.count(
@@ -394,10 +394,10 @@ class _ShopBrowserScreenState extends State<ShopBrowserScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             for (final (k, icon, label) in [
-              ('tab', Icons.add_box_outlined, 'New tab'),
-              ('open', Icons.open_in_browser_rounded, 'Open in browser'),
-              ('copy', Icons.link_rounded, 'Copy link'),
-              ('close', Icons.tab_unselected_rounded, 'Close all tabs'),
+              ('tab', Icons.add_box_outlined, 'New Tab'),
+              ('open', Icons.open_in_browser_rounded, 'Open in Browser'),
+              ('copy', Icons.link_rounded, 'Copy Link'),
+              ('close', Icons.tab_unselected_rounded, 'Close All Tabs'),
             ])
               ListTile(
                 leading: Icon(icon, color: _ink),
@@ -416,7 +416,7 @@ class _ShopBrowserScreenState extends State<ShopBrowserScreen> {
         launchUrl(Uri.parse(t.url), mode: LaunchMode.externalApplication);
       case 'copy':
         Clipboard.setData(ClipboardData(text: t.url));
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link copied')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link copied.')));
       case 'close':
         Navigator.of(context).pop();
     }
@@ -506,7 +506,7 @@ class _ShopBrowserScreenState extends State<ShopBrowserScreen> {
           child: Row(
             children: [
               IconButton(
-                tooltip: 'Close browser',
+                tooltip: 'Close Browser',
                 onPressed: () => Navigator.of(context).pop(),
                 icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 22),
               ),
@@ -518,7 +518,7 @@ class _ShopBrowserScreenState extends State<ShopBrowserScreen> {
                 ),
               ),
               IconButton(
-                tooltip: 'New tab',
+                tooltip: 'New Tab',
                 onPressed: _newTab,
                 icon: const Icon(Icons.add_rounded, color: Colors.white, size: 26),
               ),
@@ -881,7 +881,7 @@ class _CompareBar extends StatelessWidget {
                             style:
                                 const TextStyle(color: _ink, fontSize: 13, fontWeight: FontWeight.w600, height: 1.25)),
                         if (p.price != null)
-                          Text('${rupees(p.price!)} here',
+                          Text('${rupees(p.price!)} on this site',
                               style: NeonType.manrope(14, FontWeight.w800).copyWith(color: const Color(0xFF15803D))),
                       ],
                     ),
@@ -907,7 +907,7 @@ class _CompareBar extends StatelessWidget {
                         shape: const StadiumBorder(),
                       ),
                       icon: const Icon(Icons.compare_arrows_rounded, size: 18),
-                      label: Text('Compare prices', style: NeonType.manrope(14, FontWeight.w800)),
+                      label: Text('Compare Prices',style: NeonType.manrope(14, FontWeight.w800)),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -965,7 +965,7 @@ class _AdviceSheetState extends State<_AdviceSheet> {
       final a = await PriceService.instance.recommend(widget.products);
       if (mounted) setState(() => _a = a);
     } catch (e) {
-      if (mounted) setState(() => _error = e is PriceCompareException ? e.message : 'Something went wrong.');
+      if (mounted) setState(() => _error = e is PriceCompareException ? e.message : 'An unexpected error has occurred. Please try again.');
     }
   }
 
@@ -985,14 +985,14 @@ class _AdviceSheetState extends State<_AdviceSheet> {
             children: [
               const Icon(Icons.auto_awesome_rounded, color: Color(0xFF5B5BF0)),
               const SizedBox(width: 8),
-              Text('MyAssistant recommends', style: NeonType.manrope(18, FontWeight.w800).copyWith(color: _ink)),
+              Text('MyAssistant Recommendation',style: NeonType.manrope(18, FontWeight.w800).copyWith(color: _ink)),
             ],
           ),
           const SizedBox(height: 4),
           Text(
               ps.length == 1
-                  ? 'Is this a good buy? Open the same kind of product on another store to compare them.'
-                  : 'Weighing the ${ps.length} products open in your tabs.',
+                  ? 'To assess this purchase, open a similar product on another store for comparison.'
+                  : 'Assessing the ${ps.length} products open in your tabs.',
               style: const TextStyle(color: _inkLo, fontSize: 13)),
           const SizedBox(height: 16),
           if (a == null && _error.isEmpty) ...[
@@ -1000,13 +1000,13 @@ class _AdviceSheetState extends State<_AdviceSheet> {
             const Center(child: CircularProgressIndicator(color: Color(0xFF5B5BF0))),
             const SizedBox(height: 14),
             const Center(
-                child: Text('Reading reviews, specs and prices…', style: TextStyle(color: _inkLo, fontSize: 13))),
+                child: Text('Reviewing ratings, specifications and prices…', style: TextStyle(color: _inkLo, fontSize: 13))),
           ] else if (_error.isNotEmpty) ...[
             Text(_error, style: const TextStyle(color: Color(0xFFB91C1C))),
             const SizedBox(height: 10),
             Align(
                 alignment: Alignment.centerLeft,
-                child: OutlinedButton(onPressed: _run, child: const Text('Try again'))),
+                child: OutlinedButton(onPressed: _run, child: const Text('Retry'))),
           ] else if (a != null) ...[
             Container(
               padding: const EdgeInsets.all(14),
@@ -1030,7 +1030,7 @@ class _AdviceSheetState extends State<_AdviceSheet> {
             for (final (i, p) in ps.indexed) _item(i, p, a),
             if (a.alternatives.isNotEmpty) ...[
               const SizedBox(height: 6),
-              Text('Also worth a look', style: NeonType.manrope(15, FontWeight.w800).copyWith(color: _ink)),
+              Text('Alternatives to Consider',style: NeonType.manrope(15, FontWeight.w800).copyWith(color: _ink)),
               const SizedBox(height: 6),
               for (final x in a.alternatives)
                 ListTile(
@@ -1049,7 +1049,7 @@ class _AdviceSheetState extends State<_AdviceSheet> {
               OutlinedButton.icon(
                 onPressed: widget.onAddStore,
                 icon: const Icon(Icons.add_rounded),
-                label: const Text('Open another store to compare'),
+                label: const Text('Open Another Store to Compare'),
               ),
             ],
             if (a.sources.isNotEmpty) ...[
@@ -1072,7 +1072,7 @@ class _AdviceSheetState extends State<_AdviceSheet> {
               SearchSuggestionChips(suggestions: a.suggestions),
             ],
             const SizedBox(height: 10),
-            const Text('AI advice from the web — check the final price and details on the store.',
+            const Text('AI advice based on web sources. Please verify the final price and details on the store.',
                 style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 11.5)),
           ],
         ],

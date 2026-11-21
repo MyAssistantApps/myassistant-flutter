@@ -81,25 +81,25 @@ Future<PermissionStatus> _phoneRequest() async {
 
 final List<_PermItem> _kRequired = [
   _PermItem(Permission.microphone, Icons.mic_rounded, AppleColors.orange,
-      'Microphone', 'Talking is how this app works.'),
+      'Microphone', 'Required to talk to your assistant.'),
 ];
 
 final List<_PermItem> _kRecommended = [
   _PermItem(Permission.contacts, Icons.contacts_rounded, AppleColors.blue,
-      'Contacts', 'So "call Alan" reaches the right Alan.'),
+      'Contacts', 'So "Call Alan" reaches the right person.'),
   _PermItem(Permission.phone, Icons.call_rounded, AppleColors.green, 'Phone',
-      'To place the calls you ask for.',
+      'Required to place the calls you request.',
       check: _phoneStatus, ask: _phoneRequest),
   _PermItem(
       Permission.notification,
       Icons.notifications_rounded,
       AppleColors.red,
       'Notifications',
-      'Reminders and messages arrive on time.'),
+      'Delivers reminders and messages on time.'),
   _PermItem(Permission.camera, Icons.photo_camera_rounded, AppleColors.indigo,
       'Camera', 'Scan documents, receipts and reports.'),
   _PermItem(Permission.locationWhenInUse, Icons.place_rounded, AppleColors.teal,
-      'Location', 'Weather and places near you.'),
+      'Location', 'For local weather and nearby places.'),
 ];
 
 List<_PermItem> get _kAll => [..._kRequired, ..._kRecommended];
@@ -202,9 +202,9 @@ class _PermissionsScreenState extends State<PermissionsScreen>
       if (!_requiredGranted) {
         _blocked = micBlocked;
         _error = micBlocked
-            ? 'The microphone is blocked by Android. Open Settings, allow '
-                'Microphone under Permissions, then come back.'
-            : 'The microphone is needed — talking is how the assistant works.';
+            ? 'Microphone access is blocked. Open Settings, allow '
+                'Microphone under Permissions, then return to the app.'
+            : 'Microphone access is required to talk to your assistant.';
       }
     });
     // Only the microphone is required: whatever else was declined, the
@@ -232,7 +232,7 @@ class _PermissionsScreenState extends State<PermissionsScreen>
                   ),
                   const SizedBox(height: 22),
                   Text(
-                    'Give it its senses',
+                    'Enable Permissions',
                     style: GoogleFonts.interTight(
                       fontSize: 26,
                       fontWeight: FontWeight.w700,
@@ -242,15 +242,15 @@ class _PermissionsScreenState extends State<PermissionsScreen>
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Your assistant listens, calls, and scans for you. The '
-                    'microphone is essential; the rest unlock what it can do '
-                    'for you, and you can change any of them later in '
+                    'Your assistant listens, places calls, and scans on your behalf. The '
+                    'microphone is essential; the others unlock more '
+                    'features. You can change any of them later in '
                     'Settings.',
                     style: TextStyle(
                         color: Neon.textLo, fontSize: 15, height: 1.45),
                   ),
                   const SizedBox(height: 22),
-                  const GroupLabel('Needed'),
+                  const GroupLabel('Required'),
                   GroupedCard(
                     dividerInset: 60,
                     children: [
@@ -280,9 +280,9 @@ class _PermissionsScreenState extends State<PermissionsScreen>
                   ],
                   const SizedBox(height: 18),
                   GlowCta(
-                    label: _blocked ? 'Open Settings' : 'Allow all',
+                    label: _blocked ? 'Open Settings' : 'Allow All',
                     busy: _busy,
-                    busyLabel: 'Asking Android',
+                    busyLabel: 'Requesting Access',
                     onPressed: _blocked ? openAppSettings : _requestAll,
                   ),
                   // With the microphone allowed, the rest are a choice.
@@ -292,14 +292,14 @@ class _PermissionsScreenState extends State<PermissionsScreen>
                       onPressed: _finish,
                       style: TextButton.styleFrom(
                           minimumSize: const Size.fromHeight(48)),
-                      child: Text('Continue without the rest',
+                      child: Text('Skip Remaining Permissions',
                           style: TextStyle(color: Neon.textLo, fontSize: 14)),
                     ),
                   ],
                   const SizedBox(height: 10),
                   Text(
-                    'Contacts stay on your phone — only names and numbers '
-                    'sync, never photos or emails.',
+                    'Contacts remain on your phone. Only names and numbers '
+                    'are synchronised, never photos or emails.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                         color: Neon.textLo, fontSize: NeonType.caption),
@@ -339,7 +339,7 @@ class _PermissionsScreenState extends State<PermissionsScreen>
                     // "Open Settings"; anything else is optional.
                     _blocked = _kRequired.contains(item);
                     _error =
-                        '${item.title} is blocked by Android. Open Settings '
+                        '${item.title} access is blocked by Android. Open Settings '
                         'and allow it there.';
                   });
                 }

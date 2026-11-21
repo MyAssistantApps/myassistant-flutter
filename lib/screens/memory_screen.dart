@@ -114,8 +114,8 @@ class _MemoryScreenState extends State<MemoryScreen> {
     final ok = await showAppDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Forget this?'),
-        content: Text('"$what"\n\nThe assistant will stop using it. This cannot be undone.'),
+        title: const Text('Forget This Item'),
+        content: Text('"$what"\n\nYour assistant will no longer use this. This cannot be undone.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           TextButton(
@@ -136,10 +136,10 @@ class _MemoryScreenState extends State<MemoryScreen> {
     if (!mounted) return;
     if (r == null) {
       setState(() => _memories = before);
-      AppFeedback.show("Couldn't remove it. Check your connection.",
+      AppFeedback.show("Unable to remove the item. Check your connection.",
           context: context, tone: FeedbackTone.error);
     } else {
-      AppFeedback.show('Forgotten.', context: context, tone: FeedbackTone.success);
+      AppFeedback.show('Memory removed.', context: context, tone: FeedbackTone.success);
     }
   }
 
@@ -152,7 +152,7 @@ class _MemoryScreenState extends State<MemoryScreen> {
     if (!mounted) return;
     if (r == null) {
       setState(() => _rules = before);
-      AppFeedback.show("Couldn't remove it. Check your connection.",
+      AppFeedback.show("Unable to remove the rule. Check your connection.",
           context: context, tone: FeedbackTone.error);
     } else {
       AppFeedback.show('Rule removed.', context: context, tone: FeedbackTone.success);
@@ -166,9 +166,9 @@ class _MemoryScreenState extends State<MemoryScreen> {
       body: SafeArea(
         top: false,
         child: _loading
-            ? const NeonLoader.page(semanticLabel: 'Loading what I remember')
+            ? const NeonLoader.page(semanticLabel: 'Loading your memory')
             : _failed
-                ? NeonErrorState(message: "Couldn't load your memory", onRetry: _load)
+                ? NeonErrorState(message: "Unable to load your memory.", onRetry: _load)
                 : RefreshIndicator(onRefresh: _load, child: _list()),
       ),
     );
@@ -187,23 +187,23 @@ class _MemoryScreenState extends State<MemoryScreen> {
           padding: const EdgeInsets.fromLTRB(4, 0, 4, 20),
           child: Text(
             total == 0
-                ? 'Nothing yet. Tell the assistant about yourself — "I am vegetarian", '
-                    '"remember my sister lives in Pune" — and it will show here.'
-                : 'What the assistant has learned about you from your conversations. '
-                    'Tap any item to remove it. To add or correct something, just tell it.',
+                ? 'Nothing stored yet. Tell your assistant about yourself — for example "I am vegetarian" or '
+                    '"Remember that my sister lives in Pune" — and it will appear here.'
+                : 'What your assistant has learned about you from your conversations. '
+                    'Tap an item to remove it. To add or correct a detail, tell your assistant.',
             style: TextStyle(color: Neon.textLo, fontSize: 14, height: 1.4),
           ),
         ),
         if (total == 0)
           const NeonEmptyState(
             icon: Icons.psychology_alt_rounded,
-            title: 'No memories yet',
+            title: 'No Memories Recorded',
           ),
-        _group('How you like things', Icons.tune_rounded, AppleColors.purple, prefs),
-        _group('Your goals', Icons.flag_rounded, AppleColors.green, goals),
-        _group('About you', Icons.person_rounded, AppleColors.blue, facts),
+        _group('Your Preferences', Icons.tune_rounded, AppleColors.purple, prefs),
+        _group('Your Goals', Icons.flag_rounded, AppleColors.green, goals),
+        _group('About You', Icons.person_rounded, AppleColors.blue, facts),
         if (_rules.isNotEmpty) ...[
-          const GroupLabel('Standing rules'),
+          const GroupLabel('Standing Rules'),
           GroupedCard(
             dividerInset: 60,
             children: [
@@ -239,7 +239,7 @@ class _MemoryScreenState extends State<MemoryScreen> {
                 titleMaxLines: 4,
                 subtitle: [
                   _when(m.at),
-                  if (m.faded) 'Not used lately',
+                  if (m.faded) 'Not used recently',
                 ].where((s) => s.isNotEmpty).join(' · '),
                 trailing: Icon(Icons.close_rounded, color: Neon.textDim, size: 18),
                 onTap: () => _forget(m),

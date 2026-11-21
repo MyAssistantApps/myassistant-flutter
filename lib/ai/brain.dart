@@ -197,10 +197,10 @@ final class BrainError extends BrainEvent {
   /// Plain words for any failure.
   factory BrainError.from(Object e) {
     if (e is TimeoutException) {
-      return const BrainError('timeout', 'Sorry, that took longer than it should. Could you try once more?');
+      return const BrainError('timeout', 'That took longer than expected. Please try again.');
     }
     if (e is CloudBlockedException) {
-      return const BrainError('blocked', "I'm sorry, I'm not able to help with that one.");
+      return const BrainError('blocked', "I am unable to assist with that request.");
     }
     // The server's model proxy: a rate limit or exhausted credits arrive
     // as a 429 (or a 'quota' message in a stream) — a kind "busy" line,
@@ -208,30 +208,30 @@ final class BrainError extends BrainEvent {
     if (e is ServerModelException &&
         (e.status == 429 || e.body.toLowerCase().contains('quota'))) {
       return const BrainError(
-          'quota', "I'm a little busy right now — please give me a minute and try again.");
+          'quota', "I am handling a high volume of requests. Please try again in a minute.");
     }
     if (e is QuotaExceeded) {
       return const BrainError(
-          'quota', "I'm a little busy right now — please give me a minute and try again.");
+          'quota', "I am handling a high volume of requests. Please try again in a minute.");
     }
     if (e is ServiceApiNotEnabled || e is InvalidApiKey) {
-      return const BrainError('not_enabled', "I'm not quite ready yet — please try again in a little while.");
+      return const BrainError('not_enabled', "I am not yet ready. Please try again shortly.");
     }
     if (e is UnsupportedUserLocation) {
-      return const BrainError('location', "The assistant isn't available where you are.");
+      return const BrainError('location', "The assistant is not available in your location.");
     }
     if (e is SocketException || e is http.ClientException) {
-      return const BrainError('offline', "I can't reach the internet right now. Please check your connection and try again.");
+      return const BrainError('offline', "I am unable to reach the internet. Check your connection and try again.");
     }
     if (e is FirebaseAIException) {
       final m = e.message.toLowerCase();
       if (m.contains('app check') || m.contains('permission') || m.contains('unauth')) {
         return const BrainError(
-            'denied', "I couldn't connect just now. Please try again in a moment.");
+            'denied', "I was unable to connect. Please try again shortly.");
       }
-      return const BrainError('server', "Sorry, I couldn't connect just now. Please try again in a moment.");
+      return const BrainError('server', "I was unable to connect just now. Please try again shortly.");
     }
-    return const BrainError('failed', "Sorry, something didn't work on my side. Let's try that again.");
+    return const BrainError('failed', "I ran into an unexpected error. Please try again.");
   }
 }
 
@@ -448,7 +448,7 @@ class AssistantBrain {
       'everything else helpfully and briefly.'
       '${mode == BrainMode.voice ? ' Speak naturally in short sentences, with no lists or formatting.' : ''}';
 
-  static const emptyReply = "Sorry, I couldn't come up with an answer. Please try again.";
+  static const emptyReply = "I was unable to prepare an answer. Please try again.";
 
   /// When the assistant opens: fetch the config and warm the model
   /// connection, so the first turn waits for neither. Best effort.
@@ -1223,7 +1223,7 @@ class AssistantBrain {
     List<Map<String, Object?>> toolLog,
   ) async {
     if (t.sid == null || t.tid == null) {
-      return "I couldn't reach your shortcuts just now. Please try again.";
+      return "I was unable to reach your shortcuts. Please try again.";
     }
     final args = <String, Object?>{'name': name};
     t.emit(BrainToolCall('run_shortcut', args));
@@ -1236,9 +1236,9 @@ class AssistantBrain {
     if (res.needsConfirmation) {
       _askLater(t, 'run_shortcut', args, res);
       final s = (res.summary ?? '').trim();
-      return s.isEmpty ? 'Shall I go ahead?' : (s.endsWith('?') ? s : '$s?');
+      return s.isEmpty ? 'Shall I proceed?' : (s.endsWith('?') ? s : '$s?');
     }
-    if (!res.ok) return "I couldn't run $name: ${res.error ?? 'something went wrong'}.";
+    if (!res.ok) return "I was unable to run $name: ${res.error ?? 'an unexpected error occurred'}.";
     final action = res.deviceAction;
     if (action != null) {
       final outcome = await _device(t, 'run_shortcut', action);
@@ -1291,7 +1291,7 @@ class AssistantBrain {
       ));
     }));
     if (handed == 0 && reply.trim().isNotEmpty) {
-      t.emit(const BrainError('tts', "The reply couldn't be spoken.", fatal: false));
+      t.emit(const BrainError('tts', "The reply could not be spoken.", fatal: false));
     }
   }
 }

@@ -20,9 +20,11 @@ import '../core/log.dart';
 /// not control.
 ///
 /// Google does this only where the carrier takes part: 12 countries in
-/// September 2026, India not among them. On such a SIM the only other way
-/// in is the server's TESTING switch (a typed number), and only while the
-/// server offers it.
+/// September 2026, India not among them. There the number is proven by a
+/// VOICE CALL (2026-11-14): our caller rings it and reads a 6-digit code,
+/// which the user types back (POST /phone/call-code, /phone/call-verify).
+/// The server's TESTING switch (a typed number) remains only while the
+/// server still offers it.
 class PhoneVerifyService {
   PhoneVerifyService({
     SimNumberPort? sim,
@@ -59,7 +61,7 @@ class PhoneVerifyService {
     }
     if (server == null) return const PhoneVerifyMethods(sim: false, typed: false, reached: false);
     final sim = server['sim'] == true && await _sim.supported();
-    return PhoneVerifyMethods(sim: sim, typed: server['typed'] == true);
+    return PhoneVerifyMethods(sim: sim, call: server['call'] == true, typed: server['typed'] == true);
   }
 
   /// Android's consent sheet, then the server. Null on success, or words
@@ -78,6 +80,33 @@ class PhoneVerifyService {
   /// refuses it unless its switch is on.
   Future<String?> devVerify(String e164) => _register('/phone/dev-verify', {'phone': e164});
 
+  /// Asks our caller to ring [e164] and read a code. Null when the call is
+  /// on its way, or words safe to show.
+  Future<String?> requestCall(String e164) async {
+    try {
+      final r = await _post('/phone/call-code', {'phone': e164});
+      if (r.statusCode == 409) return 'This number is already registered to another account.';
+      if (r.statusCode >= 300) return _errorOf(r) ?? "Unable to place the call. Please try again.";
+      AppLog.add('phone', 'verification call requested');
+      return null;
+    } catch (_) {
+      return 'Unable to reach the server. Check your connection.';
+    }
+  }
+
+  /// The code the caller read out. Null on success (the number is now theirs).
+  Future<String?> verifyCallCode(String e164, String code) =>
+      _register('/phone/call-verify', {'phone': e164, 'code': code});
+
+  static String? _errorOf(http.Response r) {
+    try {
+      final d = jsonDecode(r.body);
+      return d is Map ? d['error'] as String? : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<String?> _register(String path, Map<String, dynamic> body) async {
     try {
       final r = await _post(path, body);
@@ -91,30 +120,33 @@ class PhoneVerifyService {
           decoded = jsonDecode(r.body);
         } catch (_) {}
         return (decoded is Map ? decoded['error'] as String? : null) ??
-            'Could not register this number.';
+            'Unable to register this number.';
       }
       // Refresh so the gate sees phoneVerified and lets the user through.
       await _refreshUser();
       AppLog.add('phone', 'verified via $path');
       return null;
     } catch (_) {
-      return 'Could not reach the server. Check your connection.';
+      return 'Unable to reach the server. Check your connection.';
     }
   }
 
   /// What the user reads when the phone's side did not finish.
   static String wordsFor(String code) => switch (code) {
-        'cancelled' => 'You closed the confirmation. Tap Confirm to try again.',
-        'unsupported' => "Your network can't confirm numbers automatically yet.",
-        'not_enabled' => 'Number confirmation is not switched on for this app yet.',
-        'network' => 'No connection. Check your internet and try again.',
-        _ => 'Could not confirm your number. Try again.',
+        'cancelled' => 'The confirmation was closed. Tap Confirm to try again.',
+        'unsupported' => "Your network does not yet support automatic number confirmation.",
+        'not_enabled' => 'Number confirmation is not yet enabled for this app.',
+        'network' => 'Unable to connect. Check your internet connection.',
+        _ => 'Unable to confirm your number. Please try again.',
       };
 }
 
 /// What the verify screen may offer.
 class PhoneVerifyMethods {
-  const PhoneVerifyMethods({required this.sim, required this.typed, this.reached = true});
+  const PhoneVerifyMethods({required this.sim, required this.typed, this.call = false, this.reached = true});
+
+  /// Our caller can ring the number and read a code (Indian numbers).
+  final bool call;
 
   /// Google can confirm this SIM's number, and the server takes its token.
   final bool sim;

@@ -6,6 +6,9 @@ import '../design/apple_kit.dart';
 import '../design/dock_metrics.dart';
 import '../design/neon_tokens.dart';
 import 'clients_screen.dart';
+import 'listing/my_listing_screen.dart';
+import 'listing/nearby_pros_screen.dart';
+import '../services/persona.dart';
 import 'connected_apps_screen.dart';
 import 'calendar_screen.dart';
 import 'calls_screen.dart';
@@ -22,6 +25,7 @@ import 'studio/studio_screen.dart';
 import '../features/home/try_now_cards.dart';
 import '../features/shopping/shopping_list_screen.dart';
 import '../design/motion.dart';
+import '../features/premium/premium_screen.dart';
 
 /// HUB TAB — every feature as a front door.
 ///
@@ -40,8 +44,21 @@ class _HubScreenState extends State<HubScreen> {
   final _featureQuery = TextEditingController();
   bool _foundFeature = false;
 
+  // The Hub lives in the tab stack, so a profession changed in Settings
+  // must rebuild it here rather than on the next cold start.
+  void _onPersona() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    Persona.notifier.addListener(_onPersona);
+  }
+
   @override
   void dispose() {
+    Persona.notifier.removeListener(_onPersona);
     _featureQuery.dispose();
     super.dispose();
   }
@@ -83,7 +100,7 @@ class _HubScreenState extends State<HubScreen> {
                 suffixIcon: _featureQuery.text.isEmpty
                     ? null
                     : IconButton(
-                        tooltip: 'Clear search',
+                        tooltip: 'Clear Search',
                         icon: Icon(Icons.close_rounded, color: Neon.textLo),
                         onPressed: () {
                           FocusScope.of(context).unfocus();
@@ -111,12 +128,12 @@ class _HubScreenState extends State<HubScreen> {
               ),
             ),
           ),
-          _group(context, 'Your day', [
+          _group(context, 'Your Day', [
             // The month, moved off Home (2026-09-29): Home shows what is
             // next; everything with a date lives here.
             _Row(
               'Calendar',
-              'Reminders, bills and birthdays — by date',
+              'Reminders, bills, and birthdays by date',
               Icons.calendar_month_rounded,
               Neon.accentF,
               (c) => const CalendarScreen(),
@@ -124,14 +141,14 @@ class _HubScreenState extends State<HubScreen> {
             // "Office mode" (build 120): made by voice, run from here.
             _Row(
               'Shortcuts',
-              'One word does several things — say its name',
+              'One word runs several actions — say its name',
               Icons.bolt_rounded,
               Neon.accentD,
               (c) => const ShortcutsScreen(),
             ),
             _Row(
               'Reminders',
-              'Everything you asked me to remember',
+              'Every reminder you have scheduled',
               Icons.notifications_active_rounded,
               Neon.accentA,
               (c) => const RemindersScreen(),
@@ -139,8 +156,8 @@ class _HubScreenState extends State<HubScreen> {
             // One list for anything to buy (build 124): groceries, a dress,
             // a charger — "add this to my shopping list" in any conversation.
             _Row(
-              'Shopping list',
-              'Anything to buy — say “add this to my shopping list”',
+              'Shopping List',
+              'Items to buy — say “Add this to my shopping list”',
               Icons.shopping_basket_rounded,
               Neon.accentE,
               (c) => const ShoppingListScreen(),
@@ -148,25 +165,36 @@ class _HubScreenState extends State<HubScreen> {
             ),
           ]),
           // News as cards, by topic (2026-09-25).
-          _group(context, 'Stay informed', [
+          _group(context, 'Stay Informed', [
             _Row(
               'News',
-              "Today's stories as cards — swipe through, tap to read",
+              "Today's headlines — swipe to browse, tap to read",
               Icons.newspaper_rounded,
               Neon.accentC,
               (c) => const NewsScreen(),
             ),
           ]),
+          // NEAR YOU (2026-11-14): doctors, advocates and businesses on
+          // MyAssistant who published their page.
+          _group(context, 'Near You', [
+            _Row(
+              'Professionals Near You',
+              'Doctors, advocates, and shops — call or book',
+              Icons.storefront_rounded,
+              Neon.accentE,
+              (c) => const NearbyProsScreen(),
+            ),
+          ]),
           _group(context, 'Phone', [
             _Row(
               'Calls',
-              'Calls I made for you — and what they said back',
+              'Calls placed on your behalf, with outcomes',
               Icons.phone_in_talk_rounded,
               Neon.accentD,
               (c) => const CallsScreen(),
             ),
             _Row(
-              'Call notes',
+              'Call Notes',
               'Notes and reminders from your recorded calls',
               Icons.call_rounded,
               Neon.accentE,
@@ -174,7 +202,7 @@ class _HubScreenState extends State<HubScreen> {
             ),
             _Row(
               'Email',
-              'Link your mailbox — then ask me to read or send mail',
+              'Link your mailbox to read and send email by voice',
               Icons.alternate_email_rounded,
               Neon.accentF,
               (c) => const EmailSetupScreen(),
@@ -182,23 +210,35 @@ class _HubScreenState extends State<HubScreen> {
           ]),
           _group(context, 'Connections', [
             _Row(
-              'Connected apps',
-              'Your notes app, mail and more — in one place',
+              'Connected Apps',
+              'Notes, mail, and more in one place',
               Icons.hub_rounded,
               Neon.accentA,
               (c) => const ConnectedAppsScreen(),
             ),
           ]),
-          _group(context, 'Practice', [
+          _group(context, Persona.usesCaseFiles ? 'Practice' : 'Files', [
+            // Case files only for professions that keep them (2026-11-13).
+            if (Persona.usesCaseFiles)
+              _Row(
+                Persona.isDoctor ? 'Patients' : 'Clients',
+                Persona.isDoctor
+                    ? 'Case files, visit notes and reports'
+                    : 'Case files, notes and their documents',
+                Icons.folder_shared_rounded,
+                Neon.accentF,
+                (c) => const ClientsScreen(),
+              ),
+            if (Persona.proKind != null)
+              _Row(
+                'Your Public Page',
+                'Be found nearby and on Google — posts and bookings',
+                Icons.campaign_rounded,
+                Neon.accentD,
+                (c) => const MyListingScreen(),
+              ),
             _Row(
-              'Clients & patients',
-              'Case files, notes and their documents',
-              Icons.folder_shared_rounded,
-              Neon.accentF,
-              (c) => const ClientsScreen(),
-            ),
-            _Row(
-              'My documents',
+              'My Documents',
               'Your own scans, IDs and files',
               Icons.description_rounded,
               Neon.accentC,
@@ -217,7 +257,7 @@ class _HubScreenState extends State<HubScreen> {
           _group(context, 'Money', [
             _Row(
               'Finance',
-              'EMIs, incomes and payoff plans',
+              'EMIs, income, and repayment schedules',
               Icons.account_balance_wallet_rounded,
               Neon.accentB,
               (c) => const FinanceScreen(),
@@ -234,29 +274,29 @@ class _HubScreenState extends State<HubScreen> {
           // offline (features/games/games.dart).
           _group(context, 'Games', [
             _Row(
-              'Memory pairs',
-              'Flip the cards and find every pair',
+              'Memory Pairs',
+              'Flip the cards and match every pair',
               Icons.grid_view_rounded,
               Neon.accentB,
               (c) => const MemoryPairsScreen(),
             ),
             _Row(
-              'Quick maths',
-              'As many sums as you can in 60 seconds',
+              'Quick Maths',
+              'Solve as many sums as you can in 60 seconds',
               Icons.calculate_rounded,
               Neon.accentA,
               (c) => const QuickMathsScreen(),
             ),
             _Row(
-              'Tic-tac-toe with Maya',
-              'Three in a row — she plays to win',
+              'Tic-Tac-Toe with Maya',
+              'Three in a row against a strong opponent',
               Icons.tag_rounded,
               Neon.accentD,
               (c) => const TicTacToeScreen(),
             ),
             _Row(
-              'Light trail',
-              'Watch the lights, repeat the trail',
+              'Light Trail',
+              'Watch the lights and repeat the sequence',
               Icons.lightbulb_rounded,
               Neon.accentC,
               (c) => const LightTrailScreen(),
@@ -264,8 +304,15 @@ class _HubScreenState extends State<HubScreen> {
           ]),
           _group(context, 'App', [
             _Row(
+              'MyAssistant Premium',
+              'Plans, free trial and credits',
+              Icons.workspace_premium_rounded,
+              Neon.accentA,
+              (c) => const PremiumScreen(),
+            ),
+            _Row(
               'Features',
-              "What's live, what's being built, what's next",
+              "Live, in development, and planned",
               Icons.new_releases_rounded,
               Neon.accentC,
               (c) => const FeaturesScreen(),

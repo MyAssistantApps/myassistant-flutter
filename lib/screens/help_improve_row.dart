@@ -38,7 +38,7 @@ Future<bool> showHelpImproveNotice(BuildContext context, int days) async {
   final ok = await showAppDialog<bool>(
     context: context,
     builder: (c) => AlertDialog(
-      title: const Text('Help improve the assistant?'),
+      title: const Text('Help Improve the Assistant?'),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -49,10 +49,10 @@ Future<bool> showHelpImproveNotice(BuildContext context, int days) async {
       actions: [
         TextButton(
             onPressed: () => Navigator.pop(c, false),
-            child: const Text('Not now')),
+            child: const Text('Not Now')),
         FilledButton(
             onPressed: () => Navigator.pop(c, true),
-            child: const Text('Turn on')),
+            child: const Text('Turn On')),
       ],
     ),
   );
@@ -64,17 +64,17 @@ Future<bool> showHelpImproveTurnOff(BuildContext context) async {
   final ok = await showAppDialog<bool>(
     context: context,
     builder: (c) => AlertDialog(
-      title: const Text('Turn off?'),
+      title: const Text('Turn Off?'),
       content: const Text(
           'Your voice recordings will be deleted now, and your chats will '
           'stay private. The assistant works the same.'),
       actions: [
         TextButton(
             onPressed: () => Navigator.pop(c, false),
-            child: const Text('Keep on')),
+            child: const Text('Keep On')),
         FilledButton(
             onPressed: () => Navigator.pop(c, true),
-            child: const Text('Turn off')),
+            child: const Text('Turn Off')),
       ],
     ),
   );
@@ -100,7 +100,7 @@ class HelpImproveAskCard extends StatelessWidget {
             Icon(Icons.volunteer_activism_rounded, color: Neon.violet, size: 20),
             const SizedBox(width: 9),
             Flexible(
-              child: Text('Help improve the assistant?',
+              child: Text('Help Improve the Assistant?',
                   style: TextStyle(
                       color: Neon.textHi,
                       fontSize: 17,
@@ -116,14 +116,14 @@ class HelpImproveAskCard extends StatelessWidget {
             Expanded(
               child: OutlinedButton(
                 onPressed: () => onAnswer(false),
-                child: const Text('No thanks'),
+                child: const Text('No, Thank You'),
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: OutlinedButton(
                 onPressed: () => onAnswer(true),
-                child: const Text('Yes, help improve'),
+                child: const Text('Yes, Help Improve'),
               ),
             ),
           ]),
@@ -177,18 +177,18 @@ class _HelpImproveRowState extends State<HelpImproveRow> {
     final ok = await _prefs.set(on, source: 'settings');
     if (mounted) setState(() => _busy = false);
     if (!ok) {
-      _toast("Couldn't save that. Please try again.");
+      _toast("Unable to save your preference. Please try again.");
       return;
     }
-    _toast(on ? 'Thank you — this is on.' : 'Turned off. Your recordings are deleted.');
+    _toast(on ? 'Thank you. This setting is now on.' : 'Turned off. Your recordings are deleted.');
   }
 
   @override
   Widget build(BuildContext context) {
     return AppleRow(
       leading: IconTile(Icons.volunteer_activism_rounded, AppleColors.blue),
-      title: 'Help improve the assistant',
-      subtitle: 'Let our team check your chats to fix mistakes.',
+      title: 'Help Improve the Assistant',
+      subtitle: 'Allow our team to review your chats to correct mistakes.',
       trailing: Switch(
         value: _prefs.isOn,
         onChanged: _busy

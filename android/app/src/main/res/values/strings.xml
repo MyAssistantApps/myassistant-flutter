@@ -1,29 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="widget_task_label">Talk</string>
-    <string name="widget_task_description">One tap on the orb and your assistant is listening.</string>
+    <string name="widget_task_label">Speak</string>
+    <string name="widget_task_description">A single tap on the orb activates your assistant.</string>
     <!-- The line above the "Send feedback" form (TesterFeedbackBridge). The
          form's own picture is always of the You tab, where the row is, so
          it asks which screen it was, and "Gallery" is the form's button
          for attaching a different picture. -->
-    <string name="feedback_prompt">Tell us what happened, or what you would like improved. Mention the screen you were on, or add a screenshot of it from Gallery.</string>
+    <string name="feedback_prompt">Please describe what occurred, or what you would like improved. Mention the screen you were on, or attach a screenshot of it from Gallery.</string>
     <!-- Settings → Accessibility (ScreenAgentService). -->
-    <string name="screen_agent_label">MyAssistant screen control</string>
-    <string name="screen_agent_description">Lets your assistant do tasks you ask for inside other apps — open a chat, type a message, add to a cart — by reading the screen and tapping for you. It only acts while a task you asked for is running, shows a Stop button the whole time, and asks you before anything that sends, pays, orders or deletes. It never reads or types passwords or codes.</string>
+    <string name="screen_agent_label">MyAssistant Screen Control</string>
+    <string name="screen_agent_description">Allows your assistant to perform tasks you request inside other apps, such as opening a chat, typing a message or adding to a cart, by reading the screen and tapping on your behalf. It acts only while a task you requested is running, displays a Stop button throughout, and asks for your confirmation before anything that sends, pays, orders or deletes. It never reads or types passwords or codes.</string>
     <!-- Home-screen widgets (2026-11-08): HomeWidgets.kt. -->
     <string name="widget_talk_title">Ask MyAssistant</string>
-    <string name="widget_talk_line">Tap and speak — I\'ll take care of it</string>
-    <string name="widget_talk_description">A wide bar: one tap and your assistant is listening.</string>
-    <string name="widget_day_title">My day</string>
+    <string name="widget_talk_line">Tap and speak to your assistant</string>
+    <string name="widget_talk_description">A wide bar: a single tap activates your assistant.</string>
+    <string name="widget_day_title">My Day</string>
     <string name="widget_day_meetings">Meetings</string>
     <string name="widget_day_reminders">Reminders</string>
-    <string name="widget_day_bills">Bills due</string>
-    <string name="widget_day_clear">You\'re all clear today</string>
-    <string name="widget_day_stale">Open MyAssistant to refresh your day</string>
-    <string name="widget_day_description">Today at a glance: meetings, reminders, bills and what\'s next.</string>
-    <string name="widget_sc_talk">Talk</string>
+    <string name="widget_day_bills">Bills Due</string>
+    <string name="widget_day_clear">No items pending today</string>
+    <string name="widget_day_stale">Please open MyAssistant to refresh your day</string>
+    <string name="widget_day_description">Today at a glance: meetings, reminders, bills and upcoming items.</string>
+    <string name="widget_sc_talk">Speak</string>
     <string name="widget_sc_price">Compare</string>
     <string name="widget_sc_flights">Flights</string>
     <string name="widget_sc_task">Reminders</string>
-    <string name="widget_shortcuts_description">Talk, price compare, flights and reminders, one tap each.</string>
+    <string name="widget_shortcuts_description">Voice, price comparison, flights and reminders, each a single tap away.</string>
 </resources>

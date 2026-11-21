@@ -9,10 +9,13 @@ import '../../design/neon_widgets.dart';
 import '../../widgets/glow_cta.dart';
 import '../../services/api_service.dart';
 import '../../services/assistant_identity.dart';
+import '../../services/auth_service.dart';
+import '../../services/persona.dart';
 import '../../shell/home_shell.dart';
 import '../splash_screen.dart';
 import 'guide_screen.dart';
 import 'permissions_screen.dart';
+import 'profession_screen.dart';
 import 'welcome_screen.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
@@ -40,6 +43,11 @@ class _AssistantSetupGateState extends State<AssistantSetupGate> {
   static const _welcomeKey = 'welcomed_v1';
   bool? _needed;
 
+  /// "What do you do?" — asked before naming, once per account. Decides
+  /// which workspaces exist (Clinic for doctors). Accounts created before
+  /// this step existed get it once too, on their next launch.
+  bool _personaNeeded = false;
+
   /// Permission gate: false until the MICROPHONE is granted — the one the
   /// app cannot work without (see permissions_screen.dart). Checked on
   /// every launch, so revoking it brings the gate back; the recommended
@@ -64,13 +72,31 @@ class _AssistantSetupGateState extends State<AssistantSetupGate> {
   Future<void> _check() async {
     bool needed = false;
     bool welcomed = false;
+    bool personaNeeded = false;
     try {
       final prefs = await SharedPreferences.getInstance();
       welcomed = prefs.getBool(_welcomeKey) == true;
+      // The cached session may predate the persona field — ask the server
+      // before concluding it was never chosen. Offline → don't block.
+      Map<String, dynamic>? p;
+      if (!Persona.isChosen) {
+        p = await ApiService.getJson('/profile/full');
+        final server = ((p?['user'] as Map?)?['persona'] as String?) ?? '';
+        if (server.isNotEmpty) {
+          AuthService.instance.applyPersona(server);
+        } else {
+          // Only ask when the server actually stores a profession: an older
+          // backend has no `persona` field, and asking there would trap the
+          // user on a step that can never save. They are asked once the
+          // backend supports it.
+          final supported = (p?['user'] as Map?)?.containsKey('persona') ?? false;
+          personaNeeded = p != null && supported;
+        }
+      }
       if (prefs.getBool(_doneKey) == true) {
         needed = false;
       } else {
-        final p = await ApiService.getJson('/profile/full');
+        p ??= await ApiService.getJson('/profile/full');
         if (p != null) {
           final n =
               (((p['assistant'] as Map?)?['name'] as String?) ?? '').trim();
@@ -88,6 +114,7 @@ class _AssistantSetupGateState extends State<AssistantSetupGate> {
     if (mounted) {
       setState(() {
         _needed = needed;
+        _personaNeeded = personaNeeded;
         _permsOk = permsOk;
         // Returning account, fresh install → welcome now (naming flow
         // handles its own celebration through _markDone).
@@ -118,6 +145,10 @@ class _AssistantSetupGateState extends State<AssistantSetupGate> {
 
   @override
   Widget build(BuildContext context) {
+    if (_needed != null && _personaNeeded) {
+      return ProfessionScreen(
+          onDone: () => setState(() => _personaNeeded = false));
+    }
     return switch (_needed) {
       null => const SplashScreen(),
       true => AssistantSetupScreen(onDone: _markDone),
@@ -189,7 +220,7 @@ class _AssistantSetupScreenState extends State<AssistantSetupScreen> {
           // its own sentence saying what to change; only a real network
           // failure gets the generic line.
           _error = (r?['message'] as String?) ??
-              "Couldn't save the name. Check your connection and try again.";
+              "Unable to save the name. Check your connection and try again.";
         });
       }
       return;
@@ -226,7 +257,7 @@ class _AssistantSetupScreenState extends State<AssistantSetupScreen> {
                   ),
                   const SizedBox(height: 22),
                   Text(
-                    'Name your assistant',
+                    'Name Your Assistant',
                     style: GoogleFonts.interTight(
                       fontSize: 26,
                       fontWeight: FontWeight.w700,
@@ -236,8 +267,8 @@ class _AssistantSetupScreenState extends State<AssistantSetupScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Pick any name you like — this is who you\'ll be '
-                    'talking to. You can rename it any time by simply '
+                    'Select any name you prefer. This is the assistant you will be '
+                    'speaking with. You can rename it at any time by '
                     'telling it so.',
                     style: TextStyle(
                         color: Neon.textLo, fontSize: 15, height: 1.45),
@@ -251,7 +282,7 @@ class _AssistantSetupScreenState extends State<AssistantSetupScreen> {
                     onChanged: (_) => setState(() {}),
                     onSubmitted: (_) => _save(),
                     decoration: const InputDecoration(
-                      labelText: 'Assistant name',
+                      labelText: 'Assistant Name',
                       hintText: 'e.g. Maya',
                       counterText: '',
                       prefixIcon: Icon(Icons.badge_outlined),
@@ -276,7 +307,7 @@ class _AssistantSetupScreenState extends State<AssistantSetupScreen> {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'Speak to me in',
+                    'Assistant Language',
                     style: TextStyle(
                         color: Neon.textHi,
                         fontSize: 15,
@@ -284,8 +315,8 @@ class _AssistantSetupScreenState extends State<AssistantSetupScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Your assistant greets and talks in this language. '
-                    'Change it any time by just asking.',
+                    'Your assistant greets and speaks in this language. '
+                    'You can change it at any time by asking.',
                     style: TextStyle(
                         color: Neon.textLo, fontSize: NeonType.footnote),
                   ),
@@ -331,7 +362,7 @@ class _AssistantSetupScreenState extends State<AssistantSetupScreen> {
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
-                                '“Hi, I\'m $n. How can I help you today?”',
+                                '“Hello, I am $n. How may I assist you today?”',
                                 style: TextStyle(
                                     color: Neon.textLo,
                                     fontSize: 14,
@@ -361,7 +392,7 @@ class _AssistantSetupScreenState extends State<AssistantSetupScreen> {
                   // everywhere and reads broken. Naming is mandatory —
                   // renaming later by voice stays free.
                   Text(
-                    'Required — you can rename it any time later.',
+                    'Required. You can rename it at any time.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                         color: Neon.textLo, fontSize: NeonType.caption),

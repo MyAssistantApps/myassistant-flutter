@@ -64,15 +64,15 @@ class _NetBannerState extends State<NetBanner> with WidgetsBindingObserver {
     final (icon, text, color) = switch (_shown) {
       NetState.offline => (
           Icons.wifi_off_rounded,
-          'No internet connection. Check Wi-Fi or mobile data.',
+          'No internet connection. Please check Wi-Fi or mobile data.',
           const Color(0xFFE5484D),
         ),
       NetState.serverDown => (
           Icons.cloud_off_rounded,
-          "Can't reach MyAssistant right now. Trying again…",
+          "Unable to reach MyAssistant. Retrying…",
           const Color(0xFFD9822B),
         ),
-      NetState.ok => (Icons.wifi_rounded, 'Back online', const Color(0xFF2E9E6A)),
+      NetState.ok => (Icons.wifi_rounded, 'Connection restored', const Color(0xFF2E9E6A)),
     };
     return Stack(
       children: [

@@ -174,7 +174,7 @@ class _AssistantResultOverlayState extends State<AssistantResultOverlay> {
         key: const ValueKey('script'),
         constraints: BoxConstraints(maxHeight: math.min(h * 0.55, room)),
         child: ScriptCard(
-          title: e.presentedTitle ?? 'For you',
+          title: e.presentedTitle ?? 'For You',
           content: e.presentedText!,
           onClose: e.dismissPresentedText,
         ),
@@ -210,7 +210,7 @@ class _AssistantResultOverlayState extends State<AssistantResultOverlay> {
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Close sources',
+                  tooltip: 'Close Sources',
                   constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                   padding: EdgeInsets.zero,
                   onPressed: e.dismissSearchResults,

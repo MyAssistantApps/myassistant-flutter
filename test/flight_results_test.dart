@@ -92,7 +92,7 @@ void main() {
     await t.pump();
     await t.pump(const Duration(milliseconds: 100));
     expect(find.text('Cheapest'), findsOneWidget);
-    expect(find.text('Set price alert', skipOffstage: false), findsOneWidget);
+    expect(find.text('Set Price Alert',skipOffstage: false), findsOneWidget);
     expect(find.textContaining('BEST VALUE'), findsOneWidget);
     expect(find.text('FASTEST'), findsOneWidget);
     expect(find.text('Book'), findsWidgets);
@@ -134,7 +134,7 @@ void main() {
     await t.pump();
     await t.pump(const Duration(milliseconds: 100));
     expect(asked.last, contains('BOM to DEL'));
-    expect(find.textContaining('Whole trip from'), findsOneWidget);
+    expect(find.textContaining('Entire trip from'), findsOneWidget);
     expect(t.takeException(), isNull);
   });
 

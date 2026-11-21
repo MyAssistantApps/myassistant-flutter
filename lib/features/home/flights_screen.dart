@@ -20,10 +20,10 @@ extension FlightKindText on FlightKind {
       this == FlightKind.domestic ? 'Domestic' : 'International';
   String get line => this == FlightKind.domestic
       ? 'Flights within India'
-      : 'Fly anywhere in the world';
+      : 'Flights to destinations worldwide';
   String get photo => 'assets/flights/$name.jpg';
   String get headline =>
-      this == FlightKind.domestic ? 'Across India' : 'Around the world';
+      this == FlightKind.domestic ? 'Across India' : 'Around the World';
   String get tag => this == FlightKind.domestic ? 'DOMESTIC' : 'INTERNATIONAL';
 
   /// Where each photo is anchored so the aircraft stays in view.
@@ -51,11 +51,11 @@ class FlightsScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Where to next?',
+                Text('Flight Options',
                     style: NeonType.manrope(30, FontWeight.w800).copyWith(
                         color: Neon.textHi, letterSpacing: -0.8)),
                 const SizedBox(height: 4),
-                Text('Pick how far you are flying.',
+                Text('Select the type of flight.',
                     style: TextStyle(color: Neon.textLo, fontSize: 15)),
               ],
             ),

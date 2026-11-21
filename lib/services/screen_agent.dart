@@ -8,7 +8,7 @@ import 'api_service.dart';
 /// open any app I asked for and do task", with confirmations).
 ///
 /// [ScreenAgent] talks to ScreenAgentService.kt (Settings → Accessibility →
-/// "MyAssistant screen control"); [ScreenTaskRunner] runs one task as a
+/// "MyAssistant Screen Control"); [ScreenTaskRunner] runs one task as a
 /// loop: read the screen, ask the server for ONE step (POST
 /// /ai/screen/step, backend ai/screenTask.js), ask the owner first when
 /// the step sends, pays, orders or deletes, do it, and again — until done,
@@ -130,7 +130,7 @@ class ScreenTaskRunner {
         waits = 0;
         // ASK FIRST: anything that sends, pays, orders or deletes.
         if (step['sensitive'] == true) {
-          final ok = await hands.confirm(say.isEmpty ? 'Go ahead with this step?' : say);
+          final ok = await hands.confirm(say.isEmpty ? 'Do you wish to proceed with this step?' : say);
           if (!ok) return ScreenTaskResult(false, 'They said no at the last step, so nothing was sent or paid.', steps: n - 1);
         }
         final before = _sig(screen);

@@ -34,17 +34,17 @@ class QuickTool {
 }
 
 const quickTools = <QuickTool>[
-  QuickTool('flights', 'Flights', 'Search and book flights in a few taps.',
+  QuickTool('flights', 'Flights', 'Search for and book flights in a few steps.',
       Icons.flight_takeoff_rounded, -58),
   QuickTool('buses', 'Buses', 'Find buses and seats for your next trip.',
       Icons.directions_bus_rounded, 52),
   QuickTool('hotels', 'Hotels', 'Hotels and resorts, at the best prices.',
       Icons.hotel_rounded, 70),
-  QuickTool('groceries', 'Groceries', 'Order from stores near you, pay in the app.',
+  QuickTool('groceries', 'Groceries', 'Order from nearby stores and pay within the app.',
       Icons.shopping_basket_rounded, -86),
-  QuickTool('food', 'Food', 'Order from restaurants near you, in the app.',
+  QuickTool('food', 'Food', 'Order from nearby restaurants within the app.',
       Icons.restaurant_rounded, 30),
-  QuickTool('misc', 'Everyday', 'Fashion, beauty, medicines, moving & more.',
+  QuickTool('misc', 'Everyday', 'Fashion, beauty, medicines, moving and more.',
       Icons.widgets_rounded, 0),
 ];
 
@@ -126,7 +126,7 @@ class _QuickToolsSectionState extends State<QuickToolsSection> {
           header: true,
           child: Padding(
             padding: const EdgeInsets.only(left: Neon.s1, bottom: 10),
-            child: Text('Quick tools',
+            child: Text('Quick Tools',
                 style: NeonType.manrope(21, FontWeight.w800)
                     .copyWith(color: Neon.textHi, letterSpacing: -0.6)),
           ),
@@ -352,7 +352,7 @@ class QuickToolScreen extends StatelessWidget {
                   style: NeonType.manrope(26, FontWeight.w800)
                       .copyWith(color: Neon.textHi)),
               const SizedBox(height: 8),
-              Text('Coming soon.',
+              Text('This feature will be available soon.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Neon.textLo, fontSize: 15)),
             ],

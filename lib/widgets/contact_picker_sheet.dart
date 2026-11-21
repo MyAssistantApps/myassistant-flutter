@@ -49,7 +49,7 @@ class ContactPickerSheet extends StatelessWidget {
 
   String get _title {
     final n = spokenName.trim();
-    return n.isEmpty ? 'Which contact?' : 'Which $n?';
+    return n.isEmpty ? 'Select Contact' : 'Select Contact: $n';
   }
 
   @override
@@ -73,7 +73,7 @@ class ContactPickerSheet extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
             child: Text(
-              '${matches.length} contacts match. Tap the one to call.',
+              '${matches.length} contacts match. Please select the one to call.',
               style: TextStyle(color: Neon.textLo, fontSize: 13),
             ),
           ),

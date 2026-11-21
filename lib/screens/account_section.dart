@@ -12,6 +12,8 @@ import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../services/app_feedback.dart';
 import '../design/motion.dart';
+import '../services/persona.dart';
+import 'auth/profession_screen.dart';
 
 /// ACCOUNT — who is signed in, and the three things anyone must be able to
 /// do with their own account: take their data, leave, and erase it.
@@ -52,10 +54,10 @@ class _AccountSectionState extends State<AccountSection> {
           XFile(path,
               mimeType: 'application/json', name: 'my-assistant-data.json')
         ],
-        subject: 'My assistant data',
+        subject: 'MyAssistant Data',
       );
     } catch (_) {
-      _snack("Couldn't export your data — check your connection and try again.");
+      _snack("Unable to export your data. Check your connection and try again.");
     } finally {
       if (mounted) setState(() => _busy = _exporting = false);
     }
@@ -66,12 +68,12 @@ class _AccountSectionState extends State<AccountSection> {
       context: context,
       builder: (c) => AlertDialog(
         backgroundColor: Neon.surface,
-        title: const Text('Sign out?'),
+        title: const Text('Sign Out'),
         content: const Text(
-            'Your data stays on your account. Sign back in any time to pick up where you left off.'),
+            'Your data stays with your account. Sign in again at any time to resume.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(c, true), child: const Text('Sign out')),
+          TextButton(onPressed: () => Navigator.pop(c, true), child: const Text('Sign Out')),
         ],
       ),
     );
@@ -87,13 +89,13 @@ class _AccountSectionState extends State<AccountSection> {
       context: context,
       builder: (c) => AlertDialog(
         backgroundColor: Neon.surface,
-        title: const Text('Delete your account?'),
+        title: const Text('Delete Account'),
         content: const Text(
-            'This permanently erases everything your assistant holds for you — memories, reminders, '
-            'documents, clients, call notes and messages — and disconnects your linked accounts. '
-            'It cannot be undone.\n\nWant a copy first? Use "Export my data".'),
+            'This permanently erases everything your assistant holds for you (memories, reminders, '
+            'documents, clients, call notes and messages) and disconnects your linked accounts. '
+            'This cannot be undone.\n\nTo keep a copy, use "Export My Data" first.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Keep my account')),
+          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Keep My Account')),
           TextButton(
             onPressed: () => Navigator.pop(c, true),
             style: TextButton.styleFrom(foregroundColor: Neon.errorInk),
@@ -117,7 +119,7 @@ class _AccountSectionState extends State<AccountSection> {
       if (mounted) Navigator.of(context).popUntil((r) => r.isFirst);
     } catch (_) {
       if (mounted) setState(() => _busy = false);
-      _snack("Your account wasn't deleted — check your connection and try again.");
+      _snack("Unable to delete your account. Check your connection and try again.");
     }
   }
 
@@ -134,26 +136,49 @@ class _AccountSectionState extends State<AccountSection> {
         GroupedCard(
           children: [
             AppleRow(
-              title: 'Signed in as',
+              title: 'Signed In As',
               subtitle: who,
               trailing: _busy && !_exporting
                   ? const NeonLoader.inline()
                   : null,
             ),
+            // What the user does — decides which assistant and workspace they
+            // see (Doctor's assistant + Clinic for doctors). Changeable here.
+            ValueListenableBuilder<String>(
+              valueListenable: Persona.notifier,
+              builder: (_, p, __) {
+                final spec = AuthService.instance.user?.specialty ?? '';
+                return AppleRow(
+                  title: 'Profession',
+                  subtitle: Persona.titleFor(p) +
+                      (p == 'doctor' && spec.isNotEmpty ? ' · $spec' : ''),
+                  trailing: Icon(Icons.chevron_right_rounded,
+                      size: 20, color: Neon.textDim),
+                  onTap: _busy
+                      ? null
+                      : () => Navigator.of(context).push(MaterialPageRoute<void>(
+                            builder: (ctx) => ProfessionScreen(
+                              editing: true,
+                              onDone: () => Navigator.of(ctx).pop(),
+                            ),
+                          )),
+                );
+              },
+            ),
             AppleRow(
-              title: 'Export my data',
-              subtitle: 'Everything your assistant holds for you, as a file',
+              title: 'Export My Data',
+              subtitle: 'Download everything your assistant holds for you',
               trailing: _exporting
                   ? const NeonLoader.inline()
                   : Icon(Icons.ios_share_rounded, size: 18, color: Neon.textDim),
               onTap: _busy ? null : _export,
             ),
             AppleRow(
-              title: 'Sign out',
+              title: 'Sign Out',
               onTap: _busy ? null : _signOut,
             ),
             AppleRow(
-              title: 'Delete account',
+              title: 'Delete Account',
               titleColor: Neon.error,
               onTap: _busy ? null : _delete,
             ),
@@ -185,7 +210,7 @@ class _TypeToConfirmState extends State<_TypeToConfirm> {
   Widget build(BuildContext context) {
     final matches = _controller.text.trim().toUpperCase() == widget.word;
     return AlertDialog(
-      title: Text('Type ${widget.word} to confirm'),
+      title: Text('Type ${widget.word} to Confirm'),
       content: TextField(
         controller: _controller,
         autofocus: true,
@@ -198,7 +223,7 @@ class _TypeToConfirmState extends State<_TypeToConfirm> {
         TextButton(
           onPressed: matches ? () => Navigator.pop(context, true) : null,
           style: TextButton.styleFrom(foregroundColor: Neon.errorInk),
-          child: const Text('Delete forever'),
+          child: const Text('Delete Permanently'),
         ),
       ],
     );

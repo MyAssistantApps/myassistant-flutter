@@ -37,7 +37,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
       final res = await ApiService.fetchFinance();
       if (mounted) setState(() => _data = res);
     } catch (_) {
-      if (mounted) setState(() => _error = "Couldn't load your finances");
+      if (mounted) setState(() => _error = "Unable to load your finances.");
     }
   }
 
@@ -49,7 +49,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
       AppLog.add('finance', 'delete $id -> $e');
     }
     if (!ok && mounted) {
-      AppFeedback.show("Couldn't delete that.",
+      AppFeedback.show("Unable to delete the item. Please try again.",
           context: context, tone: FeedbackTone.error);
     }
     _load();
@@ -109,7 +109,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
           ((_data?['items'] as List?)?.isEmpty ?? true)
               ? null
               : FloatingActionButton(
-                  tooltip: 'Add finance item',
+                  tooltip: 'Add Finance Item',
                   onPressed: _addItem,
                   child: const Icon(Icons.add_rounded),
                 ),
@@ -143,11 +143,11 @@ class _FinanceScreenState extends State<FinanceScreen> {
     if (items.isEmpty) {
       return NeonEmptyState(
         icon: Icons.account_balance_wallet_rounded,
-        title: 'Nothing here yet',
-        body: 'Add your EMIs, incomes and expenses with the + button — or '
-            'just tell ${AssistantIdentity.name}: "I have a bike EMI of '
+        title: 'No finance items yet',
+        body: 'To add your EMIs, incomes and expenses, use the + button or '
+            'tell ${AssistantIdentity.name}: "I have a bike EMI of '
             '₹3,500 at 11 percent".',
-        actionLabel: 'Add an item',
+        actionLabel: 'Add an Item',
         actionIcon: Icons.add_rounded,
         onAction: _addItem,
       );
@@ -159,17 +159,17 @@ class _FinanceScreenState extends State<FinanceScreen> {
         _summaryCard(s),
         const SizedBox(height: 24),
         if (emis.isNotEmpty) ...[
-          const GroupLabel('EMIs — highest interest first'),
+          const GroupLabel('EMIs: Highest Interest First'),
           GroupedCard(children: emis.map(_itemRow).toList()),
           const SizedBox(height: 24),
         ],
         if (incomes.isNotEmpty) ...[
-          const GroupLabel('Incoming'),
+          const GroupLabel('Income'),
           GroupedCard(children: incomes.map(_itemRow).toList()),
           const SizedBox(height: 24),
         ],
         if (expenses.isNotEmpty) ...[
-          const GroupLabel('Recurring expenses'),
+          const GroupLabel('Recurring Expenses'),
           GroupedCard(children: expenses.map(_itemRow).toList()),
         ],
       ],
@@ -240,7 +240,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
         '${e['interest_rate']}% interest',
       if ((e['due_day'] as num? ?? 0) > 0) 'day ${e['due_day']}',
       if (isEmi && (e['outstanding'] as num? ?? 0) > 0)
-        '₹${_fmt(e['outstanding'])} left',
+        '₹${_fmt(e['outstanding'])} outstanding',
     ];
     return Dismissible(
       key: ValueKey('fin-${e['id']}'),
@@ -294,7 +294,7 @@ class _AddItemDialogState extends State<_AddItemDialog> {
   Future<void> _save() async {
     final amount = double.tryParse(_amount.text.trim());
     if (_name.text.trim().isEmpty || amount == null || amount <= 0) {
-      setState(() => _problem = 'Add a name and an amount above zero.');
+      setState(() => _problem = 'Enter a name and an amount greater than zero.');
       return;
     }
     setState(() {
@@ -323,7 +323,7 @@ class _AddItemDialogState extends State<_AddItemDialog> {
     } else {
       setState(() {
         _saving = false;
-        _problem = "Couldn't save — check the values and your connection.";
+        _problem = "Unable to save. Check the values and your connection.";
       });
     }
   }
@@ -360,7 +360,7 @@ class _AddItemDialogState extends State<_AddItemDialog> {
     // The theme's dialog, chips and buttons (2026-09-30): the local
     // colours matched them and kept the lit rim and Save's glow off.
     return AlertDialog(
-      title: const Text('Add finance item'),
+      title: const Text('Add Finance Item'),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -389,7 +389,7 @@ class _AddItemDialogState extends State<_AddItemDialog> {
             _field(_name, 'Name (Bike EMI, Salary…)', type: TextInputType.text),
             _field(_amount, 'Monthly amount (₹)'),
             if (isEmi) _field(_rate, 'Interest rate (% per year)'),
-            _field(_day, 'Day of month it hits (1-31)'),
+            _field(_day, 'Due day of the month (1-31)'),
             if (isEmi) _field(_outstanding, 'Outstanding principal (₹)'),
             if (_problem != null)
               Padding(

@@ -77,7 +77,7 @@ class _MeetingRecorderScreenState extends State<MeetingRecorderScreen> {
   String? _pausedBecause;
 
   static const _duringCall =
-      'Finish the call first — the phone keeps the microphone for it.';
+      'End the call first — the microphone is in use.';
 
   @override
   void initState() {
@@ -116,7 +116,7 @@ class _MeetingRecorderScreenState extends State<MeetingRecorderScreen> {
       await Future.delayed(const Duration(milliseconds: 600));
     }
     if (!await _rec.hasPermission()) {
-      _snack('Microphone permission is needed to record.');
+      _snack('Microphone access is required to record. Enable it in Settings.');
       return;
     }
     final dir = await getTemporaryDirectory();
@@ -196,7 +196,7 @@ class _MeetingRecorderScreenState extends State<MeetingRecorderScreen> {
     setState(() {
       _stage = _Stage.paused;
       _level = 0;
-      _pausedBecause = 'The microphone was interrupted — tap Resume to carry on.';
+      _pausedBecause = 'The microphone was interrupted. Tap Resume to continue.';
     });
   }
 
@@ -207,7 +207,7 @@ class _MeetingRecorderScreenState extends State<MeetingRecorderScreen> {
   void _onCall() {
     if (!_call.value || _stage != _Stage.recording || !mounted) return;
     AppLog.add('meeting', 'paused for a phone call');
-    _pause('Paused for your call — tap Resume when you’re back.');
+    _pause('Paused for your call. Tap Resume when you return.');
   }
 
   /// The recording whose upload failed, kept until it goes through or the
@@ -237,7 +237,7 @@ class _MeetingRecorderScreenState extends State<MeetingRecorderScreen> {
     RecordingGuard.release(this);
     if (path == null) return;
     if (_elapsed.inSeconds < 10) {
-      _snack('That was too short to make minutes from.');
+      _snack('The recording is too short to prepare minutes.');
       setState(() {
         _stage = _Stage.ready;
         _elapsed = Duration.zero;
@@ -266,8 +266,8 @@ class _MeetingRecorderScreenState extends State<MeetingRecorderScreen> {
       setState(() => _stage = _Stage.failed);
       // The raw error goes to the log; the user gets a sentence.
       AppLog.add('meeting', 'upload failed: $e');
-      _snack("We couldn't upload the recording just now — it's safe on your "
-          'phone. Tap "Try again" when your connection is back.');
+      _snack("Unable to upload the recording. It remains saved on your "
+          'phone. Tap "Retry" when your connection is restored.');
     }
   }
 
@@ -275,10 +275,10 @@ class _MeetingRecorderScreenState extends State<MeetingRecorderScreen> {
     final sure = await showAppDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
-        title: const Text('Discard this recording?'),
-        content: const Text("It hasn't been uploaded yet, so it can't be recovered."),
+        title: const Text('Discard Recording'),
+        content: const Text("This recording has not been uploaded and cannot be recovered."),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Keep it')),
+          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Keep')),
           TextButton(onPressed: () => Navigator.pop(c, true), child: const Text('Discard')),
         ],
       ),
@@ -314,8 +314,8 @@ class _MeetingRecorderScreenState extends State<MeetingRecorderScreen> {
       final leave = await showAppDialog<bool>(
         context: context,
         builder: (c) => AlertDialog(
-          title: const Text('Leave without uploading?'),
-          content: const Text("This recording hasn't been uploaded yet and will be lost."),
+          title: const Text('Leave Without Uploading'),
+          content: const Text("This recording has not been uploaded and will be lost."),
           actions: [
             TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Stay')),
             TextButton(onPressed: () => Navigator.pop(c, true), child: const Text('Leave')),
@@ -328,10 +328,10 @@ class _MeetingRecorderScreenState extends State<MeetingRecorderScreen> {
     final leave = await showAppDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
-        title: const Text('Discard this recording?'),
-        content: const Text('Tap Stop instead to get the minutes.'),
+        title: const Text('Discard Recording'),
+        content: const Text('This recording will be discarded. To receive the minutes, tap Stop instead.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Keep recording')),
+          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Keep Recording')),
           TextButton(onPressed: () => Navigator.pop(c, true), child: const Text('Discard')),
         ],
       ),
@@ -352,7 +352,7 @@ class _MeetingRecorderScreenState extends State<MeetingRecorderScreen> {
       },
       // Under the night sky (2026-09-30).
       child: NeonScaffold(
-        appBar: appleAppBar(context, 'Record a meeting'),
+        appBar: appleAppBar(context, 'Record a Meeting'),
         body: SafeArea(
           // Full height when there is room (the Spacer puts the button at
           // the bottom); scrolls while the keyboard is up instead of
@@ -365,10 +365,10 @@ class _MeetingRecorderScreenState extends State<MeetingRecorderScreen> {
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
             child: Column(
               children: [
-                _field(_title, 'What is the meeting? (optional)', Icons.title_rounded,
+                _field(_title, 'Meeting title (optional)', Icons.title_rounded,
                     enabled: !busy),
                 const SizedBox(height: 10),
-                _field(_people, 'Who is in it? (optional)', Icons.groups_rounded,
+                _field(_people, 'Participants (optional)', Icons.groups_rounded,
                     enabled: !busy),
                 const Spacer(),
                 Text(_clock,
@@ -380,11 +380,11 @@ class _MeetingRecorderScreenState extends State<MeetingRecorderScreen> {
                 const SizedBox(height: 8),
                 Text(
                   switch (_stage) {
-                    _Stage.ready => 'Put the phone in the middle of the table.',
+                    _Stage.ready => 'Place the phone in the centre of the table.',
                     _Stage.recording => 'Recording — keep this screen open.',
                     _Stage.paused => _pausedBecause ?? 'Paused',
-                    _Stage.uploading => 'Uploading — the minutes follow in a few minutes.',
-                    _Stage.failed => 'Not uploaded yet — your recording is safe on this phone.',
+                    _Stage.uploading => 'Uploading — your minutes will be ready shortly.',
+                    _Stage.failed => 'Not yet uploaded. Your recording is safe on this phone.',
                   },
                   textAlign: TextAlign.center,
                   // On air says so in the danger tone's words.
@@ -416,7 +416,7 @@ class _MeetingRecorderScreenState extends State<MeetingRecorderScreen> {
                       const SizedBox(width: 28),
                       _RecordButton(
                         icon: Icons.cloud_upload_rounded,
-                        label: 'Try upload again',
+                        label: 'Retry upload',
                         onTap: () {
                           final p = _failedPath;
                           if (p != null) _upload(p);
@@ -459,8 +459,8 @@ class _MeetingRecorderScreenState extends State<MeetingRecorderScreen> {
                   _stage == _Stage.ready
                       ? 'Start'
                       : _stage == _Stage.failed
-                          ? 'Try again'
-                          : busy ? '' : 'Stop for minutes',
+                          ? 'Retry'
+                          : busy ? '' : 'Stop to Prepare Minutes',
                   style: TextStyle(color: Neon.textLo, fontSize: NeonType.footnote),
                 ),
               ],

@@ -179,7 +179,7 @@ class AppFeedback {
           context.mounted &&
           _coveredByPopup(context, messenger),
       onAction: onRetry,
-      actionLabel: 'Try again',
+      actionLabel: 'Retry',
     );
     if (_mustWait(msg)) {
       _park(msg);
@@ -427,7 +427,10 @@ class AppFeedback {
   static final _failure = RegExp(
     r"^(couldn[’']t|could not|can[’']t|cannot|failed|unable|"
     r"something went wrong|no contact|that didn[’']t)|\bfailed\b|"
-    r"isn[’']t installed",
+    r"isn[’']t installed|"
+    // The formal wording (2026-11-15) fails in other words.
+    r"\bunable to\b|\bcould not be\b|is not installed|"
+    r"an unexpected error|an error has occurred|timed out",
     caseSensitive: false,
   );
 
@@ -495,7 +498,7 @@ class AppFeedback {
             )
           : msg.onAction != null
               ? SnackBarAction(
-                  label: msg.actionLabel ?? 'Try again',
+                  label: msg.actionLabel ?? 'Retry',
                   textColor: Neon.cyanInk,
                   onPressed: msg.onAction!,
                 )

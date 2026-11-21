@@ -162,7 +162,7 @@ class _AssistantOrbButtonState extends State<AssistantOrbButton>
     // The app's main control had no label for screen readers.
     return Semantics(
       button: true,
-      label: active ? 'Stop talking to the assistant' : 'Talk to the assistant',
+      label: active ? 'Stop speaking to your assistant' : 'Speak to your assistant',
       child: GestureDetector(
         onTap: widget.onTap,
         onLongPress: widget.onLongPress,
@@ -536,19 +536,19 @@ class _InlineCaptionOverlayState extends State<InlineCaptionOverlay>
       return 'Connecting…';
     }
     if (micPaused && !_waitingForVoice(p) && p != AssistantPhase.speaking) {
-      return 'Mic paused while you type';
+      return 'Microphone paused while typing';
     }
     return switch (p) {
       AssistantPhase.speaking => '',
       // The fast voice still connecting is not listening yet.
       AssistantPhase.listening =>
-        engine.liveActive && !engine.micOpen ? 'One moment…' : 'Listening…',
-      AssistantPhase.completed => engine.liveActive ? 'Done' : 'One moment…',
+        engine.liveActive && !engine.micOpen ? 'Please wait…' : 'Listening…',
+      AssistantPhase.completed => engine.liveActive ? 'Completed' : 'Please wait…',
       // "Listening…" only while the microphone is actually open (client,
       // 1 Oct: it said Listening when it was not).
       AssistantPhase.idle => engine.liveActive
-          ? (engine.micOpen ? 'Listening…' : 'One moment…')
-          : 'One moment…',
+          ? (engine.micOpen ? 'Listening…' : 'Please wait…')
+          : 'Please wait…',
       _ => engine.phaseLabel,
     };
   }
@@ -915,7 +915,7 @@ class _InlineCaptionOverlayState extends State<InlineCaptionOverlay>
                                           // and the conversation listens (barge-in).
                                           child: Semantics(
                                             button: canStop,
-                                            label: 'Stop and go back',
+                                            label: 'Stop and return',
                                             child: GestureDetector(
                                               behavior: HitTestBehavior.opaque,
                                               onTap: () {
@@ -1388,7 +1388,7 @@ class _ErrorCaption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final message = (engine.errorMessage ?? '').trim().isEmpty
-        ? "Sorry, something didn't work on my side. Let's try that again."
+        ? "An unexpected error has occurred. Please try again."
         : engine.errorMessage!.trim();
     final needsSettings = message.toLowerCase().contains('permission');
     // Scrolls rather than overflows: under the 330 px orb, a small phone or
@@ -1401,7 +1401,7 @@ class _ErrorCaption extends StatelessWidget {
             needsSettings ? Icons.mic_off_rounded : Icons.error_outline_rounded,
             color: Neon.error,
             size: 26,
-            semanticLabel: 'Problem',
+            semanticLabel: 'Error',
           ),
           const SizedBox(height: 10),
           Text(
@@ -1417,13 +1417,13 @@ class _ErrorCaption extends StatelessWidget {
             children: [
               if (needsSettings)
                 _PillButton(
-                  label: 'Open settings',
+                  label: 'Open Settings',
                   primary: true,
                   onTap: () => openAppSettings(),
                 )
               else
                 _PillButton(
-                  label: 'Try again',
+                  label: 'Retry',
                   primary: true,
                   onTap: () async {
                     await engine.endInlineConversation();
@@ -1609,7 +1609,7 @@ class _MuteButton extends StatelessWidget {
                 const SizedBox(width: 7),
                 Text(
                   // "Sound" alone read as either a state or an action.
-                  muted ? 'Muted' : 'Sound on',
+                  muted ? 'Muted' : 'Sound On',
                   style: _VoiceType.mute.copyWith(
                     color: muted ? NeonTone.warning.ink : Neon.textLo,
                   ),
@@ -1667,13 +1667,13 @@ class _PhotoSourceSheet extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
             child: Align(
               alignment: Alignment.centerLeft,
-              child: Text('Ask about a picture',
+              child: Text('Ask About a Picture',
                   style: NeonType.eyebrow.copyWith(color: Neon.textLo)),
             ),
           ),
-          row(Icons.photo_camera_rounded, 'Take a photo',
-              'A bill, a label, a sign, a whiteboard', ImageSource.camera),
-          row(Icons.photo_library_rounded, 'Choose from gallery',
+          row(Icons.photo_camera_rounded, 'Take a Photo',
+              'A bill, a label, a sign or a whiteboard', ImageSource.camera),
+          row(Icons.photo_library_rounded, 'Select from Gallery',
               'A screenshot or a saved picture', ImageSource.gallery),
         ],
       ),
@@ -1695,7 +1695,7 @@ class _MicPausedChip extends StatelessWidget {
           const SizedBox(width: 6),
           Flexible(
             child: Text(
-              'Mic paused while you type',
+              'Microphone paused while typing',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: _VoiceType.chip,
@@ -1820,7 +1820,7 @@ class _TypeBarState extends State<_TypeBar> with WidgetsBindingObserver {
     final ok = await _engine.askWithPhoto(source, question: q);
     if (!ok && mounted) {
       if (q.isNotEmpty) _c.text = q;
-      AppFeedback.show("Couldn't get that picture. Try again.",
+      AppFeedback.show("Unable to load the picture. Please try again.",
           context: context);
     }
   }
@@ -2230,7 +2230,7 @@ class ManagerPanel extends StatelessWidget {
           duration: const Duration(milliseconds: 220),
           child: Semantics(
             liveRegion: true,
-            label: on ? 'The Manager has the conversation' : null,
+            label: on ? 'The Manager is handling the conversation' : null,
             child: Container(
               padding: const EdgeInsets.fromLTRB(8, 8, 14, 8),
               decoration: BoxDecoration(

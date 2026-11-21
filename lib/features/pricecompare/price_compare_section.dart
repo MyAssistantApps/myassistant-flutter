@@ -59,6 +59,7 @@ class _PriceCompareSectionState extends State<PriceCompareSection> {
 
   @override
   Widget build(BuildContext context) {
+    final hit = svc.watches.where((w) => w.reached).toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -69,7 +70,7 @@ class _PriceCompareSectionState extends State<PriceCompareSection> {
             child: Row(
               children: [
                 Flexible(
-                  child: Text('Price compare',
+                  child: Text('Price Compare',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: NeonType.manrope(21, FontWeight.w800).copyWith(color: Neon.textHi, letterSpacing: -0.6)),
@@ -97,20 +98,83 @@ class _PriceCompareSectionState extends State<PriceCompareSection> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 2026-11-09 (owner): the category tiles (product compare,
-              // flights, hotels, rides, grocery) and the price history &
-              // drop alerts strip are removed from Home.
+              // Owner, 2026-11-14: products only — the hero, the Product
+              // Compare card and the alerts strip (as on hardening).
               PriceHeroBanner(onSearch: () => _open(focus: true), onPaste: () => _open(paste: true)),
-              // 2026-11-09 (owner): a small row for just flights and hotels.
+              const SizedBox(height: 16),
+              PriceCategoryShowcase(onTap: (c) => _open(category: c, focus: true)),
               const SizedBox(height: 14),
-              PriceCategoryShowcase(
-                only: const [PriceCategory.flights, PriceCategory.hotels],
-                onTap: (c) => _open(category: c, focus: true),
-              ),
+              _insights(hit),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  /// BuyHatke's "Instant price insights" strip: the alerts.
+  Widget _insights(List<PriceWatch> hit) {
+    final watches = svc.watches;
+    final (title, line) = hit.isNotEmpty
+        ? (
+            hit.length == 1 ? 'Price Dropped' : '${hit.length} Prices Dropped',
+            hit.length == 1
+                ? '${hit.first.product} has reached your target price.'
+                : 'Your price alerts have reached their targets.'
+          )
+        : watches.isNotEmpty
+            ? ('Price Drop Alerts', '${watches.length} alert${watches.length == 1 ? '' : 's'} active')
+            : ('Price History & Drop Alerts', 'Buy now or wait — the AI recommends');
+    final tint = hit.isNotEmpty ? Neon.success : Neon.cyan;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(Neon.rLg),
+        onTap: () => _open(),
+        child: Ink(
+          padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(Neon.rLg),
+            color: Color.alphaBlend(tint.withValues(alpha: Neon.isDark ? 0.16 : 0.12), Neon.glassFill.colors.first),
+            border: Border.all(color: tint.withValues(alpha: 0.35)),
+          ),
+          child: Row(
+            children: [
+              Icon(hit.isNotEmpty ? Icons.trending_down_rounded : Icons.insights_rounded, color: tint, size: 30),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: NeonType.manrope(15, FontWeight.w800).copyWith(color: Neon.textHi)),
+                    const SizedBox(height: 2),
+                    Text(line,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: Neon.textLo, fontSize: 12.5)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.fromLTRB(14, 7, 8, 7),
+                decoration: BoxDecoration(color: Neon.accentFill, borderRadius: BorderRadius.circular(Neon.rPill)),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('View', style: NeonType.manrope(13.5, FontWeight.w800).copyWith(color: Colors.white)),
+                    const SizedBox(width: 6),
+                    const Icon(Icons.play_circle_fill_rounded, size: 18, color: Colors.white),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

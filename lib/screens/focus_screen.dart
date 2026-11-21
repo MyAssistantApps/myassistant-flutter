@@ -127,18 +127,18 @@ class _FocusScreenState extends State<FocusScreen> with WidgetsBindingObserver {
     final ok = await showAppDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('End this focus?', style: NeonType.cardTitle.copyWith(color: Neon.textHi)),
+        title: Text('End This Session', style: NeonType.cardTitle.copyWith(color: Neon.textHi)),
         content: Text(
             s.kind == FocusKind.rest
-                ? 'The break ends now.'
+                ? 'The break will end now.'
                 : done == 0
-                    ? 'Less than a minute so far.'
+                    ? 'Less than a minute has passed.'
                     : done == 1
                         ? '1 minute will be logged.'
                         : '$done minutes will be logged.',
             style: TextStyle(color: Neon.textLo, fontSize: NeonType.body)),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Keep going')),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Continue')),
           TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('End')),
         ],
       ),
@@ -174,7 +174,7 @@ class _FocusScreenState extends State<FocusScreen> with WidgetsBindingObserver {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
       children: [
-        Text('How long?', style: NeonType.cardTitle.copyWith(color: Neon.textHi)),
+        Text('Duration', style: NeonType.cardTitle.copyWith(color: Neon.textHi)),
         const SizedBox(height: 12),
         Wrap(
           spacing: 8,
@@ -201,7 +201,7 @@ class _FocusScreenState extends State<FocusScreen> with WidgetsBindingObserver {
           textCapitalization: TextCapitalization.sentences,
           style: TextStyle(color: Neon.textHi, fontSize: NeonType.body),
           decoration: InputDecoration(
-            labelText: 'What is it for? (optional)',
+            labelText: 'Purpose (optional)',
             labelStyle: TextStyle(color: Neon.textLo),
             filled: true,
             fillColor: Neon.surface,
@@ -223,8 +223,8 @@ class _FocusScreenState extends State<FocusScreen> with WidgetsBindingObserver {
           },
         ),
         const SizedBox(height: 12),
-        Text('Your phone can stay locked — the countdown is in the notifications, '
-            'and it tells you when time is up.',
+        Text('Your phone can stay locked. The countdown appears in your notifications, '
+            'and you will be alerted when time is up.',
             style: TextStyle(color: Neon.textLo, fontSize: NeonType.footnote, height: 1.35)),
       ],
     );
@@ -286,7 +286,7 @@ class _FocusScreenState extends State<FocusScreen> with WidgetsBindingObserver {
                                   fontSize: 56,
                                   fontFeatures: const [FontFeature.tabularFigures()],
                                 )),
-                            Text(paused ? 'Paused' : rest ? 'Break' : 'left',
+                            Text(paused ? 'Paused' : rest ? 'Break' : 'remaining',
                                 style: NeonType.manrope(NeonType.body, FontWeight.w600)
                                     .copyWith(color: paused ? Neon.warningInk : Neon.textLo)),
                           ],
@@ -363,14 +363,14 @@ class _FocusScreenState extends State<FocusScreen> with WidgetsBindingObserver {
   Widget _finished(FocusSession s) {
     final rest = s.kind == FocusKind.rest;
     final title = rest
-        ? 'Break over'
+        ? 'Break Complete'
         : s.completed
-            ? 'Focus done — take 5?'
-            : 'Focus ended';
+            ? 'Focus session complete. Take a five-minute break.'
+            : 'Focus Session Ended';
     final line = rest
-        ? 'Ready for another focus?'
+        ? 'Ready for the next focus session?'
         : s.minutes == 0
-            ? 'Every start counts.'
+            ? 'No full minute of focus was logged.'
             : s.minutes == 1
                 ? '1 minute of focus logged.'
                 : '${s.minutes} minutes of focus logged.';
@@ -395,7 +395,7 @@ class _FocusScreenState extends State<FocusScreen> with WidgetsBindingObserver {
         const SizedBox(height: 28),
         if (!rest)
           ApplePrimaryButton(
-            label: 'Start a 5-minute break',
+            label: 'Start a 5-Minute Break',
             icon: Icons.free_breakfast_rounded,
             onPressed: () {
               HapticFeedback.selectionClick();
@@ -404,7 +404,7 @@ class _FocusScreenState extends State<FocusScreen> with WidgetsBindingObserver {
           )
         else
           ApplePrimaryButton(
-            label: 'Focus again',
+            label: 'Focus Again',
             icon: Icons.replay_rounded,
             onPressed: () {
               HapticFeedback.selectionClick();

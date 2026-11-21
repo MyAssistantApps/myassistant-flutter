@@ -136,7 +136,7 @@ class _FlightSearchScreenState extends State<FlightSearchScreen> {
       context: context,
       isScrollControlled: true,
       builder: (_) => _AirportPicker(
-          title: from ? 'Flying from' : 'Flying to', airports: _choices),
+          title: from ? 'Departure Airport' : 'Arrival Airport', airports: _choices),
     );
     if (picked == null) return;
     setState(() => from ? _from = picked : _to = picked);
@@ -166,12 +166,12 @@ class _FlightSearchScreenState extends State<FlightSearchScreen> {
     final f = _from, t = _to;
     if (f == null || t == null || f.code == t.code) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Pick two different airports.')));
+          content: Text('Select two different airports.')));
       return;
     }
     if (!_domestic && f.india && t.india) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('For flights within India, use Domestic.')));
+          content: Text('For flights within India, please use Domestic.')));
       return;
     }
     HapticFeedback.mediumImpact();
@@ -195,7 +195,7 @@ class _FlightSearchScreenState extends State<FlightSearchScreen> {
   Widget build(BuildContext context) {
     return NeonScaffold(
       appBar: appleAppBar(
-          context, _domestic ? 'Domestic flights' : 'International flights'),
+          context, _domestic ? 'Domestic Flights' : 'International Flights'),
       body: ListView(
         padding: EdgeInsets.fromLTRB(
             16, 8, 16, 28 + MediaQuery.paddingOf(context).bottom),
@@ -305,7 +305,7 @@ class _FlightSearchScreenState extends State<FlightSearchScreen> {
                       const Icon(Icons.search_rounded,
                           color: Colors.white, size: 22),
                       const SizedBox(width: 8),
-                      Text('Search flights',
+                      Text('Search Flights',
                           style: NeonType.manrope(16, FontWeight.w800)
                               .copyWith(color: Colors.white)),
                     ],
@@ -336,7 +336,7 @@ class _FlightSearchScreenState extends State<FlightSearchScreen> {
                     Text(label,
                         style: NeonType.eyebrow.copyWith(color: Neon.textLo)),
                     const SizedBox(height: 2),
-                    Text(a == null ? 'Choose airport' : '${a.city} · ${a.code}',
+                    Text(a == null ? 'Select Airport' : '${a.city} · ${a.code}',
                         style: NeonType.manrope(19, FontWeight.w800)
                             .copyWith(color: Neon.textHi)),
                     if (a != null)
@@ -572,7 +572,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
     setState(() {
       _loading = false;
       if (r == null) {
-        _error = "Couldn't reach the server. Check your connection.";
+        _error = "Unable to connect. Check your internet connection.";
         return;
       }
       _configured = r['configured'] != false;
@@ -654,22 +654,22 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
   Widget _body() {
     if (_loading) {
       return const Center(
-          child: NeonLoader.inline(size: 28, semanticLabel: 'Finding flights'));
+          child: NeonLoader.inline(size: 28, semanticLabel: 'Searching for flights'));
     }
     if (!_configured) {
       return _message(
           Icons.cloud_off_rounded,
-          'Live flight search is not connected yet',
-          'Real flights and fares appear here once an airline data '
+          'Live Flight Search Is Not Yet Available',
+          'Flights and fares will be displayed here once an airline data '
               'provider is connected to the app.');
     }
     if (_error.isNotEmpty) {
-      return _message(Icons.error_outline_rounded, "Couldn't load flights",
+      return _message(Icons.error_outline_rounded, "Unable to Load Flights",
           _error, retry: true);
     }
     if (_flights.isEmpty) {
-      return _message(Icons.flight_rounded, 'No flights found',
-          'Try another date or nearby airport.');
+      return _message(Icons.flight_rounded, 'No Flights Found',
+          'Please try another date or a nearby airport.');
     }
     final list = _sorted;
     return ListView.separated(
@@ -702,7 +702,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                   style: TextStyle(color: Neon.textLo, height: 1.4)),
               if (retry) ...[
                 const SizedBox(height: 14),
-                TextButton(onPressed: _load, child: const Text('Try again')),
+                TextButton(onPressed: _load, child: const Text('Retry')),
               ],
             ],
           ),

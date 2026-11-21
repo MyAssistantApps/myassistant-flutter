@@ -130,7 +130,7 @@ class _NewsPanelState extends State<NewsPanel> {
     _refreshing = false;
     if (!mounted) return;
     if (fresh == null || fresh.isEmpty) {
-      AppFeedback.toast("Couldn't refresh the news — try again in a moment.");
+      AppFeedback.toast("Unable to refresh the news. Please try again shortly.");
       return;
     }
     engine.showNews(fresh, topic: topic);
@@ -229,7 +229,7 @@ class _NewsPanelState extends State<NewsPanel> {
 
   Widget _header() {
     final topic = engine.newsTopic;
-    final title = topic.isEmpty || topic == 'today' ? "Today's headlines" : 'News · $topic';
+    final title = topic.isEmpty || topic == 'today' ? "Today's Headlines" : 'News · $topic';
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 10, 8, 2),
       child: Row(

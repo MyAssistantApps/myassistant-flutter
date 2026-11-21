@@ -156,7 +156,7 @@ class _SchedulePanelState extends State<SchedulePanel> {
           Expanded(
             child: Text(
               // The count IS the answer to "how many do I have".
-              n == 1 ? '1 thing $day' : '$n things $day',
+              n == 1 ? '1 item $day' : '$n items $day',
               style: GoogleFonts.interTight(
                 color: Neon.textHi,
                 fontSize: 19,
@@ -187,7 +187,7 @@ class _SchedulePanelState extends State<SchedulePanel> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Could not read ${engine.scheduleFailed.join(", ")} — this list '
+              'Unable to read ${engine.scheduleFailed.join(", ")}. This list '
               'may be incomplete.',
               style: GoogleFonts.interTight(
                 color: Neon.warningInk,
@@ -287,7 +287,7 @@ class _SchedulePanelState extends State<SchedulePanel> {
                             const SizedBox(width: 6),
                             Flexible(
                               child: Text(
-                                'Looking this up — ask me anything about it',
+                                'Loading details. Ask anything about this item.',
                                 style: GoogleFonts.interTight(
                                   color: Neon.cyanInk,
                                   fontSize: 13,

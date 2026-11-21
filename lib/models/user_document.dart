@@ -132,7 +132,7 @@ class UserDocument {
     final e = DateTime.parse(expiresOn);
     const mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return 'Valid till ${e.day} ${mo[e.month - 1]} ${e.year}';
+    return 'Valid until ${e.day} ${mo[e.month - 1]} ${e.year}';
   }
 
   bool get isPdf => mime == 'application/pdf';

@@ -16,7 +16,7 @@ import '../screens/news_story_screen.dart';
 ///
 ///  One story per card with the next two peeking behind it. Swipe LEFT for
 ///  the next story, RIGHT to bring the previous one back (at the first card
-///  it springs back); after the last story, "You're all caught up". The
+///  it springs back); after the last story, "All stories viewed". The
 ///  card tilts a little as it is dragged and flies off when let go. Tap it
 ///  for the whole story. Small ‹ › buttons and "3 of 10" underneath.
 ///
@@ -396,7 +396,7 @@ class _NewsDeckState extends State<NewsDeck>
                 ),
         ),
     };
-    final title = _index < _n ? widget.items[_index].title : "You're all caught up";
+    final title = _index < _n ? widget.items[_index].title : "All stories viewed";
     Widget stack = AnimatedBuilder(
       animation: _move,
       builder: (context, _) {
@@ -888,14 +888,14 @@ class _CaughtUpCard extends StatelessWidget {
                 Icon(Icons.check_circle_rounded, size: 44, color: Neon.success),
                 const SizedBox(height: 12),
                 Text(
-                  "You're all caught up",
+                  "All stories viewed",
                   textAlign: TextAlign.center,
                   style: NeonType.manrope(NeonType.title3, FontWeight.w800)
                       .copyWith(color: Neon.textHi),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  "That's every story for now.",
+                  "No further stories are available at present.",
                   textAlign: TextAlign.center,
                   style: NeonType.manrope(NeonType.body, FontWeight.w500)
                       .copyWith(color: Neon.textLo),

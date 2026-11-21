@@ -31,27 +31,27 @@ class _GuideScreenState extends State<GuideScreen> {
     return [
       (
         icon: Icons.graphic_eq_rounded,
-        title: 'Talk, don\'t tap',
-        body: 'Tap the orb at the bottom of the home screen and just speak. '
-            '$a listens, answers out loud, and keeps the conversation going.',
+        title: 'Talk, Not Type',
+        body: 'Tap the orb at the bottom of the home screen and speak. '
+            '$a listens, responds aloud, and keeps the conversation going.',
       ),
       (
         icon: Icons.task_alt_rounded,
-        title: '$a actually gets things done',
-        body: 'Place calls, deliver messages, set reminders, plan your money, '
-            'create images and speeches — say it, and it happens.',
+        title: '$a Gets Things Done',
+        body: 'Place calls, send messages, set reminders, plan your finances, '
+            'and create images and speeches — all by voice.',
       ),
       (
         icon: Icons.space_dashboard_rounded,
-        title: 'Your day, at a glance',
-        body: 'Home shows your agenda, promises, messages and headlines. '
-            'The Hub holds finance, markets, clients and more.',
+        title: 'Your Day at a Glance',
+        body: 'Home shows your agenda, commitments, messages, and headlines. '
+            'The Hub holds finance, markets, clients, and more.',
       ),
       (
         icon: Icons.tune_rounded,
-        title: 'Make it yours',
-        body: 'Pick a voice under the You tab, add your own '
-            'rules — or just say "your name is Nova now" and $a renames '
+        title: 'Personalise Your Assistant',
+        body: 'Select a voice under the You tab and add your own '
+            'rules — or say "Your name is Nova now" and $a renames '
             'itself.',
       ),
     ];
@@ -189,7 +189,7 @@ class _GuideScreenState extends State<GuideScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 28, vertical: 14),
                         ),
-                        child: Text(last ? 'Get started' : 'Next'),
+                        child: Text(last ? 'Get Started' : 'Next'),
                       ),
                     ),
                   ],

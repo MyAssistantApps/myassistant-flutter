@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../design/neon_tokens.dart';
 import '../../services/api_service.dart';
 import '../pricecompare/shop_browser.dart';
+import 'partner_app.dart';
 import 'services_screen.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
@@ -28,8 +29,11 @@ class _App {
         name = '${j['name']}',
         // The server's Home group ("Daily needs" for Porter, Urban
         // Company…), else the partner's own category.
-        category = '${j['homeGroup'] ?? j['category']}';
+        category = '${j['homeGroup'] ?? j['category']}',
+        pkg = j['pkg'] as String?;
   final String id;
+  /// Its Android app: opened when installed, else its Play Store page.
+  final String? pkg;
   final String name;
   final String category;
 }
@@ -38,9 +42,9 @@ class _App {
 // Ola, Rapido, auto and the others, in one square").
 const _order = ['Rides', 'Food & groceries', 'Daily needs'];
 const _titles = <String, String>{
-  'Rides': 'Taxis & autos',
-  'Food & groceries': 'Food & groceries',
-  'Daily needs': 'Daily needs',
+  'Rides': 'Taxis & Autos',
+  'Food & groceries': 'Food & Groceries',
+  'Daily needs': 'Daily Needs',
 };
 const _icons = <String, IconData>{
   'Food & groceries': Icons.fastfood_rounded,
@@ -66,12 +70,17 @@ class _PopularAppsSectionState extends State<PopularAppsSection> {
 
   Future<void> _open(_App a) async {
     HapticFeedback.selectionClick();
+    // Its own app when installed, else its Play Store page (2026-11-13).
+    if (await openPartnerApp(a.id, a.pkg)) return;
     final j = await ApiService.getJson('/go/${a.id}');
     final url = j?['url'] as String?;
     if (url == null || !mounted) return;
     // 2026-11-07 (Manish): opens inside the app (the shop browser).
     final u = Uri.tryParse(url);
-    if (u != null && (u.scheme == 'https' || u.scheme == 'http')) {
+    // A Play Store link (Ownly has no website) opens the Play Store app.
+    if (u != null &&
+        (u.scheme == 'https' || u.scheme == 'http') &&
+        u.host != 'play.google.com') {
       openInShopBrowser(context, url);
     } else {
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
@@ -88,12 +97,12 @@ class _PopularAppsSectionState extends State<PopularAppsSection> {
           padding: const EdgeInsets.only(left: Neon.s1, bottom: 6),
           child: Row(
             children: [
-              Text('Popular apps',
+              Text('Popular Apps',
                   style: NeonType.manrope(21, FontWeight.w800).copyWith(color: Neon.textHi, letterSpacing: -0.6)),
               const Spacer(),
               TextButton(
                 onPressed: () => widget.onOpen(const ServicesScreen()),
-                child: Text('See all', style: TextStyle(color: Neon.violet, fontWeight: FontWeight.w700)),
+                child: Text('View All', style: TextStyle(color: Neon.violet, fontWeight: FontWeight.w700)),
               ),
             ],
           ),

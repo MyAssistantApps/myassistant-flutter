@@ -185,7 +185,7 @@ class _NewsScreenState extends State<NewsScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 2, 20, 0),
               child: Text(
-                "Couldn't refresh — showing the stories saved earlier.",
+                "Unable to refresh. Showing saved stories.",
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
@@ -284,13 +284,13 @@ class _NewsScreenState extends State<NewsScreen> {
   Widget _empty() {
     if (_failed) {
       return NeonErrorState(
-          message: "Couldn't load the news", onRetry: _refreshNow);
+          message: "Unable to load the news.", onRetry: _refreshNow);
     }
     // The theme's lit primary (2026-09-30): its glow comes from the theme.
     return NeonEmptyState(
       icon: Icons.newspaper_rounded,
-      title: 'No stories right now',
-      body: 'Check your connection, then try again.',
+      title: 'No Stories Available',
+      body: 'Check your connection and try again.',
       action: FilledButton.icon(
         onPressed: _refreshNow,
         style: FilledButton.styleFrom(
@@ -298,7 +298,7 @@ class _NewsScreenState extends State<NewsScreen> {
           textStyle: NeonType.manrope(NeonType.rowTitle, FontWeight.w600),
         ),
         icon: const Icon(Icons.refresh_rounded, size: 18),
-        label: const Text('Try again'),
+        label: const Text('Retry'),
       ),
     );
   }

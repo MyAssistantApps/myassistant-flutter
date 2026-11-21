@@ -120,7 +120,7 @@ class ProductDetailsCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _section('About this product', icon: Icons.info_outline_rounded),
+        _section('About This Product', icon: Icons.info_outline_rounded),
         Container(
           decoration: Neon.glassBox(Neon.rCard),
           clipBehavior: Clip.antiAlias,
@@ -377,7 +377,7 @@ class _HotelListState extends State<HotelList> {
             spacing: 8,
             runSpacing: 6,
             children: [
-              for (final (label, rating) in [('Lowest price', false), ('Top rated', true)])
+              for (final (label, rating) in [('Lowest Price', false), ('Top Rated', true)])
                 ChoiceChip(
                   label: Text(label),
                   selected: _byRating == rating,
@@ -410,14 +410,14 @@ class _HotelListState extends State<HotelList> {
         : rating >= 4.5
             ? ('Excellent', Neon.success)
             : rating >= 4
-                ? ('Very good', Neon.success)
+                ? ('Very Good', Neon.success)
                 : rating >= 3.5
                     ? ('Good', Neon.cyan)
                     : ('Average', Neon.warning);
     final open = widget.open(o);
     return _tappable(
       onTap: open,
-      label: '$name, ${rupees(o.price)} a night on ${o.store}',
+      label: '$name, ${rupees(o.price)} per night on ${o.store}',
       child: Container(
         decoration: Neon.glassBox(Neon.rCard).copyWith(
           border: best ? Border.all(color: Neon.success.withValues(alpha: 0.6), width: 1.4) : null,
@@ -515,9 +515,9 @@ class _HotelListState extends State<HotelList> {
                 runSpacing: 6,
                 children: [
                   if (cancel == true)
-                    _chip(Icons.event_available_rounded, 'Free cancellation', Neon.success, filled: true),
+                    _chip(Icons.event_available_rounded, 'Free Cancellation', Neon.success, filled: true),
                   if (breakfast == true)
-                    _chip(Icons.free_breakfast_rounded, 'Breakfast included', Neon.warning, filled: true),
+                    _chip(Icons.free_breakfast_rounded, 'Breakfast Included', Neon.warning, filled: true),
                   for (final a in amen) _chip(_amenityIcon(a), a, Neon.textLo),
                 ],
               ),
@@ -754,7 +754,7 @@ class RideOptions extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _section('Quick picks', icon: Icons.bolt_rounded),
+        _section('Top Options', icon: Icons.bolt_rounded),
         Row(
           children: [
             if (cheapest != null) pick('CHEAPEST', Icons.savings_rounded, Neon.success, cheapest),
@@ -764,12 +764,12 @@ class RideOptions extends StatelessWidget {
             ],
             if (roomy != null) ...[
               const SizedBox(width: 8),
-              pick('MOST ROOM', Icons.weekend_rounded, Neon.violet, roomy)
+              pick('MOST SPACIOUS', Icons.weekend_rounded, Neon.violet, roomy)
             ],
           ],
         ),
         const SizedBox(height: 24),
-        _section('Fares by ride type', trailing: '${result.offers.length} options', icon: Icons.local_taxi_rounded),
+        _section('Fares by Ride Type', trailing: '${result.offers.length} options', icon: Icons.local_taxi_rounded),
         for (final type in _order)
           if (groups[type] case final g? when g.isNotEmpty) ...[
             Container(
@@ -785,7 +785,7 @@ class RideOptions extends StatelessWidget {
                         Icon(_icon(type), color: Neon.violet, size: 22),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: Text(type == 'Other' ? 'Other rides' : type,
+                          child: Text(type == 'Other' ? 'Other Rides' : type,
                               style: NeonType.manrope(15, FontWeight.w800).copyWith(color: Neon.textHi)),
                         ),
                         if (g.first.info.num('seats') != null)
@@ -901,7 +901,7 @@ class GroceryView extends StatelessWidget {
           const SizedBox(height: 24),
         ],
         if (timed.isNotEmpty) ...[
-          _section('Delivery race', icon: Icons.electric_bolt_rounded, trailing: 'fastest first'),
+          _section('Delivery Times', icon: Icons.electric_bolt_rounded, trailing: 'fastest first'),
           Container(
             padding: const EdgeInsets.all(14),
             decoration: Neon.glassBox(Neon.rCard),
@@ -955,7 +955,7 @@ class GroceryView extends StatelessWidget {
           ),
           const SizedBox(height: 24),
         ],
-        _section('What you pay', icon: Icons.shopping_basket_rounded, trailing: 'cheapest total first'),
+        _section('Total Payable', icon: Icons.shopping_basket_rounded, trailing: 'lowest total first'),
         for (final (k, o) in offers.indexed) ...[
           _row(o,
               cheapest: k == 0, fastest: timed.isNotEmpty && identical(o, timed.first), perUnit: identical(o, perUnit)),
@@ -1006,7 +1006,7 @@ class GroceryView extends StatelessWidget {
                     Text(rupees(_total(o)),
                         style: NeonType.manrope(19, FontWeight.w800)
                             .copyWith(color: cheapest ? Neon.success : Neon.textHi)),
-                    Text('to pay', style: TextStyle(color: Neon.textDim, fontSize: 11)),
+                    Text('payable', style: TextStyle(color: Neon.textDim, fontSize: 11)),
                   ],
                 ),
                 if (open != null) Icon(Icons.chevron_right_rounded, color: Neon.textDim),
@@ -1028,7 +1028,7 @@ class GroceryView extends StatelessWidget {
                 spacing: 6,
                 runSpacing: 6,
                 children: [
-                  if (cheapest) _tag('CHEAPEST TOTAL', Neon.success),
+                  if (cheapest) _tag('LOWEST TOTAL', Neon.success),
                   if (fastest) _tag('FASTEST', Neon.cyan),
                   if (perUnit) _tag('BEST PER ${u.isEmpty ? 'UNIT' : u.toUpperCase()}', Neon.violet),
                   if (!o.inStock) _tag('OUT OF STOCK', Neon.error),

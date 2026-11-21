@@ -29,14 +29,14 @@ extension BusKindText on BusKind {
         BusKind.government => 'STATE RTC',
       };
   String get headline => switch (this) {
-        BusKind.premium => 'Travel in luxury',
-        BusKind.standard => 'Everyday travel',
-        BusKind.sleeper => 'Sleep through the night',
-        BusKind.government => 'Government buses',
+        BusKind.premium => 'Luxury Travel',
+        BusKind.standard => 'Everyday Travel',
+        BusKind.sleeper => 'Overnight Sleeper Travel',
+        BusKind.government => 'Government Buses',
       };
   String get line => switch (this) {
         BusKind.premium => 'Volvo & Scania multi-axle AC coaches',
-        BusKind.standard => 'AC and non-AC seaters at fair prices',
+        BusKind.standard => 'AC and non-AC seaters at reasonable fares',
         BusKind.sleeper => 'AC and non-AC sleeper berths',
         BusKind.government => 'KSRTC, MSRTC, TNSTC, APSRTC and more',
       };
@@ -59,7 +59,7 @@ extension BusKindText on BusKind {
         BusKind.government => const [
             (Icons.verified_rounded, 'Official'),
             (Icons.schedule_rounded, 'Frequent'),
-            (Icons.currency_rupee_rounded, 'Low fares'),
+            (Icons.currency_rupee_rounded, 'Low Fares'),
           ],
       };
   IconData get icon => switch (this) {
@@ -87,11 +87,11 @@ class BusesScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('How do you want to travel?',
+                Text('Bus Travel Options',
                     style: NeonType.manrope(28, FontWeight.w800).copyWith(
                         color: Neon.textHi, letterSpacing: -0.8)),
                 const SizedBox(height: 4),
-                Text('Pick the kind of bus.',
+                Text('Select the type of bus.',
                     style: TextStyle(color: Neon.textLo, fontSize: 15)),
               ],
             ),

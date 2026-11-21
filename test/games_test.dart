@@ -40,7 +40,7 @@ void main() {
       await t.pump(const Duration(milliseconds: 100));
     }
     await t.pump(const Duration(seconds: 1));
-    expect(find.text('All pairs found'), findsOneWidget);
+    expect(find.text('All Pairs Found'), findsOneWidget);
     expect(find.textContaining('8 moves'), findsOneWidget);
     expect(t.takeException(), isNull);
   });
@@ -50,12 +50,12 @@ void main() {
     t.view.devicePixelRatio = 2.625;
     addTearDown(t.view.reset);
     await t.pumpWidget(const MaterialApp(home: QuickMathsScreen(seconds: 3, seed: 3)));
-    await t.tap(find.text('Play again'));
+    await t.tap(find.text('Play Again'));
     await t.pump();
     expect(find.text('correct'), findsOneWidget);
     await t.pump(const Duration(seconds: 4));
     await t.pump();
-    expect(find.text('Time!'), findsOneWidget);
+    expect(find.text('Time Up'), findsOneWidget);
     expect(t.takeException(), isNull);
   });
 
@@ -65,13 +65,13 @@ void main() {
     addTearDown(t.view.reset);
     await t.pumpWidget(const MaterialApp(home: TicTacToeScreen(seed: 2)));
     for (var i = 0; i < 9; i++) {
-      if (find.text('New game').evaluate().isNotEmpty) break;
+      if (find.text('New Game').evaluate().isNotEmpty) break;
       final squares = find.bySemanticsLabel(RegExp(r'empty$'));
       if (squares.evaluate().isEmpty) break;
       await t.tap(squares.first);
       await t.pump(const Duration(milliseconds: 600));
     }
-    expect(find.text('New game'), findsOneWidget);
+    expect(find.text('New Game'), findsOneWidget);
     expect(t.takeException(), isNull);
   });
 
@@ -80,7 +80,7 @@ void main() {
     t.view.devicePixelRatio = 2.625;
     addTearDown(t.view.reset);
     await t.pumpWidget(const MaterialApp(home: LightTrailScreen(seed: 3)));
-    await t.tap(find.text('Play again'));
+    await t.tap(find.text('Play Again'));
     await t.pump(const Duration(seconds: 2));
     // The same trail the screen makes from seed 3.
     final r = math.Random(3);
@@ -90,10 +90,10 @@ void main() {
     expect(pads, findsNWidgets(4));
     await t.tap(pads.at(first));
     await t.pump(const Duration(seconds: 3));
-    expect(find.text('Your turn — 2 to go'), findsOneWidget);
+    expect(find.text('Your turn: 2 remaining'), findsOneWidget);
     await t.tap(pads.at((first + 1) % 4));
     await t.pumpAndSettle();
-    expect(find.text('Trail broken'), findsOneWidget);
+    expect(find.text('Trail Broken'), findsOneWidget);
     expect(find.text('You cleared 1 round.'), findsOneWidget);
     expect(second, inInclusiveRange(0, 3));
   });

@@ -18,7 +18,7 @@ void main() {
 
   testWidgets('the logo loads, spins and blinks without errors', (tester) async {
     await pumpSplash(tester);
-    expect(find.bySemanticsLabel('My Assistant'), findsOneWidget);
+    expect(find.bySemanticsLabel('MyAssistant'), findsOneWidget);
     expect(find.byType(CustomPaint), findsWidgets);
     for (var i = 0; i < 80; i++) {
       await tester.pump(const Duration(milliseconds: 80));

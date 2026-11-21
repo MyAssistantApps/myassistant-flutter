@@ -140,12 +140,12 @@ class _QuickTaskScreenState extends State<QuickTaskScreen> {
 
   String get _caption => switch (_stage) {
         _Stage.listening => 'Listening…',
-        _Stage.sending => 'Handing it over…',
-        _Stage.sent => "On it. I'll let you know when it's done.",
-        _Stage.failed => "That didn't go through. Try again?",
+        _Stage.sending => 'Submitting…',
+        _Stage.sent => "Task received. You will be notified on completion.",
+        _Stage.failed => "Unable to submit the task. Please try again.",
         _Stage.idle => _voiceReady
-            ? 'Tap the orb and say what you need'
-            : 'Type what you need',
+            ? 'Tap the orb and state your request'
+            : 'Type your request',
       };
 
   @override
@@ -176,7 +176,7 @@ class _QuickTaskScreenState extends State<QuickTaskScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Assign a task',
+                      'Assign a Task',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.interTight(
@@ -202,7 +202,7 @@ class _QuickTaskScreenState extends State<QuickTaskScreen> {
               Semantics(
                 button: canListen,
                 label: canListen
-                    ? 'Speak your task'
+                    ? 'Dictate your task'
                     : _stage == _Stage.listening
                         ? 'Listening'
                         : null,
@@ -295,7 +295,7 @@ class _QuickTaskScreenState extends State<QuickTaskScreen> {
                         cursorColor: Neon.violet,
                         style: NightField.input,
                         decoration: NightField.decoration(
-                            'Book a cab at 6, or anything else…'),
+                            'Book a cab at 6, or any other request…'),
                       ),
                     ),
                     const SizedBox(width: 5),

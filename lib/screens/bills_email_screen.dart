@@ -83,7 +83,7 @@ class _BillsEmailScreenState extends State<BillsEmailScreen> {
     });
   }
 
-  Future<void> _run(Future<bool> Function() job, {String? ok, String fail = "That didn't work. Try again."}) async {
+  Future<void> _run(Future<bool> Function() job, {String? ok, String fail = "An unexpected error has occurred. Please try again."}) async {
     if (_busy) return;
     setState(() => _busy = true);
     final done = await job();
@@ -106,18 +106,18 @@ class _BillsEmailScreenState extends State<BillsEmailScreen> {
     final yes = await showAppDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Get a new address?'),
-        content: const Text('Your current address stops working straight away. Emails sent to it will bounce.'),
+        title: const Text('Get a New Address'),
+        content: const Text('Your current address will stop working immediately. Emails sent to it will bounce.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Get new address')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Get New Address')),
         ],
       ),
     );
     if (yes != true) return;
     await _run(() async => await _svc.rotate() != null,
-        ok: 'New address ready',
-        fail: "Couldn't get a new address. You can do this 5 times a day.");
+        ok: 'New address created.',
+        fail: "Unable to get a new address. The limit is 5 per day.");
   }
 
   @override
@@ -125,14 +125,14 @@ class _BillsEmailScreenState extends State<BillsEmailScreen> {
     // 2026-09-30: under the app's sky, with the shared loader, error and
     // empty states.
     return NeonScaffold(
-      appBar: appleAppBar(context, 'Bills by email'),
+      appBar: appleAppBar(context, 'Bills by Email'),
       body: ValueListenableBuilder<MailInboxState?>(
         valueListenable: _svc.state,
         builder: (context, s, _) {
           if (_loading) return const NeonLoader.page();
           if (_failed || s == null) {
             return NeonErrorState(
-              message: "Couldn't load Bills by email",
+              message: "Unable to load Bills by Email.",
               onRetry: () {
                 setState(() => _loading = true);
                 unawaited(_load());
@@ -142,7 +142,7 @@ class _BillsEmailScreenState extends State<BillsEmailScreen> {
           if (!s.available) {
             return const NeonEmptyState(
               icon: Icons.forward_to_inbox_rounded,
-              title: 'Bills by email is not available yet.',
+              title: 'Bills by Email is not yet available.',
             );
           }
           return RefreshIndicator(
@@ -159,13 +159,13 @@ class _BillsEmailScreenState extends State<BillsEmailScreen> {
 
   List<Widget> _off() => [
         Text(
-          "Get your own address for bills, tickets and policy renewals. Forward them to it and "
-          "I'll save them in My documents and remind you before they're due.",
+          "Get a dedicated address for bills, tickets, and policy renewals. Forward them to it and "
+          "your assistant will save them in My Documents and remind you before they are due.",
           style: TextStyle(color: Neon.textHi, fontSize: 15, height: 1.4),
         ),
         const SizedBox(height: 20),
         ApplePrimaryButton(
-          label: 'Turn on',
+          label: 'Turn On',
           icon: Icons.forward_to_inbox_rounded,
           onPressed: _busy ? null : () => _run(() async => await _svc.turnOn() != null),
         ),
@@ -187,7 +187,7 @@ class _BillsEmailScreenState extends State<BillsEmailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Your address', style: TextStyle(color: Neon.textLo, fontSize: NeonType.footnote)),
+            Text('Your Address', style: TextStyle(color: Neon.textLo, fontSize: NeonType.footnote)),
             const SizedBox(height: 4),
             SelectableText(
               a.address,
@@ -196,7 +196,7 @@ class _BillsEmailScreenState extends State<BillsEmailScreen> {
             ),
             if (!a.on) ...[
               const SizedBox(height: 4),
-              Text('Switched off — emails to it bounce back to the sender.',
+              Text('Switched off. Emails to it bounce back to the sender.',
                   style: TextStyle(color: Neon.warningInk, fontSize: NeonType.footnote)),
             ],
             const SizedBox(height: 6),
@@ -246,7 +246,7 @@ class _BillsEmailScreenState extends State<BillsEmailScreen> {
       const SizedBox(height: 16),
       GroupedCard(children: [
         AppleRow(
-          title: 'Receive emails',
+          title: 'Receive Emails',
           subtitle: a.on ? null : 'Emails to this address bounce back to the sender.',
           trailing: Switch(
             key: const ValueKey('bills-switch'),
@@ -255,17 +255,17 @@ class _BillsEmailScreenState extends State<BillsEmailScreen> {
           ),
         ),
         AppleRow(
-          title: 'Get a new address',
-          subtitle: 'Use this if strangers start sending you mail.',
+          title: 'Get a New Address',
+          subtitle: 'Use this if you start receiving mail from unknown senders.',
           onTap: _busy ? null : _confirmRotate,
         ),
       ]),
       const SizedBox(height: 24),
-      const GroupLabel('Set it up once'),
+      const GroupLabel('One-Time Setup'),
       GroupedCard(children: [
         for (final (i, t) in const [
           'Copy your address.',
-          'In your email app, forward a bill to it — or set up automatic forwarding for emails from your electricity, phone or insurance company.',
+          'In your email app, forward a bill to it — or set up automatic forwarding from your electricity, phone, or insurance provider.',
           'If your email service sends a confirmation code, it appears below.',
         ].indexed)
           Padding(
@@ -285,7 +285,7 @@ class _BillsEmailScreenState extends State<BillsEmailScreen> {
         GroupedCard(children: [
           AppleRow(
             leading: IconTile(Icons.inbox_rounded, Neon.cyan),
-            title: 'Nothing yet. Forward a bill to try it.',
+            title: 'No emails yet. Forward a bill to begin.',
             titleMaxLines: 2,
           ),
         ])
@@ -297,7 +297,7 @@ class _BillsEmailScreenState extends State<BillsEmailScreen> {
   }
 
   Widget _footer(MailInboxState? s) => Text(
-        'Only people who know this address can send to it. I never pay, reply or click links from these emails.'
+        'Only people who know this address can send to it. Your assistant never pays, replies to, or opens links in these emails.'
         '${s == null ? '' : ' Limit: ${s.perDay} emails a day, ${s.maxMb} MB each.'}',
         style: TextStyle(color: Neon.textLo, fontSize: NeonType.footnote, height: 1.4),
       );
@@ -312,14 +312,14 @@ class _BillsEmailScreenState extends State<BillsEmailScreen> {
   }
 
   (String, Color) _chip(MailItem m) => switch (m.status) {
-        'saved' when m.isPersonal && !m.verified => ('Did you send this?', Neon.warningInk),
-        'saved' when !m.verified && m.reminders.isEmpty => ('Sender not confirmed', Neon.warningInk),
+        'saved' when m.isPersonal && !m.verified => ('Did You Send This?', Neon.warningInk),
+        'saved' when !m.verified && m.reminders.isEmpty => ('Sender Not Confirmed', Neon.warningInk),
         'saved' => ('Saved', Neon.successInk),
-        'already_saved' => ('Already saved', Neon.textLo),
-        'couldnt_read' => ("Couldn't read", Neon.warningInk),
-        'confirm_code' => ('Confirmation code', Neon.cyanInk),
-        'processing' => ('Working on it', Neon.textLo),
-        _ => ('Not saved', Neon.textLo),
+        'already_saved' => ('Already Saved', Neon.textLo),
+        'couldnt_read' => ("Unable to Read", Neon.warningInk),
+        'confirm_code' => ('Confirmation Code', Neon.cyanInk),
+        'processing' => ('Processing', Neon.textLo),
+        _ => ('Not Saved', Neon.textLo),
       };
 
   Widget _row(MailItem m) {
@@ -336,7 +336,7 @@ class _BillsEmailScreenState extends State<BillsEmailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(m.subject.isEmpty ? '(no subject)' : m.subject,
+            Text(m.subject.isEmpty ? '(No subject)' : m.subject,
                 maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Neon.textHi, fontSize: 15)),
             const SizedBox(height: 2),
             Text([m.from, _when(m.receivedAt)].where((x) => x.isNotEmpty).join(' · '),
@@ -378,16 +378,16 @@ class _BillsEmailScreenState extends State<BillsEmailScreen> {
                 if (m.isPersonal && m.fromAddress != null)
                   TextButton(
                     key: ValueKey('bills-trust-${m.id}'),
-                    onPressed: _busy ? null : () => _run(() => _svc.trust(m.id), ok: 'Reminders set'),
-                    child: const Text('This was me'),
+                    onPressed: _busy ? null : () => _run(() => _svc.trust(m.id), ok: 'Reminders created.'),
+                    child: const Text('Sent by Me'),
                   ),
                 TextButton(
                   key: ValueKey('bills-remind-${m.id}'),
                   onPressed: _busy
                       ? null
                       : () => _run(() => _svc.remindAnyway(m.id),
-                          ok: 'Reminders set', fail: 'Nothing to remind about in this one.'),
-                  child: const Text('Set reminders'),
+                          ok: 'Reminders created.', fail: 'This email contains nothing that requires a reminder.'),
+                  child: const Text('Set Reminders'),
                 ),
               ]),
           ],

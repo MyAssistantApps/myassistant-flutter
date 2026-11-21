@@ -30,6 +30,29 @@ class AppUser {
   /// as not yet finished signing up.
   final bool phoneVerified;
 
+  /// What the user does, chosen at registration: doctor | professional |
+  /// business | student | personal — or '' when not chosen yet. Decides
+  /// which workspaces the app shows (see [Persona]).
+  final String persona;
+
+  /// Doctor's specialty ("Dentist") — optional free text.
+  final String specialty;
+
+  bool get isDoctor => persona == 'doctor';
+
+  AppUser copyWith({String? persona, String? specialty}) => AppUser(
+        id: id,
+        email: email,
+        name: name,
+        provider: provider,
+        gender: gender,
+        birthday: birthday,
+        phone: phone,
+        phoneVerified: phoneVerified,
+        persona: persona ?? this.persona,
+        specialty: specialty ?? this.specialty,
+      );
+
   const AppUser({
     required this.id,
     this.email,
@@ -39,6 +62,8 @@ class AppUser {
     this.birthday,
     this.phone,
     this.phoneVerified = false,
+    this.persona = '',
+    this.specialty = '',
   });
 
   factory AppUser.fromJson(Map<String, dynamic> j) => AppUser(
@@ -50,6 +75,8 @@ class AppUser {
         birthday: j['birthday'] as String?,
         phone: j['phone'] as String?,
         phoneVerified: j['phoneVerified'] == true,
+        persona: (j['persona'] as String?) ?? '',
+        specialty: (j['specialty'] as String?) ?? '',
       );
 }
 
@@ -114,13 +141,13 @@ class AuthService extends ChangeNotifier {
     try {
       account = await _googleData.signIn();
     } catch (_) {
-      throw const AuthException('Google sign-in failed. Please try again.');
+      throw const AuthException('Unable to sign in with Google. Please try again.');
     }
     if (account == null) throw const AuthException('');
     final code = account.serverAuthCode;
     if (code == null) {
       throw const AuthException(
-          "We couldn't connect your Google account just now. Please try again in a moment.");
+          "Unable to connect your Google account. Please try again shortly.");
     }
     await ApiService.connectGoogle(code);
   }
@@ -242,6 +269,17 @@ class AuthService extends ChangeNotifier {
     } catch (_) {}
   }
 
+  /// Applies a profile change the server has ALREADY accepted, without
+  /// waiting for /auth/me — so the UI switches workspaces instantly and a
+  /// failed refresh can't revert it. The next refreshUser() overwrites it
+  /// with the server's copy anyway.
+  void applyPersona(String persona, {String? specialty}) {
+    final u = user;
+    if (u == null) return;
+    user = u.copyWith(persona: persona, specialty: specialty);
+    notifyListeners();
+  }
+
   // ---------------- EMAIL ----------------
 
   Future<void> signUp(
@@ -288,7 +326,7 @@ class AuthService extends ChangeNotifier {
     final idToken = (await account.authentication).idToken;
     if (idToken == null) {
       throw const AuthException(
-          "We couldn't sign you in with Google just now. Please try again in a moment.");
+          "Unable to sign in with Google. Please try again shortly.");
     }
     await _post('/auth/google', {'idToken': idToken});
   }
@@ -300,7 +338,7 @@ class AuthService extends ChangeNotifier {
       scopes: [AppleIDAuthorizationScopes.email, AppleIDAuthorizationScopes.fullName],
     );
     if (cred.identityToken == null) {
-      throw const AuthException('Apple sign-in failed. Please try again.');
+      throw const AuthException('Unable to sign in with Apple. Please try again.');
     }
     // Apple sends the name ONLY on the very first sign-in — forward it
     // so the backend can store it.
@@ -420,8 +458,8 @@ class AuthService extends ChangeNotifier {
       // Say which it is: their internet, or our server (2026-10-09).
       await NetStatus.instance.check();
       throw AuthException(NetStatus.instance.state.value == NetState.offline
-          ? 'No internet connection. Check Wi-Fi or mobile data and try again.'
-          : 'Could not reach the server. Please try again in a moment.');
+          ? 'No internet connection. Check Wi-Fi or mobile data and retry.'
+          : 'Unable to reach the server. Please try again shortly.');
     }
 
     final Map<String, dynamic> data;
@@ -429,14 +467,14 @@ class AuthService extends ChangeNotifier {
       data = jsonDecode(r.body) as Map<String, dynamic>;
     } catch (_) {
       throw AuthException(r.statusCode == 429
-          ? 'Too many sign-in attempts just now. Please wait a few minutes and try again.'
-          : "We couldn't sign you in just now. Please try again in a moment.");
+          ? 'Too many sign-in attempts. Please wait a few minutes and try again.'
+          : "Unable to sign you in. Please try again shortly.");
     }
 
     if (r.statusCode != 200) {
       final msg = data['error'] as String?;
       throw AuthException(msg == null || msg.isEmpty
-          ? "We couldn't sign you in just now. Please try again in a moment."
+          ? "Unable to sign you in. Please try again shortly."
           : msg[0].toUpperCase() + msg.substring(1));
     }
 

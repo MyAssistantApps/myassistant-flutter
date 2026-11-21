@@ -47,8 +47,8 @@ class _AuthScreenState extends State<AuthScreen> {
     super.initState();
     // Arrived here because the session ended, not by choice: say so kindly.
     if (AuthService.instance.sessionEnded) {
-      _error = 'For your security you were signed out. Please sign in again — '
-          'everything you saved is still here.';
+      _error = 'For your security, you have been signed out. Sign in again to continue. '
+          'All your data is intact.';
     }
   }
 
@@ -73,7 +73,7 @@ class _AuthScreenState extends State<AuthScreen> {
       // An empty message = the user backed out of a sign-in sheet.
       setState(() => _error = e.message.isEmpty ? null : e.message);
     } catch (_) {
-      setState(() => _error = 'Something went wrong. Please try again.');
+      setState(() => _error = 'An unexpected error has occurred. Please try again.');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -124,7 +124,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                       const SizedBox(height: 22),
                       Text(
-                        _isSignUp ? 'Create your account' : 'Welcome back',
+                        _isSignUp ? 'Create Your Account' : 'Welcome Back',
                         style: GoogleFonts.interTight(
                           fontSize: 26,
                           fontWeight: FontWeight.w700,
@@ -135,7 +135,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       const SizedBox(height: 6),
                       Text(
                         _isSignUp
-                            ? 'Your personal assistant, everywhere you go.'
+                            ? 'Your personal assistant — wherever you are.'
                             : 'Sign in to continue.',
                         style: TextStyle(
                             color: Neon.textLo, fontSize: 15, height: 1.4),
@@ -155,7 +155,7 @@ class _AuthScreenState extends State<AuthScreen> {
                               textInputAction: TextInputAction.next,
                               textCapitalization: TextCapitalization.words,
                               decoration: const InputDecoration(
-                                labelText: 'Your name',
+                                labelText: 'Full Name',
                                 prefixIcon: Icon(Icons.person_outline_rounded),
                               ),
                               // Mandatory: the assistant addresses the
@@ -163,7 +163,7 @@ class _AuthScreenState extends State<AuthScreen> {
                               // account reads broken from minute one.
                               validator: (v) =>
                                   (v == null || v.trim().length < 2)
-                                      ? 'Please enter your name'
+                                      ? 'Enter your name.'
                                       : null,
                             ),
                             const SizedBox(height: 14),
@@ -218,7 +218,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           if (t.isEmpty ||
                               !t.contains('@') ||
                               !t.contains('.')) {
-                            return 'Enter a valid email';
+                            return 'Enter a valid email address.';
                           }
                           return null;
                         },
@@ -234,7 +234,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           prefixIcon: const Icon(Icons.lock_outline_rounded),
                           suffixIcon: IconButton(
                             tooltip:
-                                _obscure ? 'Show password' : 'Hide password',
+                                _obscure ? 'Show Password' : 'Hide Password',
                             onPressed: () =>
                                 setState(() => _obscure = !_obscure),
                             icon: Icon(_obscure
@@ -243,9 +243,9 @@ class _AuthScreenState extends State<AuthScreen> {
                           ),
                         ),
                         validator: (v) {
-                          if ((v ?? '').isEmpty) return 'Enter your password';
+                          if ((v ?? '').isEmpty) return 'Enter your password.';
                           if (_isSignUp && v!.length < 8) {
-                            return 'At least 8 characters';
+                            return 'Use at least 8 characters.';
                           }
                           return null;
                         },
@@ -349,7 +349,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       ],
                       const SizedBox(height: 20),
                       GlowCta(
-                        label: _isSignUp ? 'Create account' : 'Log in',
+                        label: _isSignUp ? 'Create Account' : 'Sign In',
                         busy: _busy,
                         busyLabel: 'Signing in',
                         onPressed: _submitEmail,
@@ -417,8 +417,8 @@ class _AuthScreenState extends State<AuthScreen> {
                                 }),
                         child: Text(
                           _isSignUp
-                              ? 'Already have an account? Log in'
-                              : 'New here? Create an account',
+                              ? 'Already have an account? Sign In'
+                              : 'New to MyAssistant? Create Account',
                         ),
                       ),
                       const SizedBox(height: 8),

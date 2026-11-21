@@ -43,29 +43,29 @@ class TryNowCard {
 
 const tryNowCards = <TryNowCard>[
   TryNowCard('outfit', 'Clothes',
-      'Your photo + any outfit. See yourself wearing it.', 'clothes', 0,
-      headline: 'See yourself in any outfit',
+      'Combine your photo with any outfit to preview the look.', 'clothes', 0,
+      headline: 'Preview Yourself in Any Outfit',
       refLabel: 'The outfit',
-      refHint: 'A photo of the clothes — a shop screenshot works',
-      notesHint: 'Optional — e.g. slim fit, in navy blue, for a wedding'),
+      refHint: 'A photo of the clothes; a shop screenshot is acceptable',
+      notesHint: 'Optional, e.g. slim fit, in navy blue, for a wedding'),
   TryNowCard('hair', 'Haircut',
-      'Your photo + a cut you like. Try it before the salon.', 'haircut', -58,
-      headline: 'Try a haircut before the salon',
+      'Combine your photo with a preferred haircut to preview it before the salon.', 'haircut', -58,
+      headline: 'Preview a Haircut Before the Salon',
       refLabel: 'The haircut',
-      refHint: 'A salon or celebrity photo of the cut you want',
-      notesHint: 'Optional — e.g. a bit shorter on the sides, keep my colour'),
+      refHint: 'A salon or celebrity photo of the desired haircut',
+      notesHint: 'Optional, e.g. a bit shorter on the sides, keep my colour'),
   TryNowCard('jewellery', 'Jewellery',
-      'Your photo + a necklace or earrings. See it on you.', 'jewellery', 52,
-      headline: 'See the jewellery on you',
+      'Combine your photo with a necklace or earrings to preview them on you.', 'jewellery', 52,
+      headline: 'Preview the Jewellery on You',
       refLabel: 'The jewellery',
-      refHint: 'A necklace, earrings, a ring — from a shop or a photo',
-      notesHint: 'Optional — e.g. in rose gold, a smaller pendant'),
+      refHint: 'A necklace, earrings or a ring, from a shop or a photo',
+      notesHint: 'Optional, e.g. in rose gold, a smaller pendant'),
   TryNowCard('custom', 'Custom',
-      'Your photo, any reference and your own words.', 'custom', -86,
-      headline: 'Your photo, any idea',
+      'Your photo, any reference and your own instructions.', 'custom', -86,
+      headline: 'Your Photo, Any Idea',
       refLabel: 'Reference',
-      refHint: 'Anything to borrow from — a look, an accessory, a place',
-      notesHint: 'Tell me what to do — e.g. wear this watch, put me on this beach'),
+      refHint: 'Any source of inspiration: a look, an accessory or a place',
+      notesHint: 'Describe what is required, e.g. wear this watch, put me on this beach'),
 ];
 
 class TryNowSection extends StatefulWidget {
@@ -142,7 +142,7 @@ class _TryNowSectionState extends State<TryNowSection> {
             padding: const EdgeInsets.only(left: Neon.s1, bottom: 10),
             child: Row(
               children: [
-                Text('Try now',
+                Text('Try Now',
                     style: NeonType.manrope(21, FontWeight.w800)
                         .copyWith(color: Neon.textHi, letterSpacing: -0.6)),
                 const SizedBox(width: 8),
@@ -304,7 +304,7 @@ class _Card extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text('Try now',
+                            Text('Try Now',
                                 style: NeonType.manrope(13, FontWeight.w800)
                                     .copyWith(color: Colors.white)),
                             const SizedBox(width: 4),

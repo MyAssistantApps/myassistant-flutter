@@ -369,7 +369,7 @@ class AssistantEngine extends ChangeNotifier {
       _setPhase(AssistantPhase.idle, silent: true);
       notifyListeners();
       AppLog.add('orb', 'start produced no session');
-      AppFeedback.toast("I couldn't connect just now — please tap the orb to try again.");
+      AppFeedback.toast("I was unable to connect. Tap the orb to try again.");
     }
   }
 
@@ -686,7 +686,7 @@ class AssistantEngine extends ChangeNotifier {
       return 'Checking your calendar…';
     }
     if (tool.startsWith('find_') || tool.startsWith('list_')) {
-      return 'Looking that up…';
+      return 'Retrieving details…';
     }
     if (tool.startsWith('remember_') || tool.startsWith('update_')) {
       return 'Saving…';
@@ -696,25 +696,25 @@ class AssistantEngine extends ChangeNotifier {
       'schedule_task' => 'Scheduling…',
       'cancel_scheduled_task' => 'Cancelling…',
       'send_agent_message' => 'Sending the message…',
-      'lookup_person' || 'recall_memory' => 'Checking what I know…',
-      'get_last_document' || 'associate_document' => 'Fetching the document…',
-      'daily_brief' => 'Fetching your day…',
+      'lookup_person' || 'recall_memory' => 'Checking saved details…',
+      'get_last_document' || 'associate_document' => 'Retrieving the document…',
+      'daily_brief' => 'Preparing your brief…',
       'get_weather' => 'Checking the weather…',
-      'place_phone_call' => 'Setting up the call…',
+      'place_phone_call' => 'Preparing the call…',
       'capture_document' => 'Opening the camera…',
-      'generate_image' || 'generate_video' => 'Creating it…',
+      'generate_image' || 'generate_video' => 'Generating…',
       // A multi-step plan runs several tools behind this one label, so it
       // says so — 'Working on it…' for twenty seconds reads as a hang.
-      'start_task' => 'Working through the steps…',
+      'start_task' => 'Completing the steps…',
       'translator_mode' => 'Switching modes…',
       'set_morning_brief' => 'Updating your brief…',
       'read_news_story' => 'Reading the story…',
       'plan_my_day' => 'Planning your day…',
-      'complete_priority' || 'check_habit' => 'Ticking it off…',
+      'complete_priority' || 'check_habit' => 'Marking as completed…',
       'add_habit' => 'Adding the habit…',
-      'start_focus' => 'Starting your focus…',
+      'start_focus' => 'Starting focus session…',
       'momentum_status' => 'Checking your progress…',
-      _ => 'Working on it…',
+      _ => 'Processing…',
     };
   }
 
@@ -903,7 +903,7 @@ class AssistantEngine extends ChangeNotifier {
           phase != AssistantPhase.listening &&
           phase != AssistantPhase.speaking) {
         unawaited(_brainMade?.cancel());
-        _setLocalError('That took too long. Please try again.');
+        _setLocalError('The request timed out. Please try again.');
       }
     });
   }
@@ -1432,15 +1432,15 @@ class AssistantEngine extends ChangeNotifier {
     final epoch = _voiceEpoch;
     if (e.code == 'permission') {
       unawaited(_stopVoice());
-      _setLocalError('Microphone permission is needed. Enable it in Settings.');
+      _setLocalError('Microphone access is required. Enable it in Settings.');
       return;
     }
     _hearFailures++;
     if (e.permanent || _hearFailures >= 3) {
       unawaited(_stopVoice());
       _setLocalError(e.code == 'network'
-          ? "I couldn't reach the speech service. Check your connection."
-          : "I couldn't hear you just now. Please try again.");
+          ? "I was unable to reach the speech service. Check your internet connection."
+          : "I was unable to hear you. Please try again.");
       return;
     }
     // A blip: try again in a moment.
@@ -2557,8 +2557,8 @@ class AssistantEngine extends ChangeNotifier {
   static String orbGreeting({String? name, String? gender}) {
     final who = honorific(name: name, gender: gender);
     return who.isEmpty
-        ? 'Hello! How can I help you today?'
-        : 'Hello $who, how can I help you today?';
+        ? 'Hello. How may I assist you today?'
+        : 'Hello $who, how may I assist you today?';
   }
 
   /// Time-appropriate greeting text.
@@ -2573,7 +2573,7 @@ class AssistantEngine extends ChangeNotifier {
         : h < 17
             ? 'Good afternoon'
             : 'Good evening';
-    return '$part, $who! How can I help you today?';
+    return '$part, $who. How may I assist you today?';
   }
 
   /// The spoken greeting, when it is switched on: a FIXED line, so it goes
@@ -2893,7 +2893,7 @@ class AssistantEngine extends ChangeNotifier {
           final err = await SmsService.instance.send(to, msg);
           final ok = err == null;
           AppFeedback.toast(
-              ok ? 'Text sent to $who.' : "Couldn't text $who — $err.");
+              ok ? 'Text message sent to $who.' : "Unable to send a text message to $who: $err.");
           try {
             await ApiService.sendJson('/outcomes', method: 'POST', body: {
               'kind': 'message',
@@ -2924,7 +2924,7 @@ class AssistantEngine extends ChangeNotifier {
             documentCards = [d];
             notifyListeners();
             await shareDocumentFile(d).catchError((_) {
-              AppFeedback.toast("Couldn't prepare that file to share.");
+              AppFeedback.toast("Unable to prepare the file for sharing.");
             });
           }
         }
@@ -3106,7 +3106,7 @@ class AssistantEngine extends ChangeNotifier {
               // offers it rather than leaving the user to guess.
               if (reason == 'needs_alarm_permission') {
                 AppFeedback.toast(
-                    'This version cannot set alarms — update the app to enable it.',
+                    'This version cannot set alarms. Please update the app to enable this.',
                     spoken: true);
                 _tellModel(
                     '[SYSTEM] ERROR: this build of the app is not permitted to set '
@@ -3115,7 +3115,7 @@ class AssistantEngine extends ChangeNotifier {
                     'the installer on screen. Do NOT tell them to hunt through '
                     'settings — there is no permission switch for this one.');
               } else if (reason == 'no_clock_app') {
-                AppFeedback.toast('No clock app on this phone.', spoken: true);
+                AppFeedback.toast('No clock app is available on this phone.', spoken: true);
                 _tellModel(
                     '[SYSTEM] ERROR: this phone has no clock app that can handle '
                     '"$action", so NOTHING was set. Say that plainly.');
@@ -3190,7 +3190,7 @@ class AssistantEngine extends ChangeNotifier {
                     if (!mayInstall) {
                       // Not asked to install: the page is open, the
                       // decision is theirs — one question, nothing pressed.
-                      AppFeedback.toast("$want isn't installed");
+                      AppFeedback.toast("$want is not installed.");
                       _tellModel(
                           '[SYSTEM] "$want" is not installed; its page in the app '
                           'store is now open and NOTHING was installed. Ask exactly '
@@ -3202,7 +3202,7 @@ class AssistantEngine extends ChangeNotifier {
                     }
                     // Asked to install: the store page is open, they tap
                     // Install, and InstallWatch opens the app when it lands.
-                    AppFeedback.toast("$want isn't installed — tap Install",
+                    AppFeedback.toast("$want is not installed. Tap Install.",
                         spoken: true);
                     _tellModel(
                         '[SYSTEM] "$want" is not installed, so its page in the app '
@@ -3219,7 +3219,7 @@ class AssistantEngine extends ChangeNotifier {
                 }).catchError((_) {});
                 return;
               }
-              AppFeedback.toast('$want isn\'t installed on this phone.',
+              AppFeedback.toast('$want is not installed on this phone.',
                   spoken: true);
               _reportDeviceFailure('open_named_app',
                   target: want, reason: 'no app by that name is installed');
@@ -3368,7 +3368,7 @@ class AssistantEngine extends ChangeNotifier {
             // The tool has already spoken by the time this runs, so the
             // only honest move left is to correct it out loud.
             AppLog.add('update', 'no context to show the update sheet');
-            AppFeedback.toast('Open the app first, then ask me to update.',
+            AppFeedback.toast('Open the app first, then request the update again.',
                 spoken: true);
             _reportDeviceFailure('check_for_update',
                 reason: 'no screen to show it on');
@@ -3491,7 +3491,7 @@ class AssistantEngine extends ChangeNotifier {
             // WHERE IT IS (the owner, 2026-10-03: "user cannot make out
             // where it is saved"): said on screen every time.
             if (e['type'] == 'show_image' && e['documents'] == null) {
-              AppFeedback.toast('Saved in your Documents (Hub → My documents)',
+              AppFeedback.toast('Saved to your documents (Hub → My Documents).',
                   tone: FeedbackTone.success);
             }
           }
@@ -3517,7 +3517,7 @@ class AssistantEngine extends ChangeNotifier {
               : '[SYSTEM] INTERPRETER MODE OFF. Stop translating; go back '
                   'to being my assistant and respond only to me as usual.');
           AppFeedback.toast(on
-              ? 'Translator on — everyone near the phone is heard.'
+              ? 'Translator on. Everyone near the phone will be heard.'
               : 'Translator off.');
         }
         break;
@@ -3786,11 +3786,11 @@ class AssistantEngine extends ChangeNotifier {
         spoken = "Saved to ${result.clientName}'s file.";
       } else if (result.clientCandidates.length > 1) {
         final names = result.clientCandidates.join(' and ');
-        toast = 'Saved to your documents — "$person" matched $names.';
+        toast = 'Saved to your documents. "$person" matched $names.';
         spoken = 'Saved to your documents for now — $names both match '
             '"$person". Tell me which one and I\'ll file it.';
       } else if (person != null && person.trim().isNotEmpty) {
-        toast = 'Saved to your documents — no client named "$person".';
+        toast = 'Saved to your documents. No client named "$person" was found.';
         spoken = "I saved it to your documents, but I couldn't find a "
             "client or patient named $person. Add them from the Clients "
             "screen and I'll file it there.";
@@ -3814,12 +3814,12 @@ class AssistantEngine extends ChangeNotifier {
       final why = e.message.isNotEmpty
           ? e.message
           : 'the server refused the upload (${e.statusCode})';
-      AppFeedback.toast("Couldn't save the scan — $why.", spoken: true);
+      AppFeedback.toast("Unable to save the scan: $why.", spoken: true);
       await _tellModel(
           '[SYSTEM] ERROR: the scan was NOT saved — $why. Say that '
           'plainly in one sentence; nothing was saved.');
     } catch (_) {
-      AppFeedback.toast("Couldn't save the scan — check your connection.",
+      AppFeedback.toast("Unable to save the scan. Check your internet connection.",
           spoken: true);
       await _tellModel('[SYSTEM] ERROR: the scan could not be uploaded (no '
           'connection), so NOTHING was saved. Say so and suggest trying again.');
@@ -3902,7 +3902,7 @@ class AssistantEngine extends ChangeNotifier {
     // the worst outcome is the assistant claiming a call it never made.
     if (!await CallService.instance.ensurePermission()) {
       AppFeedback.toast(
-          'Contacts permission is off — the call to "$name" was NOT placed. '
+          'Contacts access is disabled, so the call to "$name" was not placed. '
           'Enable Contacts in Settings.',
           tone: FeedbackTone.error,
           spoken: true);
@@ -3965,7 +3965,7 @@ class AssistantEngine extends ChangeNotifier {
     if (matches.isEmpty) {
       // Tell whichever brain is running, so the assistant says it instead
       // of the user waiting on a call that can never come.
-      AppFeedback.toast('No contact named "$name" found — no call placed.',
+      AppFeedback.toast('No contact named "$name" was found. No call was placed.',
           spoken: true);
       await _tellModel(
           '[SYSTEM] ERROR: No contact named "$name" was found on the '
@@ -4200,7 +4200,7 @@ class AssistantEngine extends ChangeNotifier {
     if (report == null && !ok) {
       report =
           '[SYSTEM] ERROR: the phone could not perform "$action" — tell me plainly.';
-      AppFeedback.toast("Couldn't do that on this phone.", spoken: true);
+      AppFeedback.toast("Unable to perform that action on this phone.", spoken: true);
       _reportDeviceFailure('phone_control',
           target: action, reason: 'the phone refused or could not do it');
     }
@@ -4221,17 +4221,17 @@ class AssistantEngine extends ChangeNotifier {
     final open = await showAppDialog<bool>(
       context: ctx,
       builder: (c) => AlertDialog(
-        title: const Text('Allow full silent?'),
+        title: const Text('Allow Full Silent Mode'),
         content: const Text(
-            'To put your phone fully on silent, allow "Do Not Disturb" '
-            'for My Assistant once, then come back. Until then I use vibrate.'),
+            'To place your phone fully on silent, please allow "Do Not Disturb" '
+            'access for MyAssistant once, then return. Until then, vibrate mode is used.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(c, false),
-              child: const Text('Use vibrate')),
+              child: const Text('Use Vibrate')),
           FilledButton(
               onPressed: () => Navigator.pop(c, true),
-              child: const Text('Open settings')),
+              child: const Text('Open Settings')),
         ],
       ),
     );
@@ -4605,7 +4605,7 @@ class AssistantEngine extends ChangeNotifier {
     } catch (_) {
       // fall through to the honest message
     }
-    AppFeedback.toast('It is saved — open it from Hub, My documents.');
+    AppFeedback.toast('The document is saved. Open it from Hub, My Documents.');
   }
 
   Future<void> _openExternalUrl(String url) async {
@@ -4657,7 +4657,7 @@ class AssistantEngine extends ChangeNotifier {
       // never open a browser as a consolation prize.
       final action =
           RegExp(r'action=([^;]+);').firstMatch(url)?.group(1) ?? 'that';
-      AppFeedback.toast("This phone has no app that can do that.",
+      AppFeedback.toast("No app on this phone can perform that action.",
           tone: FeedbackTone.error, spoken: true);
       // NOTHING OPENED, SO NOBODY LEFT. The flag is set optimistically
       // before the launch is attempted; left true on a dead end it made
@@ -4690,7 +4690,7 @@ class AssistantEngine extends ChangeNotifier {
     }
     if (!ok) {
       AppFeedback.toast(
-          'Could not open the app for that — nothing was ordered or booked.',
+          'Unable to open the app for that request. Nothing was ordered or booked.',
           spoken: true);
       _leftForExternalApp = false; // the app never went anywhere
       // The server recorded this as done the moment it dispatched it. Tell
@@ -4876,7 +4876,7 @@ class AssistantEngine extends ChangeNotifier {
       on = false;
     }
     if (!on) {
-      AppFeedback.toast('Turn on "MyAssistant screen control" so I can work in other apps.');
+      AppFeedback.toast('Enable "MyAssistant Screen Control" so that your assistant can work in other apps.');
       try {
         await agent.openSettings();
       } catch (_) {}
@@ -5008,12 +5008,12 @@ class AssistantEngine extends ChangeNotifier {
       await ApiService.createReminder(e.title, e.start);
       if (identical(seenEvent, e)) seenEvent = null;
       notifyListeners();
-      AppFeedback.toast('Reminder set — ${e.title}, ${e.whenLabel()}.',
+      AppFeedback.toast('Reminder created: ${e.title}, ${e.whenLabel()}.',
           tone: FeedbackTone.success);
       return true;
     } catch (err) {
       AppLog.add('vision', 'reminder from the picture failed: $err');
-      AppFeedback.toast("Couldn't set that reminder — try again.");
+      AppFeedback.toast("Unable to create the reminder. Please try again.");
       return false;
     }
   }
@@ -5028,11 +5028,11 @@ class AssistantEngine extends ChangeNotifier {
       if (identical(seenEvent, e)) seenEvent = null;
       notifyListeners();
       AppFeedback.toast(
-          'Added to your calendar — ${e.title}, ${e.whenLabel()}.',
+          'Added to your calendar: ${e.title}, ${e.whenLabel()}.',
           tone: FeedbackTone.success);
     } else {
-      AppFeedback.toast("Couldn't add it to your calendar — allow calendar "
-          'access, or use Remind me.');
+      AppFeedback.toast("Unable to add the event to your calendar. Please allow calendar "
+          'access, or use Set Reminder.');
     }
     return ok;
   }
@@ -5128,7 +5128,7 @@ class AssistantEngine extends ChangeNotifier {
   /// Closes cleanly with a short caption and no spoken goodbye.
   Future<void> _closeAfterQuiet() async {
     await endInlineConversation();
-    if (_foreground) AppFeedback.toast('Closed after a minute of quiet.');
+    if (_foreground) AppFeedback.toast('Conversation closed after one minute of inactivity.');
   }
 
   // ---------------- WHERE THE OWNER IS ----------------
@@ -5174,7 +5174,7 @@ class AssistantEngine extends ChangeNotifier {
           .askOnce(explain: (line) => AppFeedback.toast(line));
       if (!ok) return;
       await _refreshLocation();
-      AppFeedback.toast('Location is on — ask me again.');
+      AppFeedback.toast('Location access is enabled. Please repeat your request.');
     } catch (_) {
     } finally {
       _askingLocation = false;
@@ -5213,7 +5213,7 @@ class AssistantEngine extends ChangeNotifier {
         if (!explained) await p.setBool(_kCallLogExplained, true);
       } catch (_) {}
       if (!explained) {
-        AppFeedback.toast('To tell you who called, allow call history.');
+        AppFeedback.toast('Call history access is required to tell you who called.');
       }
       final r = await CallHistory.requestCallLog();
       AppLog.add('calls', 'call history permission: $r');
@@ -5313,11 +5313,11 @@ class _EngineShortcutPorts implements ShortcutPorts {
   @override
   Future<void> notifyContinue(ShortcutRunDirective d, ShortcutEnvelope next) =>
       ReminderNotifications.instance
-          .showNow(d.name, 'Tap to carry on: ${next.label}');
+          .showNow(d.name, 'Tap to continue: ${next.label}');
 
   @override
   Future<void> notifyUnfinished(String name, String label) =>
-      ReminderNotifications.instance.showNow(name, "I didn't finish: $label");
+      ReminderNotifications.instance.showNow(name, "Not completed: $label");
 
   @override
   Future<void> wait(Duration d) => Future<void>.delayed(d);

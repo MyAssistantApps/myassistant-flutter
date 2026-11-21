@@ -81,18 +81,18 @@ abstract final class HomeExtras {
   /// Real capabilities only. A question can be tried with one tap; an
   /// action is said by the user, in their own words.
   static const tips = [
-    HomeTip('brief', 'Brief me for today', 'Your day, your messages and the weather in one go.',
-        ask: 'Give me my brief for today.'),
-    HomeTip('promises', 'What did I promise?', 'I keep track of what you tell people you will do.',
-        ask: 'What have I promised anyone recently?'),
-    HomeTip('shopping', 'Add milk to my shopping list', 'One list for anything to buy, from any conversation.'),
-    HomeTip('meeting', 'Record this meeting', 'I write the minutes, the decisions and who does what.'),
-    HomeTip('remind', 'Remind me to call Amma at 6', 'Reminders that ring, or call you, at the time.'),
-    HomeTip('news', 'Read me the news', 'Today\'s stories, read out, and explained if you ask.',
-        ask: 'Read me today\'s top news.'),
-    HomeTip('weather', 'Will it rain this evening?', 'The weather where you are, hour by hour.',
-        ask: 'Will it rain this evening?'),
-    HomeTip('message', 'Tell Priya I\'m running late', 'Messages sent for you — I always check with you first.'),
+    HomeTip('brief', 'Give me today\'s briefing', 'Your schedule, messages, and weather in one briefing.',
+        ask: 'Give me today\'s briefing.'),
+    HomeTip('promises', 'What commitments have I made?', 'Your assistant tracks the commitments you make to others.',
+        ask: 'What commitments have I made recently?'),
+    HomeTip('shopping', 'Add milk to my shopping list', 'One list of items to purchase, from any conversation.'),
+    HomeTip('meeting', 'Record the minutes of this meeting', 'Minutes, decisions, and action items, recorded for you.'),
+    HomeTip('remind', 'Set a reminder to call Amma at 6 PM', 'Reminders that ring, or call you, at the set time.'),
+    HomeTip('news', 'Read today\'s headlines', 'Today\'s headlines read aloud, and explained on request.',
+        ask: 'Read today\'s top headlines.'),
+    HomeTip('weather', 'What is the rain forecast for this evening?', 'Hourly forecast for your location.',
+        ask: 'What is the rain forecast for this evening?'),
+    HomeTip('message', 'Inform Priya that I am running late', 'Messages sent on your behalf — always confirmed with you first.'),
   ];
 
   /// Today's tip: a different one each day, the same one all day.

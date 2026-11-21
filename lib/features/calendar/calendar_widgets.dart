@@ -305,7 +305,7 @@ class CalInlineState extends StatelessWidget {
                 textStyle:
                     NeonType.manrope(NeonType.body, FontWeight.w700),
               ),
-              child: const Text('Try again'),
+              child: const Text('Retry'),
             ),
           if (onAction != null && actionLabel != null)
             TextButton.icon(

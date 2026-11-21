@@ -177,7 +177,7 @@ class _ProductSearchScreenState extends State<ProductSearchScreen> {
       if (mounted && run == _run) {
         setState(() {
           _hits = const [];
-          _error = e is PriceCompareException ? e.message : 'Something went wrong. Try again.';
+          _error = e is PriceCompareException ? e.message : 'An unexpected error has occurred. Please try again.';
         });
       }
     } finally {
@@ -202,8 +202,8 @@ class _ProductSearchScreenState extends State<ProductSearchScreen> {
 
   static String _sortLabel(_Sort s) => switch (s) {
         _Sort.popular => 'Popularity',
-        _Sort.low => 'Price: low to high',
-        _Sort.high => 'Price: high to low',
+        _Sort.low => 'Price: Low to High',
+        _Sort.high => 'Price: High to Low',
         _Sort.rating => 'Rating',
       };
 
@@ -231,7 +231,7 @@ class _ProductSearchScreenState extends State<ProductSearchScreen> {
                           padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
                           sliver: SliverToBoxAdapter(
                             child: Text(
-                              _busy ? 'Searching the stores for “$_shown”…' : 'Showing results for “$_shown”',
+                              _busy ? 'Searching stores for “$_shown”…' : 'Results for “$_shown”',
                               style: TextStyle(color: _ink, fontSize: 19, fontWeight: FontWeight.w700),
                             ),
                           ),
@@ -246,7 +246,7 @@ class _ProductSearchScreenState extends State<ProductSearchScreen> {
                                   const SizedBox(height: 10),
                                   Text(_error, textAlign: TextAlign.center, style: TextStyle(color: _inkLo)),
                                   const SizedBox(height: 12),
-                                  OutlinedButton(onPressed: _search, child: const Text('Try again')),
+                                  OutlinedButton(onPressed: _search, child: const Text('Retry')),
                                 ],
                               ),
                             ),
@@ -312,7 +312,7 @@ class _ProductSearchScreenState extends State<ProductSearchScreen> {
                     enabledBorder: InputBorder.none,
                     focusedBorder: InputBorder.none,
                     border: InputBorder.none,
-                    hintText: 'Search a product',
+                    hintText: 'Search for a product',
                     hintStyle: TextStyle(color: _inkDim),
                   ),
                 ),
@@ -612,13 +612,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             product: h.name,
             offers: [PriceOffer(store: h.store, price: h.price, title: h.name, url: h.url)],
             bestPick: h.store,
-            advice: "Couldn't find this on other stores right now — this is ${h.store}'s price.",
+            advice: "This product could not be found on other stores at present. The price shown is from ${h.store}.",
             at: DateTime.now(),
             facts: {if (h.image.isNotEmpty) 'image': h.image},
           );
         });
       } else {
-        setState(() => _error = e is PriceCompareException ? e.message : 'Something went wrong.');
+        setState(() => _error = e is PriceCompareException ? e.message : 'An unexpected error has occurred.');
       }
     } finally {
       _tick?.cancel();
@@ -799,7 +799,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               onPressed: () {
                 final low = r?.lowest;
                 Share.share(
-                    low == null ? _name : '$_name — ${rupees(low.price)} on ${low.store} (compared in MyAssistant)');
+                    low == null ? _name : '$_name: ${rupees(low.price)} on ${low.store} (compared in MyAssistant)');
               },
               icon: Icon(Icons.ios_share_rounded, color: _ink),
             ),
@@ -812,7 +812,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Widget _loading() {
     final h = widget.hit;
-    const steps = ['Checking Amazon, Flipkart, Croma…', 'Comparing every store\'s price…', 'Reading price history…'];
+    const steps = ['Checking Amazon, Flipkart, Croma…', 'Comparing prices across all stores…', 'Retrieving price history…'];
     return Padding(
       padding: const EdgeInsets.only(top: 18),
       child: Column(
@@ -880,20 +880,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         for (final (i, o) in r.offers.indexed) ...[_storeCard(r, o, cheapest: i == 0), const SizedBox(height: 12)],
         if (r.deals.isNotEmpty) ...[
           const SizedBox(height: 16),
-          _h('Bank offers & coupons'),
+          _h('Bank Offers & Coupons'),
           const SizedBox(height: 10),
           for (final d in r.deals) _deal(d),
         ],
         if (r.facts.pairs('specs').isNotEmpty || r.facts.strs('highlights').isNotEmpty) ...[
           const SizedBox(height: 26),
-          _h('Highlights & specs'),
+          _h('Highlights & Specifications'),
           const SizedBox(height: 10),
           _specs(r),
         ],
         ..._similar(r),
         if (_sources.isNotEmpty) ...[
           const SizedBox(height: 26),
-          _h('Where these prices came from'),
+          _h('Sources of These Prices'),
           const SizedBox(height: 6),
           for (final s in _sources.take(6))
             InkWell(
@@ -907,7 +907,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ],
         if (_suggestions.isNotEmpty) ...[const SizedBox(height: 8), SearchSuggestionChips(suggestions: _suggestions)],
         const SizedBox(height: 14),
-        Text('Prices as found on the web just now; the store shows the final price before you pay.',
+        Text('Prices as retrieved from the web; the store displays the final price before payment.',
             style: TextStyle(color: _inkDim, fontSize: 11.5)),
       ];
 
@@ -971,7 +971,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           TextSpan(
                               text: rupees((avg - low.price).abs()),
                               style: TextStyle(fontWeight: FontWeight.w800, color: _ink)),
-                          TextSpan(text: low.price <= avg ? ' lower than average price' : ' higher than average price'),
+                          TextSpan(text: low.price <= avg ? ' below the average price' : ' above the average price'),
                         ]),
                         style: TextStyle(color: _inkLo, fontSize: 13.5),
                       ),
@@ -986,8 +986,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           const SizedBox(width: 12),
           Tooltip(
             message: r.history.lowest != null
-                ? 'Deal score: where today\'s price sits between the lowest and highest reported'
-                : 'Deal score: from the discount on MRP',
+                ? 'Deal score: the position of the current price between the lowest and highest reported'
+                : 'Deal score: based on the discount on MRP',
             child: _ScoreGauge(score: score),
           ),
         ],
@@ -1003,7 +1003,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _h('Price history'),
+        _h('Price History'),
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.fromLTRB(14, 16, 14, 14),
@@ -1016,8 +1016,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                            'No price history was found for this one yet. Set an alert and the chart fills '
-                            'in with every check.',
+                            'No price history is available for this product yet. Once an alert is set, the chart is updated '
+                            'with every check.',
                             style: TextStyle(color: _inkLo, fontSize: 13)),
                       ),
                     ])
@@ -1046,13 +1046,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(w == null ? 'Never miss a price drop' : 'Alert at ${rupees(w.target)}',
+                Text(w == null ? 'Price Drop Alert' : 'Alert at ${rupees(w.target)}',
                     style: TextStyle(color: _ink, fontSize: 16, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 2),
                 Text(
                     w == null
-                        ? 'Get a notification when it drops to your price'
-                        : 'Checked each day you open Price compare',
+                        ? 'Receive a notification when the price falls to your target'
+                        : 'Checked on each day Price Compare is opened',
                     style: TextStyle(color: _inkLo, fontSize: 13)),
               ],
             ),
@@ -1061,7 +1061,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           FilledButton(
             onPressed: () => _setAlert(r),
             style: FilledButton.styleFrom(backgroundColor: _accent, shape: const StadiumBorder()),
-            child: Text(w == null ? 'Turn on' : 'Edit'),
+            child: Text(w == null ? 'Enable' : 'Edit'),
           ),
         ],
       ),
@@ -1070,9 +1070,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Widget _verdict(PriceResult r) {
     final (c, word) = switch (r.verdict) {
-      PriceVerdict.buy => (_green, 'Good time to buy'),
-      PriceVerdict.wait => (Neon.warning, 'Better to wait'),
-      PriceVerdict.okay => (_accent, 'Fair price'),
+      PriceVerdict.buy => (_green, 'Favourable Time to Purchase'),
+      PriceVerdict.wait => (Neon.warning, 'Waiting Is Advisable'),
+      PriceVerdict.okay => (_accent, 'Fair Price'),
     };
     return Container(
       padding: const EdgeInsets.all(14),
@@ -1172,7 +1172,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                     if (delivery.isNotEmpty || !o.inStock) ...[
                       const SizedBox(height: 4),
-                      Text(!o.inStock ? 'Out of stock' : 'Delivery: $delivery',
+                      Text(!o.inStock ? 'Out of Stock' : 'Delivery: $delivery',
                           style: TextStyle(color: o.inStock ? _inkLo : _red, fontSize: 12)),
                     ],
                   ],
@@ -1204,7 +1204,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               TextButton(
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: d.code));
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Copied ${d.code}')));
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Code ${d.code} copied.')));
                 },
                 child: Text(d.code),
               ),
@@ -1260,7 +1260,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     if (hits.isEmpty) return const [];
     return [
       const SizedBox(height: 28),
-      _h('Deals in this category'),
+      _h('Deals in This Category'),
       const SizedBox(height: 12),
       SizedBox(
         height: 140 + MediaQuery.textScalerOf(context).scale(118),
@@ -1354,10 +1354,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Tell me when it drops to',
+              Text('Notify When the Price Falls To',
                   style: TextStyle(color: _ink, fontSize: 19, fontWeight: FontWeight.w800)),
               const SizedBox(height: 4),
-              Text('Now ${rupees(now)} on ${r.lowest!.store}', style: TextStyle(color: _inkLo)),
+              Text('Currently ${rupees(now)} on${r.lowest!.store}', style: TextStyle(color: _inkLo)),
               const SizedBox(height: 14),
               Wrap(spacing: 8, children: [
                 for (final pct in [5, 10, 15, 20])
@@ -1389,7 +1389,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     if (v != null && v > 0) Navigator.pop(ctx, v);
                   },
                   style: FilledButton.styleFrom(backgroundColor: _accent),
-                  child: const Text('Set alert'),
+                  child: const Text('Set Alert'),
                 ),
               ),
             ],
@@ -1401,7 +1401,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     if (target == null) return;
     svc.watch(r, target);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Alert set — ${rupees(target)} or less')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Alert set for ${rupees(target)} or less.')));
     }
   }
 }

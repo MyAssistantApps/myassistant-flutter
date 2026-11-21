@@ -144,7 +144,7 @@ class DraftPad extends ChangeNotifier {
       if (run != _run) return;
       AppLog.add('draft', 'failed: $e');
       text.text = before; // nothing half-written replaces the user's text
-      AppFeedback.show("Couldn't write that just now — please try again.",
+      AppFeedback.show("Unable to write the draft. Please try again.",
           tone: FeedbackTone.error);
     } finally {
       if (run == _run) {
@@ -182,11 +182,11 @@ class DraftPad extends ChangeNotifier {
         mimeType: 'text/plain',
         note: title,
       );
-      AppFeedback.show('Saved in your Documents', tone: FeedbackTone.success);
+      AppFeedback.show('Draft saved to your documents.', tone: FeedbackTone.success);
       return true;
     } catch (e) {
       AppLog.add('draft', 'save failed: $e');
-      AppFeedback.show("Couldn't save it — check the internet and try again.",
+      AppFeedback.show("Unable to save the draft. Check your internet connection and try again.",
           tone: FeedbackTone.error);
       return false;
     }
@@ -224,9 +224,9 @@ class _DraftPadScreenState extends State<DraftPadScreen> {
 
   /// One-tap changes; each is the same as saying it.
   static const _quick = [
-    ('Make it formal', 'Make it more formal and professional'),
-    ('Shorter', 'Make it shorter and tighter, keep every key point'),
-    ('Fix grammar', 'Fix grammar, spelling and punctuation only'),
+    ('Make Formal','Make it more formal and professional'),
+    ('Shorten','Make it shorter and tighter, keep every key point'),
+    ('Fix Grammar','Fix grammar, spelling and punctuation only'),
     ('Friendlier', 'Make the tone warmer and friendlier'),
     ('Continue', 'Continue writing from where it ends'),
   ];
@@ -278,7 +278,7 @@ class _DraftPadScreenState extends State<DraftPadScreen> {
   Future<void> _talk() async {
     final e = AssistantEngine.instance;
     if (e.liveActive || e.inlineVoice || e.starting) {
-      AppFeedback.show('Listening — say what to change',
+      AppFeedback.show('Listening. Please state the required change.',
           tone: FeedbackTone.info);
       return;
     }
@@ -365,7 +365,7 @@ class _DraftPadScreenState extends State<DraftPadScreen> {
             ),
           ),
           if (pad.previous != null && !busy)
-            icon(Icons.undo_rounded, 'Undo the last change', pad.undo),
+            icon(Icons.undo_rounded, 'Undo Last Change', pad.undo),
           icon(
             Icons.copy_rounded,
             'Copy',
@@ -414,7 +414,7 @@ class _DraftPadScreenState extends State<DraftPadScreen> {
                   decoration: _bare(
                     busy
                         ? 'Writing…'
-                        : 'Start typing, or tell me what to write below',
+                        : 'Begin typing, or describe what to write below',
                     TextStyle(color: Neon.textDim, fontSize: 16.5),
                   ),
                 ),
@@ -558,8 +558,8 @@ class _DraftPadScreenState extends State<DraftPadScreen> {
                   busy
                       ? 'Writing…'
                       : empty
-                          ? 'What should I write?'
-                          : 'Ask for a change…',
+                          ? 'Describe what to write'
+                          : 'Request a change',
                   TextStyle(color: Neon.textDim, fontSize: 15),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
@@ -567,9 +567,9 @@ class _DraftPadScreenState extends State<DraftPadScreen> {
             ),
             const SizedBox(width: 6),
             if (busy)
-              round(Icons.stop_rounded, 'Stop writing', pad.stop, filled: true)
+              round(Icons.stop_rounded, 'Stop Writing', pad.stop, filled: true)
             else ...[
-              round(Icons.mic_rounded, 'Say what to change', _talk),
+              round(Icons.mic_rounded, 'Dictate a Change', _talk),
               const SizedBox(width: 6),
               round(Icons.arrow_upward_rounded, 'Send', _sendAsk, filled: true),
             ],
@@ -633,8 +633,8 @@ class ClipboardOffer {
         ..showSnackBar(SnackBar(
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 8),
-          content: const Text('You copied some text'),
-          action: SnackBarAction(label: 'Paste & edit', onPressed: _paste),
+          content: const Text('Copied text is available.'),
+          action: SnackBarAction(label: 'Paste & Edit', onPressed: _paste),
         ));
     } catch (e) {
       AppLog.add('draft', 'clipboard check failed: $e');
@@ -647,6 +647,6 @@ class ClipboardOffer {
     final data = await Clipboard.getData(Clipboard.kTextPlain);
     final t = data?.text?.trim() ?? '';
     if (t.isEmpty) return;
-    DraftPad.instance.open(title: 'Pasted text', content: t);
+    DraftPad.instance.open(title: 'Pasted Text', content: t);
   }
 }

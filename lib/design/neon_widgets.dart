@@ -157,7 +157,7 @@ class NeonErrorState extends StatelessWidget {
     this.icon = Icons.cloud_off_rounded,
   });
 
-  static const defaultHint = 'Check your connection, then try again.';
+  static const defaultHint = 'Check your internet connection and try again.';
 
   @override
   Widget build(BuildContext context) {
@@ -171,7 +171,7 @@ class NeonErrorState extends StatelessWidget {
           : FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: const Text('Try again'),
+              label: const Text('Retry'),
               // Spelled out rather than left to the theme, so it is the
               // same button inside any theme (and in tests without one).
               style: FilledButton.styleFrom(
@@ -450,7 +450,7 @@ class _NeonSuccessState extends State<NeonSuccess>
     );
     return Semantics(
       liveRegion: true,
-      label: widget.label ?? 'Done',
+      label: widget.label ?? 'Completed',
       excludeSemantics: true,
       child: Column(
         mainAxisSize: MainAxisSize.min,

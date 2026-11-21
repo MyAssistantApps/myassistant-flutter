@@ -89,7 +89,7 @@ class _WhatsNewCardState extends State<WhatsNewCard> {
                     Icon(Icons.auto_awesome_rounded, color: Neon.violet, size: 20),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text("What's new",
+                      child: Text("Latest Updates",
                           style: TextStyle(
                               color: Neon.textHi, fontSize: 16, fontWeight: FontWeight.w700)),
                     ),

@@ -130,7 +130,7 @@ class _CallLedState extends State<CallLed> with SingleTickerProviderStateMixin {
                 Flexible(
                   child: Text(
                     who.isEmpty
-                        ? 'On a call for you'
+                        ? 'On a call on your behalf'
                         : '${_verb(call.status)} $who',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -156,9 +156,9 @@ class _CallLedState extends State<CallLed> with SingleTickerProviderStateMixin {
       case 'dialing':
         return 'Calling';
       case 'summarizing':
-        return 'Wrapping up with';
+        return 'Concluding with';
       default:
-        return 'Talking to';
+        return 'Speaking with';
     }
   }
 }

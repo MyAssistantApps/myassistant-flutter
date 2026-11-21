@@ -73,7 +73,7 @@ class _MeetingDetailScreenState extends State<MeetingDetailScreen> {
           subject: 'Minutes — ${_m?['title'] ?? 'meeting'}');
     } catch (_) {
       if (mounted) {
-        AppFeedback.show("Couldn't make the PDF — try again.", context: context);
+        AppFeedback.show("Unable to create the PDF. Please try again.", context: context);
       }
     } finally {
       if (mounted) setState(() => _sharing = false);
@@ -91,7 +91,7 @@ class _MeetingDetailScreenState extends State<MeetingDetailScreen> {
           actions: [
             if (done)
               IconButton(
-                tooltip: 'Share minutes (PDF)',
+                tooltip: 'Share Minutes (PDF)',
                 onPressed: _sharing ? null : _sharePdf,
                 icon: _sharing
                     ? const NeonLoader.inline(semanticLabel: 'Preparing PDF')
@@ -114,7 +114,7 @@ class _MeetingDetailScreenState extends State<MeetingDetailScreen> {
                       child: _loading
                           ? const NeonLoader.page()
                           : NeonErrorState(
-                              message: "Couldn't load this meeting",
+                              message: "Unable to load this meeting.",
                               onRetry: () {
                                 setState(() => _loading = true);
                                 _load();
@@ -183,12 +183,12 @@ class _MeetingDetailScreenState extends State<MeetingDetailScreen> {
     if (status == 'processing') {
       return [
         RimCard(tone: NeonTone.tip, radius: Neon.rLg, child: Row(children: [
-          const NeonLoader.inline(semanticLabel: 'Writing your minutes'),
+          const NeonLoader.inline(semanticLabel: 'Preparing your minutes'),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-                'Writing your minutes — this takes a few minutes. You can '
-                'leave; a notification comes when they are ready.',
+                'Your minutes are being prepared. This takes a few minutes. You can '
+                'leave this screen; you will be notified when they are ready.',
                 style: TextStyle(color: Neon.textLo, fontSize: NeonType.body, height: 1.45)),
           ),
         ])),
@@ -200,7 +200,7 @@ class _MeetingDetailScreenState extends State<MeetingDetailScreen> {
           Icon(Icons.error_outline_rounded, color: Neon.warning),
           const SizedBox(width: 12),
           Expanded(
-            child: Text((m['summary'] ?? "Couldn't process this recording.").toString(),
+            child: Text((m['summary'] ?? "Unable to process this recording.").toString(),
                 style: TextStyle(color: Neon.textLo, fontSize: 14)),
           ),
         ])),
@@ -232,7 +232,7 @@ class _MeetingDetailScreenState extends State<MeetingDetailScreen> {
         const SizedBox(height: 12),
         Reveal(
           delayMs: 120,
-          child: _section(Icons.task_alt_rounded, 'Action items', NeonTone.success, Column(
+          child: _section(Icons.task_alt_rounded, 'Action Items', NeonTone.success, Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               for (final a in actions)
@@ -266,7 +266,7 @@ class _MeetingDetailScreenState extends State<MeetingDetailScreen> {
         const SizedBox(height: 12),
         Reveal(
           delayMs: 180,
-          child: _section(Icons.send_rounded, 'Follow-up message', NeonTone.action, Column(
+          child: _section(Icons.send_rounded, 'Follow-Up Message', NeonTone.action, Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(follow, style: TextStyle(color: Neon.textLo, fontSize: 14, height: 1.5)),
@@ -298,7 +298,7 @@ class _MeetingDetailScreenState extends State<MeetingDetailScreen> {
         child: FilledButton.icon(
           onPressed: _sharing ? null : _sharePdf,
           icon: const Icon(Icons.picture_as_pdf_rounded),
-          label: Text(_sharing ? 'Preparing PDF…' : 'Share minutes as PDF'),
+          label: Text(_sharing ? 'Preparing PDF…' : 'Share Minutes as PDF'),
         ),
       ),
       if (transcript.isNotEmpty) ...[
@@ -315,7 +315,7 @@ class _MeetingDetailScreenState extends State<MeetingDetailScreen> {
             TextButton.icon(
               onPressed: () => setState(() => _showTranscript = !_showTranscript),
               icon: ExpandChevron(open: _showTranscript, size: 18),
-              label: Text(_showTranscript ? 'Hide transcript' : 'Show full transcript'),
+              label: Text(_showTranscript ? 'Hide Transcript' : 'Show Full Transcript'),
             ),
           ],
         )),

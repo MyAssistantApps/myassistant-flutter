@@ -20,6 +20,7 @@ import '../../screens/reminders_screen.dart';
 import '../../services/app_feedback.dart';
 import '../../services/auth_service.dart';
 import '../../services/brief_service.dart';
+import '../../services/persona.dart';
 import '../../services/call_history.dart';
 import '../../services/missed_calls_service.dart';
 import '../../widgets/neon_cards.dart';
@@ -34,6 +35,7 @@ import 'home_extras.dart';
 import 'home_redesign.dart';
 import 'pro_banners.dart';
 import 'quick_tools.dart';
+import 'upload_files_card.dart';
 import 'popular_apps.dart';
 import 'quick_apps.dart';
 import 'home_feed.dart';
@@ -62,7 +64,7 @@ class HomeActions {
   /// calls card always worked this way).
   void callBack(CallEntry c) => unawaited(AssistantEngine.instance
       .callBackMissed(c)
-      .catchError((Object e) => _said("Couldn't start the call.", e)));
+      .catchError((Object e) => _said("Unable to start the call. Please try again.", e)));
   void dropCall(CallEntry c) => MissedCallsService.instance.remove(c);
 
   /// The assistant says them, which marks them read; the refresh then
@@ -76,10 +78,10 @@ class HomeActions {
   /// calling or paying still asks for a yes, as any spoken request does.
   void ask(String request) => unawaited(AssistantEngine.instance
       .askAssistant(request)
-      .catchError((Object e) => _said("Couldn't ask that.", e)));
+      .catchError((Object e) => _said("Unable to submit the request. Please try again.", e)));
   void talk() => unawaited(AssistantEngine.instance
       .beginInlineConversation(name: AuthService.instance.user?.name)
-      .catchError((Object e) => _said("Couldn't start the chat.", e)));
+      .catchError((Object e) => _said("Unable to start the conversation. Please try again.", e)));
   void hide(HomeCard c) => unawaited(HomeMemory.instance.hide(c.id));
   void open(BuildContext context, Widget page) => Navigator.of(context)
       .push(MaterialPageRoute<void>(builder: (_) => page));
@@ -239,7 +241,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
               state: state,
               child: switch (state) {
                 'failed' => NeonErrorState(
-                    message: "Couldn't load your day",
+                    message: "Unable to load your day.",
                     onRetry: () => svc.refresh(force: true),
                   ),
                 'loading' => const _Skeleton(),
@@ -441,11 +443,11 @@ class _HomeFeedViewState extends State<HomeFeedView> {
           child: Text.rich(
             TextSpan(children: [
               TextSpan(
-                  text: "You're all clear",
+                  text: "All clear",
                   style: NeonType.manrope(15.5, FontWeight.w800)
                       .copyWith(color: Neon.textHi)),
               TextSpan(
-                  text: later ? '  ·  nothing right now' : '  ·  nothing today',
+                  text: later ? '  ·  nothing pending' : '  ·  nothing pending today',
                   style: TextStyle(color: Neon.textLo, fontSize: 13)),
             ]),
             maxLines: 1,
@@ -461,47 +463,36 @@ class _HomeFeedViewState extends State<HomeFeedView> {
   /// THE ASSISTANTS AS A SLIDING BANNER (owner, 2026-11-04: "a sliding
   /// banner, not the buttons"): Doctor's, Advocate's and Business, each
   /// with its own photo. My documents stays one slim row under it.
+  ///
+  /// ONLY THE USER'S OWN PROFESSION (owner, 2026-11-13): a doctor sees the
+  /// Doctor's assistant, an advocate the Advocate's, a business owner the
+  /// Business one; everyone else sees none (the server refuses the others).
   Widget _assistants() {
+    return ValueListenableBuilder<String>(
+      valueListenable: Persona.notifier,
+      builder: (context, _, __) => _assistantsFor(_proKindOf(Persona.proKind)),
+    );
+  }
+
+  static ProKind? _proKindOf(String? k) => switch (k) {
+        'doctor' => ProKind.doctor,
+        'advocate' => ProKind.advocate,
+        'business' => ProKind.business,
+        _ => null,
+      };
+
+  Widget _assistantsFor(ProKind? mine) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Semantics(
-          header: true,
-          child: Padding(
-            padding: const EdgeInsets.only(left: Neon.s1, bottom: 10),
-            child: Text('Assistants',
-                style: NeonType.manrope(21, FontWeight.w800)
-                    .copyWith(color: Neon.textHi, letterSpacing: -0.6)),
-          ),
-        ),
-        ProBanners(
-            onOpen: (k) => _do.open(context, ProAssistantScreen(kind: k))),
-        const SizedBox(height: 12),
-        Tappable(
-          onTap: () => _do.open(context, const DocumentsScreen()),
-          semanticLabel: 'My documents',
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: Neon.glassBox(Neon.rLg),
-            child: ExcludeSemantics(
-              child: Row(
-                children: [
-                  Icon(Icons.description_rounded,
-                      color: Neon.violet, size: 22),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text('My documents',
-                        style: NeonType.manrope(
-                                NeonType.body, FontWeight.w700)
-                            .copyWith(color: Neon.textHi)),
-                  ),
-                  Icon(Icons.chevron_right_rounded,
-                      color: Neon.textDim, size: 22),
-                ],
-              ),
-            ),
-          ),
-        ),
+        if (mine != null) ...[
+          ProBanners(
+              kinds: [mine],
+              onOpen: (k) => _do.open(context, ProAssistantScreen(kind: k))),
+          const SizedBox(height: 12),
+        ],
+        UploadFilesCard(
+            onTap: () => _do.open(context, const DocumentsScreen())),
       ],
     );
   }
@@ -717,9 +708,9 @@ class _HomeFeedViewState extends State<HomeFeedView> {
   Widget _status(BriefService svc) {
     final at = svc.updatedAt;
     final text = !svc.loaded
-        ? "Couldn't load your day."
+        ? "Unable to load your day."
         : at == null
-            ? 'Offline · showing your last saved day'
+            ? 'Offline · showing your last saved briefing'
             : 'Offline · updated ${CallHistory.clock(at)}';
     return Padding(
       padding: const EdgeInsets.only(top: 8),
@@ -737,7 +728,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
               minimumSize: const Size(48, 48),
             ),
             onPressed: () => svc.refresh(force: true),
-            child: const Text('Try again'),
+            child: const Text('Retry'),
           ),
         ],
       ),
@@ -826,8 +817,8 @@ class _HomeFeedViewState extends State<HomeFeedView> {
       subtitle: 'Weather',
       // Rain on its way is worth a reminder; heat and sun are just told.
       act: w.kind == 'rain' && from != null
-          ? _Act('Remind me', Icons.alarm_add_rounded, () async {
-              _do.ask('Remind me to take an umbrella half an hour before '
+          ? _Act('Set Reminder', Icons.alarm_add_rounded, () async {
+              _do.ask('Set a reminder to carry an umbrella half an hour before '
                   '${_hour(from)} today.');
               return true;
             })
@@ -840,8 +831,8 @@ class _HomeFeedViewState extends State<HomeFeedView> {
         tone: NeonTone.action,
         icon: Icons.shopping_basket_rounded,
         tint: Neon.accentE,
-        title: e.toBuy == 1 ? '1 thing to buy' : '${e.toBuy} things to buy',
-        subtitle: 'Shopping list · ${e.toBuyNames.join(', ')}',
+        title: e.toBuy == 1 ? '1 item to buy' : '${e.toBuy} items to buy',
+        subtitle: 'Shopping List · ${e.toBuyNames.join(', ')}',
         onTap: () => _do.open(context, const ShoppingListScreen()),
         act: _Act('Open', Icons.chevron_right_rounded, () async {
           _do.open(context, const ShoppingListScreen());
@@ -865,12 +856,12 @@ class _HomeFeedViewState extends State<HomeFeedView> {
               Expanded(
                 child: Semantics(
                   header: true,
-                  child: Text('In the news',
+                  child: Text('In the News',
                       style: NeonType.eyebrow.copyWith(color: Neon.textLo)),
                 ),
               ),
               IconButton(
-                tooltip: 'Hide news on Home',
+                tooltip: 'Hide News on Home',
                 constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                 onPressed: _hideNews,
                 icon: Icon(Icons.close_rounded, size: 18, color: Neon.textLo),
@@ -916,7 +907,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                 textStyle: NeonType.manrope(NeonType.footnote, FontWeight.w700),
               ),
               onPressed: () => _do.open(context, const NewsScreen()),
-              child: const Text('More news'),
+              child: const Text('More News'),
             ),
           ),
         ],
@@ -927,7 +918,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
   void _hideNews() {
     HapticFeedback.selectionClick();
     unawaited(HomeMemory.instance.setNewsOn(false));
-    unawaited(AppFeedback.showUndo(context, 'News hidden from Home',
+    unawaited(AppFeedback.showUndo(context, 'News hidden from Home.',
         onUndo: () => unawaited(HomeMemory.instance.setNewsOn(true))));
   }
 
@@ -938,21 +929,21 @@ class _HomeFeedViewState extends State<HomeFeedView> {
     final busy = _busy.contains(e.id);
     final ask = t.ask;
     final primary = ask != null
-        ? _Act('Try it', Icons.graphic_eq_rounded, () async {
+        ? _Act('Try It', Icons.graphic_eq_rounded, () async {
             _do.ask(ask);
             return true;
           })
-        : _Act('Talk to me', Icons.mic_rounded, () async {
+        : _Act('Speak Now', Icons.mic_rounded, () async {
             _do.talk();
             return true;
           });
-    final later = _Act('Not now', null, () async {
+    final later = _Act('Not Now', null, () async {
       unawaited(HomeMemory.instance.hide(e.id));
       return true;
     });
     return Semantics(
       container: true,
-      label: 'Try asking: ${t.say}. ${t.why}',
+      label: 'Suggested request: ${t.say}. ${t.why}',
       child: GlassCard(
         padding: const EdgeInsets.fromLTRB(Neon.s4, Neon.s4, Neon.s2, Neon.s1 + 2),
         child: Column(
@@ -966,7 +957,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                     children: [
                       Icon(Icons.auto_awesome_rounded, size: 16, color: Neon.violet),
                       const SizedBox(width: 8),
-                      Text('Try asking',
+                      Text('Suggested Request',
                           style: NeonType.eyebrow.copyWith(color: Neon.textLo)),
                     ],
                   ),
@@ -1008,7 +999,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
   // ── buttons ──────────────────────────────────────────────────────────
 
   (_Act?, _Act?) _buttons(HomeCard c) {
-    final notNow = _Act('Not now', null, () async {
+    final notNow = _Act('Not Now', null, () async {
       _do.hide(c);
       return true;
     });
@@ -1021,7 +1012,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
           _Act('Prepare', Icons.groups_rounded, () async {
             unawaited(_do
                 .prepareMeeting(context, c.item!)
-                .catchError((Object e) => _said("Couldn't open that.", e)));
+                .catchError((Object e) => _said("Unable to open meeting preparation.", e)));
             return true;
           }),
           notNow,
@@ -1040,18 +1031,18 @@ class _HomeFeedViewState extends State<HomeFeedView> {
         return (
           call.dialable.isEmpty
               ? null
-              : _Act('Call back', Icons.call_rounded, () async {
+              : _Act('Call Back', Icons.call_rounded, () async {
                   _do.callBack(call);
                   return true;
                 }),
-          _Act('Not now', null, () async {
+          _Act('Not Now', null, () async {
             _do.dropCall(call);
             return true;
           }),
         );
       case HomeCardKind.message:
         return (
-          _Act('Hear it', Icons.volume_up_rounded, () async {
+          _Act('Listen', Icons.volume_up_rounded, () async {
             await _do.hearMessages();
             return true;
           }),
@@ -1060,7 +1051,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
       case HomeCardKind.birthday:
         final who = c.person ?? c.title;
         return (
-          _Act('Send wishes', Icons.celebration_rounded, () async {
+          _Act('Send Wishes', Icons.celebration_rounded, () async {
             _do.ask('Help me wish $who: it is ${c.title} '
                 '${c.reason.toLowerCase()}. Draft a warm message and ask me '
                 'before sending it.');
@@ -1078,7 +1069,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
         );
       case HomeCardKind.getStarted:
         return (
-          _Act('Talk to me', Icons.mic_rounded, () async {
+          _Act('Speak Now', Icons.mic_rounded, () async {
             _do.talk();
             return true;
           }),
@@ -1091,7 +1082,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
     final ok = c.promise != null
         ? await _do.completePromise(c.promise!)
         : await _do.completeReminder(c.item!);
-    if (!ok) _failed("Couldn't mark it done.", () => _run(c.id, () => _done(c)));
+    if (!ok) _failed("Unable to mark as completed.", () => _run(c.id, () => _done(c)));
     return ok;
   }
 
@@ -1106,17 +1097,17 @@ class _HomeFeedViewState extends State<HomeFeedView> {
     final ok = await _do.moveReminder(c.item!, to);
     if (!mounted) return ok;
     if (ok) {
-      AppFeedback.show('Moved to ${CallHistory.clock(to)}',
+      AppFeedback.show('Rescheduled to ${CallHistory.clock(to)}.',
           context: context, tone: FeedbackTone.success);
     } else {
-      _failed("Couldn't move it.", () => _run(c.id, () => _later(c)));
+      _failed("Unable to reschedule the reminder.", () => _run(c.id, () => _later(c)));
     }
     return ok;
   }
 
   void _failed(String what, VoidCallback retry) {
     if (!mounted) return;
-    AppFeedback.showRetry('$what Check your connection.',
+    AppFeedback.showRetry('$what Check your internet connection.',
         context: context, onRetry: retry);
   }
 
@@ -1132,7 +1123,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
       await act();
     } catch (e) {
       AppLog.add('home', 'button on $id failed: $e');
-      _failed("That didn't work.", () => _run(id, act));
+      _failed("Unable to complete the action.",() => _run(id, act));
     }
     if (!mounted) return;
     setState(() => _busy.remove(id));
@@ -1145,7 +1136,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
     return FilledButton.icon(
       onPressed: busy ? null : () => _run(id, a.run),
       icon: busy
-          ? const NeonLoader.inline(size: 16, semanticLabel: 'Working')
+          ? const NeonLoader.inline(size: 16, semanticLabel: 'In progress')
           : Icon(a.icon ?? Icons.arrow_forward_rounded, size: 18),
       label: Text(a.label),
       style: FilledButton.styleFrom(
@@ -1220,12 +1211,12 @@ class _HomeFeedViewState extends State<HomeFeedView> {
   static String _kindName(HomeCardKind k) => switch (k) {
         HomeCardKind.meeting => 'Meeting',
         HomeCardKind.reminder => 'Reminder',
-        HomeCardKind.promise => 'Promise',
-        HomeCardKind.missedCall => 'Missed call',
+        HomeCardKind.promise => 'Commitment',
+        HomeCardKind.missedCall => 'Missed Call',
         HomeCardKind.message => 'Message',
         HomeCardKind.birthday => 'Birthday',
         HomeCardKind.payment => 'Bill',
-        HomeCardKind.getStarted => 'Get started',
+        HomeCardKind.getStarted => 'Get Started',
       };
 
   static (IconData, Color) _look(HomeCardKind k) => switch (k) {

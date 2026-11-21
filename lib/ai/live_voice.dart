@@ -574,7 +574,7 @@ class LiveVoicePreview {
   static final _cache = <String, List<SpeechChunk>>{};
 
   static String line(String voice) =>
-      "Hi, I'm $voice. This is how I'll sound when we talk.";
+      "Hello, I am $voice. This is how I will sound when we speak.";
 
   /// Plays [voice]'s sample into [sink]. False when it could not be made.
   static Future<bool> play(
@@ -868,7 +868,7 @@ class LiveVoice {
 
   /// Said when the fast voice gives up on a turn nobody heard.
   static const missedLine =
-      "Sorry, I didn't catch that. Could you say it again?";
+      "I did not quite catch that. Could you please repeat it?";
 
   /// The owner's microphone level, 0..1, while she is silent (the orb).
   void Function(double level)? onLevel;
@@ -1873,7 +1873,7 @@ class LiveVoice {
   static String _toolLine(_LiveTurn t) {
     final log = t.tools?.toolLog ?? const [];
     final ok = log.isNotEmpty && log.every((e) => e['ok'] == true);
-    return ok ? 'Done.' : "Sorry, I couldn't finish that.";
+    return ok ? 'Done.' : "I was unable to complete that.";
   }
 
   /// No word from her in [after]: the turn is handed on.

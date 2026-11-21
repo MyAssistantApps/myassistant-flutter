@@ -85,9 +85,9 @@ class _ShoppingEditSheetState extends State<ShoppingEditSheet> {
     String? amountError;
     String? linkError;
     if (name.isEmpty) {
-      nameError = 'Type what to buy.';
+      nameError = 'Enter the item to purchase.';
     } else if (name.length > shoppingNameMax) {
-      nameError = '80 letters at most — put the rest in the details.';
+      nameError = 'At most 80 characters are permitted. Please place the remainder in the details.';
     } else if (name != _item.name) {
       patch['name'] = name;
     }
@@ -95,7 +95,7 @@ class _ShoppingEditSheetState extends State<ShoppingEditSheet> {
     if (amount != _spaces(_item.amountText)) {
       final a = parseAmount(amount);
       if (a == null) {
-        amountError = 'Try an amount like “2 kg”, “1 packet” or “3”.';
+        amountError = 'Enter a valid amount, such as “2 kg”, “1 packet” or “3”.';
       } else {
         patch['quantity'] = a.quantity;
         patch['unit'] = a.unit;
@@ -107,7 +107,7 @@ class _ShoppingEditSheetState extends State<ShoppingEditSheet> {
     if (store != (_item.store ?? '')) patch['store'] = store.isEmpty ? null : store;
     final link = cleanShoppingLink(_link.text);
     if (link == null) {
-      linkError = 'Use a web address starting with https://';
+      linkError = 'Enter a web address beginning with https://';
     } else if (link != (_item.link ?? '')) {
       patch['link'] = link.isEmpty ? null : link;
     }
@@ -156,7 +156,7 @@ class _ShoppingEditSheetState extends State<ShoppingEditSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Edit', style: NeonType.cardTitle.copyWith(color: Neon.textHi)),
+            Text('Edit Item', style: NeonType.cardTitle.copyWith(color: Neon.textHi)),
             const SizedBox(height: 14),
             TextField(
               key: const Key('edit_name'),
@@ -164,14 +164,14 @@ class _ShoppingEditSheetState extends State<ShoppingEditSheet> {
               maxLength: shoppingNameMax,
               textCapitalization: TextCapitalization.sentences,
               style: text,
-              decoration: _box('What', hint: 'e.g. Kurti', error: _nameError),
+              decoration: _box('Item', hint: 'e.g. Kurti', error: _nameError),
             ),
             const SizedBox(height: 12),
             TextField(
               key: const Key('edit_amount'),
               controller: _amount,
               style: text,
-              decoration: _box('How much', hint: '2 kg, 1 packet, 3', error: _amountError),
+              decoration: _box('Quantity', hint: '2 kg, 1 packet, 3', error: _amountError),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -180,7 +180,7 @@ class _ShoppingEditSheetState extends State<ShoppingEditSheet> {
               maxLength: 200,
               textCapitalization: TextCapitalization.sentences,
               style: text,
-              decoration: _box('Details', hint: 'Size, colour, brand — M, blue floral'),
+              decoration: _box('Details', hint: 'Size, colour, brand, e.g. M, blue floral'),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -189,7 +189,7 @@ class _ShoppingEditSheetState extends State<ShoppingEditSheet> {
               maxLength: 40,
               textCapitalization: TextCapitalization.words,
               style: text,
-              decoration: _box('From', hint: 'A shop or app — Myntra, the kirana'),
+              decoration: _box('Store', hint: 'A shop or app, e.g. Myntra, the kirana'),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -204,7 +204,7 @@ class _ShoppingEditSheetState extends State<ShoppingEditSheet> {
                 error: _linkError,
                 suffix: hasLink
                     ? IconButton(
-                        tooltip: 'Open the link',
+                        tooltip: 'Open Link',
                         onPressed: _openLink,
                         icon: Icon(Icons.open_in_new_rounded, color: Neon.textLo),
                       )
@@ -217,7 +217,7 @@ class _ShoppingEditSheetState extends State<ShoppingEditSheet> {
               initialValue: widget.categories.any((c) => c.id == _category) ? _category : null,
               isExpanded: true,
               style: text,
-              decoration: _box('Kind'),
+              decoration: _box('Category'),
               items: [
                 for (final c in widget.categories)
                   DropdownMenuItem(value: c.id, child: Text(c.label, overflow: TextOverflow.ellipsis)),

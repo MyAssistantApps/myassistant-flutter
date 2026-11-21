@@ -158,10 +158,10 @@ String _tidy(String raw) => raw
 QuickAddResult _named(String name, {double? quantity, String? unit}) {
   final n = cleanItemName(name);
   if (n.isEmpty) {
-    return const QuickAddResult.error('Type what to buy — like “milk” or “2 kg onions”.');
+    return const QuickAddResult.error('Enter the item to purchase, e.g. “milk” or “2 kg onions”.');
   }
   if (n.length > shoppingNameMax) {
-    return const QuickAddResult.error('That name is too long — keep it under 80 letters, and put '
+    return const QuickAddResult.error('The name is too long. Keep it under 80 characters and add the '
         'size or colour in the details.');
   }
   return QuickAddResult.ok(ShoppingDraft(n, quantity: quantity, unit: unit));

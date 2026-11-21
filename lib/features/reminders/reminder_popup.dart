@@ -208,7 +208,7 @@ class _ReminderPopupSheetState extends State<ReminderPopupSheet> {
   // ── today's progress ─────────────────────────────────────────────────
   Widget _progressRow(double p, int done, int total) {
     return Semantics(
-      label: 'Today: $done of $total reminders done',
+      label: 'Today: $done of $total reminders completed',
       child: ExcludeSemantics(
         child: Row(
           children: [
@@ -225,7 +225,7 @@ class _ReminderPopupSheetState extends State<ReminderPopupSheet> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                  total == 0 ? "Today's reminders" : '$done of $total done today',
+                  total == 0 ? "Today's reminders" : '$done of $total completed today',
                   style: NeonType.manrope(NeonType.body, FontWeight.w600)
                       .copyWith(color: Neon.textHi)),
             ),
@@ -277,7 +277,7 @@ class _ReminderPopupSheetState extends State<ReminderPopupSheet> {
                   decoration: _done ? TextDecoration.lineThrough : null,
                   decorationColor: Neon.textLo)),
           const SizedBox(height: 8),
-          Text(_done ? 'Done — nicely handled.' : _when(at, now),
+          Text(_done ? 'Marked as completed.' : _when(at, now),
               style: TextStyle(color: Neon.textLo, fontSize: NeonType.body, height: 1.4)),
           const SizedBox(height: 22),
           // Side by side when they fit; the second wraps under the first
@@ -305,7 +305,7 @@ class _ReminderPopupSheetState extends State<ReminderPopupSheet> {
 
   Widget _nextRow(Reminder n) {
     return Tappable(
-      semanticLabel: 'Next up: ${n.text}, ${_clock(n.dueAt!)}',
+      semanticLabel: 'Upcoming: ${n.text},${_clock(n.dueAt!)}',
       onTap: () => setState(() {
         _focus = n;
         _done = false;
@@ -319,7 +319,7 @@ class _ReminderPopupSheetState extends State<ReminderPopupSheet> {
         ),
         child: Row(
           children: [
-            Text('Next up', style: TextStyle(color: Neon.textLo, fontSize: NeonType.footnote)),
+            Text('Upcoming',style: TextStyle(color: Neon.textLo, fontSize: NeonType.footnote)),
             const SizedBox(width: 12),
             Expanded(
               child: Text(n.text,
@@ -394,7 +394,7 @@ class _ReminderPopupSheetState extends State<ReminderPopupSheet> {
     if (!mounted) return;
     if (!ok) {
       setState(() => _done = false);
-      AppFeedback.showRetry("Couldn't mark it done. Check your connection.",
+      AppFeedback.showRetry("Unable to mark the reminder as completed. Check your connection.",
           context: context, onRetry: _markDone);
       return;
     }
@@ -409,12 +409,12 @@ class _ReminderPopupSheetState extends State<ReminderPopupSheet> {
     final r = _focus;
     final api = widget.api;
     Navigator.of(context).maybePop();
-    AppFeedback.show('Snoozed until ${_clock(to)}', tone: FeedbackTone.success);
+    AppFeedback.show('Reminder snoozed until ${_clock(to)}.', tone: FeedbackTone.success);
     final ok = await api.snooze(r, to);
     if (ok) {
       api.changed();
     } else {
-      AppFeedback.toast("Couldn't snooze it. Check your connection.", tone: FeedbackTone.error);
+      AppFeedback.toast("Unable to snooze the reminder. Check your connection.", tone: FeedbackTone.error);
     }
   }
 
@@ -448,7 +448,7 @@ class _DoneButton extends StatelessWidget {
     ];
     return Tappable(
       onTap: onTap,
-      semanticLabel: done ? 'Done' : 'Mark done',
+      semanticLabel: done ? 'Completed' : 'Mark as Completed',
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         height: 52,
@@ -472,7 +472,7 @@ class _DoneButton extends StatelessWidget {
               child: Icon(Icons.check_rounded, color: Neon.textHi, size: 22),
             ),
             const SizedBox(width: 10),
-            Text(done ? 'Done' : 'Mark done',
+            Text(done ? 'Completed' : 'Mark as Completed',
                 style: NeonType.manrope(NeonType.body + 2, FontWeight.w800).copyWith(
                   color: Neon.textHi,
                   shadows: [Shadow(color: Neon.bg.withValues(alpha: 0.45), blurRadius: 6)],

@@ -131,7 +131,7 @@ class _ChatScreenState extends State<ChatScreen> {
       });
     } catch (_) {
       if (mounted && _threads == null) {
-        setState(() => _error = "Couldn't load your chats.");
+        setState(() => _error = "Unable to load your chats.");
       }
     }
   }
@@ -184,7 +184,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 // in: you make a group rarely and message somebody often,
                 // so the common one sits nearest the thumb.
                 IconButton(
-                  tooltip: 'New group',
+                  tooltip: 'New Group',
                   onPressed: () => Navigator.of(context)
                       .push(MaterialPageRoute(
                           builder: (_) =>
@@ -193,7 +193,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   icon: Icon(Icons.group_add_rounded, color: Neon.textHi),
                 ),
                 IconButton(
-                  tooltip: 'New chat',
+                  tooltip: 'New Chat',
                   onPressed: _newChat,
                   icon: Icon(Icons.edit_square, color: Neon.textHi),
                 ),
@@ -229,11 +229,11 @@ class _ChatScreenState extends State<ChatScreen> {
                               const SizedBox(height: 32),
                               NeonEmptyState(
                                 icon: Icons.forum_outlined,
-                                title: 'No chats yet',
+                                title: 'No conversations yet',
                                 body: 'Say "send a message to <name>" or "send '
-                                    'my <document> to <name>" — everything '
-                                    'lands here.',
-                                actionLabel: 'New chat',
+                                    'my <document> to <name>". All messages '
+                                    'appear here.',
+                                actionLabel: 'New Chat',
                                 actionIcon: Icons.edit_square,
                                 onAction: _newChat,
                               ),
@@ -599,11 +599,11 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
         }
         _jumpToEnd();
       } else if (mounted) {
-        AppFeedback.show("Couldn't send — are they on the app?", context: context);
+        AppFeedback.show("Unable to send. The recipient may not be on MyAssistant.", context: context);
       }
     } catch (_) {
       if (mounted) {
-        AppFeedback.show("Couldn't send the message.", context: context);
+        AppFeedback.show("Unable to send the message. Please try again.", context: context);
       }
     } finally {
       if (mounted) setState(() => _sending = false);
@@ -649,12 +649,12 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
             itemBuilder: (_) => [
               PopupMenuItem(
                 value: 'mute',
-                child: Text(_muted ? 'Unmute' : 'Mute notifications'),
+                child: Text(_muted ? 'Unmute' : 'Mute Notifications'),
               ),
               PopupMenuItem(
                 value: 'clear',
                 child:
-                    Text('Clear chat', style: TextStyle(color: Neon.errorInk)),
+                    Text('Clear Chat', style: TextStyle(color: Neon.errorInk)),
               ),
             ],
           ),
@@ -668,7 +668,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
                 : _failed
                     // Scrolls when the keyboard leaves little room.
                     ? NeonErrorState(
-                        message: "Couldn't load this conversation",
+                        message: "Unable to load this conversation.",
                         onRetry: () {
                           setState(() => _loading = true);
                           _load();
@@ -716,7 +716,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
           if (m.auto)
             Padding(
               padding: const EdgeInsets.only(bottom: 2),
-              child: Text('assistant · auto-reply',
+              child: Text('Assistant · automatic reply',
                   style: TextStyle(
                       color: m.mine
                           ? Neon.onAccent.withValues(alpha: 0.7)
@@ -793,10 +793,10 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
     final ok = await showAppDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
-        title: const Text('Clear this chat?'),
+        title: const Text('Clear Chat'),
         content: Text(
           'This removes the messages from your copy only. '
-          '${widget.name} keeps theirs.',
+          '${widget.name} retains theirs.',
           style: TextStyle(color: Neon.textLo, height: 1.4, fontSize: 14),
         ),
         actions: [
@@ -840,14 +840,14 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
             if (m.mine)
               ListTile(
                 leading: Icon(Icons.undo_rounded, color: Neon.error),
-                title: Text('Delete for everyone',
+                title: Text('Delete for Everyone',
                     style: TextStyle(color: Neon.errorInk)),
                 onTap: () => Navigator.of(c).pop('everyone'),
               ),
             ListTile(
               leading: Icon(Icons.visibility_off_rounded, color: Neon.textHi),
               title:
-                  Text('Delete for me', style: TextStyle(color: Neon.textHi)),
+                  Text('Delete for Me', style: TextStyle(color: Neon.textHi)),
               onTap: () => Navigator.of(c).pop('me'),
             ),
           ],

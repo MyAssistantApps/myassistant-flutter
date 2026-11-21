@@ -175,7 +175,9 @@
     <application
         android:label="myassistant"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -397,7 +399,7 @@
         <service
             android:name=".HariNotificationListener"
             android:exported="false"
-            android:label="Hari Assistant"
+            android:label="MyAssistant"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
             <intent-filter>
                 <action android:name="android.service.notification.NotificationListenerService"/>
