@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'clinic/appointments_screen.dart';
 import 'package:flutter/material.dart';
 import '../design/neon_widgets.dart';
 import 'package:flutter/services.dart';
@@ -27,7 +28,7 @@ import 'pro/leads_screen.dart';
 import 'pro/legal_draft_screen.dart';
 import 'listing/my_listing_screen.dart';
 import '../services/listing_service.dart';
-import '../models/clinic.dart' show rupees;
+import '../models/clinic.dart' show rupees, Appointment;
 import '../services/clinic_service.dart';
 import '../services/persona.dart';
 import '../services/pro_photo.dart';
@@ -123,9 +124,13 @@ class ProProfile {
               ProAction('Patient Records', 'Files, clinical notes, and reports',
                   Icons.folder_shared_rounded,
                   page: () => const ClientsScreen()),
-              ProAction('Book Appointment', 'Select a patient and available slot',
+              // BOOKED, NOT "BOOK" (owner, 2026-11-21): every appointment
+              // already booked — by the doctor, by voice, the public page or
+              // a patient talking to this assistant — each opening the
+              // patient's record. New ones are the + on that screen.
+              ProAction('Booked Appointments', 'Upcoming visits, with patient records',
                   Icons.event_available_rounded,
-                  run: (c) => bookAppointment(c)),
+                  page: () => const AppointmentsScreen()),
               ProAction('Follow-ups', 'Review visits with reminder calls',
                   Icons.event_repeat_rounded,
                   page: () => const ClinicScreen(initialTab: 1)),
@@ -530,6 +535,13 @@ class _ProAssistantScreenState extends State<ProAssistantScreen> {
                   onTap: () => _run(context, featured.first),
                 ),
               ),
+            ),
+          // THE NEXT APPOINTMENTS, right on the page (2026-11-21), for the
+          // doctor whose page this is.
+          if (kind == ProKind.doctor && Persona.proKind == kind.name)
+            const SliverPadding(
+              padding: EdgeInsets.fromLTRB(16, 22, 16, 0),
+              sliver: SliverToBoxAdapter(child: _UpcomingPreview()),
             ),
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 22, 16, 0),
@@ -1679,3 +1691,90 @@ class _PublicPageCardState extends State<PublicPageCard> {
     );
   }
 }
+
+/// The doctor's next three appointments, each opening the patient's record,
+/// with "See All" for the full list.
+class _UpcomingPreview extends StatefulWidget {
+  const _UpcomingPreview();
+
+  @override
+  State<_UpcomingPreview> createState() => _UpcomingPreviewState();
+}
+
+class _UpcomingPreviewState extends State<_UpcomingPreview> {
+  List<Appointment>? _list;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final l = await ClinicService.instance.upcoming(days: 14);
+    // Offline or an older server: an empty list, never a spinner forever.
+    if (mounted) setState(() => _list = l ?? _list ?? const <Appointment>[]);
+  }
+
+  void _all() => Navigator.of(context)
+      .push(MaterialPageRoute<void>(builder: (_) => const AppointmentsScreen()))
+      .then((_) => _load());
+
+  @override
+  Widget build(BuildContext context) {
+    final list = _list;
+    final next = (list ?? const <Appointment>[]).take(3).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 12),
+          child: Row(children: [
+            Expanded(
+              child: Text('UPCOMING APPOINTMENTS',
+                  style: NeonType.eyebrow.copyWith(color: Neon.textLo)),
+            ),
+            if ((list?.length ?? 0) > 0)
+              TextButton(onPressed: _all, child: Text('See All (${list!.length})')),
+          ]),
+        ),
+        if (list == null)
+          const SizedBox(height: 60, child: Center(child: NeonLoader(size: 26)))
+        else if (next.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Neon.surface,
+              borderRadius: BorderRadius.circular(Neon.rLg),
+              border: Border.all(color: Neon.line),
+            ),
+            child: Row(children: [
+              Icon(Icons.event_available_rounded, color: Neon.violet),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                    'No upcoming appointments. Bookings from patients, your public page and your assistant appear here.',
+                    style: TextStyle(color: Neon.textLo, fontSize: 13, height: 1.35)),
+              ),
+            ]),
+          )
+        else
+          for (final a in next) ...[
+            AppointmentCard(
+              appt: a,
+              compact: true,
+              onOpen: () {
+                final id = a.clientId;
+                if (id == null) return _all();
+                Navigator.of(context)
+                    .push(MaterialPageRoute<void>(builder: (_) => ClientDetailScreen(clientId: id)))
+                    .then((_) => _load());
+              },
+            ),
+            const SizedBox(height: 10),
+          ],
+      ],
+    );
+  }
+}
+

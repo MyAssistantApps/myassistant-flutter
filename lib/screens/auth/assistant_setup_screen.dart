@@ -16,6 +16,7 @@ import '../splash_screen.dart';
 import 'guide_screen.dart';
 import 'permissions_screen.dart';
 import 'profession_screen.dart';
+import 'photo_step_screen.dart';
 import 'welcome_screen.dart';
 import '../../features/home/horoscope_card.dart';
 import '../../services/horoscope.dart';
@@ -49,6 +50,9 @@ class _AssistantSetupGateState extends State<AssistantSetupGate> {
   /// which workspaces exist (Clinic for doctors). Accounts created before
   /// this step existed get it once too, on their next launch.
   bool _personaNeeded = false;
+
+  /// Right after the profession step in a fresh onboarding.
+  bool _photoStep = false;
 
   /// Permission gate: false until the MICROPHONE is granted — the one the
   /// app cannot work without (see permissions_screen.dart). Checked on
@@ -150,7 +154,15 @@ class _AssistantSetupGateState extends State<AssistantSetupGate> {
   Widget build(BuildContext context) {
     if (_needed != null && _personaNeeded) {
       return ProfessionScreen(
-          onDone: () => setState(() => _personaNeeded = false));
+          onDone: () => setState(() {
+                _personaNeeded = false;
+                // Fresh onboarding only: the photo step follows the
+                // profession it is dressed for.
+                _photoStep = true;
+              }));
+    }
+    if (_photoStep) {
+      return PhotoStepScreen(onDone: () => setState(() => _photoStep = false));
     }
     return switch (_needed) {
       null => const SplashScreen(),

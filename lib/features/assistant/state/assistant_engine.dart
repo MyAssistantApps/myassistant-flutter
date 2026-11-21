@@ -23,6 +23,7 @@ import '../../../services/notification_service.dart';
 import '../../../design/motion.dart' show showAppDialog;
 import '../../../design/theme_controller.dart';
 import '../../../shell/home_shell.dart';
+import '../../../screens/connect/assistant_call_screen.dart';
 import '../../../screens/documents_screen.dart';
 import '../../../screens/phone/call_notes_screen.dart';
 import '../../../screens/reminders_screen.dart';
@@ -2885,6 +2886,28 @@ class AssistantEngine extends ChangeNotifier {
         // a phone task last) and keeps the rest for the owner's return.
         unawaited(ShortcutRunner.instance
             .run(ShortcutRunDirective.fromJson(e), shortcutPorts));
+        break;
+
+      case 'connect_assistant':
+        // "Connect me to Alan's assistant" (2026-11-21): a live call with
+        // Alan's own assistant — his assistant's name, voice and photo.
+        {
+          final id = (e['hostId'] as num?)?.toInt();
+          final nav = AvatarMessageService.navigatorKey.currentState;
+          if (id == null || nav == null) {
+            _reportDeviceFailure('connect_assistant',
+                target: '${e['ownerName'] ?? ''}', reason: 'the call screen could not open');
+          } else {
+            // Our own conversation ends first (after "Connecting you to…"
+            // is spoken): two live sessions would share one microphone and
+            // one speaker.
+            unawaited(() async {
+              await Future<void>.delayed(const Duration(milliseconds: 1800));
+              await endInlineConversation().catchError((Object _) {});
+              nav.push(MaterialPageRoute(builder: (_) => AssistantCallScreen(hostId: id)));
+            }());
+          }
+        }
         break;
 
       case 'open_app_screen':

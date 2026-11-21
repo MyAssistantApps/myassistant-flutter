@@ -165,6 +165,16 @@ class ClinicService extends ChangeNotifier {
         (r['appointment'] as Map).cast<String, dynamic>());
   }
 
+  /// Every appointment still to happen (from the start of today, next
+  /// [days] days), whoever booked it: the doctor, by voice, the public page
+  /// or another person's assistant. Null when offline.
+  Future<List<Appointment>?> upcoming({int days = 30}) async {
+    final j = await ApiService.getJson('/clinic/appointments/upcoming?days=$days',
+        timeout: const Duration(seconds: 10));
+    if (j == null || j['appointments'] is! List) return null;
+    return Appointment.list(j['appointments']);
+  }
+
   Future<bool> setAppointmentStatus(int id, String status) async {
     final r = await ApiService.sendJson('/clinic/appointments/$id',
         method: 'PATCH', body: {'status': status});

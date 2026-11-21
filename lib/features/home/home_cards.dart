@@ -41,6 +41,10 @@ import 'popular_apps.dart';
 import 'quick_apps.dart';
 import 'home_feed.dart';
 import 'home_memory.dart';
+import 'my_assistant_banner.dart';
+import 'connect_card.dart';
+import '../../screens/connect/assistants_screen.dart';
+import '../../screens/workspace/workspace_screen.dart';
 
 /// A button's background work failed: logged, and said in a toast (there is
 /// no screen context down here).
@@ -482,7 +486,18 @@ class _HomeFeedViewState extends State<HomeFeedView> {
               kinds: [mine],
               onOpen: (k) => _do.open(context, ProAssistantScreen(kind: k))),
           const SizedBox(height: 12),
+        ] else ...[
+          // Everyone else gets their own card too (owner, 2026-11-21).
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: MyAssistantBanner(
+              onOpen: () => _do.open(context, const WorkspaceScreen()),
+            ),
+          ),
+          const SizedBox(height: 12),
         ],
+        ConnectCard(onTap: () => _do.open(context, const AssistantsScreen())),
+        const SizedBox(height: 12),
         UploadFilesCard(
             onTap: () => _do.open(context, const DocumentsScreen())),
       ],

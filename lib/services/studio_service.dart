@@ -383,6 +383,33 @@ class StudioService {
         (jsonDecode(body) as Map)['photo'].cast<String, dynamic>());
   }
 
+  /// Onboarding: [bytes] → a professional headshot (POST /studio/headshot).
+  /// Returns the result's bytes and how many tries are left. Throws
+  /// [StudioException] (consent_required, headshot_limit, no_provider…).
+  static Future<({List<int> bytes, int remaining})> headshot({
+    required List<int> bytes,
+    required String filename,
+    required String mimeType,
+    String profession = '',
+  }) async {
+    final req = http.MultipartRequest('POST', Uri.parse('$_base/headshot'))
+      ..headers.addAll(_multipartHeaders)
+      ..fields['profession'] = profession
+      ..files.add(http.MultipartFile.fromBytes('photo', bytes,
+          filename: filename, contentType: MediaType.parse(mimeType)));
+    // An image edit takes 20-60 s; the user is watching a progress state.
+    final resp = await _client.send(req).timeout(const Duration(seconds: 150));
+    final body = await resp.stream.bytesToString();
+    if (resp.statusCode != 200) _throw(resp.statusCode, body);
+    final j = (jsonDecode(body) as Map).cast<String, dynamic>();
+    final docId = ((j['document'] as Map?)?['id'] as num?)?.toInt();
+    if (docId == null) {
+      throw const StudioException(500, 'The headshot could not be loaded.', '');
+    }
+    final d = await ApiService.downloadDocument(docId);
+    return (bytes: d.bytes, remaining: (j['remaining'] as num?)?.toInt() ?? 0);
+  }
+
   static Future<void> makeDefault(int photoId) async {
     final r = await _client
         .post(Uri.parse('$_base/photos/$photoId/default'), headers: _h)

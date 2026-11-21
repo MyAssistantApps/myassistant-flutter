@@ -38,9 +38,13 @@ class AppUser {
   /// Doctor's specialty ("Dentist") — optional free text.
   final String specialty;
 
+  /// What they do in their own words ("Chartered Accountant"); '' if unset.
+  final String profession;
+
   bool get isDoctor => persona == 'doctor';
 
-  AppUser copyWith({String? persona, String? specialty}) => AppUser(
+  AppUser copyWith({String? persona, String? specialty, String? profession}) =>
+      AppUser(
         id: id,
         email: email,
         name: name,
@@ -51,6 +55,7 @@ class AppUser {
         phoneVerified: phoneVerified,
         persona: persona ?? this.persona,
         specialty: specialty ?? this.specialty,
+        profession: profession ?? this.profession,
       );
 
   const AppUser({
@@ -64,6 +69,7 @@ class AppUser {
     this.phoneVerified = false,
     this.persona = '',
     this.specialty = '',
+    this.profession = '',
   });
 
   factory AppUser.fromJson(Map<String, dynamic> j) => AppUser(
@@ -77,6 +83,7 @@ class AppUser {
         phoneVerified: j['phoneVerified'] == true,
         persona: (j['persona'] as String?) ?? '',
         specialty: (j['specialty'] as String?) ?? '',
+        profession: (j['profession'] as String?) ?? '',
       );
 }
 
@@ -277,10 +284,11 @@ class AuthService extends ChangeNotifier {
   /// waiting for /auth/me — so the UI switches workspaces instantly and a
   /// failed refresh can't revert it. The next refreshUser() overwrites it
   /// with the server's copy anyway.
-  void applyPersona(String persona, {String? specialty}) {
+  void applyPersona(String persona, {String? specialty, String? profession}) {
     final u = user;
     if (u == null) return;
-    user = u.copyWith(persona: persona, specialty: specialty);
+    user = u.copyWith(
+        persona: persona, specialty: specialty, profession: profession);
     notifyListeners();
   }
 
