@@ -139,9 +139,11 @@ class OpenAiLiveSession implements LiveSessionPort, CancellableReply {
     switch (type) {
       case 'session.created':
       case 'session.updated':
+        final first = !_serverReady;
         _serverReady = true;
+        if (type == 'session.created') _tuneTurns();
         if (!_ready.isCompleted) _ready.complete();
-        if (_out.hasListener) _emit(const LiveInReady());
+        if (first && _out.hasListener) _emit(const LiveInReady());
       case 'response.created':
         _responding = true;
       case 'input_audio_buffer.speech_started':
@@ -239,6 +241,44 @@ class OpenAiLiveSession implements LiveSessionPort, CancellableReply {
     if (!_ready.isCompleted)
       _ready.completeError(StateError('the realtime socket closed'));
     if (!_out.isClosed) _out.close();
+  }
+
+  /// How readily she answers once the owner stops (2026-11-10, Manish:
+  /// "voice to text is very delayed and don't give the answer quickly").
+  /// The server mints sessions with semantic_vad eagerness "low", which
+  /// waits up to ~8 s for a speaker who might carry on — the dead air after
+  /// every question. "medium" still lets the model judge whether the
+  /// sentence is finished (no cut-offs on a short think-pause) but answers
+  /// a finished one at once, with at most ~4 s of waiting. Interruption
+  /// stays off: only the Interrupt button stops her.
+  static String turnEagerness = 'medium';
+
+  /// Her speaking pace (OpenAI's 0.25–1.5; 1.0 is her natural pace). Sent
+  /// with the update so she always talks at a normal speed (2026-11-10,
+  /// Manish: "it is talking fast, make it normal as it was").
+  static double speakingSpeed = 1.0;
+
+  void _tuneTurns() {
+    final eagerness = turnEagerness;
+    if (eagerness.isEmpty) return;
+    _event({
+      'type': 'session.update',
+      'session': {
+        'type': 'realtime',
+        'audio': {
+          'input': {
+            'turn_detection': {
+              'type': 'semantic_vad',
+              'eagerness': eagerness,
+              'create_response': true,
+              'interrupt_response': false,
+            },
+          },
+          'output': {'speed': speakingSpeed},
+        },
+      },
+    });
+    AppLog.add('live', 'realtime turns: semantic, eagerness $eagerness, speed $speakingSpeed');
   }
 
   void _event(Map<String, Object?> e) {

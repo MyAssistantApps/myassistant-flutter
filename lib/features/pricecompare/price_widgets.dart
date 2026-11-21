@@ -232,42 +232,71 @@ class _ExampleCompare extends StatelessWidget {
 /// wide card on top; the other four as a 2 × 2 of full-photo cards. Five
 /// tiles as 3 + 2 left a ragged, centred last row.
 class PriceCategoryShowcase extends StatelessWidget {
-  const PriceCategoryShowcase({super.key, required this.onTap, this.selected});
+  const PriceCategoryShowcase({super.key, required this.onTap, this.selected, this.only});
   final void Function(PriceCategory c) onTap;
   final PriceCategory? selected;
 
+  /// When set, only these categories, as long bordered cards one under
+  /// another (Home shows just flights and hotels, 2026-11-09).
+  final List<PriceCategory>? only;
+
   @override
   Widget build(BuildContext context) {
-    final rest = PriceCategory.values.where((c) => c != PriceCategory.shopping).toList();
+    final small = only != null;
+    final rest = only ?? PriceCategory.values.where((c) => c != PriceCategory.shopping).toList();
     return Column(
       children: [
-        _PhotoCard(
-          category: PriceCategory.shopping,
-          title: 'Product compare',
-          line: 'Amazon, Flipkart, Croma & more',
-          wide: true,
-          selected: selected == PriceCategory.shopping,
-          onTap: () => onTap(PriceCategory.shopping),
-        ),
-        for (var i = 0; i < rest.length; i += 2) ...[
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              for (var k = i; k < i + 2 && k < rest.length; k++) ...[
-                if (k > i) const SizedBox(width: 10),
-                Expanded(
-                  child: _PhotoCard(
-                    category: rest[k],
-                    title: rest[k] == PriceCategory.cabs ? 'Rides' : rest[k].label,
-                    line: rest[k].line,
-                    selected: selected == rest[k],
-                    onTap: () => onTap(rest[k]),
-                  ),
-                ),
-              ],
-            ],
+        if (!small)
+          _PhotoCard(
+            category: PriceCategory.shopping,
+            title: 'Product compare',
+            line: 'Amazon, Flipkart, Croma & more',
+            wide: true,
+            selected: selected == PriceCategory.shopping,
+            onTap: () => onTap(PriceCategory.shopping),
           ),
-        ],
+        if (small)
+          // Side by side, photo on top, name under it (Manish, 2026-11-10).
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final c in rest) ...[
+                  if (c != rest.first) const SizedBox(width: 10),
+                  Expanded(
+                    child: _PhotoCard(
+                      category: c,
+                      title: c == PriceCategory.cabs ? 'Rides' : c.label,
+                      line: c.line,
+                      selected: selected == c,
+                      small: true,
+                      onTap: () => onTap(c),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          )
+        else
+          for (var i = 0; i < rest.length; i += 2) ...[
+            if (!small || i > 0) const SizedBox(height: 10),
+            Row(
+              children: [
+                for (var k = i; k < i + 2 && k < rest.length; k++) ...[
+                  if (k > i) const SizedBox(width: 10),
+                  Expanded(
+                    child: _PhotoCard(
+                      category: rest[k],
+                      title: rest[k] == PriceCategory.cabs ? 'Rides' : rest[k].label,
+                      line: rest[k].line,
+                      selected: selected == rest[k],
+                      onTap: () => onTap(rest[k]),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
       ],
     );
   }
@@ -283,6 +312,7 @@ class _PhotoCard extends StatelessWidget {
     required this.onTap,
     this.wide = false,
     this.selected = false,
+    this.small = false,
   });
   final PriceCategory category;
   final String title;
@@ -290,6 +320,7 @@ class _PhotoCard extends StatelessWidget {
   final VoidCallback onTap;
   final bool wide;
   final bool selected;
+  final bool small;
 
   @override
   Widget build(BuildContext context) {
@@ -300,6 +331,8 @@ class _PhotoCard extends StatelessWidget {
       'NEW' => const Color(0xFF3D7BFF),
       _ => const Color(0xFF22B573),
     };
+    if (small) return _bordered(r);
+    if (wide) return _feature();
     final text = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -396,6 +429,229 @@ class _PhotoCard extends StatelessWidget {
                     ),
                 ],
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// The wide Product compare card, redone (2026-11-21, Manish: "not looking
+  /// good"): no more photo edge to edge with text fighting a busy mall.
+  /// A glass card — eyebrow, name, one line, the stores as brand-coloured
+  /// chips — with the photo as a small rounded tile on the right and the
+  /// arrow sitting on its corner. Selected = accent gradient border + glow.
+  Widget _feature() {
+    final r = BorderRadius.circular(Neon.rCard);
+    const stores = [PriceStores.amazon, PriceStores.flipkart, PriceStores.croma];
+    final accent = Neon.violet;
+    final body = Ink(
+      padding: const EdgeInsets.fromLTRB(16, 16, 14, 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(Neon.rCard - (selected ? 1.5 : 1)),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color.alphaBlend(accent.withValues(alpha: 0.16), Neon.surface),
+            Neon.surface,
+          ],
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(Neon.rPill),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.auto_awesome_rounded, size: 11, color: accent),
+                      const SizedBox(width: 4),
+                      Text('MOST USED',
+                          style: NeonType.manrope(9.5, FontWeight.w800).copyWith(color: accent, letterSpacing: 1)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: NeonType.manrope(20, FontWeight.w800)
+                        .copyWith(color: Neon.textHi, letterSpacing: -0.5, height: 1.1)),
+                const SizedBox(height: 4),
+                Text('Find the lowest price in one search',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Neon.textLo, fontSize: 12.5, height: 1.3)),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final s in stores) _storeChip(s.name, s.color),
+                    _storeChip('+ more', null),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 92,
+            height: 104,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned.fill(
+                  right: 6,
+                  bottom: 8,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(Neon.rMd),
+                    child: Image(
+                      image: ResizeImage(AssetImage(category.photo), width: 300),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: Neon.accentFill,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Neon.surface, width: 3),
+                      boxShadow: [BoxShadow(color: accent.withValues(alpha: 0.45), blurRadius: 12)],
+                    ),
+                    child: Icon(Icons.arrow_forward_rounded, color: Neon.onAccent, size: 18),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: '$title. $line',
+      excludeSemantics: true,
+      child: DecoratedBox(
+        // The border is a gradient, so it is drawn as a padded backdrop.
+        decoration: BoxDecoration(
+          borderRadius: r,
+          gradient: selected ? Neon.gVioletPink : null,
+          color: selected ? null : Neon.hairline,
+          boxShadow: selected ? [BoxShadow(color: accent.withValues(alpha: 0.25), blurRadius: 24, offset: const Offset(0, 8))] : null,
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(selected ? 1.5 : 1),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(Neon.rCard - (selected ? 1.5 : 1)),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                onTap();
+              },
+              child: body,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// A store as a small chip: its brand colour as a dot, its name.
+  Widget _storeChip(String name, Color? color) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Neon.textHi.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(Neon.rPill),
+          border: Border.all(color: Neon.hairline),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (color != null) ...[
+              Container(width: 7, height: 7, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+              const SizedBox(width: 5),
+            ],
+            Text(name,
+                style: TextStyle(
+                    color: color == null ? Neon.textLo : Neon.textHi, fontSize: 11, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      );
+
+  /// Home's small tile (2026-11-09, owner: "give border to the image, not
+  /// fill", then "straight instead of square, one by one"): a long bordered
+  /// card. 2026-11-10 (Manish): back to side by side — the photo inset on
+  /// top, the name and line under it.
+  Widget _bordered(BorderRadius r) {
+    final inner = BorderRadius.circular(Neon.rLg - 6);
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: '$title. $line',
+      excludeSemantics: true,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: r,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap();
+          },
+          child: Ink(
+            padding: const EdgeInsets.fromLTRB(7, 7, 7, 12),
+            decoration: BoxDecoration(
+              borderRadius: r,
+              color: Neon.glassFill.colors.first,
+              border: Border.all(color: selected ? Neon.violet : Neon.hairline, width: selected ? 2 : 1.2),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AspectRatio(
+                  aspectRatio: 1.62,
+                  child: ClipRRect(
+                    borderRadius: inner,
+                    child: Image(image: ResizeImage(AssetImage(category.photo), width: 400), fit: BoxFit.cover),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: Text(title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: NeonType.manrope(17, FontWeight.w800)
+                          .copyWith(color: Neon.textHi, letterSpacing: -0.4, height: 1.1)),
+                ),
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Text(line,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: Neon.textLo, fontSize: 12, height: 1.25)),
+                ),
+              ],
             ),
           ),
         ),

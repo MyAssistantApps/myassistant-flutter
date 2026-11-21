@@ -105,7 +105,7 @@ class _QuickToolsSectionState extends State<QuickToolsSection> {
 
   void _open(QuickTool t) {
     HapticFeedback.selectionClick();
-    widget.onOpen(switch (t.id) {
+    final page = switch (t.id) {
       'flights' => const FlightsScreen(),
       'buses' => const BusesScreen(),
       'hotels' => const HotelsScreen(),
@@ -113,7 +113,8 @@ class _QuickToolsSectionState extends State<QuickToolsSection> {
       'food' => const ShopHomeScreen(domain: ShopDomain.food),
       'misc' => const ServicesScreen(),
       _ => QuickToolScreen(tool: t),
-    });
+    };
+    widget.onOpen(page);
   }
 
   @override

@@ -7,7 +7,7 @@ same credits under "Photo credits" on the Price compare page.
 | File | Photo | Author | Licence |
 |------|-------|--------|---------|
 | flights.jpg | [Airbus A350-941 F-WWCF MSN002 ILA Berlin 2016 17](https://commons.wikimedia.org/wiki/File:Airbus_A350-941_F-WWCF_MSN002_ILA_Berlin_2016_17.jpg) | Julian Herzog | CC BY 4.0 |
-| hotels.jpg | [Infinity Pool Lopesan Costa Meloneras](https://commons.wikimedia.org/wiki/File:Infinity_Pool_Lopesan_Costa_Meloneras,_May_2018.jpg) | Martin Falbisoner | CC BY-SA 4.0 |
+| hotels.jpg | [Taj Mahal Palace Hotel](https://commons.wikimedia.org/wiki/File:Taj_Mahal_Palace_Hotel.jpg) | Joe Ravi | CC BY-SA 3.0 |
 | cabs.jpg | [BMW, IAA 2017 (1Y7A2712)](https://commons.wikimedia.org/wiki/File:BMW,_IAA_2017_(1Y7A2712).jpg) | MB-one | CC BY-SA 4.0 |
 | shopping.jpg | [Large interior view of Plaza Singapura Shopping mall](https://commons.wikimedia.org/wiki/File:Large_interior_view_of_Plaza_Singapura_Shopping_mall_Orchard_Road_Singapore.jpg) | Basile Morin | CC BY-SA 4.0 |
 | grocery.jpg | [Municipal Market of São Paulo city](https://commons.wikimedia.org/wiki/File:Municipal_Market_of_S%C3%A3o_Paulo_city.jpg) | Wilfredor | CC BY-SA 4.0 |

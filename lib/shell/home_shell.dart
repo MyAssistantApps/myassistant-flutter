@@ -51,6 +51,7 @@ import '../services/home_widgets.dart';
 import '../features/widgets/widget_picker.dart';
 import '../features/pricecompare/price_compare_screen.dart';
 import '../features/pricecompare/flight_search_screen.dart';
+import '../features/pricecompare/hotel_search_screen.dart';
 import '../screens/reminders_screen.dart';
 import '../services/location_service.dart';
 import '../services/share_intake_service.dart';
@@ -443,6 +444,7 @@ class _HomeShellState extends State<HomeShell>
     final page = switch (route) {
       'price' => const PriceCompareScreen(),
       'flights' => const FlightSearchScreen(),
+      'hotels' => const HotelSearchScreen(),
       'reminders' => const RemindersScreen(),
       _ => null,
     };

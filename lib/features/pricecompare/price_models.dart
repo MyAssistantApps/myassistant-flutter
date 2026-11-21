@@ -118,7 +118,7 @@ enum PriceCategory {
 /// Who took the photos (Wikimedia Commons; the licences ask for credit).
 const photoCredits = <(String, String, String)>[
   ('Flights', 'Julian Herzog', 'CC BY 4.0'),
-  ('Hotels', 'Martin Falbisoner', 'CC BY-SA 4.0'),
+  ('Hotels', 'Joe Ravi', 'CC BY-SA 3.0'),
   ('Rides', 'MB-one', 'CC BY-SA 4.0'),
   ('Shopping', 'Basile Morin', 'CC BY-SA 4.0'),
   ('Grocery', 'Wilfredor', 'CC BY-SA 4.0'),
