@@ -240,14 +240,15 @@ class _HomeFeedViewState extends State<HomeFeedView> {
             if (state == 'partial' || (state == 'loaded' && svc.stale))
               _status(svc),
             const SizedBox(height: 28),
-            // QUICK TOOLS first (owner, 2026-11-04), then the assistants.
+            // THE ASSISTANTS FIRST, then Quick Tools (owner, 2026-11-21:
+            // the doctor's / advocate's / business assistant above).
+            Reveal(delayMs: 125, child: _assistants()),
+            const SizedBox(height: 26),
             Reveal(
-              delayMs: 125,
+              delayMs: 130,
               child:
                   QuickToolsSection(onOpen: (page) => _do.open(context, page)),
             ),
-            const SizedBox(height: 26),
-            Reveal(delayMs: 130, child: _assistants()),
             // POPULAR APPS where Try now was (client, 2026-11-05): Swiggy,
             // Zomato, Blinkit…, Uber, Ola, Rapido…; Try now moved to Hub.
             const SizedBox(height: 26),

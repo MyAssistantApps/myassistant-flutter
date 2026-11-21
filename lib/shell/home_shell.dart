@@ -43,6 +43,7 @@ import '../screens/hub_screen.dart';
 import '../features/shopping/shopping_list_screen.dart' show ShoppingNav;
 import '../screens/quick_task_screen.dart';
 import '../services/app_feedback.dart';
+import '../services/documents_lock.dart';
 import '../services/app_update_service.dart';
 import '../services/assistant_identity.dart';
 import '../services/brief_service.dart';
@@ -554,6 +555,19 @@ class _HomeShellState extends State<HomeShell>
     // conversation keeps running underneath, mic stays hot.
     engine.onShowDocuments = (docs) {
       if (!mounted || docs.isEmpty) return false;
+      // Behind the screen lock (owner, 2026-11-21): a document asked for by
+      // voice opens only after the phone's own unlock.
+      if (!DocumentsLock.instance.isUnlocked) {
+        DocumentsLock.instance.unlock().then((ok) {
+          if (!mounted) return;
+          if (ok) {
+            engine.onShowDocuments?.call(docs);
+          } else {
+            AppFeedback.show('Your documents stay locked. Please unlock to view them.');
+          }
+        });
+        return true;
+      }
       // The keyboard goes down first (tester run, 2026-10-01): it came back
       // over the voice screen when the picture closed, hiding the dock orb
       // — so the one tap that stops the session had nothing to land on.
