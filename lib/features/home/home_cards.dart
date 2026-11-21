@@ -140,51 +140,57 @@ class _HomeFeedViewState extends State<HomeFeedView> {
 
   HomeActions get _do => widget.actions;
 
-  /// Arrange mode: the sections as compact tiles to drag into order.
-  bool _arranging = false;
-  String? _pressed;
-
-  void _startArranging(String id) {
-    HapticFeedback.heavyImpact();
-    setState(() {
-      _arranging = true;
-      _pressed = id;
-    });
-  }
-
-  /// The movable sections, in the user's order. Each answers a long press
-  /// by opening arrange mode.
+  /// The movable sections, in the user's order (owner, 2026-11-21). Press
+  /// and hold a card: a firm tap, the card lifts, and it is dragged to its
+  /// new place on Home itself; the page scrolls while it is carried.
   Widget _sections() {
     return ValueListenableBuilder<List<String>>(
       valueListenable: HomeLayout.instance.order,
       builder: (context, order, _) {
-        if (_arranging) {
-          return ArrangeHomePanel(
-            highlight: _pressed,
-            onDone: () => setState(() {
-              _arranging = false;
-              _pressed = null;
-            }),
-          );
-        }
-        final out = <Widget>[];
-        var delay = 125;
-        for (final id in order) {
-          final child = _section(id);
-          if (child == null) continue;
-          if (out.isNotEmpty) out.add(SizedBox(height: id == 'connect' || id == 'documents' ? 12 : 22));
-          out.add(Semantics(
-            key: ValueKey('home-section-$id'),
-            onLongPressHint: 'Arrange Home',
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onLongPress: () => _startArranging(id),
-              child: Reveal(delayMs: delay, child: child),
-            ),
-          ));
-          delay += 5;
-        }
-        return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: out);
+        final ids = [for (final id in order) if (_section(id) != null) id];
+        return SliverReorderableList(
+          itemCount: ids.length,
+          onReorderStart: (_) => HapticFeedback.heavyImpact(),
+          onReorderEnd: (_) => HapticFeedback.mediumImpact(),
+          onReorderItem: (from, to) {
+            if (from == to) return;
+            final next = List.of(ids);
+            final id = next.removeAt(from);
+            next.insert(to, id);
+            HomeLayout.instance.set(next);
+          },
+          proxyDecorator: (child, _, anim) => AnimatedBuilder(
+            animation: anim,
+            builder: (context, c) {
+              final t = Curves.easeOut.transform(anim.value);
+              return Transform.scale(
+                scale: 1 + 0.03 * t,
+                child: Material(
+                  color: Colors.transparent,
+                  elevation: 14 * t,
+                  shadowColor: Neon.violet.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(28),
+                  child: c,
+                ),
+              );
+            },
+            child: child,
+          ),
+          itemBuilder: (context, i) {
+            final id = ids[i];
+            return ReorderableDelayedDragStartListener(
+              key: ValueKey('home-section-$id'),
+              index: i,
+              child: Semantics(
+                onLongPressHint: 'Move this card',
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 20),
+                  child: Reveal(delayMs: 125 + 5 * i, child: _section(id)!),
+                ),
+              ),
+            );
+          },
+        );
       },
     );
   }
@@ -293,9 +299,12 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                 newsOn: memory.newsOn.value,
                 hidden: memory.hiddenAt(now),
               ).where((e) => e.tip == null).toList();
-        return ListView(
-          padding: widget.padding,
-          children: [
+        final p = widget.padding;
+        return CustomScrollView(
+          slivers: [
+           SliverPadding(
+            padding: EdgeInsets.fromLTRB(p.left, p.top, p.right, 0),
+            sliver: SliverList.list(children: [
             // Kept alive: scrolled away and back, it must not replay its
             // entrance.
             _KeepAlive(child: widget.leading),
@@ -314,10 +323,18 @@ class _HomeFeedViewState extends State<HomeFeedView> {
             if (state == 'partial' || (state == 'loaded' && svc.stale))
               _status(svc),
             const SizedBox(height: 28),
+            ]),
+           ),
             // THE SECTIONS IN THE USER'S ORDER (owner, 2026-11-21): press
-            // and hold any of them to arrange Home (home_layout.dart).
-            _sections(),
-            if (extras.isNotEmpty && !_arranging) ...[
+            // and hold a card and drag it, right here on Home.
+           SliverPadding(
+            padding: EdgeInsets.fromLTRB(p.left, 0, p.right, 0),
+            sliver: _sections(),
+           ),
+           SliverPadding(
+            padding: EdgeInsets.fromLTRB(p.left, 0, p.right, p.bottom),
+            sliver: SliverList.list(children: [
+            if (extras.isNotEmpty) ...[
               const SizedBox(height: 24),
               Reveal(
                 delayMs: 140,
@@ -332,10 +349,10 @@ class _HomeFeedViewState extends State<HomeFeedView> {
             ],
             // Once per release: what just got better. Below the day, never
             // above what needs the user.
-            if (!_arranging) ...[
-              const SizedBox(height: 20),
-              const WhatsNewCard(),
-            ],
+            const SizedBox(height: 20),
+            const WhatsNewCard(),
+            ]),
+           ),
           ],
         );
       },
