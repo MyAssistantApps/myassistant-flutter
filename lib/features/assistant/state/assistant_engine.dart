@@ -10,6 +10,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../../core/store_build.dart';
 import '../../home/ride_strip.dart';
 import '../../home/order_strip.dart';
+import 'contact_pick.dart';
 import '../../../screens/linked_accounts_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -3805,6 +3806,16 @@ class AssistantEngine extends ChangeNotifier {
       String? language,
       String? voice}) async {
     if (name.trim().isEmpty) return;
+    // THE ANSWER TO "WHICH ONE?" (2026-11-21): with several matches on the
+    // table, "2", "the second one" or "ending 8765" picks that contact.
+    if (ambiguousContacts.isNotEmpty) {
+      final i = pickNumberedContact(name, ambiguousContacts);
+      if (i != null) {
+        if (message != null && message.trim().isNotEmpty) _localCallTask = message;
+        await _actOnResolvedCall(ambiguousContacts[i]);
+        return;
+      }
+    }
     // Whatever the user decided about a no-answer. Zero means one
     // attempt — the assistant never invents a retry.
     _localCallRetryTimes = retryTimes;
@@ -3964,13 +3975,16 @@ class AssistantEngine extends ChangeNotifier {
     notifyListeners();
     _offerContactPicker();
 
-    final names = ambiguousContacts.map((c) => c.name).join(', ');
+    // NUMBERED (owner, 2026-11-21): the same name saved twice cannot be
+    // told apart by name, so each option is read with its number and the
+    // last digits of its phone number, and the user answers by number.
     await _tellModel(
         '[SYSTEM] "$name" matches ${ambiguousContacts.length} saved '
-        'contacts: $names. NO call was placed. Ask the user which one '
-        'you should call, in ONE short question that says the names as '
-        'they are saved. When they answer, call place_phone_call again '
-        'with that exact saved name.');
+        'contacts: ${numberedContacts(ambiguousContacts)}. NO call was placed. '
+        'Read the options to the user exactly like that, numbered, and ask '
+        'which number to call, in ONE short question. When they answer, call '
+        'place_phone_call again with name set to the NUMBER they chose (for '
+        'example "2"), or the last digits they said.');
   }
 
   /// Acts on a resolved contact: agent relay (Hari speaks the message on
