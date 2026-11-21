@@ -425,19 +425,28 @@ AssistantRole documentsRoleFor(List<UserDocument>? docs) {
       'You help the owner with their saved documents: finding, reading and '
       'explaining them, and the renewals coming up. ');
   if (docs.isEmpty) {
-    b.write('The owner has no documents saved yet. Say so plainly and tell '
-        'them to tap Add a Document at the bottom of this page.');
+    b.write('No documents were saved when this conversation started. If the '
+        'owner asks for one, call find_document first (it may have just been '
+        'added); only if nothing is found, say so and tell them to tap Add a '
+        'Document at the bottom of this page.');
     return AssistantRole('the Documents Assistant', b.toString());
   }
-  b.write("These are ALL ${docs.length} documents saved on the owner's "
-      'account, newest first. Answer questions about what is stored from '
-      'this list directly. ');
+  // A SNAPSHOT, NOT THE TRUTH (owner, 2026-11-21: "open my PAN card" was
+  // refused because the PAN card was uploaded after this list was taken).
+  // The list answers "what do I have?" quickly; whether a named document
+  // exists is always settled by find_document, which reads the account.
+  b.write("These are the ${docs.length} documents that were saved on the "
+      "owner's account when this conversation started, newest first. Answer "
+      'general questions about what is stored from this list. The owner may '
+      'have added files since, so this list may be incomplete. ');
   b.write('When the owner asks to see, show, open or pull up a document, '
       'call find_document AT ONCE with its exact title as the query and '
       'show true, so it opens on their screen immediately. Do not ask which '
       'one unless two documents match equally. To answer a question about '
       'what a document SAYS, call find_document with show false and read '
-      'it. Never invent a document that is not on this list.\n');
+      'it. If the owner names a document that is NOT on this list, call '
+      'find_document anyway before answering: it may have just been added. '
+      'Only say a document is not saved after find_document found nothing.\n');
   var budget = 7000;
   for (final d in docs) {
     final parts = <String>[
