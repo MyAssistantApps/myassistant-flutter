@@ -9,6 +9,7 @@ import '../../services/api_service.dart';
 import '../pricecompare/flight_results_screen.dart' as pcr;
 import '../pricecompare/flight_trip.dart' as pc;
 import 'flights_screen.dart' show FlightKind;
+import 'voice_booking.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  FLIGHT SEARCH (owner, 2026-11-04): from, to, date, passengers and
@@ -153,6 +154,115 @@ class _FlightSearchScreenState extends State<FlightSearchScreen> {
     if (d != null) setState(() => _date = d);
   }
 
+  /// Spoken: "Bangalore to Delhi on 5th December, 2 passengers, business".
+  /// Only what was said changes; returns what did ('' = nothing understood).
+  String _heard(String said) {
+    final v = VoiceBooking.trip(said, now: DateTime.now(), places: {for (final a in _choices) a.city});
+    if (v.isEmpty) return '';
+    Airport? at(String? city) => city == null ? null : _choices.firstWhere((a) => a.city == city);
+    final done = <String>[];
+    setState(() {
+      final f = at(v.from), t = at(v.to);
+      if (f != null) _from = f;
+      if (t != null) _to = t;
+      if (f != null || t != null) done.add('${_from?.city ?? '?'} → ${_to?.city ?? '?'}');
+      if (v.date != null) {
+        _date = v.date!;
+        done.add(_fmtDate(_date));
+      }
+      if (v.people != null) {
+        _adults = v.people!.clamp(1, 9);
+        done.add('$_adults adult${_adults == 1 ? '' : 's'}');
+      }
+      if (v.cabin != null) {
+        _cabin = switch (v.cabin) {
+          'premium' => Cabin.premiumEconomy,
+          'business' => Cabin.business,
+          'first' => Cabin.first,
+          _ => Cabin.economy,
+        };
+        done.add(_cabin.label);
+      }
+    });
+    return done.join(' · ');
+  }
+
+  /// The form as the booking agent sees it.
+  BookingForm _voiceForm() => BookingForm(
+        screen: _domestic ? 'Domestic Flights' : 'International Flights',
+        example: _domestic
+            ? '"Bangalore to Delhi on 5th Dec, 2 people"'
+            : '"Bangalore to Dubai next Friday, 2 people, business"',
+        fields: {
+          'from': 'departure city${_domestic ? '' : ' (one end must be outside India)'}',
+          'to': 'arrival city',
+          'date': 'departure date, YYYY-MM-DD',
+          'adults': 'number of passengers, 1 to 9',
+          'cabin': 'one of economy, premium, business, first',
+        },
+        places: {for (final a in _choices) a.city},
+        state: () => {
+          'from': _from?.city,
+          'to': _to?.city,
+          'date': BookingAgent.iso(_date),
+          'adults': _adults,
+          'cabin': switch (_cabin) {
+            Cabin.economy => 'economy',
+            Cabin.premiumEconomy => 'premium',
+            Cabin.business => 'business',
+            Cabin.first => 'first',
+          },
+        },
+        apply: _applyVoice,
+        parseLocal: _heard,
+        actions: {
+          'search': ('search flights with this form and show every site\'s fares', () async => _search()),
+        },
+      );
+
+  /// What the booking agent set; returns what changed.
+  String _applyVoice(Map<String, Object?> v) {
+    Airport? at(Object? city) {
+      final c = voiceText(city)?.toLowerCase();
+      if (c == null) return null;
+      final alias = VoiceBooking.aliases[c]?.toLowerCase() ?? c;
+      for (final a in _choices) {
+        if (a.city.toLowerCase() == alias || a.code.toLowerCase() == c) return a;
+      }
+      return null;
+    }
+
+    final done = <String>[];
+    setState(() {
+      final f = at(v['from']), t = at(v['to']);
+      if (f != null) _from = f;
+      if (t != null) _to = t;
+      if (f != null || t != null) done.add('${_from?.city ?? '?'} → ${_to?.city ?? '?'}');
+      final d = voiceDate(v['date']);
+      if (d != null) {
+        _date = d;
+        done.add(_fmtDate(_date));
+      }
+      final n = voiceInt(v['adults']);
+      if (n != null) {
+        _adults = n.clamp(1, 9);
+        done.add('$_adults adult${_adults == 1 ? '' : 's'}');
+      }
+      final cabin = voiceText(v['cabin'])?.toLowerCase();
+      if (cabin != null) {
+        _cabin = cabin.startsWith('prem')
+            ? Cabin.premiumEconomy
+            : cabin.startsWith('bus')
+                ? Cabin.business
+                : cabin.startsWith('first')
+                    ? Cabin.first
+                    : Cabin.economy;
+        done.add(_cabin.label);
+      }
+    });
+    return done.join(' · ');
+  }
+
   void _swap() {
     HapticFeedback.selectionClick();
     setState(() {
@@ -194,11 +304,13 @@ class _FlightSearchScreenState extends State<FlightSearchScreen> {
   @override
   Widget build(BuildContext context) {
     return NeonScaffold(
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: VoiceFillButton(form: _voiceForm()),
       appBar: appleAppBar(
           context, _domestic ? 'Domestic Flights' : 'International Flights'),
       body: ListView(
         padding: EdgeInsets.fromLTRB(
-            16, 8, 16, 28 + MediaQuery.paddingOf(context).bottom),
+            16, 8, 16, 120 + MediaQuery.paddingOf(context).bottom),
         children: [
           // FROM / TO, with the swap button between them.
           Stack(

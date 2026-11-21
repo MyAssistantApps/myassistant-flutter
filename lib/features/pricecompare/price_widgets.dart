@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -438,23 +440,26 @@ class _PhotoCard extends StatelessWidget {
   }
 
   /// The wide Product compare card, redone (2026-11-21, Manish: "not looking
-  /// good"): no more photo edge to edge with text fighting a busy mall.
-  /// A glass card — eyebrow, name, one line, the stores as brand-coloured
-  /// chips — with the photo as a small rounded tile on the right and the
-  /// arrow sitting on its corner. Selected = accent gradient border + glow.
+  /// good", then "improve more, change the image"): a glass card — eyebrow,
+  /// name, one line, the stores as overlapping brand avatars, a Compare now
+  /// pill — and on the right a drawn illustration (a bag with an old price
+  /// struck out and the lowest price in green) instead of the mall photo.
+  /// Drawn, so it needs no licence and follows the accent in both themes.
+  /// Selected = accent gradient border + glow.
   Widget _feature() {
     final r = BorderRadius.circular(Neon.rCard);
-    const stores = [PriceStores.amazon, PriceStores.flipkart, PriceStores.croma];
+    final inner = BorderRadius.circular(Neon.rCard - (selected ? 1.5 : 1));
+    const stores = [PriceStores.amazon, PriceStores.flipkart, PriceStores.croma, PriceStores.reliance];
     final accent = Neon.violet;
     final body = Ink(
-      padding: const EdgeInsets.fromLTRB(16, 16, 14, 16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 12, 16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(Neon.rCard - (selected ? 1.5 : 1)),
+        borderRadius: inner,
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color.alphaBlend(accent.withValues(alpha: 0.16), Neon.surface),
+            Color.alphaBlend(accent.withValues(alpha: Neon.isDark ? 0.20 : 0.10), Neon.surface),
             Neon.surface,
           ],
         ),
@@ -489,58 +494,61 @@ class _PhotoCard extends StatelessWidget {
                     style: NeonType.manrope(20, FontWeight.w800)
                         .copyWith(color: Neon.textHi, letterSpacing: -0.5, height: 1.1)),
                 const SizedBox(height: 4),
-                Text('Find the lowest price in one search',
-                    maxLines: 1,
+                Text('One search. Every store. Lowest price.',
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(color: Neon.textLo, fontSize: 12.5, height: 1.3)),
                 const SizedBox(height: 12),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
+                Row(
                   children: [
-                    for (final s in stores) _storeChip(s.name, s.color),
-                    _storeChip('+ more', null),
+                    SizedBox(
+                      width: 26.0 + (stores.length - 1) * 19,
+                      height: 26,
+                      child: Stack(
+                        children: [
+                          for (var i = 0; i < stores.length; i++)
+                            Positioned(left: i * 19.0, child: _storeAvatar(stores[i])),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text('& more',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: Neon.textLo, fontSize: 11.5, fontWeight: FontWeight.w600)),
+                    ),
                   ],
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          SizedBox(
-            width: 92,
-            height: 104,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Positioned.fill(
-                  right: 6,
-                  bottom: 8,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(Neon.rMd),
-                    child: Image(
-                      image: ResizeImage(AssetImage(category.photo), width: 300),
-                      fit: BoxFit.cover,
-                    ),
+                const SizedBox(height: 14),
+                Container(
+                  padding: const EdgeInsets.fromLTRB(14, 8, 10, 8),
+                  decoration: BoxDecoration(
+                    color: Neon.accentFill,
+                    borderRadius: BorderRadius.circular(Neon.rPill),
+                    boxShadow: [
+                      BoxShadow(color: accent.withValues(alpha: 0.35), blurRadius: 14, offset: const Offset(0, 4))
+                    ],
                   ),
-                ),
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: Neon.accentFill,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Neon.surface, width: 3),
-                      boxShadow: [BoxShadow(color: accent.withValues(alpha: 0.45), blurRadius: 12)],
-                    ),
-                    child: Icon(Icons.arrow_forward_rounded, color: Neon.onAccent, size: 18),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text('Compare now',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: NeonType.manrope(13, FontWeight.w800).copyWith(color: Neon.onAccent)),
+                      ),
+                      const SizedBox(width: 6),
+                      Icon(Icons.arrow_forward_rounded, color: Neon.onAccent, size: 16),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
+          const SizedBox(width: 10),
+          const _CompareArt(),
         ],
       ),
     );
@@ -555,13 +563,15 @@ class _PhotoCard extends StatelessWidget {
           borderRadius: r,
           gradient: selected ? Neon.gVioletPink : null,
           color: selected ? null : Neon.hairline,
-          boxShadow: selected ? [BoxShadow(color: accent.withValues(alpha: 0.25), blurRadius: 24, offset: const Offset(0, 8))] : null,
+          boxShadow: selected
+              ? [BoxShadow(color: accent.withValues(alpha: 0.25), blurRadius: 24, offset: const Offset(0, 8))]
+              : null,
         ),
         child: Padding(
           padding: EdgeInsets.all(selected ? 1.5 : 1),
           child: Material(
             color: Colors.transparent,
-            borderRadius: BorderRadius.circular(Neon.rCard - (selected ? 1.5 : 1)),
+            borderRadius: inner,
             clipBehavior: Clip.antiAlias,
             child: InkWell(
               onTap: () {
@@ -576,27 +586,31 @@ class _PhotoCard extends StatelessWidget {
     );
   }
 
-  /// A store as a small chip: its brand colour as a dot, its name.
-  Widget _storeChip(String name, Color? color) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: Neon.textHi.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(Neon.rPill),
-          border: Border.all(color: Neon.hairline),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (color != null) ...[
-              Container(width: 7, height: 7, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-              const SizedBox(width: 5),
-            ],
-            Text(name,
-                style: TextStyle(
-                    color: color == null ? Neon.textLo : Neon.textHi, fontSize: 11, fontWeight: FontWeight.w600)),
-          ],
-        ),
-      );
+  /// A store as its own app icon (the logos bundled in assets/brands/, as
+  /// Popular apps and the shop browser show them), ringed in the card
+  /// colour so the overlapping ones read apart; its initial if one is missing.
+  Widget _storeAvatar(PriceStore s) {
+    final letter = Container(
+      color: s.color,
+      alignment: Alignment.center,
+      child: Text(s.name[0],
+          style: TextStyle(color: Neon.glyphOn(s.color), fontSize: 11, fontWeight: FontWeight.w800, height: 1)),
+    );
+    return Container(
+      width: 26,
+      height: 26,
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(color: Neon.surface, borderRadius: BorderRadius.circular(9)),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(7),
+        child: Image.asset(storeLogo(s),
+            fit: BoxFit.cover,
+            cacheWidth: 72,
+            filterQuality: FilterQuality.medium,
+            errorBuilder: (_, __, ___) => letter),
+      ),
+    );
+  }
 
   /// Home's small tile (2026-11-09, owner: "give border to the image, not
   /// fill", then "straight instead of square, one by one"): a long bordered
@@ -659,6 +673,276 @@ class _PhotoCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// A store's app icon in assets/brands/.
+String storeLogo(PriceStore s) => switch (s) {
+      PriceStores.amazon => 'assets/brands/amazon.png',
+      PriceStores.flipkart => 'assets/brands/flipkart.png',
+      PriceStores.croma => 'assets/brands/croma.png',
+      PriceStores.reliance => 'assets/brands/reliancedigital.png',
+      _ => 'assets/brands/${s.name.toLowerCase().replaceAll(' ', '')}.png',
+    };
+
+/// One product the illustration shows: what it is, an old price and the
+/// lowest one, and the store that has it. Sample numbers, for the picture.
+typedef _Showcase = ({String photo, String name, String was, String now, PriceStore at});
+
+const List<_Showcase> _showcase = [
+  (
+    photo: 'assets/pricecompare/product_phone.jpg',
+    name: 'Phones',
+    was: '₹54,999',
+    now: '₹49,990',
+    at: PriceStores.flipkart
+  ),
+  (
+    photo: 'assets/pricecompare/product_laptop.jpg',
+    name: 'Laptops',
+    was: '₹72,990',
+    now: '₹64,490',
+    at: PriceStores.amazon
+  ),
+  (
+    photo: 'assets/pricecompare/product_audio.jpg',
+    name: 'Audio',
+    was: '₹29,990',
+    now: '₹24,990',
+    at: PriceStores.croma
+  ),
+  (
+    photo: 'assets/pricecompare/product_watch.jpg',
+    name: 'Watches',
+    was: '₹14,999',
+    now: '₹11,499',
+    at: PriceStores.amazon
+  ),
+  (photo: 'assets/pricecompare/product_tv.jpg', name: 'TVs', was: '₹46,990', now: '₹39,990', at: PriceStores.reliance),
+];
+
+/// The Product Compare illustration (2026-11-21, Manish: "auto change
+/// image"): the accent tile shows a product that changes every few seconds
+/// — phone, laptop, headphones, watch, TV — each with an old price struck
+/// out and the lowest price in green with the icon of the store that has
+/// it. Still (the first product) when the phone asks for less motion.
+/// Decorative only — the card's label says it all.
+class _CompareArt extends StatefulWidget {
+  const _CompareArt();
+
+  @override
+  State<_CompareArt> createState() => _CompareArtState();
+}
+
+class _CompareArtState extends State<_CompareArt> {
+  static const _every = Duration(milliseconds: 2600);
+  Timer? _timer;
+  int _i = 0;
+
+  bool _cached = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // The photos are ready before they are shown: no blank frame between.
+    if (!_cached) {
+      _cached = true;
+      for (final p in _showcase) {
+        precacheImage(ResizeImage(AssetImage(p.photo), width: 360), context).catchError((_) {});
+      }
+    }
+    final still = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    if (still) {
+      _timer?.cancel();
+      _timer = null;
+    } else {
+      _timer ??= Timer.periodic(_every, (_) {
+        if (mounted) setState(() => _i = (_i + 1) % _showcase.length);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const green = Color(0xFF22C55E);
+    final p = _showcase[_i];
+    Widget swap(Widget child) => AnimatedSwitcher(
+          duration: Neon.med,
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          transitionBuilder: (c, a) => FadeTransition(
+            opacity: a,
+            child: ScaleTransition(scale: Tween(begin: 0.85, end: 1.0).animate(a), child: c),
+          ),
+          child: child,
+        );
+    return ExcludeSemantics(
+      child: SizedBox(
+        width: 112,
+        height: 128,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned.fill(
+              top: 10,
+              bottom: 10,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(Neon.rLg),
+                  gradient: Neon.gVioletPink,
+                  boxShadow: [
+                    BoxShadow(color: Neon.violet.withValues(alpha: 0.35), blurRadius: 18, offset: const Offset(0, 6))
+                  ],
+                ),
+                // The product's real photo, edge to edge (2026-11-22, Manish:
+                // "real images of the laptop, watches, TVs, phones"), cross-
+                // fading with a slight zoom; a dark fade at the bottom keeps
+                // its name readable.
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(Neon.rLg),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 550),
+                        switchInCurve: Curves.easeOutCubic,
+                        switchOutCurve: Curves.easeInCubic,
+                        layoutBuilder: (current, previous) =>
+                            Stack(fit: StackFit.expand, children: [...previous, if (current != null) current]),
+                        transitionBuilder: (c, a) => FadeTransition(
+                          opacity: a,
+                          child: ScaleTransition(scale: Tween(begin: 1.08, end: 1.0).animate(a), child: c),
+                        ),
+                        child: Image(
+                          key: ValueKey(p.photo),
+                          image: ResizeImage(AssetImage(p.photo), width: 360),
+                          fit: BoxFit.cover,
+                          filterQuality: FilterQuality.medium,
+                          errorBuilder: (_, __, ___) =>
+                              DecoratedBox(decoration: BoxDecoration(gradient: Neon.gVioletPink)),
+                        ),
+                      ),
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            stops: const [0.45, 1],
+                            colors: [Colors.transparent, Colors.black.withValues(alpha: 0.72)],
+                          ),
+                        ),
+                      ),
+                      // What is showing, under the product.
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 18,
+                        child: swap(Text(p.name,
+                            key: ValueKey(p.name),
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            style: NeonType.manrope(10, FontWeight.w800)
+                                .copyWith(color: Colors.white.withValues(alpha: 0.9), letterSpacing: 0.6))),
+                      ),
+                      // Which one of how many, as dots.
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 8,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            for (var k = 0; k < _showcase.length; k++)
+                              AnimatedContainer(
+                                duration: Neon.med,
+                                width: k == _i ? 10 : 4,
+                                height: 4,
+                                margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: k == _i ? 0.95 : 0.45),
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // The old price, struck out.
+            Positioned(
+              top: 0,
+              right: -4,
+              child: swap(_tag(
+                key: ValueKey('was$_i'),
+                child: Text(p.was,
+                    style: TextStyle(
+                      color: Neon.textLo,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      decoration: TextDecoration.lineThrough,
+                      decorationColor: Neon.textLo,
+                    )),
+              )),
+            ),
+            // The lowest price, and the store that has it.
+            Positioned(
+              bottom: 0,
+              left: -6,
+              child: swap(_tag(
+                key: ValueKey('now$_i'),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: Image.asset(storeLogo(p.at),
+                          width: 15,
+                          height: 15,
+                          cacheWidth: 48,
+                          errorBuilder: (_, __, ___) =>
+                              const Icon(Icons.trending_down_rounded, color: green, size: 13)),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(p.now, style: NeonType.manrope(11.5, FontWeight.w800).copyWith(color: Neon.textHi)),
+                    const SizedBox(width: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(color: green, borderRadius: BorderRadius.circular(4)),
+                      child: Text('LOW',
+                          style:
+                              NeonType.manrope(8, FontWeight.w800).copyWith(color: Colors.white, letterSpacing: 0.4)),
+                    ),
+                  ],
+                ),
+              )),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _tag({Key? key, required Widget child}) => Container(
+        key: key,
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+        decoration: BoxDecoration(
+          color: Neon.surfaceHigh,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Neon.hairline),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.25), blurRadius: 10, offset: const Offset(0, 3))
+          ],
+        ),
+        child: child,
+      );
 }
 
 /// The photo credits the licences ask for.

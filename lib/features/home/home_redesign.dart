@@ -217,8 +217,25 @@ class _WavePainter extends CustomPainter {
   bool shouldRepaint(_WavePainter old) => old.active != active;
 }
 
+/// EACH ROW ITS OWN COLOUR (2026-11-22, Manish: "make them different
+/// colours, different for each one"): Home's reminder rows and timeline
+/// rows take a colour by position from this bright set, so no two rows
+/// next to each other match. The same in both themes.
+const homeRowColors = <Color>[
+  Color(0xFFA855F7), // violet
+  Color(0xFF14B8A6), // teal
+  Color(0xFFF59E0B), // amber
+  Color(0xFFEC4899), // pink
+  Color(0xFF3B82F6), // blue
+  Color(0xFF22C55E), // green
+];
+
+/// The colour of the [i]th row.
+Color homeRowColor(int i) => homeRowColors[i % homeRowColors.length];
+
 /// One row of the day's timeline: the time, a dot on the rail, the thing.
-/// [first]/[last] trim the rail at the ends.
+/// [first]/[last] trim the rail at the ends. [color] (optional) colours
+/// its dot and tints the row.
 class TimelineRow extends StatelessWidget {
   const TimelineRow({
     super.key,
@@ -228,8 +245,10 @@ class TimelineRow extends StatelessWidget {
     required this.first,
     required this.last,
     required this.onTap,
+    this.color,
   });
 
+  final Color? color;
   final String time;
   final String title;
   final IconData icon;
@@ -246,8 +265,19 @@ class TimelineRow extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
         onTap: onTap,
-        child: ConstrainedBox(
+        child: Container(
           constraints: const BoxConstraints(minHeight: 60),
+          margin: color == null ? null : const EdgeInsets.symmetric(vertical: 3, horizontal: 2),
+          decoration: color == null
+              ? null
+              : BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  gradient: LinearGradient(colors: [
+                    color!.withValues(alpha: Neon.isDark ? 0.20 : 0.12),
+                    color!.withValues(alpha: Neon.isDark ? 0.05 : 0.03),
+                  ]),
+                  border: Border.all(color: color!.withValues(alpha: 0.35)),
+                ),
           child: IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -269,7 +299,7 @@ class TimelineRow extends StatelessWidget {
                 SizedBox(
                   width: 34,
                   child: CustomPaint(
-                      painter: _RailPainter(first: first, last: last)),
+                      painter: _RailPainter(first: first, last: last, color: color)),
                 ),
                 Expanded(
                   child: Align(
@@ -284,7 +314,7 @@ class TimelineRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 10),
-                Icon(icon, size: 18, color: Neon.textDim),
+                Icon(icon, size: 18, color: color ?? Neon.textDim),
                 const SizedBox(width: 6),
               ],
             ),
@@ -296,9 +326,10 @@ class TimelineRow extends StatelessWidget {
 }
 
 class _RailPainter extends CustomPainter {
-  _RailPainter({required this.first, required this.last});
+  _RailPainter({required this.first, required this.last, this.color});
   final bool first;
   final bool last;
+  final Color? color;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -314,20 +345,23 @@ class _RailPainter extends CustomPainter {
     if (!last) {
       canvas.drawLine(Offset(cx, cy + 7), Offset(cx, size.height), rail);
     }
+    final c = color;
     canvas.drawCircle(Offset(cx, cy), 9,
-        Paint()..color = Neon.violet.withValues(alpha: 0.22));
+        Paint()..color = (c ?? Neon.violet).withValues(alpha: c == null ? 0.22 : 0.32));
     canvas.drawCircle(
       Offset(cx, cy),
       5,
-      Paint()
-        ..shader = ui.Gradient.linear(Offset(cx - 5, cy - 5),
-            Offset(cx + 5, cy + 5), [Neon.cyan, Neon.violet]),
+      c != null
+          ? (Paint()..color = c)
+          : (Paint()
+            ..shader = ui.Gradient.linear(Offset(cx - 5, cy - 5),
+                Offset(cx + 5, cy + 5), [Neon.cyan, Neon.violet])),
     );
   }
 
   @override
   bool shouldRepaint(_RailPainter old) =>
-      old.first != first || old.last != last;
+      old.first != first || old.last != last || old.color != color;
 }
 
 /// A tool on Home: a tinted icon over its name, the whole tile a target.

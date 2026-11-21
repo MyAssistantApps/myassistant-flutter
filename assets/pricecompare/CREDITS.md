@@ -13,6 +13,16 @@ same credits under "Photo credits" on the Price compare page.
 | grocery.jpg | [Municipal Market of São Paulo city](https://commons.wikimedia.org/wiki/File:Municipal_Market_of_S%C3%A3o_Paulo_city.jpg) | Wilfredor | CC BY-SA 4.0 |
 | fuel.jpg | [Petrol pump mp3h0355](https://commons.wikimedia.org/wiki/File:Petrol_pump_mp3h0355.jpg) | Rama | CC BY-SA 2.0 FR |
 
+## Product Compare card (product_*.jpg, cropped square and resized)
+
+| File | Photo | Author | Licence |
+|------|-------|--------|---------|
+| product_phone.jpg | [Smartphone Use](https://commons.wikimedia.org/wiki/File:Smartphone_Use.jpg) | Océanos y dados | CC0 |
+| product_laptop.jpg | [MacBook Air M1](https://commons.wikimedia.org/wiki/File:MacBook_Air_M1.png) | Padgriffin | CC BY-SA 4.0 |
+| product_audio.jpg | [Headphones (219748761)](https://commons.wikimedia.org/wiki/File:Headphones_(219748761).jpeg) | Vladislav Pashaiev | CC BY 3.0 |
+| product_watch.jpg | [Apple Watch-](https://commons.wikimedia.org/wiki/File:Apple_Watch-.jpg) | fancycrave1 | CC0 |
+| product_tv.jpg | [OnePlus TV U1S](https://commons.wikimedia.org/wiki/File:OnePlus_TV_U1S.jpg) | PhotoPicker13 | CC BY-SA 4.0 |
+
 ## Airlines (assets/pricecompare/airlines/, cropped)
 
 | File | Photo | Author | Licence |

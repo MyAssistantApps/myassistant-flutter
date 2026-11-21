@@ -127,6 +127,12 @@ const photoCredits = <(String, String, String)>[
   ('Rides', 'MB-one', 'CC BY-SA 4.0'),
   ('Shopping', 'Basile Morin', 'CC BY-SA 4.0'),
   ('Grocery', 'Wilfredor', 'CC BY-SA 4.0'),
+  // The Product Compare card's changing photos (2026-11-22).
+  ('Phones', 'Océanos y dados', 'CC0'),
+  ('Laptops', 'Padgriffin', 'CC BY-SA 4.0'),
+  ('Audio', 'Vladislav Pashaiev', 'CC BY 3.0'),
+  ('Watches', 'fancycrave1', 'CC0'),
+  ('TVs', 'PhotoPicker13', 'CC BY-SA 4.0'),
 ];
 
 abstract final class PriceStores {

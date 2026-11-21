@@ -6,6 +6,9 @@ import '../../design/apple_kit.dart';
 import '../../design/neon_tokens.dart';
 import '../../design/neon_widgets.dart';
 import '../../services/api_service.dart';
+import 'bus_search.dart' show busCities;
+import 'flight_search.dart' show indianAirports, worldAirports;
+import 'voice_booking.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  HOTELS (client, 2026-11-05: "I think you missed adding the hotel
@@ -42,6 +45,104 @@ class _HotelsScreenState extends State<HotelsScreen> {
   void dispose() {
     _city.dispose();
     super.dispose();
+  }
+
+  /// Spoken: "Goa from 22 to 25 November, 2 adults, 1 room". Only what was
+  /// said changes; returns what did ('' = nothing understood).
+  String _heard(String said) {
+    final v = VoiceBooking.stay(said, now: DateTime.now(), places: {
+      ...busCities,
+      for (final a in [...indianAirports, ...worldAirports]) a.city,
+    });
+    if (v.isEmpty) return '';
+    final done = <String>[];
+    setState(() {
+      if (v.city != null) {
+        _city.text = v.city!;
+        done.add(v.city!);
+      }
+      var start = v.checkIn ?? _stay.start;
+      var end = v.checkOut ??
+          (v.nights != null
+              ? start.add(Duration(days: v.nights!.clamp(1, 30)))
+              : (v.checkIn != null ? start.add(Duration(days: _stay.duration.inDays.clamp(1, 30))) : _stay.end));
+      if (!end.isAfter(start)) end = start.add(const Duration(days: 1));
+      if (v.checkIn != null || v.checkOut != null || v.nights != null) {
+        _stay = DateTimeRange(start: start, end: end);
+        final n = end.difference(start).inDays;
+        done.add('${_short(start)} → ${_short(end)} ($n night${n == 1 ? '' : 's'})');
+      }
+      if (v.adults != null) {
+        _adults = v.adults!.clamp(1, 12);
+        done.add('$_adults adult${_adults == 1 ? '' : 's'}');
+      }
+      if (v.rooms != null) {
+        _rooms = v.rooms!.clamp(1, 6);
+        done.add('$_rooms room${_rooms == 1 ? '' : 's'}');
+      }
+    });
+    return done.join(' · ');
+  }
+
+  /// The form as the booking agent sees it: the fields, now, how to set
+  /// them, and the sites it can open.
+  BookingForm _voiceForm() => BookingForm(
+        screen: 'Hotels',
+        example: '"Goa, 22 to 25 Nov, 2 adults, 1 room"',
+        fields: const {
+          'city': 'the city, area or hotel to stay in (any place name)',
+          'checkIn': 'check-in date, YYYY-MM-DD',
+          'checkOut': 'check-out date, YYYY-MM-DD, after check-in',
+          'adults': 'number of adults, 1 to 12',
+          'rooms': 'number of rooms, 1 to 6',
+        },
+        state: () => {
+          'city': _city.text.trim(),
+          'checkIn': _iso(_stay.start),
+          'checkOut': _iso(_stay.end),
+          'adults': _adults,
+          'rooms': _rooms,
+        },
+        apply: _applyVoice,
+        parseLocal: _heard,
+        actions: {
+          'booking': ('open the search on Booking.com', () => _open('booking')),
+          'agoda': ('open the search on Agoda', () => _open('agoda')),
+          'makemytrip': ('open MakeMyTrip hotels', () => _open('makemytrip')),
+          'goibibo': ('open Goibibo hotels', () => _open('goibibo')),
+        },
+      );
+
+  /// What the booking agent set; returns what changed.
+  String _applyVoice(Map<String, Object?> v) {
+    final done = <String>[];
+    setState(() {
+      final city = voiceText(v['city']);
+      if (city != null && city != _city.text.trim()) {
+        _city.text = city;
+        done.add(city);
+      }
+      final a = voiceDate(v['checkIn']), b = voiceDate(v['checkOut']);
+      if (a != null || b != null) {
+        final start = a ?? _stay.start;
+        var end = b ?? (a != null ? start.add(Duration(days: _stay.duration.inDays.clamp(1, 30))) : _stay.end);
+        if (!end.isAfter(start)) end = start.add(const Duration(days: 1));
+        _stay = DateTimeRange(start: start, end: end);
+        final n = end.difference(start).inDays;
+        done.add('${_short(start)} → ${_short(end)} ($n night${n == 1 ? '' : 's'})');
+      }
+      final adults = voiceInt(v['adults']);
+      if (adults != null) {
+        _adults = adults.clamp(1, 12);
+        done.add('$_adults adult${_adults == 1 ? '' : 's'}');
+      }
+      final rooms = voiceInt(v['rooms']);
+      if (rooms != null) {
+        _rooms = rooms.clamp(1, 6);
+        done.add('$_rooms room${_rooms == 1 ? '' : 's'}');
+      }
+    });
+    return done.join(' · ');
   }
 
   Future<void> _pickDates() async {
@@ -89,12 +190,14 @@ class _HotelsScreenState extends State<HotelsScreen> {
   Widget build(BuildContext context) {
     final nights = _stay.end.difference(_stay.start).inDays;
     return NeonScaffold(
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: VoiceFillButton(form: _voiceForm()),
       appBar: appleAppBar(context, 'Hotels'),
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: ListView(
           padding: EdgeInsets.fromLTRB(
-              16, 8, 16, 28 + MediaQuery.paddingOf(context).bottom),
+              16, 8, 16, 120 + MediaQuery.paddingOf(context).bottom),
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(28),
