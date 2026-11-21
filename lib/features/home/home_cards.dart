@@ -44,6 +44,7 @@ import 'quick_apps.dart';
 import 'home_feed.dart';
 import 'home_memory.dart';
 import 'home_layout.dart';
+import 'ride_strip.dart';
 import 'my_assistant_banner.dart';
 import 'connect_card.dart';
 import '../../screens/connect/assistants_screen.dart';
@@ -309,6 +310,8 @@ class _HomeFeedViewState extends State<HomeFeedView> {
             // entrance.
             _KeepAlive(child: widget.leading),
             const SizedBox(height: 20),
+            // A cab booked by voice: driver, car, OTP, Cancel (2026-11-21).
+            const RideStrip(),
             StateSwitch(
               state: state,
               child: switch (state) {

@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../core/store_build.dart';
+import '../../home/ride_strip.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -2730,6 +2731,11 @@ class AssistantEngine extends ChangeNotifier {
             .whereType<Map<String, dynamic>>()
             .map(SearchResult.fromJson)
             .toList();
+        break;
+
+      case 'ride_booked':
+        // A cab booked by voice: Home's ride card shows it at once.
+        RideService.instance.refresh();
         break;
 
       case 'documents':
