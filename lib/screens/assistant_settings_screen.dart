@@ -25,7 +25,6 @@ import 'avatar_identity_screen.dart';
 import 'memory_screen.dart';
 import 'overlay_section.dart';
 import '../services/app_feedback.dart';
-import '../services/tester_feedback.dart';
 import '../features/widgets/widget_picker.dart';
 import '../features/home/horoscope_card.dart';
 import '../services/horoscope.dart';
@@ -132,28 +131,6 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
   Future<void> _removeRule(int id) async {
     await ApiService.sendJson('/profile/instructions/$id', method: 'DELETE');
     await _load();
-  }
-
-  /// Opens the tester feedback form (TesterFeedback). When it opened,
-  /// the form speaks for itself; when it could not, one toast says so.
-  ///
-  /// Two messages, each only when it is true (review, 2026-09-25). The one
-  /// toast used to say "Check your internet" for every failure, but the
-  /// failures that reach here were never the internet (Firebase not
-  /// started, no Android half); the connection is now checked before the
-  /// form starts, and only that check's answer asks about the connection.
-  Future<void> _sendFeedback() async {
-    final started = await TesterFeedback.start();
-    if (!mounted) return;
-    final msg = switch (started) {
-      FeedbackStart.opened => null,
-      FeedbackStart.offline =>
-        'Feedback requires an internet connection. Check your network and try again.',
-      FeedbackStart.unavailable =>
-        "Feedback is unavailable right now. Please try again later.",
-    };
-    if (msg == null) return;
-    AppFeedback.show(msg, context: context, tone: FeedbackTone.error);
   }
 
   @override
@@ -493,26 +470,6 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                       title: 'Home-Screen Widgets',
                       subtitle: 'Ask Bar, My Day, Shortcuts, and Orb',
                       onTap: () => showWidgetPicker(context),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-
-                // SEND FEEDBACK (owner, 2026-09-25: "yes add the send
-                // feedback button"). Opens the feedback form of the service
-                // the client installs the app from; what they write reaches
-                // the owner with the build it is about. Next to About,
-                // where a person looks for "tell someone".
-                const GroupLabel('Help'),
-                GroupedCard(
-                  dividerInset: 60,
-                  children: [
-                    AppleRow(
-                      leading:
-                          IconTile(Icons.feedback_outlined, AppleColors.blue),
-                      title: 'Send Feedback',
-                      subtitle: 'Report an issue or suggest an improvement',
-                      onTap: _sendFeedback,
                     ),
                   ],
                 ),

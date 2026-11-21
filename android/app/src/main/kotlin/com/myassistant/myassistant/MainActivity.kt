@@ -1000,10 +1000,6 @@ class MainActivity : FlutterFragmentActivity() {
         // calls card), read here and summarised in Dart (CallLogBridge).
         CallLogBridge.register(flutterEngine.dartExecutor.binaryMessenger, this)
 
-        // "Send feedback" on the You tab: opens App Distribution's own
-        // feedback form (TesterFeedbackBridge).
-        TesterFeedbackBridge.register(flutterEngine.dartExecutor.binaryMessenger, this)
-
         // The sign-up's phone step: Google confirms the SIM's number with
         // its carrier, no SMS code (PhoneNumberVerificationBridge).
         PhoneNumberVerificationBridge.register(flutterEngine.dartExecutor.binaryMessenger, this)

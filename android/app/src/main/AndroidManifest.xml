@@ -25,8 +25,7 @@
      Android 14+ gates this; ordinary reminders never use it. -->
 <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
 <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION"/>
-<!-- Network state: the updater's metered-network check (MainActivity)
-     and TesterFeedbackBridge.hasInternet(). -->
+<!-- Network state: the updater's metered-network check (MainActivity). -->
 <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
 <!-- Incoming-call guard: detect ringing/active calls so the assistant
      stops speaking immediately and releases the microphone. -->

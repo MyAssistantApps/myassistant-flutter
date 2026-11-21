@@ -59,6 +59,9 @@ it for them. Actions → in-app update → Run workflow publishes on demand.
 App Distribution is no longer used (the last one was build 207,
 2026-11-14). A build signed with another key will not install over
 existing ones, which is why the workflow checks the key.
+User feedback reaches the owner through the voice tool
+`send_developer_feedback` (admin panel → #/feedback). `tool/set_ci_secrets.sh`
+stores the workflow secrets (owner only).
 
 ## Secrets — both repos are PUBLIC
 
