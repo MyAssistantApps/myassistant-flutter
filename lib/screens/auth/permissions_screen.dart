@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../design/apple_kit.dart';
 import '../../design/neon_tokens.dart';
@@ -104,10 +105,19 @@ final List<_PermItem> _kRecommended = [
 
 List<_PermItem> get _kAll => [..._kRequired, ..._kRecommended];
 
+/// TYPING ONLY (product audit 2026-11-21): a user who declines the
+/// microphone still gets the whole app — chat, reminders, the workspace —
+/// instead of a gate they cannot pass. The orb asks for the microphone
+/// again the first time it is tapped.
+const kMicSkippedPref = 'perm_mic_skipped_v1';
+
 /// Launch-time check used by the setup gate: true when every REQUIRED
-/// permission (the microphone) is granted. Never prompts.
+/// permission (the microphone) is granted, or the user chose to continue
+/// by typing. Never prompts.
 Future<bool> allRequiredPermissionsGranted() async {
   try {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(kMicSkippedPref) == true) return true;
     for (final item in _kRequired) {
       if (!await item.p.status.isGranted) return false;
     }
@@ -179,6 +189,14 @@ class _PermissionsScreenState extends State<PermissionsScreen>
     // very first "call Alan" can already resolve.
     ContactsSyncService.instance.maybeSync(force: true);
     widget.onDone();
+  }
+
+  Future<void> _continueTyping() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(kMicSkippedPref, true);
+    } catch (_) {}
+    _finish();
   }
 
   Future<void> _requestAll() async {
@@ -285,6 +303,17 @@ class _PermissionsScreenState extends State<PermissionsScreen>
                     busyLabel: 'Requesting Access',
                     onPressed: _blocked ? openAppSettings : _requestAll,
                   ),
+                  // Without the microphone, the app still works by typing.
+                  if (!_requiredGranted && _error != null && !_busy) ...[
+                    const SizedBox(height: 6),
+                    TextButton(
+                      onPressed: _continueTyping,
+                      style: TextButton.styleFrom(
+                          minimumSize: const Size.fromHeight(48)),
+                      child: Text('Continue With Typing Only',
+                          style: TextStyle(color: Neon.textLo, fontSize: 14)),
+                    ),
+                  ],
                   // With the microphone allowed, the rest are a choice.
                   if (_requiredGranted && !_allGranted && !_busy) ...[
                     const SizedBox(height: 6),

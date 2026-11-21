@@ -29,6 +29,23 @@ val emulatorOnlyBuild: Boolean = (project.findProperty("target-platform") as Str
     ?.let { platforms -> platforms.isNotEmpty() && platforms.all { it.contains("x64") || it.contains("x86") } }
     ?: false
 
+// GOOGLE PLAY BUILD (product audit 2026-11-21): `-Pstore=play`
+// (flutter build appbundle --dart-define=STORE=play
+//  --android-project-arg=store=play) merges src/playRelease/AndroidManifest.xml
+// into the release, removing the permissions Play refuses. The default
+// (sideloaded) build is unchanged.
+val playStoreBuild: Boolean = (project.findProperty("store") as String?) == "play"
+
+// A Play upload must carry the real key: packaging a store=play release
+// without android/key.properties fails instead of falling back to the
+// debug keystore.
+gradle.taskGraph.whenReady {
+    val packaging = allTasks.any { it.name == "bundleRelease" || it.name == "assembleRelease" }
+    if (playStoreBuild && packaging && !rootProject.file("key.properties").exists()) {
+        throw GradleException("store=play needs android/key.properties (the upload key).")
+    }
+}
+
 android {
     namespace = "com.myassistant.myassistant"
     compileSdk = 36
@@ -77,6 +94,12 @@ android {
                 storeFile = file(keystoreProperties["storeFile"] as String)
                 storePassword = keystoreProperties["storePassword"] as String
             }
+        }
+    }
+
+    sourceSets {
+        getByName("release") {
+            if (playStoreBuild) manifest.srcFile("src/playRelease/AndroidManifest.xml")
         }
     }
 

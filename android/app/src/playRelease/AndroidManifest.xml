@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  GOOGLE PLAY RELEASE OVERLAY (product audit 2026-11-21).
+  Merged only into a release built with `-Pstore=play`
+  (flutter build appbundle with android-project-arg store=play; see
+  lib/core/store_build.dart). It removes what Google Play refuses or
+  restricts for an assistant that is not the default phone or SMS app:
+
+  - SEND_SMS, READ_CALL_LOG: restricted to default handlers. Texts open the
+    SMS app instead (sms_service.dart); the missed-calls card simply asks
+    for nothing and stays hidden.
+  - REQUEST_INSTALL_PACKAGES, UPDATE_PACKAGES_WITHOUT_USER_ACTION: Play
+    forbids self-updating outside Play. The in-app updater is off anyway.
+  - REQUEST_DELETE_PACKAGES, PACKAGE_USAGE_STATS: need declarations this
+    build does not make (uninstall by voice, screen-time reports).
+  - READ_MEDIA_IMAGES/VIDEO (merged from a plugin): the photo picker is
+    used, which needs no permission.
+  - AD_ID: no advertising; Firebase Analytics works without it.
+  - "Manifest.permission.CAPTURE_AUDIO_OUTPUT": a malformed name a plugin
+    merges in; it grants nothing and would only confuse review.
+
+  Still declared and needing a Play Console declaration: the accessibility
+  service (screen agent), the special-use foreground service (floating
+  bubble), the microphone foreground service, SYSTEM_ALERT_WINDOW,
+  USE_FULL_SCREEN_INTENT and SCHEDULE_EXACT_ALARM (wake-up reminders).
+  See docs/PRODUCT_READINESS.md, "Play Store".
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.SEND_SMS" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_CALL_LOG" tools:node="remove" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" tools:node="remove" />
+    <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" tools:node="remove" />
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" tools:node="remove" />
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove" />
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove" />
+    <uses-permission android:name="Manifest.permission.CAPTURE_AUDIO_OUTPUT" tools:node="remove" />
+</manifest>

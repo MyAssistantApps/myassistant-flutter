@@ -154,3 +154,8 @@ String rupees(int n) {
 }
 
 String grouped(int n) => rupees(n).substring(1);
+
+/// Play Billing is not wired yet: plan buttons join the early-access list
+/// instead of charging (premium_screen.dart `_joinEarlyAccess`). Flip when
+/// purchases go live.
+const bool kBillingLive = false;

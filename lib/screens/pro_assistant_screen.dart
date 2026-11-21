@@ -1703,6 +1703,9 @@ class _UpcomingPreview extends StatefulWidget {
 
 class _UpcomingPreviewState extends State<_UpcomingPreview> {
   List<Appointment>? _list;
+  // A failed load is not an empty day (product audit 2026-11-21): a doctor
+  // told "No upcoming appointments" while offline believes the day is free.
+  bool _failed = false;
 
   @override
   void initState() {
@@ -1711,9 +1714,18 @@ class _UpcomingPreviewState extends State<_UpcomingPreview> {
   }
 
   Future<void> _load() async {
+    if (_failed && mounted) setState(() => _failed = false);
     final l = await ClinicService.instance.upcoming(days: 14);
-    // Offline or an older server: an empty list, never a spinner forever.
-    if (mounted) setState(() => _list = l ?? _list ?? const <Appointment>[]);
+    if (!mounted) return;
+    // Offline or an older server: the last list if there was one, else an
+    // honest "could not load" with a retry, never a spinner forever.
+    setState(() {
+      if (l != null) {
+        _list = l;
+      } else if (_list == null) {
+        _failed = true;
+      }
+    });
   }
 
   void _all() => Navigator.of(context)
@@ -1738,7 +1750,25 @@ class _UpcomingPreviewState extends State<_UpcomingPreview> {
               TextButton(onPressed: _all, child: Text('See All (${list!.length})')),
           ]),
         ),
-        if (list == null)
+        if (list == null && _failed)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Neon.surface,
+              borderRadius: BorderRadius.circular(Neon.rLg),
+              border: Border.all(color: Neon.line),
+            ),
+            child: Row(children: [
+              Icon(Icons.cloud_off_rounded, color: Neon.error),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text('Unable to load your appointments. Please check your connection.',
+                    style: TextStyle(color: Neon.textLo, fontSize: 13, height: 1.35)),
+              ),
+              TextButton(onPressed: _load, child: const Text('Retry')),
+            ]),
+          )
+        else if (list == null)
           const SizedBox(height: 60, child: Center(child: NeonLoader(size: 26)))
         else if (next.isEmpty)
           Container(

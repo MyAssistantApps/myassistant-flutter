@@ -17,6 +17,7 @@ import '../services/voice_choice.dart';
 import '../services/api_service.dart';
 import '../services/assistant_identity.dart';
 import 'account_section.dart';
+import 'help_feedback_sheet.dart';
 import '../features/premium/premium_screen.dart';
 import 'app_lock_section.dart';
 import 'theme_colour_screen.dart';
@@ -182,7 +183,7 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                       leading: IconTile(
                           Icons.workspace_premium_rounded, AppleColors.purple),
                       title: 'MyAssistant Premium',
-                      subtitle: 'Try Pro free for 14 days',
+                      subtitle: 'Join the Pro early-access list',
                       trailing: Icon(Icons.chevron_right_rounded,
                           color: Neon.textDim, size: 20),
                       onTap: () => Navigator.of(context).push(
@@ -478,6 +479,14 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                 const GroupLabel('About & Legal'),
                 GroupedCard(
                   children: [
+                    AppleRow(
+                      leading: IconTile(Icons.support_agent_rounded, AppleColors.blue),
+                      title: 'Help & Feedback',
+                      subtitle: 'Report a problem or suggest an idea',
+                      trailing: Icon(Icons.chevron_right_rounded,
+                          color: Neon.textDim, size: 20),
+                      onTap: () => HelpFeedbackSheet.show(context),
+                    ),
                     _legalRow('Privacy Policy', '/legal/privacy'),
                     _legalRow('Terms & Conditions', '/legal/terms'),
                   ],

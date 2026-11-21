@@ -6,6 +6,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
+import '../../../core/store_build.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -1412,7 +1414,22 @@ class AssistantEngine extends ChangeNotifier {
     final epoch = _voiceEpoch;
     if (e.code == 'permission') {
       unawaited(_stopVoice());
-      _setLocalError('Microphone access is required. Enable it in Settings.');
+      // Declined at sign-up ("Continue With Typing Only"): ask now, once
+      // per tap, where the user can see why. Blocked for good: Settings.
+      unawaited(() async {
+        try {
+          final st = await Permission.microphone.request();
+          if (st.isGranted) {
+            _setLocalError('Microphone allowed. Please tap again to talk.');
+            return;
+          }
+          if (st.isPermanentlyDenied) {
+            _setLocalError('Microphone access is blocked. Please allow it in Settings to talk to your assistant.');
+            return;
+          }
+        } catch (_) {}
+        _setLocalError('Microphone access is required to talk. You can still type your request.');
+      }());
       return;
     }
     _hearFailures++;
@@ -2791,8 +2808,11 @@ class AssistantEngine extends ChangeNotifier {
           final msg = (e['message'] ?? '').toString();
           final err = await SmsService.instance.send(to, msg);
           final ok = err == null;
-          AppFeedback.toast(
-              ok ? 'Text message sent to $who.' : "Unable to send a text message to $who: $err.");
+          AppFeedback.toast(ok
+              ? (kPlayStoreBuild
+                  ? 'Your message to $who is ready. Please tap Send.'
+                  : 'Text message sent to $who.')
+              : "Unable to send a text message to $who: $err.");
           try {
             await ApiService.sendJson('/outcomes', method: 'POST', body: {
               'kind': 'message',

@@ -1,3 +1,4 @@
+import 'dart:async' show TimeoutException;
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kReleaseMode;
@@ -174,9 +175,23 @@ class ApiService {
   static Future<Map<String, dynamic>?> getJson(String path,
       {Duration timeout = const Duration(seconds: 6)}) async {
     try {
-      final r = await _client
-          .get(Uri.parse('$baseUrl$path'), headers: _authHeaders)
-          .timeout(timeout);
+      http.Response r;
+      try {
+        r = await _client
+            .get(Uri.parse('$baseUrl$path'), headers: _authHeaders)
+            .timeout(timeout);
+      } catch (e) {
+        // ONE RETRY on a dropped connection (product audit 2026-11-21):
+        // on Indian mobile networks a socket reset or a failed handshake
+        // is common and the second try usually works. Only fast transport
+        // failures retry — a timeout does not, so a probe's budget holds —
+        // and a GET is safe to repeat.
+        if (!isConnectError(e) || e is TimeoutException) rethrow;
+        await Future<void>.delayed(const Duration(milliseconds: 800));
+        r = await _client
+            .get(Uri.parse('$baseUrl$path'), headers: _authHeaders)
+            .timeout(timeout);
+      }
       if (r.statusCode != 200) {
         _flagAuthFailure(r.statusCode);
         AppLog.add('api', '$path -> ${r.statusCode}');
@@ -710,7 +725,10 @@ class ApiService {
                   ? 'the calling service refused our caller number'
                   : 'the calling service did not accept the call');
     }
-    return jsonDecode(r.body)['id'] as String;
+    final j = jsonDecode(r.body);
+    final id = j is Map ? j['id']?.toString() : null;
+    if (id == null || id.isEmpty) throw AgentCallFailed(r.statusCode, 'the calling service did not accept the call');
+    return id;
   }
 
   // ---------------- PRIVACY (F2) ----------------
@@ -751,8 +769,9 @@ class ApiService {
       _flagAuthFailure(r.statusCode);
       throw Exception('status ${r.statusCode}');
     }
-    final j = jsonDecode(r.body) as Map<String, dynamic>;
-    return (state: j['state'] as String, result: j['result'] as String?);
+    final j = jsonDecode(r.body);
+    if (j is! Map) throw Exception('status: unexpected reply');
+    return (state: (j['state'] ?? 'unknown').toString(), result: j['result']?.toString());
   }
 
   // ---------------- QUOTA ----------------

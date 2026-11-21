@@ -29,7 +29,7 @@ class Reminder {
   bool get calls => deliver == 'call';
 
   factory Reminder.fromJson(Map<String, dynamic> j) => Reminder(
-        id: j['id'] as int,
+        id: (j['id'] as num?)?.toInt() ?? 0,
         text: (j['text'] as String?) ?? '',
         dueAt: j['dueAt'] == null
             ? null
