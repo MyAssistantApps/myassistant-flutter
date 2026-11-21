@@ -43,6 +43,7 @@ import 'popular_apps.dart';
 import 'quick_apps.dart';
 import 'home_feed.dart';
 import 'home_memory.dart';
+import 'home_layout.dart';
 import 'my_assistant_banner.dart';
 import 'connect_card.dart';
 import '../../screens/connect/assistants_screen.dart';
@@ -139,9 +140,82 @@ class _HomeFeedViewState extends State<HomeFeedView> {
 
   HomeActions get _do => widget.actions;
 
+  /// Arrange mode: the sections as compact tiles to drag into order.
+  bool _arranging = false;
+  String? _pressed;
+
+  void _startArranging(String id) {
+    HapticFeedback.heavyImpact();
+    setState(() {
+      _arranging = true;
+      _pressed = id;
+    });
+  }
+
+  /// The movable sections, in the user's order. Each answers a long press
+  /// by opening arrange mode.
+  Widget _sections() {
+    return ValueListenableBuilder<List<String>>(
+      valueListenable: HomeLayout.instance.order,
+      builder: (context, order, _) {
+        if (_arranging) {
+          return ArrangeHomePanel(
+            highlight: _pressed,
+            onDone: () => setState(() {
+              _arranging = false;
+              _pressed = null;
+            }),
+          );
+        }
+        final out = <Widget>[];
+        var delay = 125;
+        for (final id in order) {
+          final child = _section(id);
+          if (child == null) continue;
+          if (out.isNotEmpty) out.add(SizedBox(height: id == 'connect' || id == 'documents' ? 12 : 22));
+          out.add(Semantics(
+            key: ValueKey('home-section-$id'),
+            onLongPressHint: 'Arrange Home',
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onLongPress: () => _startArranging(id),
+              child: Reveal(delayMs: delay, child: child),
+            ),
+          ));
+          delay += 5;
+        }
+        return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: out);
+      },
+    );
+  }
+
+  Widget? _section(String id) => switch (id) {
+        'assistant' => ValueListenableBuilder<String>(
+            valueListenable: Persona.notifier,
+            builder: (context, _, __) => _ownAssistant(_proKindOf(Persona.proKind)),
+          ),
+        'connect' => ConnectCard(onTap: () => _do.open(context, const AssistantsScreen())),
+        'documents' => UploadFilesCard(onTap: () => _do.open(context, const DocumentsScreen())),
+        'quick_tools' => QuickToolsSection(onOpen: (page) => _do.open(context, page)),
+        'popular_apps' => PopularAppsSection(onOpen: (page) => _do.open(context, page)),
+        'price_compare' => PriceCompareSection(onOpen: (page) => _do.open(context, page)),
+        'quick_apps' => const QuickApps(),
+        'horoscope' => const HoroscopeCard(),
+        _ => null,
+      };
+
+  /// The user's own assistant: their profession's, or their workspace.
+  Widget _ownAssistant(ProKind? mine) => mine != null
+      ? ProBanners(kinds: [mine], onOpen: (k) => _do.open(context, ProAssistantScreen(kind: k)))
+      : Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2),
+          child: MyAssistantBanner(onOpen: () => _do.open(context, const WorkspaceScreen())),
+        );
+
   @override
   void initState() {
     super.initState();
+    unawaited(HomeLayout.instance.load());
     unawaited(HomeMemory.instance.load());
     unawaited(HomeNews.instance.load());
     // Play my day's words, fetched ahead so the tap speaks at once.
@@ -240,31 +314,10 @@ class _HomeFeedViewState extends State<HomeFeedView> {
             if (state == 'partial' || (state == 'loaded' && svc.stale))
               _status(svc),
             const SizedBox(height: 28),
-            // THE ASSISTANTS FIRST, then Quick Tools (owner, 2026-11-21:
-            // the doctor's / advocate's / business assistant above).
-            Reveal(delayMs: 125, child: _assistants()),
-            const SizedBox(height: 26),
-            Reveal(
-              delayMs: 130,
-              child:
-                  QuickToolsSection(onOpen: (page) => _do.open(context, page)),
-            ),
-            // POPULAR APPS where Try now was (client, 2026-11-05): Swiggy,
-            // Zomato, Blinkit…, Uber, Ola, Rapido…; Try now moved to Hub.
-            const SizedBox(height: 26),
-            Reveal(
-              delayMs: 135,
-              child:
-                  PopularAppsSection(onOpen: (page) => _do.open(context, page)),
-            ),
-            // PRICE COMPARE (owner, 2026-11-04): under Try now, BuyHatke's
-            // layout in the app's glass.
-            const SizedBox(height: 26),
-            Reveal(
-              delayMs: 138,
-              child: PriceCompareSection(onOpen: (page) => _do.open(context, page)),
-            ),
-            if (extras.isNotEmpty) ...[
+            // THE SECTIONS IN THE USER'S ORDER (owner, 2026-11-21): press
+            // and hold any of them to arrange Home (home_layout.dart).
+            _sections(),
+            if (extras.isNotEmpty && !_arranging) ...[
               const SizedBox(height: 24),
               Reveal(
                 delayMs: 140,
@@ -277,24 +330,12 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                 ),
               ),
             ],
-            // A chip that says what today's tip card says is dropped; with
-            // no chips left, no empty gap is left either.
-            // The suggestion chips ("What did I promise?", "Any mail worth
-            // reading?", "Track an expense") are gone (owner, 2026-11-21).
-            // The professions' photo banners and the documents box became
-            // the Assistants tiles above (light premium, 2026-11-02).
-            const SizedBox(height: 20),
-            // QUICK APPS (2026-11-08): GPay, WhatsApp, YouTube… one tap
-            // away, where the Order and shop banners used to be.
-            const Reveal(delayMs: 170, child: QuickApps()),
-            const SizedBox(height: 20),
             // Once per release: what just got better. Below the day, never
             // above what needs the user.
-            const WhatsNewCard(),
-            // TODAY'S HOROSCOPE at the very bottom of Home (owner,
-            // 2026-11-21; it sat between the assistants and Popular Apps).
-            const SizedBox(height: 20),
-            const Reveal(delayMs: 175, child: HoroscopeCard()),
+            if (!_arranging) ...[
+              const SizedBox(height: 20),
+              const WhatsNewCard(),
+            ],
           ],
         );
       },
@@ -471,22 +512,6 @@ class _HomeFeedViewState extends State<HomeFeedView> {
     );
   }
 
-  /// THE ASSISTANTS (light premium, 2026-11-02): four raised tiles in one
-  /// row — the three professions and Documents (upload, keep, ask).
-  /// THE ASSISTANTS AS A SLIDING BANNER (owner, 2026-11-04: "a sliding
-  /// banner, not the buttons"): Doctor's, Advocate's and Business, each
-  /// with its own photo. My documents stays one slim row under it.
-  ///
-  /// ONLY THE USER'S OWN PROFESSION (owner, 2026-11-13): a doctor sees the
-  /// Doctor's assistant, an advocate the Advocate's, a business owner the
-  /// Business one; everyone else sees none (the server refuses the others).
-  Widget _assistants() {
-    return ValueListenableBuilder<String>(
-      valueListenable: Persona.notifier,
-      builder: (context, _, __) => _assistantsFor(_proKindOf(Persona.proKind)),
-    );
-  }
-
   static ProKind? _proKindOf(String? k) => switch (k) {
         'doctor' => ProKind.doctor,
         'advocate' => ProKind.advocate,
@@ -494,32 +519,6 @@ class _HomeFeedViewState extends State<HomeFeedView> {
         _ => null,
       };
 
-  Widget _assistantsFor(ProKind? mine) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (mine != null) ...[
-          ProBanners(
-              kinds: [mine],
-              onOpen: (k) => _do.open(context, ProAssistantScreen(kind: k))),
-          const SizedBox(height: 12),
-        ] else ...[
-          // Everyone else gets their own card too (owner, 2026-11-21).
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2),
-            child: MyAssistantBanner(
-              onOpen: () => _do.open(context, const WorkspaceScreen()),
-            ),
-          ),
-          const SizedBox(height: 12),
-        ],
-        ConnectCard(onTap: () => _do.open(context, const AssistantsScreen())),
-        const SizedBox(height: 12),
-        UploadFilesCard(
-            onTap: () => _do.open(context, const DocumentsScreen())),
-      ],
-    );
-  }
 
   /// Every unread message in one compact card (messages_card.dart).
   Widget _messagesCard(HomeCard c, TodayBrief b) {
