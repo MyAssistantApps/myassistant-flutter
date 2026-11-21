@@ -8,6 +8,7 @@ import 'package:myassistant/services/api_service.dart';
 
 import '../core/log.dart';
 import '../features/home/ride_strip.dart';
+import '../features/home/order_strip.dart';
 import '../features/assistant/state/assistant_engine.dart';
 import 'app_feedback.dart';
 import 'app_update_service.dart';
@@ -106,6 +107,7 @@ class PushService {
         // A booked cab moved on (driver assigned, arriving…): Home's ride
         // card refreshes; the notification itself is shown below.
         if (m.data['kind'] == 'ride_update') RideService.instance.refresh();
+        if (m.data['kind'] == 'order_update') OrderService.instance.refresh();
         // A booking request from the public page: the badge moves at once.
         final isListing = m.data['kind'] == 'listing_request';
         if (isListing) ListingService.instance.newRequests.value++;
