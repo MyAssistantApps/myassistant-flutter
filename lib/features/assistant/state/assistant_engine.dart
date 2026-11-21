@@ -176,9 +176,6 @@ class AssistantEngine extends ChangeNotifier {
       LiveVoicePrefs.enabled &&
       AiConfigStore.instance.current.live.on;
 
-  /// The conversation is on the fast (Live) voice right now.
-  bool get fastVoice => _liveMode;
-
   /// Test seam: a scripted brain, listener, player and voice. The barge-in
   /// microphone stays off unless [bargeWatch]; the fast voice is off unless
   /// a [live] one is given.
@@ -503,15 +500,6 @@ class AssistantEngine extends ChangeNotifier {
     } catch (_) {}
   }
 
-  static Future<void> setCaptionsEnabled(bool v) async {
-    captionsEnabled = v;
-    if (!v) instance.caption.value = null;
-    try {
-      final p = await SharedPreferences.getInstance();
-      await p.setBool(_captionsPrefKey, v);
-    } catch (_) {}
-  }
-
   /// The whole line [speaker] has said so far this turn (the recogniser and
   /// the brain both hand over everything so far, not just what is new).
   void _captionLine(String speaker, String text) {
@@ -756,8 +744,6 @@ class AssistantEngine extends ChangeNotifier {
           CallStatusInfo? s, DateTime changedAt, DateTime now) =>
       s != null && !s.done && now.difference(changedAt) < _callStatusCap;
 
-  bool get micBusy => phase == AssistantPhase.listening;
-
   /// Set by HomeShell: opens the conversation screen (same navigation as
   /// tapping the mic) and returns true, or returns false when it is
   /// already on screen. A tapped message notification uses this so the
@@ -789,7 +775,7 @@ class AssistantEngine extends ChangeNotifier {
   /// Says [text] in the assistant's own voice with NO model behind it:
   /// Gemini TTS through the speech engine, into the player. For words that
   /// are fixed — someone's message read out when no conversation is
-  /// running, the greeting.
+  /// running.
   Future<void> _speakDirect(String text) async {
     final line = text.trim();
     if (line.isEmpty || speakerMuted || !_foreground) {
@@ -2297,9 +2283,6 @@ class AssistantEngine extends ChangeNotifier {
   final _notes = <({String line, bool untrusted})>[];
   bool _notesRunning = false;
 
-  /// [_tellModel] for feature modules (the photo-card actions).
-  Future<void> tellModel(String line) => _tellModel(line);
-
   /// [_tellModel] with [untrusted] (tests).
   @visibleForTesting
   Future<void> debugNote(String line, {bool untrusted = false}) =>
@@ -2494,13 +2477,6 @@ class AssistantEngine extends ChangeNotifier {
   /// The user's display name, supplied by the screen once it is known.
   String? greetingName;
 
-  /// Suppresses the automatic spoken greeting when a conversation opens.
-  ///
-  /// OFF since 2026-09-20 at the owner's request (the orb tap's cached
-  /// hello stays). It stays a switch rather than deleted code: flipping it
-  /// back is one word.
-  bool greetingEnabled = false;
-
   /// How the owner is addressed (owner, 2026-09-23: "should say hello
   /// Sir, and give more respect"; 2026-09-24: "don't call them ji, call
   /// them Sir"). Ma'am when the profile says female, Sir otherwise — never
@@ -2515,50 +2491,6 @@ class AssistantEngine extends ChangeNotifier {
 
   static String honorific({String? name, String? gender}) {
     return (gender ?? '').trim().toLowerCase() == 'female' ? "Ma'am" : 'Sir';
-  }
-
-  /// What the orb tap says, instantly, in the assistant's own voice.
-  /// About 2 s spoken (2026-10-04): it plays the instant the orb is tapped
-  /// and covers the fast voice's connect, so nobody waits in silence.
-  static String orbGreeting({String? name, String? gender}) {
-    final who = honorific(name: name, gender: gender);
-    return who.isEmpty
-        ? 'Hello. How may I assist you today?'
-        : 'Hello $who, how may I assist you today?';
-  }
-
-  /// Time-appropriate greeting text.
-  static String greetingFor(String? name, {String? gender, DateTime? now}) {
-    final h0 = honorific(name: name, gender: gender);
-    final who = h0.isEmpty ? 'there' : h0;
-    // Short and professional — the greeting is also the app's first
-    // latency impression, so one crisp sentence beats a flourish.
-    final h = (now ?? DateTime.now()).hour;
-    final part = h < 12
-        ? 'Good morning'
-        : h < 17
-            ? 'Good afternoon'
-            : 'Good evening';
-    return '$part, $who. How may I assist you today?';
-  }
-
-  /// The spoken greeting, when it is switched on: a FIXED line, so it goes
-  /// straight through the speech engine — no model is asked to say it.
-  /// Refuses while offline to the conversation, mid-turn, in a phone call,
-  /// or when it was said recently.
-  Future<void> greetOnce({String? name}) async {
-    if (name != null && name.isNotEmpty) greetingName = name;
-    if (!greetingEnabled || !_conversationOpen) return;
-    if (DateTime.now().difference(_lastGreetedAt) < _greetCooldown) return;
-    if (_turnRunning || PhoneStateGuard.instance.inCall) return;
-    _lastGreetedAt = DateTime.now();
-    final text =
-        greetingFor(greetingName, gender: AuthService.instance.user?.gender);
-    transcript.add(TranscriptEntry(TranscriptRole.assistant, text));
-    replyComplete = true;
-    _captionLine('hari', text);
-    notifyListeners();
-    await _speakDirect(text);
   }
 
   /// Resets the greeting clock — used when a DIFFERENT user signs in, so
@@ -3527,10 +3459,6 @@ class AssistantEngine extends ChangeNotifier {
     }
     await _askWithPicture(shot, question);
   }
-
-  /// Dashboard "Scan" button — same flow as the voice command, but entered
-  /// deterministically: the camera opens immediately, no voice turn needed.
-  Future<void> startScan() => _captureDocument('');
 
   /// LOOK AT A PICTURE THEY ALREADY HAVE (look_at_screenshot) and answer
   /// about it, as a turn with the picture. When it shows an upcoming event
@@ -4769,11 +4697,6 @@ class AssistantEngine extends ChangeNotifier {
 
   /// The shortcut runner's view of this app.
   late final ShortcutPorts shortcutPorts = _EngineShortcutPorts(this);
-
-  /// Whether a voice command can open [screen] (open_app_screen).
-  @visibleForTesting
-  bool canOpenAppScreen(String screen) =>
-      screen == 'voice_settings' || _appScreenBuilder(screen) != null;
 
   /// "OPEN VOICE SETTINGS" (2026-10-06). The conversation ends once her
   /// "Opening voice settings." has played — a session's voice is fixed, so

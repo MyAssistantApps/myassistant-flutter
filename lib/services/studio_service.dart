@@ -303,9 +303,6 @@ class StudioException implements Exception {
   const StudioException(this.statusCode, this.message, this.code);
 
   bool get needsConsent => code == 'consent_required';
-  bool get needsPhoto => code == 'no_model_photo';
-  bool get overCap => code == 'daily_cap';
-  bool get notConfigured => code == 'no_provider';
 
   @override
   String toString() => message.isNotEmpty ? message : 'Studio error $statusCode';
@@ -341,16 +338,6 @@ class StudioService {
         .timeout(const Duration(seconds: 25));
     if (r.statusCode != 200) _throw(r.statusCode, r.body);
     return StudioState.fromJson(jsonDecode(r.body) as Map<String, dynamic>);
-  }
-
-  /// The full preset text lists — fetched only when a recipe screen opens,
-  /// because the catalogue carries labels alone.
-  static Future<Map<String, dynamic>> presets() async {
-    final r = await _client
-        .get(Uri.parse('$_base/presets'), headers: _h)
-        .timeout(const Duration(seconds: 20));
-    if (r.statusCode != 200) _throw(r.statusCode, r.body);
-    return jsonDecode(r.body) as Map<String, dynamic>;
   }
 
   static Future<void> acceptConsent() async {
@@ -451,27 +438,6 @@ class StudioService {
     AppLog.add('studio', 'made a $recipe look');
     DocumentEvents.bump();
     return StudioResult.fromJson(jsonDecode(body) as Map<String, dynamic>);
-  }
-
-  static Future<List<StudioLook>> looks({String? recipe}) async {
-    final q = recipe == null ? '' : '?recipe=$recipe';
-    final r = await _client
-        .get(Uri.parse('$_base/looks$q'), headers: _h)
-        .timeout(const Duration(seconds: 25));
-    if (r.statusCode != 200) _throw(r.statusCode, r.body);
-    return ((jsonDecode(r.body) as Map)['looks'] as List? ?? const [])
-        .whereType<Map>()
-        .map((m) => StudioLook.fromJson(m.cast<String, dynamic>()))
-        .toList(growable: false);
-  }
-
-  static Future<void> favorite(int lookId, bool on) async {
-    final r = await _client
-        .post(Uri.parse('$_base/looks/$lookId/favorite'),
-            headers: {..._h, 'Content-Type': 'application/json'},
-            body: jsonEncode({'on': on}))
-        .timeout(const Duration(seconds: 20));
-    if (r.statusCode != 200) _throw(r.statusCode, r.body);
   }
 
   static Future<void> deleteLook(int lookId) async {

@@ -86,8 +86,6 @@ class LocalToolRegistry {
     };
   }
 
-  void unregister(String name) => _tools.remove(name);
-
   void clear() => _tools.clear();
 
   bool get isEmpty => _tools.isEmpty;

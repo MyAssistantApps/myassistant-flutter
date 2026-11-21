@@ -105,8 +105,6 @@ enum PriceCategory {
         grocery => 'Grocery',
       };
 
-  String get tileSubtitle => 'Compare';
-
   /// The ribbon over the tile, or '' for none. Cabs say BETA because their
   /// fares are estimates.
   String get tag => switch (this) {

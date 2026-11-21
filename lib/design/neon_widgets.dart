@@ -502,49 +502,6 @@ class _TickPainter extends CustomPainter {
       old.progress != progress || old.color != color || old.stroke != stroke;
 }
 
-/// Ambient background — deep space with two soft radial neon washes.
-/// Wrap any Scaffold body with this for the signature backdrop.
-class NeonBackdrop extends StatelessWidget {
-  final Widget child;
-  const NeonBackdrop({super.key, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(color: Neon.bg),
-      child: Stack(
-        children: [
-          Positioned(
-            top: -120,
-            left: -80,
-            child: _wash(Neon.violet, 340),
-          ),
-          Positioned(
-            bottom: -140,
-            right: -100,
-            child: _wash(Neon.cyan, 380),
-          ),
-          child,
-        ],
-      ),
-    );
-  }
-
-  Widget _wash(Color c, double size) => IgnorePointer(
-        child: Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(colors: [
-              c.withValues(alpha: 0.07),
-              c.withValues(alpha: 0.0),
-            ]),
-          ),
-        ),
-      );
-}
-
 /// ─────────────────────────────────────────────────────────────────────────
 ///  A LIT CARD (2026-09-30, the client's neon reference): a thin gradient
 ///  rim in its [tone]'s two colours, the card's ground tinted by it (glass

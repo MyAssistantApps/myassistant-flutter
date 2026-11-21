@@ -29,7 +29,6 @@ import 'services/avatar_message_service.dart';
 import 'services/brief_service.dart';
 import 'services/clinic_service.dart';
 import 'services/persona.dart';
-import 'services/style_prefs.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'services/background_scan.dart';
@@ -91,9 +90,6 @@ Future<void> main() async {
   // bars to match — light bars/dark icons or the other way around).
   await ThemeController.load();
   await AccentController.load();
-  // Style + language prefs load in parallel with the first frame; every
-  // later read is a plain field access (no disk on hot paths).
-  StylePrefs.instance.load();
   // Runtime server override (Diagnostics screen) — must resolve before
   // the first request, or the engine would connect to the wrong host.
   ApiService.loadServerOverride();

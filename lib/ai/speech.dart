@@ -276,10 +276,6 @@ class SpeechEngine {
     return out.stream;
   }
 
-  /// [synthesizeChunks], as the PCM bytes alone.
-  Stream<Uint8List> synthesize(String text, {String? style}) =>
-      synthesizeChunks(text, style: style).map((c) => c.pcm);
-
   /// Synthesise and play through [sink]. Returns how many pieces of audio
   /// were handed to it.
   Future<int> speak(

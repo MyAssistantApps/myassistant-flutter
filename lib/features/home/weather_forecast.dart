@@ -1,11 +1,9 @@
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../services/api_service.dart';
-import '../../services/notification_service.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  HOME'S WEATHER (2026-09-30, owner: "need more visual… instead of a
@@ -157,7 +155,6 @@ class WeatherForecastService extends ChangeNotifier {
   static final WeatherForecastService instance = WeatherForecastService._();
 
   static const _cacheKey = 'wx_forecast_v1';
-  static const _umbrellaKey = 'wx_umbrella_v1';
 
   /// A forecast this old is fetched again (Home's minute tick asks).
   static const staleAfter = Duration(minutes: 20);
@@ -166,26 +163,10 @@ class WeatherForecastService extends ChangeNotifier {
   bool _loading = false;
   bool _loadedCache = false;
 
-  /// "<date> <from>" of the rain an umbrella reminder is already set for.
-  String? umbrellaSetFor;
-
   /// Test seam: what GET /tools/weather/forecast answers.
   @visibleForTesting
   static Future<Map<String, dynamic>?> Function() fetch =
       () => ApiService.getJson('/tools/weather/forecast', timeout: const Duration(seconds: 12));
-
-  /// Test seam: POST /reminders.
-  @visibleForTesting
-  static Future<bool> Function(String text, DateTime due) createReminder =
-      (text, due) async {
-    try {
-      await ApiService.createReminder(text, due);
-      unawaited(ReminderNotifications.instance.sync());
-      return true;
-    } catch (_) {
-      return false;
-    }
-  };
 
   /// The saved copy (instant), then a fresh one when it is stale.
   Future<void> load() async {
@@ -193,7 +174,6 @@ class WeatherForecastService extends ChangeNotifier {
       _loadedCache = true;
       try {
         final prefs = await SharedPreferences.getInstance();
-        umbrellaSetFor = prefs.getString(_umbrellaKey);
         final raw = prefs.getString(_cacheKey);
         if (raw != null && forecast == null) {
           final f = Forecast.fromJson(jsonDecode(raw) as Map<String, dynamic>);
@@ -233,53 +213,9 @@ class WeatherForecastService extends ChangeNotifier {
     }
   }
 
-  /// When an umbrella reminder for this rain would go off: half an hour
-  /// before it, or null when that is already past (it is raining, or
-  /// about to).
-  DateTime? umbrellaTime(DateTime now) {
-    final from = forecast?.rainFrom;
-    if (from == null) return null;
-    final h = int.tryParse(from.split(':').first);
-    if (h == null) return null;
-    var start = DateTime(now.year, now.month, now.day, h);
-    if (start.isBefore(now.subtract(const Duration(hours: 1)))) {
-      start = start.add(const Duration(days: 1));
-    }
-    final at = start.subtract(const Duration(minutes: 30));
-    return at.isAfter(now.add(const Duration(minutes: 5))) ? at : null;
-  }
-
-  String _umbrellaId(DateTime at) => '${at.year}-${at.month}-${at.day} ${forecast?.rainFrom}';
-
-  bool umbrellaDone(DateTime at) => umbrellaSetFor == _umbrellaId(at);
-
-  /// THE BUTTON ANSWERS AT ONCE (owner, 2026-09-30: "buttons are laggy…
-  /// like umbrella reminder"): it used to hand a sentence to the assistant
-  /// — a whole conversation turn before anything happened. Now it is set
-  /// straight away on the screen, the reminder is made in one call behind
-  /// it, and a failure puts the button back.
-  Future<bool> remindUmbrella(DateTime at, String rainLabel) async {
-    final id = _umbrellaId(at);
-    final before = umbrellaSetFor;
-    umbrellaSetFor = id;
-    notifyListeners();
-    final ok = await createReminder('Carry an umbrella: rain expected from $rainLabel', at);
-    if (!ok) {
-      umbrellaSetFor = before;
-      notifyListeners();
-      return false;
-    }
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_umbrellaKey, id);
-    } catch (_) {}
-    return true;
-  }
-
   @visibleForTesting
-  void debugSet(Forecast? f, {String? umbrella}) {
+  void debugSet(Forecast? f) {
     forecast = f;
-    umbrellaSetFor = umbrella;
     _loadedCache = true;
     notifyListeners();
   }

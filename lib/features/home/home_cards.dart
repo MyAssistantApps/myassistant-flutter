@@ -87,17 +87,6 @@ class HomeActions {
   void open(BuildContext context, Widget page) => Navigator.of(context)
       .push(MaterialPageRoute<void>(builder: (_) => page));
 
-  /// "Play my morning" (2026-09-30): the day read aloud, its strip in the
-  /// root overlay. A second tap pauses or resumes.
-  void playBrief(BuildContext context) {
-    final p = BriefPlayer.instance;
-    if (p.state == BriefPlayState.playing || p.state == BriefPlayState.paused) {
-      p.toggle();
-      return;
-    }
-    unawaited(p.play(overlay: Overlay.maybeOf(context, rootOverlay: true)));
-  }
-
   /// The meeting card's Prepare (2026-09-30): Meeting Prep for exactly
   /// that event.
   Future<void> prepareMeeting(BuildContext context, AgendaItem item) =>
@@ -210,8 +199,6 @@ class _HomeFeedViewState extends State<HomeFeedView> {
           for (final i in ShoppingService.instance.items)
             if (!i.checked) i.name,
         ];
-        // "Born today" was here (2026-10-19 to 2026-11-01): removed at the
-        // owner's request; its slot goes back to the other extras.
         // Tips ("Try asking") are gone from Home: they said what the one
         // suggestion row below says (client, 2026-11-01).
         final extras = state == 'loading'

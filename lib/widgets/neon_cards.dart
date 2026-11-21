@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../design/motion.dart';
 import '../design/neon_tokens.dart';
@@ -276,45 +275,6 @@ class GlassCard extends StatelessWidget {
   }
 }
 
-/// A GROUPED GLASS LIST: [children] as rows of one [GlassCard], split by
-/// hairlines inset [indent] from the left — the iOS inset-grouped list,
-/// in glass. Rows keep their own taps; the ink shows on the glass.
-class GlassGroup extends StatelessWidget {
-  const GlassGroup({
-    super.key,
-    required this.children,
-    this.indent = Neon.s4,
-  });
-
-  final List<Widget> children;
-  final double indent;
-
-  @override
-  Widget build(BuildContext context) {
-    return GlassCard(
-      padding: EdgeInsets.zero,
-      clip: true,
-      child: Material(
-        type: MaterialType.transparency,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final (i, c) in children.indexed) ...[
-              if (i > 0)
-                Padding(
-                  padding: EdgeInsets.only(left: indent),
-                  child: Divider(height: 1, thickness: 1, color: Neon.hairline),
-                ),
-              c,
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 /// A QUIET TONAL ICON TILE: the icon in [color] on a low wash of it, a
 /// thin rim of the same — the kind of thing, told softly (Home's cards).
 class GlassTile extends StatelessWidget {
@@ -345,88 +305,6 @@ class GlassTile extends StatelessWidget {
         ),
         child: Icon(icon, size: size * 0.5, color: color),
       ),
-    );
-  }
-}
-
-/// THE PRIMARY GLASS BUTTON (Home's Play): a glass pill with the brand's
-/// gradient disc for its icon — the colour in one small place, the label
-/// in the text colour. 48 dp to the finger; dips and ticks; one button
-/// to a screen reader, with its [label].
-class GlassButton extends StatelessWidget {
-  const GlassButton({
-    super.key,
-    required this.label,
-    required this.icon,
-    this.onPressed,
-    this.busy = false,
-  });
-
-  final String label;
-  final IconData icon;
-  final VoidCallback? onPressed;
-  final bool busy;
-
-  @override
-  Widget build(BuildContext context) {
-    final press = onPressed;
-    final enabled = press != null && !busy;
-    Widget b = GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: enabled
-          ? () {
-              HapticFeedback.selectionClick();
-              press();
-            }
-          : null,
-      child: CustomPaint(
-        foregroundPainter:
-            _HairlinePainter(radius: Neon.rPill, colors: Neon.glassEdge),
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 48),
-          padding: const EdgeInsets.fromLTRB(6, 6, 18, 6),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(Neon.rPill),
-            gradient: Neon.glassFill,
-            boxShadow: Neon.lift,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: Neon.gBrand,
-                ),
-                child: busy
-                    ? Padding(
-                        padding: const EdgeInsets.all(10),
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Neon.onBrand),
-                      )
-                    : Icon(icon, size: 22, color: Neon.onBrand),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                label,
-                style: NeonType.manrope(NeonType.body, FontWeight.w700)
-                    .copyWith(color: Neon.textHi),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-    if (enabled) b = PressScale(scale: 0.96, child: b);
-    return Semantics(
-      button: true,
-      enabled: enabled,
-      label: label,
-      onTap: enabled ? press : null,
-      excludeSemantics: true,
-      child: b,
     );
   }
 }

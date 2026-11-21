@@ -254,7 +254,7 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Re-fetch the account (e.g. after the onboarding survey updated
+  /// Re-fetch the account (e.g. after onboarding updated
   /// name/gender) so the avatar and greetings pick changes up at once.
   Future<void> refreshUser() async {
     final token = ApiService.sessionToken;
@@ -293,29 +293,6 @@ class AuthService extends ChangeNotifier {
           String? gender}) =>
       _post('/auth/signup',
           {'email': email, 'password': password, 'name': name, 'gender': gender});
-
-  /// Set or change the user's gender (used by social sign-ins that have no
-  /// sign-up form, and by settings later).
-  Future<void> setGender(String gender) async {
-    final token = ApiService.sessionToken;
-    if (token == null) return;
-    try {
-      final r = await http.patch(
-        Uri.parse('${ApiService.baseUrl}/auth/me'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({'gender': gender}),
-      ).timeout(const Duration(seconds: 8));
-      if (r.statusCode == 200) {
-        user = AppUser.fromJson(jsonDecode(r.body)['user']);
-        notifyListeners();
-      }
-    } catch (_) {
-      // Non-fatal — the avatar just uses the default until next sync.
-    }
-  }
 
   Future<void> logIn({required String email, required String password}) =>
       _post('/auth/login', {'email': email, 'password': password});

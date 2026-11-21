@@ -51,8 +51,6 @@ import '../services/audio/pcm_player.dart';
 import 'brain.dart';
 import 'config.dart';
 import 'json_schema.dart';
-import 'model_port.dart';
-import 'speech.dart';
 import 'tool_server.dart';
 import 'types.dart';
 
@@ -374,47 +372,6 @@ class LiveVoicePrefs {
   }
 }
 
-/// A short sample of a classic speech voice. Live voice samples are served
-/// by the backend (liveVoices.js) so they match the selected voice exactly.
-class LiveVoicePreview {
-  static final _cache = <String, List<SpeechChunk>>{};
-
-  static String line(String voice) =>
-      "Hello, I am $voice. This is how I will sound when we speak.";
-
-  /// Plays [voice]'s sample into [sink]. False when it could not be made.
-  static Future<bool> play(
-    String voice, {
-    required AudioSink sink,
-    ModelPort? port,
-    AiConfig Function()? config,
-  }) async {
-    await sink.stop();
-    final chunks = _cache[voice];
-    if (chunks == null) {
-      final base = config ?? () => AiConfigStore.instance.current;
-      final engine = SpeechEngine(
-        port: port ?? ModelPorts.cloud(),
-        config: () => base().withVoice(voice),
-      );
-      final made = <SpeechChunk>[];
-      try {
-        await for (final c in engine.synthesizeChunks(line(voice))) {
-          made.add(c);
-          await sink.play(c.pcm, sampleRate: c.sampleRate);
-        }
-      } catch (_) {}
-      if (made.isEmpty) return false;
-      _cache[voice] = made;
-      return true;
-    }
-    for (final c in chunks) {
-      await sink.play(c.pcm, sampleRate: c.sampleRate);
-    }
-    return true;
-  }
-}
-
 // ---------------------------------------------------------------- the voice
 
 class LiveTimeouts {
@@ -647,12 +604,6 @@ class LiveVoice {
   ///  - still deaf after that: the cascade takes over, and says so.
   int _lastFrameUs = 0;
 
-  /// Until this moment the room is sent as silence: the listening ping must
-  /// not reach the model as speech (2026-10-02).
-  int _holdUntilUs = 0;
-
-  /// The microphone sends silence for [d] (the ping is playing).
-  void holdMic(Duration d) => _holdUntilUs = _now() + d.inMicroseconds;
   int _lastInUs = 0;
   Timer? _micWatch;
   bool _restartingMic = false;
@@ -1203,10 +1154,6 @@ class LiveVoice {
     final ms = MicStream.msOf(c);
     final now = _now();
     _lastFrameUs = now;
-    if (now < _holdUntilUs) {
-      _send(Uint8List(c.length));
-      return;
-    }
     if (!_player.playing) {
       _wasPlaying = false;
       final ev = room.feed(c, level);

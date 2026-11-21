@@ -117,8 +117,6 @@ class HomeFeed {
   final String dayLabel;
   final List<HomeLine> day;
   final List<HomeAsk> asks;
-
-  bool get allClear => now == null;
 }
 
 class HomeRanker {

@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show Platform;
 
@@ -36,8 +35,6 @@ class CheckResult {
 ///  admin panel shows them per user. It runs:
 ///    * when the admin asks for it (GET /diagnostics/pending, on launch
 ///      and whenever the app comes back to the front);
-///    * by itself after something went wrong (a voice answer that never
-///      came), at most once every 30 minutes;
 ///    * from the Diagnostics screen's button.
 ///  Never asks for anything, never shows anything.
 /// ─────────────────────────────────────────────────────────────────────────
@@ -46,10 +43,7 @@ class SelfCheck {
   static final SelfCheck instance = SelfCheck._();
 
   bool _running = false;
-  DateTime _lastAuto = DateTime.fromMillisecondsSinceEpoch(0);
   DateTime _lastPoll = DateTime.fromMillisecondsSinceEpoch(0);
-
-  static const _autoGap = Duration(minutes: 30);
 
   /// The admin asked for a check: run it. Cheap; at most once a minute.
   Future<void> runIfRequested() async {
@@ -59,15 +53,6 @@ class SelfCheck {
     await _sendUnsent();
     final r = await ApiService.getJson('/diagnostics/pending');
     if (r?['run'] == true) await run('admin');
-  }
-
-  /// Something went wrong: send a check, unless one went recently.
-  void afterProblem(String what) {
-    if (!AuthService.instance.isSignedIn) return;
-    if (DateTime.now().difference(_lastAuto) < _autoGap) return;
-    _lastAuto = DateTime.now();
-    // A moment later, so the log holds what happened right after.
-    Timer(const Duration(seconds: 4), () => unawaited(run('auto: $what')));
   }
 
   /// Runs every check and sends the report. True when the server got it.

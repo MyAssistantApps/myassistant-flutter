@@ -4,14 +4,13 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../design/apple_kit.dart';
 import '../design/motion.dart';
-import '../design/neon_tokens.dart';
 import '../services/api_service.dart';
 import '../services/app_feedback.dart';
 import '../services/privacy_prefs_service.dart';
 
-/// What the user is told before they say yes — on the one-time card and in
-/// the dialog behind the switch. Plain words; the server stores which
-/// version they saw ([PrivacyPrefsService.noticeVersion]).
+/// What the user is told before they say yes — in the dialog behind the
+/// switch. Plain words; the server stores which version they saw
+/// ([PrivacyPrefsService.noticeVersion]).
 String helpImproveNotice(int days) =>
     'If you say yes, our team may listen to recordings of your voice chats '
     '(kept up to $days days) and read your conversations, only to find and '
@@ -79,58 +78,6 @@ Future<bool> showHelpImproveTurnOff(BuildContext context) async {
     ),
   );
   return ok == true;
-}
-
-/// The one-time card's body. [onAnswer] gets true for "Yes, help improve".
-/// The two buttons are the same style: neither answer is the "right" one.
-class HelpImproveAskCard extends StatelessWidget {
-  final int days;
-  final void Function(bool yes) onAnswer;
-  const HelpImproveAskCard({super.key, required this.days, required this.onAnswer});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(22, 20, 22, 26),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(children: [
-            Icon(Icons.volunteer_activism_rounded, color: Neon.violet, size: 20),
-            const SizedBox(width: 9),
-            Flexible(
-              child: Text('Help Improve the Assistant?',
-                  style: TextStyle(
-                      color: Neon.textHi,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700)),
-            ),
-          ]),
-          const SizedBox(height: 10),
-          Text(helpImproveNotice(days),
-              style: TextStyle(color: Neon.textLo, fontSize: 13, height: 1.45)),
-          _policyLink(),
-          const SizedBox(height: 8),
-          Row(children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () => onAnswer(false),
-                child: const Text('No, Thank You'),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () => onAnswer(true),
-                child: const Text('Yes, Help Improve'),
-              ),
-            ),
-          ]),
-        ],
-      ),
-    );
-  }
 }
 
 /// You → Privacy & security: the switch.

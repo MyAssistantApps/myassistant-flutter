@@ -1,17 +1,3 @@
-/// Result of a /vision call (Group B).
-class VisionResult {
-  final String answer;
-  final VisionAction? action;
-  const VisionResult({required this.answer, this.action});
-
-  factory VisionResult.fromJson(Map<String, dynamic> j) => VisionResult(
-        answer: (j['answer'] ?? '').toString(),
-        action: j['action'] is Map<String, dynamic>
-            ? VisionAction.fromJson(j['action'] as Map<String, dynamic>)
-            : null,
-      );
-}
-
 /// B4 — a suggested next step extracted from a screenshot, awaiting the
 /// user's one-tap approval (currently: calendar/reminder entries).
 class VisionAction {

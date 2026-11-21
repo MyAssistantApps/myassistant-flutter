@@ -99,24 +99,6 @@ class GreetingVoice {
     }
   }
 
-  /// How long the cached greeting lasts; null when nothing is cached.
-  Future<Duration?> lengthOf(String text) async {
-    try {
-      final f = await _fileFor(text);
-      if (!await f.exists()) return null;
-      final raf = await f.open();
-      final head = await raf.read(8);
-      final size = await raf.length();
-      await raf.close();
-      if (head.length < 8) return null;
-      final rate = ByteData.sublistView(head, 4, 8).getUint32(0, Endian.little);
-      if (rate <= 0) return null;
-      return Duration(microseconds: ((size - 8) ~/ 2) * 1000000 ~/ rate);
-    } catch (_) {
-      return null;
-    }
-  }
-
   /// Plays the cached greeting. False when nothing was cached — the caller
   /// stays silent rather than using another voice.
   Future<bool> play(String text) async {
@@ -143,49 +125,11 @@ class GreetingVoice {
 
   static const _device = MethodChannel('hari/device');
 
-  /// THE RECORDED OPENING, PLAYED LIKE THE LIVE VOICE (2026-10-06): on the
-  /// voice-call stream and the loudspeaker (VoiceClip.kt), so it has the
-  /// same volume as the realtime voice's audio after it. False when nothing is
-  /// cached (it is fetched for next time) or it could not play.
-  Future<bool> playOnCall(String text) async {
-    if (text.trim().isEmpty) return false;
-    try {
-      final f = await _fileFor(text);
-      if (!await f.exists() || await f.length() < 2000) {
-        unawaited(prewarm(text));
-        return false;
-      }
-      final bytes = await f.readAsBytes();
-      final ok = bytes.length > 8 &&
-          [for (var i = 0; i < 4; i++) bytes[i]].join() == _magic.join();
-      if (!ok) return false;
-      final rate = ByteData.sublistView(bytes, 4, 8).getUint32(0, Endian.little);
-      final played = await _device.invokeMethod<bool>('playVoiceClip', {
-        'pcm': Uint8List.sublistView(bytes, 8),
-        'rate': rate,
-      });
-      return played == true;
-    } catch (e) {
-      AppLog.add('greeting', 'call-stream play failed: $e');
-      return false;
-    }
-  }
-
   /// Stops a recorded opening that is still playing.
   Future<void> stopOnCall() async {
     try {
       await _device.invokeMethod<bool>('stopVoiceClip');
     } catch (_) {}
-  }
-
-  /// Whether [text] is cached in the current voice (it can play at once).
-  Future<bool> isReady(String text) async {
-    try {
-      final f = await _fileFor(text);
-      return await f.exists() && await f.length() > 2000;
-    } catch (_) {
-      return false;
-    }
   }
 
   /// Drop every cached greeting — called when the user picks a different
