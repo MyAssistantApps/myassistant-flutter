@@ -18,6 +18,7 @@ import '../services/api_service.dart';
 import '../services/assistant_identity.dart';
 import 'account_section.dart';
 import 'help_feedback_sheet.dart';
+import 'linked_accounts_screen.dart';
 import '../features/premium/premium_screen.dart';
 import 'app_lock_section.dart';
 import 'theme_colour_screen.dart';
@@ -189,6 +190,27 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                             builder: (_) => const PremiumScreen()),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // LINKED ACCOUNTS (2026-11-21): Uber, Swiggy… so the
+                // assistant books and orders on the user's own account.
+                const GroupLabel('Linked Accounts'),
+                GroupedCard(
+                  dividerInset: 60,
+                  children: [
+                    AppleRow(
+                      leading: IconTile(Icons.link_rounded, AppleColors.teal),
+                      title: 'Linked Accounts',
+                      subtitle: 'Uber, Swiggy and more, for booking by voice',
+                      trailing: Icon(Icons.chevron_right_rounded,
+                          color: Neon.textDim, size: 20),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const LinkedAccountsScreen()),
                       ),
                     ),
                   ],

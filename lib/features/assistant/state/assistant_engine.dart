@@ -10,6 +10,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../../core/store_build.dart';
 import '../../home/ride_strip.dart';
 import '../../home/order_strip.dart';
+import '../../../screens/linked_accounts_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -4659,6 +4660,7 @@ class AssistantEngine extends ChangeNotifier {
         'reminders' => (_) => const RemindersScreen(),
         'call_notes' => (_) => const CallNotesScreen(),
         'documents' => (_) => const DocumentsScreen(),
+        'linked_accounts' => (_) => const LinkedAccountsScreen(),
         'clients' => (_) => const ClientsScreen(),
         'finance' => (_) => const FinanceScreen(),
         'stocks' => (_) => const StocksScreen(),
