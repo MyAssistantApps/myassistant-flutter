@@ -8,6 +8,7 @@ import '../design/neon_tokens.dart';
 import '../design/neon_widgets.dart';
 import '../features/assistant/widgets/action_cards.dart'
     show DocumentGalleryScreen;
+import '../models/brief.dart' show cleanMessageText;
 import '../models/user_document.dart';
 import '../services/api_service.dart';
 import '../widgets/document_tile.dart'
@@ -425,7 +426,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
                             fontStyle: FontStyle.italic)),
                   ],
                 )
-              : Text(m.text,
+              : Text(cleanMessageText(m.text),
                   style: TextStyle(color: ink, fontSize: 14, height: 1.35)),
         ],
       ),

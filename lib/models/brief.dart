@@ -10,6 +10,7 @@ class TodayBrief {
   final List<DateItem> dates; // birthdays and bills, today or tomorrow
   final List<PromiseItem> promises; // open commitments
   final List<BriefMessage> messages; // unread agent-to-agent messages
+  final List<BriefAppointment> appointments; // booked through contacts' assistants
   final List<CirclePerson> people; // contacts who are on the app
   final int peopleCount;
   final List<Headline> headlines; // top news, free RSS
@@ -23,6 +24,7 @@ class TodayBrief {
     this.dates = const [],
     this.promises = const [],
     this.messages = const [],
+    this.appointments = const [],
     this.people = const [],
     this.peopleCount = 0,
     this.headlines = const [],
@@ -65,11 +67,50 @@ class TodayBrief {
       dates: list('dates', DateItem.fromJson),
       promises: list('promises', PromiseItem.fromJson),
       messages: list('messages', BriefMessage.fromJson),
+      // Empty from a server older than 2026-11-21.
+      appointments: list('appointments', BriefAppointment.fromJson),
       people: list('people', CirclePerson.fromJson),
       peopleCount: (j['people_count'] as num?)?.toInt() ?? 0,
       headlines: list('headlines', Headline.fromJson),
     );
   }
+}
+
+/// A booking I made through a contact's assistant (GET /brief →
+/// appointments): Home's "Next Appointment" strip.
+class BriefAppointment {
+  final int id;
+  final String withName;
+  final String profession;
+  final int atMs;
+  final int minutes;
+  final String modeLabel;
+  final String purpose;
+  final String details;
+  final String when;
+  const BriefAppointment({
+    required this.id,
+    required this.withName,
+    required this.atMs,
+    this.profession = '',
+    this.minutes = 30,
+    this.modeLabel = '',
+    this.purpose = '',
+    this.details = '',
+    this.when = '',
+  });
+
+  factory BriefAppointment.fromJson(Map<String, dynamic> j) => BriefAppointment(
+        id: (j['id'] as num?)?.toInt() ?? 0,
+        withName: j['with'] as String? ?? '',
+        profession: j['profession'] as String? ?? '',
+        atMs: (j['at'] as num?)?.toInt() ?? 0,
+        minutes: (j['minutes'] as num?)?.toInt() ?? 30,
+        modeLabel: j['modeLabel'] as String? ?? '',
+        purpose: j['purpose'] as String? ?? '',
+        details: j['details'] as String? ?? '',
+        when: j['when'] as String? ?? '',
+      );
 }
 
 class Headline {
@@ -250,15 +291,50 @@ class DateItem {
       );
 }
 
+/// A message as people should read it: without the "[URGENT]" marker or
+/// the "(Call with your assistant Maya)" / "(Left with your assistant …)"
+/// labels older servers put in front (owner, 2026-11-21: "I don't need
+/// that text").
+String cleanMessageText(String raw) => raw
+    .replaceFirst(RegExp(r'^\s*\[URGENT\]\s*'), '')
+    .replaceFirst(
+        RegExp(r'^\s*\((Call|Left|Booked) (with|by) your assistant[^)]*\)\s*',
+            caseSensitive: false),
+        '')
+    .trim();
+
 class BriefMessage {
   final String from;
   final String text;
-  const BriefMessage({required this.from, required this.text});
 
-  factory BriefMessage.fromJson(Map<String, dynamic> j) => BriefMessage(
-        from: j['from'] as String? ?? 'Someone',
-        text: j['text'] as String? ?? '',
-      );
+  /// Sent as urgent (the server's flag, or an "[URGENT]" message from an
+  /// older server).
+  final bool urgent;
+  final int? atMs;
+
+  /// The inbox row (to mark it read) and the sender's number (to reply);
+  /// absent from older servers.
+  final int? id;
+  final String fromPhone;
+  const BriefMessage(
+      {required this.from,
+      required this.text,
+      this.urgent = false,
+      this.atMs,
+      this.id,
+      this.fromPhone = ''});
+
+  factory BriefMessage.fromJson(Map<String, dynamic> j) {
+    final raw = j['text'] as String? ?? '';
+    return BriefMessage(
+      from: j['from'] as String? ?? 'Someone',
+      text: cleanMessageText(raw),
+      urgent: j['urgent'] == true || raw.trimLeft().startsWith('[URGENT]'),
+      atMs: (j['at'] as num?)?.toInt(),
+      id: (j['id'] as num?)?.toInt(),
+      fromPhone: j['from_phone'] as String? ?? '',
+    );
+  }
 }
 
 class CirclePerson {

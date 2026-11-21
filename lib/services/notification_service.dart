@@ -175,13 +175,17 @@ class ReminderNotifications {
         'Urgent Alerts',
         description: 'An urgent message from a contact, sent through their assistant',
         importance: Importance.max,
+        // The app's own emergency tone (res/raw), unlike any other alert.
+        sound: RawResourceAndroidNotificationSound('urgent_alert'),
+        playSound: true,
       ));
       await android?.createNotificationChannel(AndroidNotificationChannel(
         urgentLoudChannel,
         'Urgent Alerts (Not Yet Seen)',
         description: 'Repeats an urgent alert, louder, until you open it',
         importance: Importance.max,
-        sound: const UriAndroidNotificationSound('content://settings/system/alarm_alert'),
+        sound: const RawResourceAndroidNotificationSound('urgent_alert_long'),
+        playSound: true,
         audioAttributesUsage: AudioAttributesUsage.alarm,
         enableVibration: true,
         vibrationPattern: Int64List.fromList([0, 900, 300, 900, 300, 900]),
@@ -230,8 +234,10 @@ class ReminderNotifications {
     } catch (_) {}
   }
 
-  static const urgentChannel = 'hari_urgent';
-  static const urgentLoudChannel = 'hari_urgent_loud';
+  // Channel ids carry the tone: Android never changes a channel's sound
+  // once created, so a new tone needs a new id.
+  static const urgentChannel = 'hari_emergency';
+  static const urgentLoudChannel = 'hari_emergency_loud';
 
   /// An urgent alert while the app is open (Android does not show the push
   /// itself then). The same id each time, so a repeat replaces the banner
@@ -255,6 +261,8 @@ class ReminderNotifications {
             audioAttributesUsage:
                 loud ? AudioAttributesUsage.alarm : AudioAttributesUsage.notification,
             fullScreenIntent: loud,
+            sound: RawResourceAndroidNotificationSound(
+                loud ? 'urgent_alert_long' : 'urgent_alert'),
             visibility: NotificationVisibility.public,
           ),
           iOS: const DarwinNotificationDetails(

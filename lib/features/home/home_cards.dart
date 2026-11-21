@@ -28,6 +28,8 @@ import '../../widgets/whats_new_card.dart';
 import '../assistant/state/assistant_engine.dart';
 import '../briefing/brief_player.dart';
 import '../meeting_prep/meeting_prep_sheet.dart';
+import 'messages_card.dart';
+import 'appointment_strip.dart';
 import '../pricecompare/price_compare_section.dart';
 import '../shopping/shopping_list_screen.dart';
 import '../shopping/shopping_service.dart';
@@ -217,11 +219,6 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                 newsOn: memory.newsOn.value,
                 hidden: memory.hiddenAt(now),
               ).where((e) => e.tip == null).toList();
-        final asks = [
-          for (final a in feed.asks)
-            if (!extras.any((e) => e.tip != null && (e.tip!.ask == a.request || e.tip!.say == a.label)))
-              a,
-        ];
         return ListView(
           padding: widget.padding,
           children: [
@@ -285,10 +282,8 @@ class _HomeFeedViewState extends State<HomeFeedView> {
             ],
             // A chip that says what today's tip card says is dropped; with
             // no chips left, no empty gap is left either.
-            if (asks.isNotEmpty) ...[
-              const SizedBox(height: 20),
-              Reveal(delayMs: 160, child: _asks(asks)),
-            ],
+            // The suggestion chips ("What did I promise?", "Any mail worth
+            // reading?", "Track an expense") are gone (owner, 2026-11-21).
             // The professions' photo banners and the documents box became
             // the Assistants tiles above (light premium, 2026-11-02).
             const SizedBox(height: 20),
@@ -322,6 +317,12 @@ class _HomeFeedViewState extends State<HomeFeedView> {
         // ONE COMPACT CARD (owner, 2026-11-04: "compress this and save
         // space"): all-clear and the day's numbers together when nothing
         // needs you; otherwise the Next card with a slim numbers row.
+        // THE NEXT APPOINTMENT booked through a contact's assistant, first
+        // thing on Home (owner, 2026-11-21).
+        if (b.appointments.isNotEmpty) ...[
+          Reveal(delayMs: 30, child: AppointmentStrip(appointments: b.appointments)),
+          const SizedBox(height: 10),
+        ],
         Reveal(
           delayMs: 40,
           child: StateSwitch(
@@ -333,16 +334,21 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         _clearLine(later: feed.day.isNotEmpty),
-                        const SizedBox(height: 4),
-                        Divider(height: 1, color: Neon.hairline),
-                        _numbers(b),
+                        if (_hasNumbers(b)) ...[
+                          const SizedBox(height: 4),
+                          Divider(height: 1, color: Neon.hairline),
+                          _numbers(b),
+                        ] else
+                          const SizedBox(height: 6),
                       ],
                     ),
                   )
-                : _nowCard(now),
+                : now.kind == HomeCardKind.message
+                    ? _messagesCard(now, b)
+                    : _nowCard(now),
           ),
         ),
-        if (now != null) ...[
+        if (now != null && _hasNumbers(b)) ...[
           const SizedBox(height: 10),
           Reveal(
               delayMs: 70,
@@ -365,7 +371,13 @@ class _HomeFeedViewState extends State<HomeFeedView> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               for (final c in feed.also)
-                KeyedSubtree(key: ValueKey(c.id), child: _alsoRow(c)),
+                KeyedSubtree(
+                    key: ValueKey(c.id),
+                    child: c.kind == HomeCardKind.message
+                        ? Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: _messagesCard(c, b))
+                        : _alsoRow(c)),
             ],
           ),
         ),
@@ -374,6 +386,10 @@ class _HomeFeedViewState extends State<HomeFeedView> {
       ],
     );
   }
+
+  bool _hasNumbers(TodayBrief b) =>
+      b.agenda.any((a) => a.kind == 'meeting' || a.kind == 'reminder') ||
+      b.dates.any((d) => d.kind == 'payment' && d.when == 'today');
 
   /// THE DAY IN NUMBERS: meetings and reminders today, bills due today —
   /// counted from the brief, each opening its page.
@@ -504,6 +520,15 @@ class _HomeFeedViewState extends State<HomeFeedView> {
     );
   }
 
+  /// Every unread message in one compact card (messages_card.dart).
+  Widget _messagesCard(HomeCard c, TodayBrief b) {
+    final (_, notNow) = _buttons(c);
+    return MessagesCard(
+      messages: b.messages,
+      onDismiss: notNow == null ? null : () => _run(c.id, notNow.run),
+    );
+  }
+
   Widget _nowCard(HomeCard c) {
     final (primary, secondary) = _buttons(c);
     final busy = _busy.contains(c.id);
@@ -518,7 +543,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
         // thing on Home. Its violet is the deep fill white words pass on
         // (4.5:1) in both themes, lit a little from the top-left.
         child: Container(
-          padding: const EdgeInsets.fromLTRB(22, 20, 22, 18),
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -564,29 +589,29 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: Neon.s4),
+                    const SizedBox(height: 8),
                     Text(
                       c.title,
-                      maxLines: 3,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: NeonType.manrope(28, FontWeight.w800)
-                          .copyWith(color: ink, letterSpacing: -0.9, height: 1.1),
+                      style: NeonType.manrope(19, FontWeight.w800)
+                          .copyWith(color: ink, letterSpacing: -0.4, height: 1.2),
                     ),
                     if (c.detail != null) ...[
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
                       Text(
                         c.detail!,
-                        maxLines: 2,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: ink, fontSize: NeonType.rowTitle, height: 1.4),
+                        style: TextStyle(color: ink.withValues(alpha: 0.9), fontSize: 13.5, height: 1.35),
                       ),
                     ],
                   ],
                 ),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 12),
               Wrap(
-                spacing: 10,
+                spacing: 8,
                 runSpacing: 8,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
@@ -684,33 +709,6 @@ class _HomeFeedViewState extends State<HomeFeedView> {
     );
   }
 
-  /// The quick actions: requests handed to the assistant. 48 dp to the
-  /// finger, 34 to the eye; not clipped at the page edge (a sliced chip
-  /// read as a fault, not as "scroll for more").
-  Widget _asks(List<HomeAsk> asks) {
-    // ONE ROW OF SUGGESTIONS, wrapped (client, 2026-11-01): the sideways
-    // list cut its last chip off at the screen's edge.
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      children: [
-        for (var i = 0; i < asks.length && i < 4; i++)
-          PressScale(
-            child: NeonPill(
-              label: asks[i].label,
-              icon: Icons.graphic_eq_rounded,
-              tone: i.isEven ? NeonTone.tip : NeonTone.discovery,
-              inkOverride: Neon.textHi,
-              quiet: true,
-              onPressed: () {
-                HapticFeedback.selectionClick();
-                _do.ask(asks[i].request);
-              },
-            ),
-          ),
-      ],
-    );
-  }
 
   Widget _status(BriefService svc) {
     final at = svc.updatedAt;
@@ -1151,11 +1149,11 @@ class _HomeFeedViewState extends State<HomeFeedView> {
         foregroundColor: fg,
         disabledBackgroundColor: bg.withValues(alpha: 0.6),
         disabledForegroundColor: fg,
-        minimumSize: const Size(48, 50),
+        minimumSize: const Size(48, 40),
         elevation: 0,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         shape: const StadiumBorder(),
-        textStyle: NeonType.manrope(NeonType.rowTitle, FontWeight.w800),
+        textStyle: NeonType.manrope(14, FontWeight.w800),
       ),
     );
   }
@@ -1167,10 +1165,10 @@ class _HomeFeedViewState extends State<HomeFeedView> {
         style: TextButton.styleFrom(
           foregroundColor: onBrand ? Colors.white : Neon.textHi,
           backgroundColor: onBrand ? Colors.white.withValues(alpha: 0.16) : null,
-          minimumSize: const Size(48, 50),
-          padding: const EdgeInsets.symmetric(horizontal: 18),
+          minimumSize: const Size(48, 40),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           shape: const StadiumBorder(),
-          textStyle: NeonType.manrope(NeonType.rowTitle, FontWeight.w700),
+          textStyle: NeonType.manrope(14, FontWeight.w700),
         ),
         child: Text(a.label),
       );

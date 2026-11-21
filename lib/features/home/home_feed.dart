@@ -352,15 +352,18 @@ class HomeRanker {
 
   static Iterable<HomeCard> _messages(List<BriefMessage> messages) sync* {
     if (messages.isEmpty) return;
+    // ONE card for every unread message (Home shows them grouped by
+    // sender, messages_card.dart); an urgent one puts it first on Home.
     final m = messages.first;
     final named = m.from.trim().isNotEmpty && m.from != 'Someone';
+    final urgent = messages.any((x) => x.urgent);
     yield HomeCard(
-      id: 'message:${m.from}:${m.text.length}:${m.text.substring(0, math.min(24, m.text.length))}',
+      id: 'message:${messages.length}:${m.from}:${m.text.length}:${m.text.substring(0, math.min(24, m.text.length))}',
       kind: HomeCardKind.message,
       title: named ? 'Message from ${m.from}' : 'New message received',
       reason: messages.length > 1 ? '${messages.length} waiting' : 'Waiting',
       detail: m.text,
-      score: 600,
+      score: urgent ? 150 : 600,
     );
   }
 
