@@ -248,10 +248,6 @@ class _HomeFeedViewState extends State<HomeFeedView> {
             ),
             const SizedBox(height: 26),
             Reveal(delayMs: 130, child: _assistants()),
-            // TODAY'S HOROSCOPE (owner, 2026-11-15): after the assistant,
-            // before Popular Apps.
-            const SizedBox(height: 16),
-            const Reveal(delayMs: 133, child: HoroscopeCard()),
             // POPULAR APPS where Try now was (client, 2026-11-05): Swiggy,
             // Zomato, Blinkit…, Uber, Ola, Rapido…; Try now moved to Hub.
             const SizedBox(height: 26),
@@ -294,6 +290,10 @@ class _HomeFeedViewState extends State<HomeFeedView> {
             // Once per release: what just got better. Below the day, never
             // above what needs the user.
             const WhatsNewCard(),
+            // TODAY'S HOROSCOPE at the very bottom of Home (owner,
+            // 2026-11-21; it sat between the assistants and Popular Apps).
+            const SizedBox(height: 20),
+            const Reveal(delayMs: 175, child: HoroscopeCard()),
           ],
         );
       },
