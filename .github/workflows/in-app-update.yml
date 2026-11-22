@@ -19,6 +19,12 @@ on:
     paths-ignore:
       - "**.md"
       - "docs/**"
+      # Rules, tests and Claude Code settings change no app code.
+      - "test/**"
+      - ".claude/**"
+      - "tool/claude_check.sh"
+      - ".gitattributes"
+      - ".github/workflows/in-app-update.yml"
   workflow_dispatch:
 
 concurrency:

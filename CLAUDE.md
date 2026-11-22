@@ -142,3 +142,39 @@ Every request carries the phone's location (`X-Geo-Lat/Lng`, from
   pushing; add a test in `test/` for new models and parsing.
 - Builds on Windows: `--android-project-arg=kotlin.incremental=false` avoids a
   Kotlin cache error when the project and the Pub cache are on different drives.
+
+## Architecture rules (owner, 2026-11-22) — Claude: follow these exactly
+
+`test/architecture_guard_test.dart` checks the hard ones on every
+`flutter test` and in CI; a pull request that breaks them cannot merge.
+
+1. **Start from today's production.** Before writing code:
+   `git pull --rebase origin production`. Code written against an old
+   production breaks when merged — things you call may have been removed.
+   If a class, field or token you need is missing, it was removed on
+   purpose: do not re-add it; use what replaced it (`git log -S <name>`).
+2. **Every AI call goes through our server.** Use the model ports in
+   `lib/ai/` (`ServerModelPort`, `brain.dart`, `cloud.dart`). Never create a
+   Firebase AI / Gemini / OpenAI client on the phone, and never put an API
+   key in the app.
+3. **Every network call goes through `ApiService`**
+   (`lib/services/api_service.dart`). No new `http` / `HttpClient` / `dio`
+   code elsewhere.
+4. **Removed features stay removed** unless the owner says otherwise in
+   writing: flights, hotels, rides and grocery in Price Compare (since
+   2026-11-14); the in-app Firebase AI path; App Distribution to users.
+   Ask the owner before reviving anything.
+5. **Reuse, don't duplicate.** Look for an existing screen, service,
+   widget or helper first (`lib/design/` tokens and widgets, `apple_kit`,
+   `pro_words.dart`, `AppFeedback`). No hard-coded colours, no copied
+   widgets, no second service for the same backend route.
+6. **Formal English in the UI**, title case on buttons and headings,
+   errors that say what happened and what to do. The assistant's name is
+   the user's choice — never hard-code one.
+7. **Small, focused changes.** One feature per pull request; do not
+   reformat or rewrite files you are not changing. Match the file's line
+   endings.
+8. **Tests with every change**: a test in `test/` for new models,
+   parsing and logic. `flutter analyze` (no new issues) and `flutter test`
+   must pass before you say you are done.
+9. **Before opening a pull request, run `/ready-for-pr`.**
