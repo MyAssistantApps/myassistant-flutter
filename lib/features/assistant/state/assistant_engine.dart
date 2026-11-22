@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../jyotish/jyotish_screen.dart';
 import '../../../ai/assistant_role.dart';
 import '../../../ai/brain.dart';
 import '../../../ai/listen.dart';
@@ -4747,6 +4748,8 @@ class AssistantEngine extends ChangeNotifier {
                   ? null
                   : (e['category'] as String).trim(),
             ),
+        // "Open my kundli" (jyotish, 2026-11-22): the Vedic horoscope.
+        'jyotish' => (_) => const JyotishScreen(),
         _ => null,
       };
 
