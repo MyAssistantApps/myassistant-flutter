@@ -9,6 +9,7 @@ import '../ai/live_voice.dart';
 import '../design/accent_controller.dart';
 import '../features/home/home_memory.dart';
 import '../design/apple_kit.dart';
+import '../design/motion.dart' show showAppSheet;
 import '../design/dock_metrics.dart';
 import '../design/neon_tokens.dart';
 import '../design/neon_widgets.dart';
@@ -35,10 +36,9 @@ import '../services/horoscope.dart';
 ///  ASSISTANT SETTINGS — how the assistant sounds and looks, plus the
 ///  user's standing rules.
 ///
-///  Deliberately NO name field and NO style dropdown: identity is set by
-///  TALKING ("your name is Maya from now on") — the conversation is the
-///  interface. Everything left on this page saves the moment it's tapped;
-///  there is no Save button to forget.
+///  The name: tap the top card to type one, or just say "your name is Maya
+///  from now on" (owner, 2026-11-22). Everything else on this page saves
+///  the moment it's tapped; there is no Save button to forget.
 /// ─────────────────────────────────────────────────────────────────────────
 class AssistantSettingsScreen extends StatefulWidget {
   const AssistantSettingsScreen({super.key});
@@ -135,6 +135,16 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
     await _load();
   }
 
+  Future<void> _rename(BuildContext context) async {
+    HapticFeedback.selectionClick();
+    final saved = await showAppSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => const _RenameSheet(),
+    );
+    if (saved != null) AppFeedback.toast('Your assistant is now called $saved.');
+  }
+
   @override
   Widget build(BuildContext context) {
     // As the You TAB it wears the same large title as Hub and Chat — a
@@ -165,12 +175,18 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                   valueListenable: AssistantIdentity.notifier,
                   builder: (_, n, __) => GlowCard(
                     halo: 0.5,
+                    // RENAME BY HAND OR BY VOICE (owner, 2026-11-22): tap to
+                    // type a new name; saying "your name is … from now on"
+                    // still renames it, and this card follows either way.
                     child: AppleRow(
                       leading: IconTile(
                           Icons.auto_awesome_rounded, AppleColors.purple),
                       title: n,
-                      subtitle: 'To rename your assistant, say "your name is '
-                          'Maya from now on".',
+                      subtitle: 'Tap to rename, or say "your name is Asha '
+                          'from now on".',
+                      trailing: Icon(Icons.edit_rounded,
+                          color: Neon.textDim, size: 20),
+                      onTap: () => _rename(context),
                     ),
                   ),
                 ),
@@ -541,4 +557,114 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
             borderRadius: BorderRadius.circular(10),
             borderSide: BorderSide.none),
       );
+}
+
+/// Type the assistant's new name. Saved to the profile (the same route the
+/// first-run naming uses); a name the server refuses — say, a male name on
+/// a female voice — comes back with its own sentence, shown under the field.
+class _RenameSheet extends StatefulWidget {
+  const _RenameSheet();
+
+  @override
+  State<_RenameSheet> createState() => _RenameSheetState();
+}
+
+class _RenameSheetState extends State<_RenameSheet> {
+  late final _name = TextEditingController(
+      text: AssistantIdentity.name == AssistantIdentity.fallback ? '' : AssistantIdentity.name);
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  String? get _problem {
+    final n = _name.text.trim();
+    if (n.isEmpty) return null;
+    if (n.length > 24) return 'Please keep the name to 24 characters or fewer.';
+    if (!RegExp(r"^[\p{L}\p{M}][\p{L}\p{M} .'-]*$", unicode: true).hasMatch(n)) {
+      return 'Please use letters only.';
+    }
+    return null;
+  }
+
+  Future<void> _save() async {
+    final n = _name.text.trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (n.isEmpty || _problem != null || _busy) return;
+    if (n == AssistantIdentity.name) {
+      Navigator.pop(context);
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final r = await ApiService.sendJson('/profile/assistant', method: 'PUT', body: {'name': n});
+    if (!mounted) return;
+    if (r == null || r['rejected'] == true) {
+      setState(() {
+        _busy = false;
+        _error = (r?['message'] as String?) ??
+            'Unable to save the name. Check your connection and try again.';
+      });
+      return;
+    }
+    await AssistantIdentity.set(n);
+    HapticFeedback.lightImpact();
+    if (mounted) Navigator.pop(context, n);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final problem = _problem;
+    final n = _name.text.trim();
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, 8, 20, 20 + MediaQuery.viewInsetsOf(context).bottom),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('Rename Your Assistant',
+                style: NeonType.manrope(19, FontWeight.w800).copyWith(color: Neon.textHi)),
+            const SizedBox(height: 6),
+            Text('This is the name your assistant answers to and uses everywhere in the app.',
+                style: NeonType.manrope(14, FontWeight.w500).copyWith(color: Neon.textLo, height: 1.4)),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _name,
+              autofocus: true,
+              maxLength: 24,
+              textCapitalization: TextCapitalization.words,
+              textInputAction: TextInputAction.done,
+              onChanged: (_) => setState(() => _error = null),
+              onSubmitted: (_) => _save(),
+              style: NeonType.manrope(17, FontWeight.w700).copyWith(color: Neon.textHi),
+              decoration: InputDecoration(
+                hintText: 'For example, Asha',
+                counterText: '',
+                filled: true,
+                fillColor: Neon.surfaceHigh,
+                errorText: problem ?? _error,
+                errorMaxLines: 3,
+                prefixIcon: Icon(Icons.auto_awesome_rounded, color: Neon.violet, size: 20),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ApplePrimaryButton(
+              label: _busy ? 'Saving…' : 'Save Name',
+              icon: Icons.check_rounded,
+              onPressed: n.isEmpty || problem != null || _busy ? null : _save,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
