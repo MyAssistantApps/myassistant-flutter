@@ -133,7 +133,14 @@ Every request carries the phone's location (`X-Geo-Lat/Lng`, from
 - `lib/features/voice_call_contacts/` — voice calling's contacts: a Drift
   (SQLite) database on the phone only, never uploaded. Entries sharing a
   number are one person with every saved name as an alias ("Rohan" and
-  "Dad" → one person); scoring is `CallService.nameScore`. Opened on
+  "Dad" → one person); scoring is `CallService.nameScore`. People who
+  share a name but not a number stay separate: `NameCollisionIndexer`
+  (pass 2 of the import, same transaction) sets `displayLabel` to
+  "Lobo 1" / "Lobo 2" in the order of their primary numbers and adds
+  both "Lobo 1" and "Lobo" as aliases, so "call Lobo 1" is one person
+  and "call Lobo" asks which; a name only one person has keeps
+  `displayLabel == primaryName`. Show `person.label`, not
+  `primaryName`, where the two must be told apart. Opened on
   demand by `_handleResolveAndCall` or Settings → Calling Contacts
   (`ResolvedContactsPage`: aliases, Sync From Phone), closed after 2 min
   idle; re-imports once when a name matches nobody. Schema changes: edit

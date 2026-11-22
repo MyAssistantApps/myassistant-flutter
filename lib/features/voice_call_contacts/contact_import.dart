@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../services/call_service.dart';
+import 'name_collision_indexer.dart';
 import 'phone_normalizer.dart';
 import 'voice_call_contacts_db.dart';
 
@@ -37,7 +38,9 @@ const _familyWords = {
 /// "Rohan" and "Dad" saved with the same mobile become one row with
 /// mergedCount 2, and every name they were saved under becomes an alias.
 /// A re-import replaces only what came from the phone; aliases the user
-/// added in the app ('user_custom') stay on their person.
+/// added in the app ('user_custom') stay on their person. People who share
+/// a name but not a number stay separate and are numbered afterwards
+/// ([NameCollisionIndexer]).
 class SyncDeviceContactsToLocal {
   SyncDeviceContactsToLocal(this.db, {this.defaultCc = '91'});
 
@@ -107,6 +110,10 @@ class SyncDeviceContactsToLocal {
       await (db.delete(db.canonicalPersons)
             ..where((p) => p.id.isNotIn(kept) & p.id.isNotIn(custom)))
           .go();
+
+      // Pass 2: people who share a name but not a number become
+      // "Lobo 1", "Lobo 2".
+      await NameCollisionIndexer(db).run();
       return kept.length;
     });
   }

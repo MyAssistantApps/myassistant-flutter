@@ -13,6 +13,7 @@ import '../../design/neon_tokens.dart';
 import '../../design/neon_widgets.dart';
 import '../../services/audio/pcm_player.dart';
 import '../../services/call_service.dart';
+import '../../widgets/voice_orb.dart' show OrbMood, orbMoodColor;
 import 'voice_call_contacts.dart';
 import 'voice_call_contacts_db.dart';
 
@@ -491,9 +492,9 @@ class _ContactsScreenState extends State<ContactsScreen> {
               },
             ),
             Positioned(
-              left: 16,
-              right: 16,
-              bottom: 16,
+              left: 20,
+              right: 20,
+              bottom: 24,
               child: _MicDock(
                 listening: _listening,
                 caption: _caption,
@@ -514,11 +515,11 @@ class _ContactsScreenState extends State<ContactsScreen> {
     return ListView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       // The bottom clears the mic orb and its caption.
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 170),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 196),
       children: [
         if (_syncing)
           Padding(
-            padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+            padding: const EdgeInsets.fromLTRB(4, 0, 4, 16),
             child: Text('Syncing with your phone…',
                 style:
                     TextStyle(color: Neon.textLo, fontSize: NeonType.footnote)),
@@ -529,7 +530,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
             hint: 'Search names or numbers',
             onChanged: (v) => setState(() => _query = v),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 28),
         ],
         if (all.isEmpty && _noPermission)
           NeonEmptyState(
@@ -555,13 +556,13 @@ class _ContactsScreenState extends State<ContactsScreen> {
         else
           for (final (letter, idx) in sections)
             Padding(
-              padding: const EdgeInsets.only(bottom: 18),
+              padding: const EdgeInsets.only(bottom: 28),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Semantics(header: true, child: GroupLabel(letter)),
                   GroupedCard(
-                    dividerInset: 66,
+                    dividerInset: 76,
                     children: [
                       for (final i in idx)
                         _ContactRow(
@@ -599,13 +600,14 @@ class _MicDock extends StatelessWidget {
             ? 'Listening… say "Give alias Papa to Allen"'
             : '“$caption”')
         : status;
+    final tone = orbMoodColor(OrbMood.listening);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         if (text != null)
           Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            margin: const EdgeInsets.only(bottom: 18),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
             decoration: BoxDecoration(
               color: Neon.surfaceHigh,
               borderRadius: BorderRadius.circular(16),
@@ -624,32 +626,56 @@ class _MicDock extends StatelessWidget {
           button: true,
           label: listening ? 'Stop Listening' : 'Speak a Contact Command',
           child: PressScale(
-            child: Material(
-              color: listening ? Neon.violet : NeonTone.brand.fill,
-              shape: const CircleBorder(),
-              clipBehavior: Clip.antiAlias,
-              elevation: 6,
-              child: InkWell(
-                onTap: onTap,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 220),
-                  width: 68,
-                  height: 68,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: listening
-                        ? [
-                            BoxShadow(
-                                color: Neon.violet.withValues(alpha: 0.6),
-                                blurRadius: 22)
-                          ]
-                        : const [],
-                  ),
-                  child: Icon(
-                      listening ? Icons.graphic_eq_rounded : Icons.mic_rounded,
-                      size: 30,
-                      color: listening ? Colors.white : NeonTone.brand.ink),
-                ),
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onTap,
+              // The Home mic, colour for colour (inline_voice.dart): the
+              // raised violet disc at rest, a lit rim around the stop
+              // glyph while it listens.
+              child: AnimatedSwitcher(
+                duration: Motion.short,
+                child: listening
+                    ? Container(
+                        key: const ValueKey('live'),
+                        width: 64,
+                        height: 64,
+                        padding: const EdgeInsets.all(2.2),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: SweepGradient(
+                              colors: [tone, Neon.violet, Neon.pink, tone]),
+                          boxShadow: Neon.halo(tone, strength: 0.9),
+                        ),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Neon.surfaceHigh,
+                          ),
+                          child: Icon(Icons.stop_rounded,
+                              color: Neon.textHi, size: 30),
+                        ),
+                      )
+                    : Container(
+                        key: const ValueKey('idle'),
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            center: const Alignment(-0.4, -0.5),
+                            radius: 1.1,
+                            colors: [
+                              Color.lerp(Neon.accentFill, Colors.white, 0.10)!,
+                              Color.lerp(Neon.accentFill, Colors.black, 0.18)!,
+                            ],
+                          ),
+                          border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.18)),
+                          boxShadow: Neon.halo(Neon.violet, strength: 1.2),
+                        ),
+                        child: const Icon(Icons.mic_rounded,
+                            color: Colors.white, size: 30),
+                      ),
               ),
             ),
           ),
@@ -666,13 +692,23 @@ String _primaryPhone(LocalPerson p) {
       .e164;
 }
 
-/// The name shown for a person: their saved name, or the number when the
-/// number was saved without one.
+/// The name shown for a person: their label ("Lobo 1" when several people
+/// share the saved name), or the number when it was saved without a name.
 String _shownName(LocalPerson p) {
-  final n = p.person.primaryName.trim();
+  final n = p.person.label.trim();
   if (n.isNotEmpty && !isNameless(n)) return n;
   final ph = _primaryPhone(p);
   return ph.isNotEmpty ? ph : (n.isEmpty ? 'No Name' : n);
+}
+
+/// [otherNames] for [p]: not the label shown, and not the saved name the
+/// label was made from ("Lobo" under "Lobo 1").
+List<String> _otherNamesOf(LocalPerson p) {
+  final saved = p.person.primaryName.trim().toLowerCase();
+  return [
+    for (final a in otherNames(p.person.label, p.aliases.map((a) => a.alias)))
+      if (a.toLowerCase() != saved) a,
+  ];
 }
 
 class _ContactRow extends StatelessWidget {
@@ -683,10 +719,9 @@ class _ContactRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final nameless = isNameless(person.person.primaryName);
-    final aka = otherNames(
-        person.person.primaryName, person.aliases.map((a) => a.alias));
+    final aka = _otherNamesOf(person);
     return AppleRow(
-      leading: _Initial(person.person.primaryName),
+      leading: _Initial(person.person.primaryName, size: 46),
       title: _shownName(person),
       subtitle: nameless
           ? 'No name saved'
@@ -901,21 +936,21 @@ class _PersonSheetState extends State<_PersonSheet> {
 
   Widget _body(BuildContext context, LocalPerson p) {
     final name = p.person.primaryName;
-    final others = otherNames(name, p.aliases.map((a) => a.alias));
+    final others = _otherNamesOf(p);
     final hasPhone = p.phones.isNotEmpty;
     return Padding(
       padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
-          bottom: 24 + MediaQuery.of(context).viewPadding.bottom),
+          left: 24,
+          right: 24,
+          bottom: 32 + MediaQuery.of(context).viewPadding.bottom),
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 8),
-            Center(child: _Initial(name, size: 64)),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
+            Center(child: _Initial(name, size: 76)),
+            const SizedBox(height: 16),
             Semantics(
               header: true,
               child: Text(_shownName(p),
@@ -924,13 +959,13 @@ class _PersonSheetState extends State<_PersonSheet> {
                       .copyWith(color: Neon.textHi, letterSpacing: -0.2)),
             ),
             if (hasPhone && !isNameless(name)) ...[
-              const SizedBox(height: 2),
+              const SizedBox(height: 6),
               Text(_primaryPhone(p),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                       color: Neon.textLo, fontSize: NeonType.footnote)),
             ],
-            const SizedBox(height: 18),
+            const SizedBox(height: 28),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -950,7 +985,7 @@ class _PersonSheetState extends State<_PersonSheet> {
               ],
             ),
             if (_status != null) ...[
-              const SizedBox(height: 14),
+              const SizedBox(height: 20),
               Text(
                 _status!,
                 textAlign: TextAlign.center,
@@ -960,7 +995,7 @@ class _PersonSheetState extends State<_PersonSheet> {
                     height: 1.35),
               ),
             ],
-            const SizedBox(height: 20),
+            const SizedBox(height: 32),
             const GroupLabel('Numbers'),
             GroupedCard(
               children: [
@@ -978,7 +1013,7 @@ class _PersonSheetState extends State<_PersonSheet> {
                     ),
               ],
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 28),
             const GroupLabel('Also Known As'),
             GroupedCard(
               children: [

@@ -211,7 +211,11 @@ class VoiceCallContacts {
   /// Reads every person with their numbers and aliases.
   static Future<List<LocalPerson>> loadPersons(VoiceCallContactsDb db) async {
     final persons = await (db.select(db.canonicalPersons)
-          ..orderBy([(p) => OrderingTerm(expression: p.primaryName.lower())]))
+          ..orderBy([
+            (p) => OrderingTerm(expression: p.primaryName.lower()),
+            // "Lobo 1" before "Lobo 2".
+            (p) => OrderingTerm(expression: p.displayLabel),
+          ]))
         .get();
     final phones = <int, List<PersonPhone>>{};
     for (final p in await db.select(db.personPhones).get()) {

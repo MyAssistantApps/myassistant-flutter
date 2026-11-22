@@ -24,6 +24,12 @@ class $CanonicalPersonsTable extends CanonicalPersons
   late final GeneratedColumn<String> primaryName = GeneratedColumn<String>(
       'primary_name', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _displayLabelMeta =
+      const VerificationMeta('displayLabel');
+  @override
+  late final GeneratedColumn<String> displayLabel = GeneratedColumn<String>(
+      'display_label', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _mergedCountMeta =
       const VerificationMeta('mergedCount');
   @override
@@ -48,7 +54,7 @@ class $CanonicalPersonsTable extends CanonicalPersons
       type: DriftSqlType.dateTime, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns =>
-      [id, primaryName, mergedCount, callCount, lastCalledAt];
+      [id, primaryName, displayLabel, mergedCount, callCount, lastCalledAt];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -69,6 +75,12 @@ class $CanonicalPersonsTable extends CanonicalPersons
               data['primary_name']!, _primaryNameMeta));
     } else if (isInserting) {
       context.missing(_primaryNameMeta);
+    }
+    if (data.containsKey('display_label')) {
+      context.handle(
+          _displayLabelMeta,
+          displayLabel.isAcceptableOrUnknown(
+              data['display_label']!, _displayLabelMeta));
     }
     if (data.containsKey('merged_count')) {
       context.handle(
@@ -99,6 +111,8 @@ class $CanonicalPersonsTable extends CanonicalPersons
           .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
       primaryName: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}primary_name'])!,
+      displayLabel: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}display_label']),
       mergedCount: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}merged_count'])!,
       callCount: attachedDatabase.typeMapping
@@ -117,12 +131,18 @@ class $CanonicalPersonsTable extends CanonicalPersons
 class CanonicalPerson extends DataClass implements Insertable<CanonicalPerson> {
   final int id;
   final String primaryName;
+
+  /// What the UI and the "which one?" question show: [primaryName], or
+  /// "Lobo 1" / "Lobo 2" when several people (different numbers) share the
+  /// name. Null only until the first import after the column was added.
+  final String? displayLabel;
   final int mergedCount;
   final int callCount;
   final DateTime? lastCalledAt;
   const CanonicalPerson(
       {required this.id,
       required this.primaryName,
+      this.displayLabel,
       required this.mergedCount,
       required this.callCount,
       this.lastCalledAt});
@@ -131,6 +151,9 @@ class CanonicalPerson extends DataClass implements Insertable<CanonicalPerson> {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['primary_name'] = Variable<String>(primaryName);
+    if (!nullToAbsent || displayLabel != null) {
+      map['display_label'] = Variable<String>(displayLabel);
+    }
     map['merged_count'] = Variable<int>(mergedCount);
     map['call_count'] = Variable<int>(callCount);
     if (!nullToAbsent || lastCalledAt != null) {
@@ -143,6 +166,9 @@ class CanonicalPerson extends DataClass implements Insertable<CanonicalPerson> {
     return CanonicalPersonsCompanion(
       id: Value(id),
       primaryName: Value(primaryName),
+      displayLabel: displayLabel == null && nullToAbsent
+          ? const Value.absent()
+          : Value(displayLabel),
       mergedCount: Value(mergedCount),
       callCount: Value(callCount),
       lastCalledAt: lastCalledAt == null && nullToAbsent
@@ -157,6 +183,7 @@ class CanonicalPerson extends DataClass implements Insertable<CanonicalPerson> {
     return CanonicalPerson(
       id: serializer.fromJson<int>(json['id']),
       primaryName: serializer.fromJson<String>(json['primaryName']),
+      displayLabel: serializer.fromJson<String?>(json['displayLabel']),
       mergedCount: serializer.fromJson<int>(json['mergedCount']),
       callCount: serializer.fromJson<int>(json['callCount']),
       lastCalledAt: serializer.fromJson<DateTime?>(json['lastCalledAt']),
@@ -168,6 +195,7 @@ class CanonicalPerson extends DataClass implements Insertable<CanonicalPerson> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'primaryName': serializer.toJson<String>(primaryName),
+      'displayLabel': serializer.toJson<String?>(displayLabel),
       'mergedCount': serializer.toJson<int>(mergedCount),
       'callCount': serializer.toJson<int>(callCount),
       'lastCalledAt': serializer.toJson<DateTime?>(lastCalledAt),
@@ -177,12 +205,15 @@ class CanonicalPerson extends DataClass implements Insertable<CanonicalPerson> {
   CanonicalPerson copyWith(
           {int? id,
           String? primaryName,
+          Value<String?> displayLabel = const Value.absent(),
           int? mergedCount,
           int? callCount,
           Value<DateTime?> lastCalledAt = const Value.absent()}) =>
       CanonicalPerson(
         id: id ?? this.id,
         primaryName: primaryName ?? this.primaryName,
+        displayLabel:
+            displayLabel.present ? displayLabel.value : this.displayLabel,
         mergedCount: mergedCount ?? this.mergedCount,
         callCount: callCount ?? this.callCount,
         lastCalledAt:
@@ -193,6 +224,9 @@ class CanonicalPerson extends DataClass implements Insertable<CanonicalPerson> {
       id: data.id.present ? data.id.value : this.id,
       primaryName:
           data.primaryName.present ? data.primaryName.value : this.primaryName,
+      displayLabel: data.displayLabel.present
+          ? data.displayLabel.value
+          : this.displayLabel,
       mergedCount:
           data.mergedCount.present ? data.mergedCount.value : this.mergedCount,
       callCount: data.callCount.present ? data.callCount.value : this.callCount,
@@ -207,6 +241,7 @@ class CanonicalPerson extends DataClass implements Insertable<CanonicalPerson> {
     return (StringBuffer('CanonicalPerson(')
           ..write('id: $id, ')
           ..write('primaryName: $primaryName, ')
+          ..write('displayLabel: $displayLabel, ')
           ..write('mergedCount: $mergedCount, ')
           ..write('callCount: $callCount, ')
           ..write('lastCalledAt: $lastCalledAt')
@@ -215,14 +250,15 @@ class CanonicalPerson extends DataClass implements Insertable<CanonicalPerson> {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, primaryName, mergedCount, callCount, lastCalledAt);
+  int get hashCode => Object.hash(
+      id, primaryName, displayLabel, mergedCount, callCount, lastCalledAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is CanonicalPerson &&
           other.id == this.id &&
           other.primaryName == this.primaryName &&
+          other.displayLabel == this.displayLabel &&
           other.mergedCount == this.mergedCount &&
           other.callCount == this.callCount &&
           other.lastCalledAt == this.lastCalledAt);
@@ -231,12 +267,14 @@ class CanonicalPerson extends DataClass implements Insertable<CanonicalPerson> {
 class CanonicalPersonsCompanion extends UpdateCompanion<CanonicalPerson> {
   final Value<int> id;
   final Value<String> primaryName;
+  final Value<String?> displayLabel;
   final Value<int> mergedCount;
   final Value<int> callCount;
   final Value<DateTime?> lastCalledAt;
   const CanonicalPersonsCompanion({
     this.id = const Value.absent(),
     this.primaryName = const Value.absent(),
+    this.displayLabel = const Value.absent(),
     this.mergedCount = const Value.absent(),
     this.callCount = const Value.absent(),
     this.lastCalledAt = const Value.absent(),
@@ -244,6 +282,7 @@ class CanonicalPersonsCompanion extends UpdateCompanion<CanonicalPerson> {
   CanonicalPersonsCompanion.insert({
     this.id = const Value.absent(),
     required String primaryName,
+    this.displayLabel = const Value.absent(),
     this.mergedCount = const Value.absent(),
     this.callCount = const Value.absent(),
     this.lastCalledAt = const Value.absent(),
@@ -251,6 +290,7 @@ class CanonicalPersonsCompanion extends UpdateCompanion<CanonicalPerson> {
   static Insertable<CanonicalPerson> custom({
     Expression<int>? id,
     Expression<String>? primaryName,
+    Expression<String>? displayLabel,
     Expression<int>? mergedCount,
     Expression<int>? callCount,
     Expression<DateTime>? lastCalledAt,
@@ -258,6 +298,7 @@ class CanonicalPersonsCompanion extends UpdateCompanion<CanonicalPerson> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (primaryName != null) 'primary_name': primaryName,
+      if (displayLabel != null) 'display_label': displayLabel,
       if (mergedCount != null) 'merged_count': mergedCount,
       if (callCount != null) 'call_count': callCount,
       if (lastCalledAt != null) 'last_called_at': lastCalledAt,
@@ -267,12 +308,14 @@ class CanonicalPersonsCompanion extends UpdateCompanion<CanonicalPerson> {
   CanonicalPersonsCompanion copyWith(
       {Value<int>? id,
       Value<String>? primaryName,
+      Value<String?>? displayLabel,
       Value<int>? mergedCount,
       Value<int>? callCount,
       Value<DateTime?>? lastCalledAt}) {
     return CanonicalPersonsCompanion(
       id: id ?? this.id,
       primaryName: primaryName ?? this.primaryName,
+      displayLabel: displayLabel ?? this.displayLabel,
       mergedCount: mergedCount ?? this.mergedCount,
       callCount: callCount ?? this.callCount,
       lastCalledAt: lastCalledAt ?? this.lastCalledAt,
@@ -287,6 +330,9 @@ class CanonicalPersonsCompanion extends UpdateCompanion<CanonicalPerson> {
     }
     if (primaryName.present) {
       map['primary_name'] = Variable<String>(primaryName.value);
+    }
+    if (displayLabel.present) {
+      map['display_label'] = Variable<String>(displayLabel.value);
     }
     if (mergedCount.present) {
       map['merged_count'] = Variable<int>(mergedCount.value);
@@ -305,6 +351,7 @@ class CanonicalPersonsCompanion extends UpdateCompanion<CanonicalPerson> {
     return (StringBuffer('CanonicalPersonsCompanion(')
           ..write('id: $id, ')
           ..write('primaryName: $primaryName, ')
+          ..write('displayLabel: $displayLabel, ')
           ..write('mergedCount: $mergedCount, ')
           ..write('callCount: $callCount, ')
           ..write('lastCalledAt: $lastCalledAt')
@@ -999,6 +1046,7 @@ typedef $$CanonicalPersonsTableCreateCompanionBuilder
     = CanonicalPersonsCompanion Function({
   Value<int> id,
   required String primaryName,
+  Value<String?> displayLabel,
   Value<int> mergedCount,
   Value<int> callCount,
   Value<DateTime?> lastCalledAt,
@@ -1007,6 +1055,7 @@ typedef $$CanonicalPersonsTableUpdateCompanionBuilder
     = CanonicalPersonsCompanion Function({
   Value<int> id,
   Value<String> primaryName,
+  Value<String?> displayLabel,
   Value<int> mergedCount,
   Value<int> callCount,
   Value<DateTime?> lastCalledAt,
@@ -1060,6 +1109,9 @@ class $$CanonicalPersonsTableFilterComposer
 
   ColumnFilters<String> get primaryName => $composableBuilder(
       column: $table.primaryName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get displayLabel => $composableBuilder(
+      column: $table.displayLabel, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get mergedCount => $composableBuilder(
       column: $table.mergedCount, builder: (column) => ColumnFilters(column));
@@ -1128,6 +1180,10 @@ class $$CanonicalPersonsTableOrderingComposer
   ColumnOrderings<String> get primaryName => $composableBuilder(
       column: $table.primaryName, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get displayLabel => $composableBuilder(
+      column: $table.displayLabel,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<int> get mergedCount => $composableBuilder(
       column: $table.mergedCount, builder: (column) => ColumnOrderings(column));
 
@@ -1153,6 +1209,9 @@ class $$CanonicalPersonsTableAnnotationComposer
 
   GeneratedColumn<String> get primaryName => $composableBuilder(
       column: $table.primaryName, builder: (column) => column);
+
+  GeneratedColumn<String> get displayLabel => $composableBuilder(
+      column: $table.displayLabel, builder: (column) => column);
 
   GeneratedColumn<int> get mergedCount => $composableBuilder(
       column: $table.mergedCount, builder: (column) => column);
@@ -1232,6 +1291,7 @@ class $$CanonicalPersonsTableTableManager extends RootTableManager<
           updateCompanionCallback: ({
             Value<int> id = const Value.absent(),
             Value<String> primaryName = const Value.absent(),
+            Value<String?> displayLabel = const Value.absent(),
             Value<int> mergedCount = const Value.absent(),
             Value<int> callCount = const Value.absent(),
             Value<DateTime?> lastCalledAt = const Value.absent(),
@@ -1239,6 +1299,7 @@ class $$CanonicalPersonsTableTableManager extends RootTableManager<
               CanonicalPersonsCompanion(
             id: id,
             primaryName: primaryName,
+            displayLabel: displayLabel,
             mergedCount: mergedCount,
             callCount: callCount,
             lastCalledAt: lastCalledAt,
@@ -1246,6 +1307,7 @@ class $$CanonicalPersonsTableTableManager extends RootTableManager<
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             required String primaryName,
+            Value<String?> displayLabel = const Value.absent(),
             Value<int> mergedCount = const Value.absent(),
             Value<int> callCount = const Value.absent(),
             Value<DateTime?> lastCalledAt = const Value.absent(),
@@ -1253,6 +1315,7 @@ class $$CanonicalPersonsTableTableManager extends RootTableManager<
               CanonicalPersonsCompanion.insert(
             id: id,
             primaryName: primaryName,
+            displayLabel: displayLabel,
             mergedCount: mergedCount,
             callCount: callCount,
             lastCalledAt: lastCalledAt,

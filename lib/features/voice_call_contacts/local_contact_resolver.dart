@@ -13,7 +13,8 @@ class LocalCallMatch {
 
   final int personId;
 
-  /// The person's primary (saved) name — what the picker shows.
+  /// The person's display label ("Lobo 1" when several people share the
+  /// saved name "Lobo") — what the picker shows.
   final String name;
 
   /// Primary number, E.164.
@@ -25,6 +26,21 @@ class LocalCallMatch {
 
   /// Matched only by how it SOUNDS — a guess the user must confirm.
   bool get soundOnly => score > 0 && score < 40;
+}
+
+const _numberWords = {
+  'one': '1', 'two': '2', 'three': '3', 'four': '4', 'five': '5',
+  'six': '6', 'seven': '7', 'eight': '8', 'nine': '9', 'ten': '10',
+};
+
+/// [spoken] with a trailing number word as a digit ("lobo one" → "lobo 1"),
+/// or null when it does not end in one.
+String? _numberWordsToDigits(String spoken) {
+  final words = spoken.trim().split(RegExp(r'\s+'));
+  if (words.length < 2) return null;
+  final d = _numberWords[words.last.toLowerCase()];
+  if (d == null) return null;
+  return [...words.take(words.length - 1), d].join(' ');
 }
 
 /// Resolves a spoken name against the local contacts database.
@@ -48,10 +64,17 @@ class LocalContactResolver {
       for (final p in await db.select(db.canonicalPersons).get()) p.id: p
     };
 
+    // "Lobo one" as speech writes it also means the label "Lobo 1".
+    final digits = _numberWordsToDigits(spoken);
+
     final best = <int, (int, PersonAlias)>{};
     for (final a in aliases) {
       if (!phones.containsKey(a.personId)) continue; // nothing to dial
-      final s = CallService.instance.nameScore(a.alias, spoken);
+      var s = CallService.instance.nameScore(a.alias, spoken);
+      if (digits != null) {
+        final d = CallService.instance.nameScore(a.alias, digits);
+        if (d > s) s = d;
+      }
       if (s <= 0) continue;
       final cur = best[a.personId];
       if (cur == null ||
@@ -76,7 +99,7 @@ class LocalContactResolver {
         if (e.value.$1 >= top - 20)
           LocalCallMatch(
             personId: e.key,
-            name: persons[e.key]?.primaryName ?? e.value.$2.alias,
+            name: persons[e.key]?.label ?? e.value.$2.alias,
             phone: phones[e.key]!,
             alias: e.value.$2.alias,
             score: e.value.$1,

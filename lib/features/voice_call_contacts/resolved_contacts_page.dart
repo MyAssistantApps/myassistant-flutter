@@ -94,7 +94,7 @@ class _ResolvedContactsPageState extends State<ResolvedContactsPage> {
     if (alias == null || alias.trim().isEmpty) return;
     await _vcc.addAlias(p.person.id, alias);
     if (mounted) {
-      AppFeedback.show('"${alias.trim()}" now reaches ${p.person.primaryName}.',
+      AppFeedback.show('"${alias.trim()}" now reaches ${p.person.label}.',
           context: context, tone: FeedbackTone.success);
     }
   }
@@ -194,7 +194,7 @@ class _PersonCard extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: Text(p.primaryName,
+                      child: Text(p.label,
                           style: TextStyle(
                               color: Neon.textHi,
                               fontSize: 16,
