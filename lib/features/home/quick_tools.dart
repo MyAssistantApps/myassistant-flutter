@@ -38,7 +38,7 @@ const quickTools = <QuickTool>[
       Icons.flight_takeoff_rounded, -58),
   QuickTool('buses', 'Buses', 'Find buses and seats for your next trip.',
       Icons.directions_bus_rounded, 52),
-  QuickTool('hotels', 'Hotels', 'Hotels and resorts, at the best prices.',
+  QuickTool('hotels', 'Hotels & Airbnb', 'Hotels, resorts and Airbnb homes.',
       Icons.hotel_rounded, 70),
   QuickTool('groceries', 'Groceries', 'Order from nearby stores and pay within the app.',
       Icons.shopping_basket_rounded, -86),
