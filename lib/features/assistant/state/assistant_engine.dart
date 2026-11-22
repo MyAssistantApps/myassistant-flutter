@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../core/store_build.dart';
+import '../../home/quick_app_store.dart';
 import '../../home/ride_strip.dart';
 import '../../home/order_strip.dart';
 import 'contact_pick.dart';
@@ -3125,7 +3126,11 @@ class AssistantEngine extends ChangeNotifier {
         // claiming an app opened.
         {
           final want = (e['name'] as String? ?? '').trim();
-          final pkg = (e['pkg'] as String? ?? '').trim();
+          var pkg = (e['pkg'] as String? ?? '').trim();
+          // AN APP THEY ADDED TO HOME (Quick Apps / Payments → Add App):
+          // its exact package, so "open <their app>" never lands on a
+          // lookalike by label.
+          if (pkg.isEmpty) pkg = await QuickAppStore.instance.pkgFor(want) ?? '';
           // INSTALL ONLY ON THE OWNER'S WORDS. Owner, 2026-09-24: "open X"
           // on a phone without X installed it unasked. The server now says
           // whether they asked to install / download it (or said yes to
@@ -4841,8 +4846,8 @@ class AssistantEngine extends ChangeNotifier {
     _leftForExternalApp = true;
     String? opened;
     try {
-      opened = await const MethodChannel('hari/intent')
-          .invokeMethod<String>('launchApp', {'name': app, 'pkg': ''});
+      opened = await const MethodChannel('hari/intent').invokeMethod<String>(
+          'launchApp', {'name': app, 'pkg': await QuickAppStore.instance.pkgFor(app) ?? ''});
     } catch (_) {}
     if (opened == null || opened.isEmpty) {
       _leftForExternalApp = false;
