@@ -5,8 +5,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-
 import '../../core/log.dart';
 import '../../services/api_service.dart';
 import 'jyotish_models.dart';
@@ -64,31 +62,24 @@ class JyotishService {
     required String language,
     DateTime? date,
   }) async* {
-    final client = http.Client();
     try {
-      final req = http.Request(
-          'POST', Uri.parse('${ApiService.baseUrl}/jyotish/predict'))
-        ..headers.addAll({
-          ...ApiService.authHeaders,
-          'Content-Type': 'application/json',
-          'Accept': 'text/event-stream',
-        })
-        ..body = jsonEncode({
-          'birth': birth.toJson(),
-          'range': range,
-          'category': category,
-          'language': language,
-          if (date != null) 'date': ymd(date),
-        });
-      final resp = await client.send(req).timeout(const Duration(seconds: 30));
+      final resp = await ApiService.postStream('/jyotish/predict', {
+        'birth': birth.toJson(),
+        'range': range,
+        'category': category,
+        'language': language,
+        if (date != null) 'date': ymd(date),
+      });
+      if (resp.statusCode != 200) {
+        // The connection is shared: read the error body so it is freed.
+        await resp.stream.drain<void>().catchError((_) {});
+      }
       if (resp.statusCode == 429) {
         yield const ReadingError(
             'Too many readings in a minute. Please wait a moment.');
         return;
       }
       if (resp.statusCode != 200) {
-        ApiService.noteAuthStatus(resp.statusCode);
-        AppLog.add('jyotish', 'predict -> ${resp.statusCode}');
         yield const ReadingError('Unable to get the reading. Please try again.');
         return;
       }
@@ -118,8 +109,6 @@ class JyotishService {
       AppLog.add('jyotish', 'predict failed: $e');
       yield const ReadingError(
           'Unable to get the reading. Check your connection and try again.');
-    } finally {
-      client.close();
     }
   }
 }
