@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/log.dart';
 import '../../design/motion.dart';
 import '../../design/neon_tokens.dart';
+import 'quick_app_store.dart';
 
 /// QUICK APPS (2026-11-08): the apps people open most, one tap away on
 /// Home — where the "Order and shop" banners used to be. Each opens the
@@ -162,7 +163,7 @@ const _channel = MethodChannel('hari/intent');
 final _found = <String, Future<(String, Uint8List)?>>{};
 
 Future<(String, Uint8List)?> _lookup(QuickApp a) =>
-    _found[a.name] ??= () async {
+    _found[a.pkgs.join(',')] ??= () async {
       if (_isIOS) {
         // No icon from another app on iOS: an empty PNG marks "installed"
         // and the tile draws [QuickApp.mark].
@@ -174,7 +175,7 @@ Future<(String, Uint8List)?> _lookup(QuickApp a) =>
             }
           } catch (_) {}
         }
-        _found.remove(a.name);
+        _found.remove(a.pkgs.join(','));
         return null;
       }
       for (final pkg in a.pkgs) {
@@ -185,7 +186,7 @@ Future<(String, Uint8List)?> _lookup(QuickApp a) =>
         } catch (_) {}
       }
       // Not remembered: installed from the Play Store, it opens next tap.
-      _found.remove(a.name);
+      _found.remove(a.pkgs.join(','));
       return null;
     }();
 
@@ -294,8 +295,8 @@ class QuickApps extends StatelessWidget {
   const QuickApps({super.key});
 
   @override
-  Widget build(BuildContext context) =>
-      const _AppGrid(title: 'Quick Apps', apps: otherApps);
+  Widget build(BuildContext context) => const _AppGrid(
+      section: 'quick_apps', title: 'Quick Apps', builtIns: otherApps);
 }
 
 /// Home's "Payments" section: GPay, PhonePe, Paytm and PayPal.
@@ -303,8 +304,24 @@ class PaymentApps extends StatelessWidget {
   const PaymentApps({super.key});
 
   @override
-  Widget build(BuildContext context) =>
-      const _AppGrid(title: 'Payments', apps: paymentApps);
+  Widget build(BuildContext context) => const _AppGrid(
+      section: 'payment_apps', title: 'Payments', builtIns: paymentApps);
+}
+
+/// A section's apps after the user's edits: the built-ins they kept, then
+/// the apps they added (drawn with the phone's own icon).
+List<QuickApp> visibleApps(List<QuickApp> builtIns, SectionEdits e) {
+  final kept = [
+    for (final a in builtIns)
+      if (!e.removed.contains(a.name)) a,
+  ];
+  return [
+    ...kept,
+    // An added app a kept built-in already shows is not drawn twice.
+    for (final a in e.added)
+      if (!kept.any((b) => b.pkgs.contains(a.pkg)))
+        QuickApp(a.name, [a.pkg], Icons.apps_rounded, Neon.cyan),
+  ];
 }
 
 /// Up to five a row, the rows evened out (four: one row of four; six: two
@@ -315,40 +332,420 @@ int tilesPerRow(int n) {
   return (n + rows - 1) ~/ rows;
 }
 
-class _AppGrid extends StatelessWidget {
-  const _AppGrid({required this.title, required this.apps});
+class _AppGrid extends StatefulWidget {
+  const _AppGrid(
+      {required this.section, required this.title, required this.builtIns});
+  final String section;
   final String title;
-  final List<QuickApp> apps;
+  final List<QuickApp> builtIns;
+
+  @override
+  State<_AppGrid> createState() => _AppGridState();
+}
+
+class _AppGridState extends State<_AppGrid> {
+  @override
+  void initState() {
+    super.initState();
+    QuickAppStore.instance.load();
+  }
+
+  Future<void> _add() async {
+    final shown = visibleApps(
+        widget.builtIns, QuickAppStore.instance.of(widget.section));
+    final app = await pickInstalledApp(context,
+        exclude: {for (final a in shown) ...a.pkgs});
+    if (app != null) await QuickAppStore.instance.add(widget.section, app);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Semantics(
-          header: true,
-          child: Padding(
-            padding: const EdgeInsets.only(left: Neon.s1, bottom: 10),
-            child: Text(title,
-                style: NeonType.manrope(21, FontWeight.w800)
-                    .copyWith(color: Neon.textHi, letterSpacing: -0.6)),
+    return ValueListenableBuilder<Map<String, SectionEdits>>(
+      valueListenable: QuickAppStore.instance.edits,
+      builder: (context, _, __) {
+        final apps = visibleApps(
+            widget.builtIns, QuickAppStore.instance.of(widget.section));
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(left: Neon.s1, bottom: 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Semantics(
+                      header: true,
+                      child: Text(widget.title,
+                          style: NeonType.manrope(21, FontWeight.w800).copyWith(
+                              color: Neon.textHi, letterSpacing: -0.6)),
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => _editSection(context, widget.section,
+                        widget.title, widget.builtIns),
+                    icon: Icon(Icons.edit_rounded, size: 16, color: Neon.textLo),
+                    label: Text('Edit',
+                        style: TextStyle(
+                            color: Neon.textLo, fontWeight: FontWeight.w700)),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.fromLTRB(8, 16, 8, 6),
+              decoration: Neon.glassBox(Neon.rLg),
+              child: LayoutBuilder(builder: (context, c) {
+                final w = c.maxWidth / tilesPerRow(apps.length + 1);
+                return Wrap(
+                  alignment: WrapAlignment.center,
+                  children: [
+                    for (final a in apps)
+                      SizedBox(
+                          key: ValueKey(a.pkgs.join(',')),
+                          width: w,
+                          child: _AppTile(app: a)),
+                    SizedBox(width: w, child: _AddTile(onTap: _add)),
+                  ],
+                );
+              }),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// The last tile on a section: add an app from the phone.
+class _AddTile extends StatelessWidget {
+  const _AddTile({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    const size = 48.0;
+    return Tappable(
+      onTap: onTap,
+      semanticLabel: 'Add an app',
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: ExcludeSemantics(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: size,
+                height: size,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(size * 0.26),
+                  border: Border.all(color: Neon.lineBright, width: 1.5),
+                ),
+                child: Icon(Icons.add_rounded, color: Neon.textLo, size: 26),
+              ),
+              const SizedBox(height: 6),
+              Text('Add App',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: NeonType.manrope(12, FontWeight.w700)
+                      .copyWith(color: Neon.textLo)),
+            ],
           ),
         ),
-        Container(
-          padding: const EdgeInsets.fromLTRB(8, 16, 8, 6),
-          decoration: Neon.glassBox(Neon.rLg),
-          child: LayoutBuilder(builder: (context, c) {
-            final w = c.maxWidth / tilesPerRow(apps.length);
-            return Wrap(
-              alignment: WrapAlignment.center,
+      ),
+    );
+  }
+}
+
+/// The phone's own icon for [pkg], once per run (null: none).
+final _pkgIcons = <String, Future<Uint8List?>>{};
+Future<Uint8List?> _iconOf(String pkg) => _pkgIcons[pkg] ??= () async {
+      try {
+        return await _channel
+            .invokeMethod<Uint8List>('appIcon', {'pkg': pkg, 'size': 96});
+      } catch (_) {
+        return null;
+      }
+    }();
+
+class _PkgIcon extends StatelessWidget {
+  const _PkgIcon(this.app);
+  final QuickApp app;
+  static const size = 36.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Uint8List?>(
+      future: _iconOf(app.pkgs.first),
+      builder: (context, snap) {
+        final png = snap.data;
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(size * 0.26),
+          child: png != null && png.isNotEmpty
+              ? Image.memory(png, width: size, height: size, gaplessPlayback: true)
+              : app.badge != null
+                  ? app.badge!(size)
+                  : Container(
+                      width: size,
+                      height: size,
+                      color: Colors.white,
+                      alignment: Alignment.center,
+                      child: Icon(app.mark, color: app.color, size: size * 0.56),
+                    ),
+        );
+      },
+    );
+  }
+}
+
+/// EDIT A SECTION: remove apps, add apps, or go back to the defaults.
+Future<void> _editSection(BuildContext context, String section, String title,
+    List<QuickApp> builtIns) {
+  final store = QuickAppStore.instance;
+  return showAppSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Neon.surface,
+    shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+    builder: (sheet) => SafeArea(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(sheet).size.height * 0.8),
+        child: ValueListenableBuilder<Map<String, SectionEdits>>(
+          valueListenable: store.edits,
+          builder: (sheet, _, __) {
+            final edits = store.of(section);
+            final apps = visibleApps(builtIns, edits);
+            final added = {for (final a in edits.added) a.pkg};
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                for (final a in apps)
-                  SizedBox(width: w, child: _AppTile(app: a)),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 4),
+                  child: Text('Edit $title',
+                      style: NeonType.manrope(20, FontWeight.w800)
+                          .copyWith(color: Neon.textHi)),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+                  child: Text(
+                      'Remove the apps you do not use, or add any app on your phone. '
+                      'Your assistant can open the apps you add by name.',
+                      style: TextStyle(
+                          color: Neon.textLo, fontSize: 13, height: 1.4)),
+                ),
+                Flexible(
+                  child: apps.isEmpty
+                      ? Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Text('No apps here yet. Tap Add App to add one.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Neon.textLo)),
+                        )
+                      : ListView(
+                          shrinkWrap: true,
+                          children: [
+                            for (final a in apps)
+                              ListTile(
+                                key: ValueKey(a.pkgs.join(',')),
+                                leading: _PkgIcon(a),
+                                title: Text(a.name,
+                                    style: TextStyle(
+                                        color: Neon.textHi,
+                                        fontWeight: FontWeight.w600)),
+                                trailing: IconButton(
+                                  tooltip: 'Remove ${a.name}',
+                                  icon: Icon(Icons.remove_circle_outline_rounded,
+                                      color: Neon.error),
+                                  onPressed: () => added.contains(a.pkgs.first)
+                                      ? store.removeAdded(section, a.pkgs.first)
+                                      : store.removeBuiltIn(section, a.name),
+                                ),
+                              ),
+                          ],
+                        ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Neon.cyan,
+                      foregroundColor: Neon.cyanInk,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    icon: const Icon(Icons.add_rounded),
+                    label: Text('Add App',
+                        style: NeonType.manrope(15, FontWeight.w800)),
+                    onPressed: () async {
+                      final app = await pickInstalledApp(sheet,
+                          exclude: {for (final a in apps) ...a.pkgs});
+                      if (app != null) await store.add(section, app);
+                    },
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+                  child: Row(
+                    children: [
+                      TextButton(
+                        onPressed: edits.removed.isEmpty && edits.added.isEmpty
+                            ? null
+                            : () => store.reset(section),
+                        child: Text('Restore Defaults',
+                            style: TextStyle(color: Neon.textLo)),
+                      ),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: () => Navigator.of(sheet).pop(),
+                        child: Text('Done',
+                            style: TextStyle(
+                                color: Neon.textHi, fontWeight: FontWeight.w700)),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             );
-          }),
+          },
         ),
-      ],
+      ),
+    ),
+  );
+}
+
+/// PICK AN APP FROM THE PHONE: every app with a launcher icon, searchable,
+/// leaving out [exclude] (already shown). Null when nothing was picked.
+Future<AddedApp?> pickInstalledApp(BuildContext context,
+    {Set<String> exclude = const {}}) {
+  return showAppSheet<AddedApp>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Neon.surface,
+    shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+    builder: (sheet) => _AppPicker(exclude: exclude),
+  );
+}
+
+/// The installed apps as {name, pkg}; empty when the phone cannot say (iPhone).
+Future<List<AddedApp>> installedApps() async {
+  try {
+    final raw = await _channel.invokeMethod<List<Object?>>('installedApps');
+    return [
+      for (final r in raw ?? const [])
+        if (r is Map)
+          if (AddedApp.fromJson({'name': r['label'], 'pkg': r['pkg']})
+              case final AddedApp a)
+            a,
+    ];
+  } catch (_) {
+    return const [];
+  }
+}
+
+class _AppPicker extends StatefulWidget {
+  const _AppPicker({required this.exclude});
+  final Set<String> exclude;
+
+  @override
+  State<_AppPicker> createState() => _AppPickerState();
+}
+
+class _AppPickerState extends State<_AppPicker> {
+  late final Future<List<AddedApp>> _apps = installedApps();
+  String _q = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final inset = MediaQuery.of(context).viewInsets.bottom;
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(bottom: inset),
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * 0.75,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
+                child: Text('Add an App',
+                    style: NeonType.manrope(20, FontWeight.w800)
+                        .copyWith(color: Neon.textHi)),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: TextField(
+                  autofocus: false,
+                  onChanged: (v) => setState(() => _q = v.trim().toLowerCase()),
+                  style: TextStyle(color: Neon.textHi),
+                  decoration: InputDecoration(
+                    hintText: 'Search your apps',
+                    hintStyle: TextStyle(color: Neon.textDim),
+                    prefixIcon: Icon(Icons.search_rounded, color: Neon.textLo),
+                    filled: true,
+                    fillColor: Neon.surfaceHigh,
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: FutureBuilder<List<AddedApp>>(
+                  future: _apps,
+                  builder: (context, snap) {
+                    if (snap.connectionState != ConnectionState.done) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final all = snap.data ?? const <AddedApp>[];
+                    if (all.isEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(
+                            'Unable to list the apps on this phone. Adding apps '
+                            'works on Android phones.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Neon.textLo)),
+                      );
+                    }
+                    final list = [
+                      for (final a in all)
+                        if (!widget.exclude.contains(a.pkg) &&
+                            (_q.isEmpty || a.name.toLowerCase().contains(_q)))
+                          a,
+                    ];
+                    if (list.isEmpty) {
+                      return Center(
+                          child: Text('No apps match.',
+                              style: TextStyle(color: Neon.textLo)));
+                    }
+                    return ListView.builder(
+                      itemCount: list.length,
+                      itemBuilder: (context, i) {
+                        final a = list[i];
+                        return ListTile(
+                          key: ValueKey(a.pkg),
+                          leading: _PkgIcon(QuickApp(
+                              a.name, [a.pkg], Icons.apps_rounded, Neon.cyan)),
+                          title: Text(a.name,
+                              style: TextStyle(
+                                  color: Neon.textHi,
+                                  fontWeight: FontWeight.w600)),
+                          trailing: Icon(Icons.add_circle_outline_rounded,
+                              color: Neon.cyan),
+                          onTap: () => Navigator.of(context).pop(a),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
