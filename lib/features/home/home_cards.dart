@@ -27,6 +27,7 @@ import '../../widgets/neon_cards.dart';
 import '../../widgets/whats_new_card.dart';
 import '../assistant/state/assistant_engine.dart';
 import '../briefing/brief_player.dart';
+import '../jyotish/jyotish_card.dart';
 import '../meeting_prep/meeting_prep_sheet.dart';
 import '../pricecompare/price_compare_section.dart';
 import '../shopping/shopping_list_screen.dart';
@@ -303,6 +304,12 @@ class _HomeFeedViewState extends State<HomeFeedView> {
             // Once per release: what just got better. Below the day, never
             // above what needs the user.
             const WhatsNewCard(),
+            // JYOTISH (2026-11-22): the Vedic horoscope, last on Home.
+            const SizedBox(height: 20),
+            Reveal(
+              delayMs: 180,
+              child: JyotishCard(onOpen: (page) => _do.open(context, page)),
+            ),
           ],
         );
       },
