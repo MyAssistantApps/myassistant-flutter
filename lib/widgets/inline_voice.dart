@@ -759,17 +759,12 @@ class _InlineCaptionOverlayState extends State<InlineCaptionOverlay>
                         top: MediaQuery.of(context).viewPadding.top, bottom: 4),
                     child: Row(
                       children: [
-                        // THE MANAGER, when they asked for it: slides in here.
                         // HER NAME AS THE HEADING (2026-11-02, Karthik: not
-                        // in the middle of the ball). The Manager's card
-                        // slides in over it when they have the conversation.
+                        // in the middle of the ball).
                         Expanded(
-                          child: Stack(
+                          child: Align(
                             alignment: Alignment.centerLeft,
-                            children: [
-                              _SessionTitle(engine: engine),
-                              ManagerPanel(engine: engine),
-                            ],
+                            child: _SessionTitle(engine: engine),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -1990,88 +1985,8 @@ class _TypeBarState extends State<_TypeBar> with WidgetsBindingObserver {
   }
 }
 
-/// THE MANAGER PANEL (owner, 2026-11-01): it slides in at the top of the
-/// voice screen while the Manager has the conversation — its badge, its
-/// name, and what it is doing right now (the tool at work) — and slides
-/// away when it hands back.
-class ManagerPanel extends StatelessWidget {
-  const ManagerPanel({super.key, required this.engine});
-  final AssistantEngine engine;
-
-  static const _gold = Color(0xFFFFC857);
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: engine.managerOn,
-      builder: (context, on, _) => AnimatedSlide(
-        offset: on ? Offset.zero : const Offset(0, -1.4),
-        duration: const Duration(milliseconds: 320),
-        curve: on ? Curves.easeOutBack : Curves.easeIn,
-        child: AnimatedOpacity(
-          opacity: on ? 1 : 0,
-          duration: const Duration(milliseconds: 220),
-          child: Semantics(
-            liveRegion: true,
-            label: on ? 'The Manager is handling the conversation' : null,
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(8, 8, 14, 8),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: _gold.withValues(alpha: 0.55)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: const LinearGradient(
-                          colors: [Color(0xFFFFD98A), Color(0xFFE09A2D)]),
-                      boxShadow: [BoxShadow(color: _gold.withValues(alpha: 0.45), blurRadius: 12)],
-                    ),
-                    child: const Icon(Icons.workspace_premium_rounded,
-                        size: 20, color: Color(0xFF3A2400)),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text('Manager',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700)),
-                        ValueListenableBuilder<String?>(
-                          valueListenable: engine.activityLabel,
-                          builder: (_, doing, __) => Text(
-                            doing ?? 'Taking over from your assistant',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.7), fontSize: 12.5),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 /// The assistant's name at the top of the talking page, lit in the orb's
-/// time-of-day colours, with a small glowing dot beside it. It fades away
-/// while the Manager's card has the spot.
+/// time-of-day colours, with a small glowing dot beside it.
 class _SessionTitle extends StatelessWidget {
   const _SessionTitle({required this.engine});
   final AssistantEngine engine;
@@ -2079,12 +1994,7 @@ class _SessionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pal = NeuronPalette.at(DateTime.now());
-    return ValueListenableBuilder<bool>(
-      valueListenable: engine.managerOn,
-      builder: (_, manager, __) => AnimatedOpacity(
-        opacity: manager ? 0 : 1,
-        duration: const Duration(milliseconds: 220),
-        child: ValueListenableBuilder<String>(
+    return ValueListenableBuilder<String>(
           valueListenable: AssistantIdentity.notifier,
           builder: (_, name, __) => Semantics(
             header: true,
@@ -2125,8 +2035,6 @@ class _SessionTitle extends StatelessWidget {
               ],
             ),
           ),
-        ),
-      ),
-    );
+        );
   }
 }

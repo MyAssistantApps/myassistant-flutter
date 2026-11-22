@@ -17,6 +17,7 @@ import '../design/theme_controller.dart';
 import '../services/voice_choice.dart';
 import '../services/api_service.dart';
 import '../services/assistant_identity.dart';
+import '../features/assistant/state/assistant_engine.dart';
 import 'account_section.dart';
 import 'help_feedback_sheet.dart';
 import 'linked_accounts_screen.dart';
@@ -613,6 +614,7 @@ class _RenameSheetState extends State<_RenameSheet> {
       return;
     }
     await AssistantIdentity.set(n);
+    unawaited(AssistantEngine.instance.nameChanged());
     HapticFeedback.lightImpact();
     if (mounted) Navigator.pop(context, n);
   }

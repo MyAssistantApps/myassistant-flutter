@@ -450,6 +450,23 @@ class AssistantEngine extends ChangeNotifier {
     if (_starting) _startCancelled = true;
     inlineVoice = false;
     await leaveConversation();
+    if (_nameStale) await nameChanged();
+  }
+
+  /// RENAMED (owner, 2026-11-22: renamed to Saanvi, the voice still said
+  /// "My name is Maya"). A voice session warmed before the rename carries
+  /// the old name in its instruction, and the cached greeting may say it:
+  /// both are let go so the next tap connects with the new name. In the
+  /// middle of a conversation (renamed by voice) it waits for the end.
+  bool _nameStale = false;
+  Future<void> nameChanged() async {
+    unawaited(GreetingVoice.instance.clear());
+    if (_starting || inlineVoice || _voiceOn) {
+      _nameStale = true;
+      return;
+    }
+    _nameStale = false;
+    await _live.discard();
   }
 
   /// Which professional assistant answers (Doctor's, Advocate's, …); null
@@ -640,13 +657,6 @@ class AssistantEngine extends ChangeNotifier {
   void debugEvent(Map<String, dynamic> e) => unawaited(_onEvent(e));
 
   final ValueNotifier<String?> activityLabel = ValueNotifier(null);
-
-  /// THE MANAGER HAS THE CONVERSATION (owner, 2026-11-01: "if user says I
-  /// want to talk to your manager agent the manager agent should pop up").
-  /// On when the server hands the turn to the Manager (backend
-  /// agents/manager.js) or the live voice calls hand_to_manager; off when
-  /// it hands back, on any other turn, and when the conversation ends.
-  final ValueNotifier<bool> managerOn = ValueNotifier(false);
 
   /// Who has control of the running turn — the manager agent and the
   /// specialists it chose — and which of them runs the current tool.
@@ -2110,12 +2120,10 @@ class AssistantEngine extends ChangeNotifier {
                 '${control == null ? '' : ' — ${control.summary} (${control.via})'}');
             // ONE ASSISTANT ON SCREEN (owner, 2026-11-01: "the user should
             // not be able to see the underlying agents"): no hand-off lane,
-            // no agent name under the orb — except the Manager, when asked.
+            // no agent name under the orb (the Manager persona was removed
+            // on 2026-11-22: one personal assistant only).
             _agentClear?.cancel();
             agentControl.value = null;
-            if (control != null && !control.skipped) {
-              managerOn.value = control.addressed?.id == 'manager';
-            }
           case BrainPartialText(:final text):
             _finishTools();
             if (phase == AssistantPhase.responding) {
@@ -2242,8 +2250,6 @@ class AssistantEngine extends ChangeNotifier {
 
   void _toolStarted(String tool, [Map<String, Object?> args = const {}]) {
     _finishTools();
-    if (tool == 'hand_to_manager') managerOn.value = true;
-    if (tool == 'hand_back_to_assistant') managerOn.value = false;
     if (LocationService.locationTools.contains(tool)) {
       unawaited(_maybeAskLocation());
     }
@@ -2458,7 +2464,6 @@ class AssistantEngine extends ChangeNotifier {
     _conversationOpen = false;
     inlineVoice = false;
     _endAfterTurn = false;
-    managerOn.value = false;
     // Every way a conversation ends comes through here.
     _endBubbleTalk();
     // MUTE BELONGS TO THE CONVERSATION THAT SET IT: the only unmute control
@@ -3288,6 +3293,7 @@ class AssistantEngine extends ChangeNotifier {
         final newName = (e['name'] as String?)?.trim();
         if (newName != null && newName.isNotEmpty) {
           AssistantIdentity.set(newName);
+          unawaited(nameChanged());
         }
         break;
 
