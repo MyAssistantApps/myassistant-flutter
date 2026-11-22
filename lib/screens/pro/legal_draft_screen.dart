@@ -15,6 +15,8 @@ import '../../services/pro_service.dart';
 import '../../widgets/document_tile.dart' show openDocument;
 import '../clinic/clinic_settings_screen.dart';
 import '../clinic/clinic_sheets.dart';
+import '../../widgets/section_assistant_bar.dart';
+import '../pro_assistant_screen.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  DRAFT A DOCUMENT — the advocate describes it, reviews it, prints it.
@@ -169,9 +171,17 @@ class _LegalDraftScreenState extends State<LegalDraftScreen> {
     return Scaffold(
       backgroundColor: Neon.bg,
       appBar: appleAppBar(context, 'Draft a Document'),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
-        children: _draft == null ? _askStep() : _reviewStep(),
+      body: PinnedSectionBar(
+        // A speaker and a camera in every section (client, 2026-11-22),
+        // pinned so they stay while the page scrolls.
+        bar: proSectionBar(
+          line: 'Say what the document should say, or show a notice or a letter.',
+          photoQuestion: 'Help me draft this document using this photo.',
+        ),
+        list: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+          children: _draft == null ? _askStep() : _reviewStep(),
+        ),
       ),
     );
   }

@@ -13,6 +13,8 @@ import '../clients_screen.dart';
 import '../clinic/clinic_sheets.dart';
 import 'invoices_screen.dart';
 import 'legal_draft_screen.dart';
+import '../../widgets/section_assistant_bar.dart';
+import '../pro_assistant_screen.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  CASES & HEARINGS — the advocate's case diary.
@@ -70,59 +72,67 @@ class _CasesScreenState extends State<CasesScreen> {
         icon: const Icon(Icons.add_rounded),
         label: const Text('New Case'),
       ),
-      body: Column(children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-          child: SegmentedButton<bool>(
-            segments: const [
-              ButtonSegment(value: false, label: Text('Open')),
-              ButtonSegment(value: true, label: Text('Closed')),
-            ],
-            selected: {_closed},
-            onSelectionChanged: (s) {
-              setState(() {
-                _closed = s.first;
-                _cases = null;
-              });
-              _load();
-            },
+      body: PinnedSectionBar(
+        // A speaker and a camera in every section (client, 2026-11-22),
+        // pinned so they stay while the page scrolls.
+        bar: proSectionBar(
+          line: 'Ask about a case or a hearing, or show a court notice.',
+          photoQuestion: 'Help me with my case using this photo.',
+        ),
+        list: Column(children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment(value: false, label: Text('Open')),
+                ButtonSegment(value: true, label: Text('Closed')),
+              ],
+              selected: {_closed},
+              onSelectionChanged: (s) {
+                setState(() {
+                  _closed = s.first;
+                  _cases = null;
+                });
+                _load();
+              },
+            ),
           ),
-        ),
-        Expanded(
-          child: _failed
-              ? NeonErrorState(
-                  message: "Unable to load your cases.",
-                  onRetry: () {
-                    setState(() => _failed = false);
-                    _load();
-                  })
-              : cases == null
-                  ? const Center(child: NeonLoader())
-                  : cases.isEmpty
-                      ? NeonEmptyState(
-                          icon: Icons.gavel_rounded,
-                          title: _closed ? 'No Closed Cases' : 'No Open Cases',
-                          body: _closed
-                              ? null
-                              : 'Add a matter with its court and next date of hearing — your assistant '
-                                  'reminds the client before each hearing.',
-                        )
-                      : RefreshIndicator(
-                          color: Neon.violet,
-                          onRefresh: _load,
-                          child: ListView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            padding: const EdgeInsets.fromLTRB(16, 6, 16, 100),
-                            children: [
-                              GroupedCard(
-                                dividerInset: 16,
-                                children: [for (final c in cases) _caseRow(c)],
-                              ),
-                            ],
+          Expanded(
+            child: _failed
+                ? NeonErrorState(
+                    message: "Unable to load your cases.",
+                    onRetry: () {
+                      setState(() => _failed = false);
+                      _load();
+                    })
+                : cases == null
+                    ? const Center(child: NeonLoader())
+                    : cases.isEmpty
+                        ? NeonEmptyState(
+                            icon: Icons.gavel_rounded,
+                            title: _closed ? 'No Closed Cases' : 'No Open Cases',
+                            body: _closed
+                                ? null
+                                : 'Add a matter with its court and next date of hearing — your assistant '
+                                    'reminds the client before each hearing.',
+                          )
+                        : RefreshIndicator(
+                            color: Neon.violet,
+                            onRefresh: _load,
+                            child: ListView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.fromLTRB(16, 6, 16, 100),
+                              children: [
+                                GroupedCard(
+                                  dividerInset: 16,
+                                  children: [for (final c in cases) _caseRow(c)],
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-        ),
-      ]),
+          ),
+        ]),
+      ),
     );
   }
 
@@ -392,77 +402,85 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
               icon: const Icon(Icons.event_rounded),
               label: const Text('Add Hearing'),
             ),
-      body: _failed
-          ? NeonErrorState(message: "Unable to load this case.", onRetry: _load)
-          : c == null
-              ? const Center(child: NeonLoader())
-              : RefreshIndicator(
-                  color: Neon.violet,
-                  onRefresh: _load,
-                  child: ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-                    children: [
-                      GroupedCard(dividerInset: 16, children: [
-                        if (c.caseNumber.isNotEmpty) AppleRow(title: 'Case Number', subtitle: c.caseNumber),
-                        if (c.court.isNotEmpty) AppleRow(title: 'Court', subtitle: c.court),
-                        if (c.oppositeParty.isNotEmpty) AppleRow(title: 'Opposite Party', subtitle: c.oppositeParty),
-                        if (c.stage.isNotEmpty) AppleRow(title: 'Stage', subtitle: c.stage),
-                        AppleRow(
-                          title: 'Client',
-                          subtitle: c.clientName.isEmpty ? 'No client linked' : c.clientName,
-                          trailing: c.clientId == null
-                              ? null
-                              : Row(mainAxisSize: MainAxisSize.min, children: [
-                                  if (c.clientPhone.isNotEmpty)
-                                    IconButton(
-                                      tooltip: 'Call Client',
-                                      icon: Icon(Icons.call_rounded, color: Neon.accentE),
-                                      onPressed: () => launchUrl(Uri(scheme: 'tel', path: c.clientPhone)),
-                                    ),
-                                  Icon(Icons.chevron_right_rounded, color: Neon.textDim),
-                                ]),
-                          onTap: c.clientId == null
-                              ? null
-                              : () => Navigator.of(context).push(
-                                  MaterialPageRoute(builder: (_) => ClientDetailScreen(clientId: c.clientId!))),
-                        ),
-                      ]),
-                      const SizedBox(height: 14),
-                      Row(children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            icon: const Icon(Icons.edit_note_rounded),
-                            label: const Text('Draft Document'),
-                            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                                builder: (_) => LegalDraftScreen(caseId: c.id, clientId: c.clientId, clientName: c.clientName))),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            icon: const Icon(Icons.receipt_long_rounded),
-                            label: const Text('Bill Fee'),
-                            onPressed: c.clientId == null
-                                ? () => AppFeedback.toast('Link a client to this case first.')
-                                : () => Navigator.of(context).push(MaterialPageRoute(
-                                    builder: (_) => InvoiceEditorScreen(
-                                        clientId: c.clientId, clientName: c.clientName, presetLine: 'Professional fee — ${c.caseNumber.isNotEmpty ? c.caseNumber : c.title}'))),
-                          ),
-                        ),
-                      ]),
-                      const SizedBox(height: 22),
-                      GroupLabel('Hearings · ${_hearings.length}'),
-                      if (_hearings.isEmpty)
-                        Text('No hearings listed. Add the next date of hearing — your assistant reminds the client the day before.',
-                            style: TextStyle(color: Neon.textLo, fontSize: 13.5, height: 1.4))
-                      else
+      body: PinnedSectionBar(
+        // A speaker and a camera in every section (client, 2026-11-22),
+        // pinned so they stay while the page scrolls.
+        bar: proSectionBar(
+          line: 'Ask about this case or its hearings, or show a court notice.',
+          photoQuestion: 'Help me with this case using this photo.',
+        ),
+        list: _failed
+            ? NeonErrorState(message: "Unable to load this case.", onRetry: _load)
+            : c == null
+                ? const Center(child: NeonLoader())
+                : RefreshIndicator(
+                    color: Neon.violet,
+                    onRefresh: _load,
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                      children: [
                         GroupedCard(dividerInset: 16, children: [
-                          for (final h in _hearings.reversed) _hearingRow(h),
+                          if (c.caseNumber.isNotEmpty) AppleRow(title: 'Case Number', subtitle: c.caseNumber),
+                          if (c.court.isNotEmpty) AppleRow(title: 'Court', subtitle: c.court),
+                          if (c.oppositeParty.isNotEmpty) AppleRow(title: 'Opposite Party', subtitle: c.oppositeParty),
+                          if (c.stage.isNotEmpty) AppleRow(title: 'Stage', subtitle: c.stage),
+                          AppleRow(
+                            title: 'Client',
+                            subtitle: c.clientName.isEmpty ? 'No client linked' : c.clientName,
+                            trailing: c.clientId == null
+                                ? null
+                                : Row(mainAxisSize: MainAxisSize.min, children: [
+                                    if (c.clientPhone.isNotEmpty)
+                                      IconButton(
+                                        tooltip: 'Call Client',
+                                        icon: Icon(Icons.call_rounded, color: Neon.accentE),
+                                        onPressed: () => launchUrl(Uri(scheme: 'tel', path: c.clientPhone)),
+                                      ),
+                                    Icon(Icons.chevron_right_rounded, color: Neon.textDim),
+                                  ]),
+                            onTap: c.clientId == null
+                                ? null
+                                : () => Navigator.of(context).push(
+                                    MaterialPageRoute(builder: (_) => ClientDetailScreen(clientId: c.clientId!))),
+                          ),
                         ]),
-                    ],
+                        const SizedBox(height: 14),
+                        Row(children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              icon: const Icon(Icons.edit_note_rounded),
+                              label: const Text('Draft Document'),
+                              onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                                  builder: (_) => LegalDraftScreen(caseId: c.id, clientId: c.clientId, clientName: c.clientName))),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              icon: const Icon(Icons.receipt_long_rounded),
+                              label: const Text('Bill Fee'),
+                              onPressed: c.clientId == null
+                                  ? () => AppFeedback.toast('Link a client to this case first.')
+                                  : () => Navigator.of(context).push(MaterialPageRoute(
+                                      builder: (_) => InvoiceEditorScreen(
+                                          clientId: c.clientId, clientName: c.clientName, presetLine: 'Professional fee — ${c.caseNumber.isNotEmpty ? c.caseNumber : c.title}'))),
+                            ),
+                          ),
+                        ]),
+                        const SizedBox(height: 22),
+                        GroupLabel('Hearings · ${_hearings.length}'),
+                        if (_hearings.isEmpty)
+                          Text('No hearings listed. Add the next date of hearing — your assistant reminds the client the day before.',
+                              style: TextStyle(color: Neon.textLo, fontSize: 13.5, height: 1.4))
+                        else
+                          GroupedCard(dividerInset: 16, children: [
+                            for (final h in _hearings.reversed) _hearingRow(h),
+                          ]),
+                      ],
+                    ),
                   ),
-                ),
+      ),
     );
   }
 

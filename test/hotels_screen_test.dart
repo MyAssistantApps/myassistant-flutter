@@ -20,6 +20,9 @@ void main() {
     addTearDown(t.view.reset);
     await t.pumpWidget(const MaterialApp(home: HotelsScreen()));
     await t.pump();
+    // The section's speaker and camera card is pinned above the list.
+    await t.scrollUntilVisible(find.text('Booking.com'), 200,
+        scrollable: find.byType(Scrollable).first);
 
     expect(find.text('Hotels & Airbnb'), findsOneWidget);
     expect(find.text('HOMES & VILLAS'), findsOneWidget);

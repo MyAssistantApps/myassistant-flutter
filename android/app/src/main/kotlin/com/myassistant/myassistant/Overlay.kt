@@ -88,6 +88,12 @@ object Overlay {
         PixelFormat.TRANSLUCENT,
     )
 
+    /** The app's theme colours changed: repaint the floating mic in them. */
+    fun applyTheme(accent: Int, partner: Int, cyan: Int) {
+        OrbView.applyTheme(accent, partner, cyan)
+        main.post { bubble?.invalidate() }
+    }
+
     @SuppressLint("ClickableViewAccessibility")
     fun showBubble(ctx: Context) {
         if (!Settings.canDrawOverlays(ctx)) return
@@ -290,7 +296,7 @@ object Overlay {
             background = GradientDrawable(GradientDrawable.Orientation.TL_BR,
                 intArrayOf(Color.parseColor("#F21C1640"), Color.parseColor("#F2120E2A"))).apply {
                 cornerRadius = dp(c, 24f)
-                setStroke(dp(c, 1.2f).toInt(), Color.parseColor("#998B5CFF"))
+                setStroke(dp(c, 1.2f).toInt(), Color.argb(0x99, Color.red(OrbView.VIOLET), Color.green(OrbView.VIOLET), Color.blue(OrbView.VIOLET)))
             }
             elevation = dp(c, 12f)
         }

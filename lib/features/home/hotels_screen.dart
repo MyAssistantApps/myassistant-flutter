@@ -6,6 +6,7 @@ import '../../design/apple_kit.dart';
 import '../../design/neon_tokens.dart';
 import '../../design/neon_widgets.dart';
 import '../../services/api_service.dart';
+import '../../widgets/section_assistant_bar.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  HOTELS (client, 2026-11-05: "I think you missed adding the hotel
@@ -26,8 +27,18 @@ class HotelsScreen extends StatefulWidget {
 String _iso(DateTime d) =>
     '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 const _mon = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec'
 ];
 String _short(DateTime d) => '${d.day} ${_mon[d.month - 1]}';
 
@@ -96,148 +107,174 @@ class _HotelsScreenState extends State<HotelsScreen> {
       appBar: appleAppBar(context, 'Hotels & Airbnb'),
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
-        child: ListView(
-          padding: EdgeInsets.fromLTRB(
-              16, 8, 16, 28 + MediaQuery.paddingOf(context).bottom),
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(28),
-              child: SizedBox(
-                height: 200,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Image.asset('assets/quick/hotels.jpg', fit: BoxFit.cover),
-                    DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          stops: const [0.4, 1],
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.withValues(alpha: 0.8),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      left: 18,
-                      bottom: 16,
-                      right: 18,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Find Your Stay',
-                              style: NeonType.manrope(28, FontWeight.w800)
-                                  .copyWith(
-                                      color: Colors.white,
-                                      letterSpacing: -0.6)),
-                          Text('Hotels, resorts and Airbnb homes',
-                              style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.85),
-                                  fontSize: 14)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 14),
-            Container(
-              decoration: Neon.glassBox(Neon.rCard),
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
-                    child: Row(children: [
-                      Icon(Icons.location_on_rounded, color: Neon.violet),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: _city,
-                          textCapitalization: TextCapitalization.words,
-                          style: NeonType.manrope(18, FontWeight.w800)
-                              .copyWith(color: Neon.textHi),
-                          decoration: InputDecoration(
-                            labelText: 'CITY, AREA OR HOTEL',
-                            labelStyle: NeonType.eyebrow
-                                .copyWith(color: Neon.textLo),
-                            filled: false,
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
+        // A speaker and a camera in every section (client, 2026-11-22),
+        // pinned so they stay while the list scrolls.
+        child: PinnedSectionBar(
+          bar: const SectionAssistantBar(
+            role: SectionRoles.hotels,
+            title: 'Ask the Hotels Assistant',
+            line:
+                'Say where and when you want to stay, or show a booking or a place.',
+            photoQuestion: 'Help me with my hotel stay using this photo.',
+          ),
+          list: ListView(
+            padding: EdgeInsets.fromLTRB(
+                16, 8, 16, 28 + MediaQuery.paddingOf(context).bottom),
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(28),
+                child: SizedBox(
+                  height: 200,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.asset('assets/quick/hotels.jpg', fit: BoxFit.cover),
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            stops: const [0.4, 1],
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withValues(alpha: 0.8),
+                            ],
                           ),
                         ),
                       ),
-                    ]),
+                      Positioned(
+                        left: 18,
+                        bottom: 16,
+                        right: 18,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Find Your Stay',
+                                style: NeonType.manrope(28, FontWeight.w800)
+                                    .copyWith(
+                                        color: Colors.white,
+                                        letterSpacing: -0.6)),
+                            Text('Hotels, resorts and Airbnb homes',
+                                style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.85),
+                                    fontSize: 14)),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  Divider(height: 1, color: Neon.hairline),
-                  InkWell(
-                    onTap: _pickDates,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Container(
+                decoration: Neon.glassBox(Neon.rCard),
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
                       child: Row(children: [
-                        Icon(Icons.calendar_month_rounded, color: Neon.violet),
+                        Icon(Icons.location_on_rounded, color: Neon.violet),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('CHECK-IN → CHECK-OUT',
-                                  style: NeonType.eyebrow
-                                      .copyWith(color: Neon.textLo)),
-                              Text(
-                                  '${_short(_stay.start)} → ${_short(_stay.end)}'
-                                  '  ·  $nights night${nights == 1 ? '' : 's'}',
-                                  style: NeonType.manrope(17, FontWeight.w800)
-                                      .copyWith(color: Neon.textHi)),
-                            ],
+                          child: TextField(
+                            controller: _city,
+                            textCapitalization: TextCapitalization.words,
+                            style: NeonType.manrope(18, FontWeight.w800)
+                                .copyWith(color: Neon.textHi),
+                            decoration: InputDecoration(
+                              labelText: 'CITY, AREA OR HOTEL',
+                              labelStyle:
+                                  NeonType.eyebrow.copyWith(color: Neon.textLo),
+                              filled: false,
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                            ),
                           ),
                         ),
                       ]),
                     ),
-                  ),
-                  Divider(height: 1, color: Neon.hairline),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 6, 6, 6),
-                    child: Row(children: [
-                      Icon(Icons.group_rounded, color: Neon.violet),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                            '$_adults adult${_adults == 1 ? '' : 's'} · '
-                            '$_rooms room${_rooms == 1 ? '' : 's'}',
-                            style: NeonType.manrope(16, FontWeight.w800)
-                                .copyWith(color: Neon.textHi)),
+                    Divider(height: 1, color: Neon.hairline),
+                    InkWell(
+                      onTap: _pickDates,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(children: [
+                          Icon(Icons.calendar_month_rounded,
+                              color: Neon.violet),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('CHECK-IN → CHECK-OUT',
+                                    style: NeonType.eyebrow
+                                        .copyWith(color: Neon.textLo)),
+                                Text(
+                                    '${_short(_stay.start)} → ${_short(_stay.end)}'
+                                    '  ·  $nights night${nights == 1 ? '' : 's'}',
+                                    style: NeonType.manrope(17, FontWeight.w800)
+                                        .copyWith(color: Neon.textHi)),
+                              ],
+                            ),
+                          ),
+                        ]),
                       ),
-                      _step(Icons.person_remove_rounded,
-                          _adults > 1 ? () => setState(() => _adults--) : null),
-                      _step(Icons.person_add_rounded,
-                          _adults < 12 ? () => setState(() => _adults++) : null),
-                      _step(Icons.bed_rounded, () {
-                        setState(() => _rooms = _rooms >= 6 ? 1 : _rooms + 1);
-                      }),
-                    ]),
-                  ),
-                ],
+                    ),
+                    Divider(height: 1, color: Neon.hairline),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 6, 6, 6),
+                      child: Row(children: [
+                        Icon(Icons.group_rounded, color: Neon.violet),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                              '$_adults adult${_adults == 1 ? '' : 's'} · '
+                              '$_rooms room${_rooms == 1 ? '' : 's'}',
+                              style: NeonType.manrope(16, FontWeight.w800)
+                                  .copyWith(color: Neon.textHi)),
+                        ),
+                        _step(
+                            Icons.person_remove_rounded,
+                            _adults > 1
+                                ? () => setState(() => _adults--)
+                                : null),
+                        _step(
+                            Icons.person_add_rounded,
+                            _adults < 12
+                                ? () => setState(() => _adults++)
+                                : null),
+                        _step(Icons.bed_rounded, () {
+                          setState(() => _rooms = _rooms >= 6 ? 1 : _rooms + 1);
+                        }),
+                      ]),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 22),
-            _eyebrow('HOMES & VILLAS'),
-            _partner('airbnb', 'Airbnb',
-                'Homes, villas and apartments · opens your search'),
-            const SizedBox(height: 12),
-            _eyebrow('HOTELS'),
-            for (final (id, name, line) in const [
-              ('booking', 'Booking.com', 'Hotels worldwide · opens your search'),
-              ('agoda', 'Agoda', 'Competitive rates in Asia · opens your search'),
-              ('makemytrip', 'MakeMyTrip', 'Hotels across India'),
-              ('goibibo', 'Goibibo', 'Hotels and homestays in India'),
-            ])
-              _partner(id, name, line),
-          ],
+              const SizedBox(height: 22),
+              _eyebrow('HOMES & VILLAS'),
+              _partner('airbnb', 'Airbnb',
+                  'Homes, villas and apartments · opens your search'),
+              const SizedBox(height: 12),
+              _eyebrow('HOTELS'),
+              for (final (id, name, line) in const [
+                (
+                  'booking',
+                  'Booking.com',
+                  'Hotels worldwide · opens your search'
+                ),
+                (
+                  'agoda',
+                  'Agoda',
+                  'Competitive rates in Asia · opens your search'
+                ),
+                ('makemytrip', 'MakeMyTrip', 'Hotels across India'),
+                ('goibibo', 'Goibibo', 'Hotels and homestays in India'),
+              ])
+                _partner(id, name, line),
+            ],
+          ),
         ),
       ),
     );
@@ -278,8 +315,7 @@ class _HotelsScreenState extends State<HotelsScreen> {
                     ],
                   ),
                 ),
-                Icon(Icons.open_in_new_rounded,
-                    color: Neon.textDim, size: 18),
+                Icon(Icons.open_in_new_rounded, color: Neon.textDim, size: 18),
               ]),
             ),
           ),

@@ -17,6 +17,7 @@ import '../design/neon_tokens.dart';
 import '../features/assistant/state/assistant_engine.dart';
 import '../features/assistant/state/assistant_state.dart';
 import '../widgets/role_mic_orb.dart';
+import '../widgets/section_assistant_bar.dart';
 import 'clients_screen.dart';
 import 'documents_screen.dart';
 import 'clinic/clinic_screen.dart';
@@ -1808,3 +1809,18 @@ class _UpcomingPreviewState extends State<_UpcomingPreview> {
   }
 }
 
+/// THE SPEAKER AND CAMERA IN EVERY WORKSPACE (client, 2026-11-22): the bar
+/// pinned on the doctor's, advocate's and business workspace screens. It
+/// talks as the user's own Pro assistant (the same one as the page's orb).
+SectionAssistantBar proSectionBar(
+    {required String line, required String photoQuestion}) {
+  final kind = ProKind.values.firstWhere((k) => k.name == Persona.proKind,
+      orElse: () => ProKind.doctor);
+  final p = ProProfile.of(kind);
+  return SectionAssistantBar(
+    role: p.role,
+    title: 'Ask the ${p.name} Assistant',
+    line: line,
+    photoQuestion: photoQuestion,
+  );
+}

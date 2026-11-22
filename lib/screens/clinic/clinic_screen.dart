@@ -15,6 +15,8 @@ import '../../services/pro_words.dart';
 import '../../services/persona.dart';
 import '../pro/cases_screen.dart';
 import '../pro/leads_screen.dart';
+import '../../widgets/section_assistant_bar.dart';
+import '../pro_assistant_screen.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  CLINIC — the doctor's workspace. Visible ONLY to doctors (persona).
@@ -73,29 +75,37 @@ class _ClinicScreenState extends State<ClinicScreen> {
                 builder: (_) => const ClinicSettingsScreen())),
           ),
         ]),
-        body: Column(
-          children: [
-            TabBar(
-              labelColor: Neon.violet,
-              unselectedLabelColor: Neon.textLo,
-              indicatorColor: Neon.violet,
-              dividerColor: Neon.line,
-              labelStyle:
-                  const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-              tabs: [
-                const Tab(text: 'Today'),
-                const Tab(text: 'Follow-ups'),
-                Tab(text: ProWords.current.payments),
-              ],
-            ),
-            const Expanded(
-              child: TabBarView(children: [
-                _TodayTab(),
-                _FollowUpsTab(),
-                _PaymentsTab(),
-              ]),
-            ),
-          ],
+        body: PinnedSectionBar(
+          // A speaker and a camera in every section (client, 2026-11-22),
+          // pinned so they stay while the page scrolls.
+          bar: proSectionBar(
+            line: 'Ask about today, follow-ups or payments, or show a document.',
+            photoQuestion: 'Help me with my work using this photo.',
+          ),
+          list: Column(
+            children: [
+              TabBar(
+                labelColor: Neon.violet,
+                unselectedLabelColor: Neon.textLo,
+                indicatorColor: Neon.violet,
+                dividerColor: Neon.line,
+                labelStyle:
+                    const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                tabs: [
+                  const Tab(text: 'Today'),
+                  const Tab(text: 'Follow-ups'),
+                  Tab(text: ProWords.current.payments),
+                ],
+              ),
+              const Expanded(
+                child: TabBarView(children: [
+                  _TodayTab(),
+                  _FollowUpsTab(),
+                  _PaymentsTab(),
+                ]),
+              ),
+            ],
+          ),
         ),
       ),
     );

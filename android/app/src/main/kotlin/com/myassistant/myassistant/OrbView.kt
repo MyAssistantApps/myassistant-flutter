@@ -13,7 +13,7 @@ import android.os.SystemClock
 import android.view.View
 
 /**
- * The app's orb, small (2026-10-19): a turning violet–pink–cyan ring with a
+ * The app's orb, small (2026-10-19): a turning ring in the app's theme colours with a
  * soft glow and the mic in the middle, in the same light as the in-app orb.
  * [listening] makes it breathe faster.
  *
@@ -31,16 +31,50 @@ class OrbView(
     private val halo: Boolean = false,
 ) : View(context) {
     companion object {
-        val VIOLET = Color.parseColor("#8B5CFF")
-        val PINK = Color.parseColor("#E040FB")
-        val CYAN = Color.parseColor("#22E4FF")
-        val NIGHT = Color.parseColor("#14102E")
+        // The app's theme colours (Neon.violet / pink / cyan), handed over by
+        // the app through [applyTheme]; the old violet until then.
+        @Volatile var VIOLET = Color.parseColor("#8B5CFF"); private set
+        @Volatile var PINK = Color.parseColor("#E040FB"); private set
+        @Volatile var CYAN = Color.parseColor("#22E4FF"); private set
+        /** The core, a near-black tinted with the accent (was #14102E / #2A1F5C). */
+        @Volatile var NIGHT = Color.parseColor("#14102E"); private set
+        @Volatile var NIGHT_LIT = Color.parseColor("#2A1F5C"); private set
+        @Volatile private var loaded = false
         val GREEN = Color.parseColor("#22E07A")
         val MINT = Color.parseColor("#B6FFD6")
 
         /** With [halo]: the orb's share of the view; the border runs in the rest. */
         const val BODY = 0.78f
         private const val RIPPLE = 1600L
+
+        /** Take the app's colours; 0 keeps the current one. */
+        fun applyTheme(accent: Int, partner: Int, cyan: Int) {
+            if (accent != 0) {
+                VIOLET = accent
+                NIGHT = mix(accent, Color.BLACK, 0.86f)
+                NIGHT_LIT = mix(accent, Color.BLACK, 0.62f)
+            }
+            if (partner != 0) PINK = partner
+            if (cyan != 0) CYAN = cyan
+        }
+
+        private fun mix(a: Int, b: Int, t: Float): Int = Color.rgb(
+            (Color.red(a) + (Color.red(b) - Color.red(a)) * t).toInt(),
+            (Color.green(a) + (Color.green(b) - Color.green(a)) * t).toInt(),
+            (Color.blue(a) + (Color.blue(b) - Color.blue(a)) * t).toInt(),
+        )
+
+        /** [c] at [alpha] (0..255). */
+        private fun alpha(c: Int, alpha: Int): Int =
+            Color.argb(alpha.coerceIn(0, 255), Color.red(c), Color.green(c), Color.blue(c))
+    }
+
+    init {
+        // The colours the app last handed over (it may be closed now).
+        if (!loaded) {
+            loaded = true
+            try { NotifyPrefs.themeColors(context).let { applyTheme(it[0], it[1], it[2]) } } catch (_: Throwable) {}
+        }
     }
 
     var listening = false
@@ -101,13 +135,13 @@ class OrbView(
         // Glow behind, breathing.
         val g = r * (0.92f + 0.08f * pulse)
         glow.shader = RadialGradient(cx, cy, g, intArrayOf(
-            Color.argb((110 + 60 * pulse).toInt(), 139, 92, 255), Color.argb(0, 224, 64, 251)),
+            alpha(VIOLET, (110 + 60 * pulse).toInt()), alpha(PINK, 0)),
             floatArrayOf(0.55f, 1f), Shader.TileMode.CLAMP)
         c.drawCircle(cx, cy, g, glow)
 
         // Night core.
         core.shader = RadialGradient(cx - inner * 0.3f, cy - inner * 0.35f, inner * 1.3f,
-            intArrayOf(Color.parseColor("#2A1F5C"), NIGHT), null, Shader.TileMode.CLAMP)
+            intArrayOf(NIGHT_LIT, NIGHT), null, Shader.TileMode.CLAMP)
         c.drawCircle(cx, cy, inner, core)
 
         // The turning ring.

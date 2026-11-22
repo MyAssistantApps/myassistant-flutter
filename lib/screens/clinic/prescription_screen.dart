@@ -14,6 +14,8 @@ import '../../services/app_feedback.dart';
 import '../../services/clinic_service.dart';
 import '../../widgets/document_tile.dart' show openDocument;
 import 'clinic_settings_screen.dart';
+import '../../widgets/section_assistant_bar.dart';
+import '../pro_assistant_screen.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  PRESCRIPTION — dictate it, check it, print it.
@@ -207,132 +209,140 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
     return Scaffold(
       backgroundColor: Neon.bg,
       appBar: appleAppBar(context, 'Prescription: ${widget.patient.name}'),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
-        children: [
-          if (_letterheadMissing)
-            Material(
-              color: Neon.warning.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(12),
-              child: ListTile(
-                leading: Icon(Icons.info_outline_rounded, color: Neon.warning),
-                title: const Text('Add Registration Number'),
-                subtitle: const Text('Printed on every prescription. Practice Settings →'),
-                onTap: () async {
-                  await Navigator.of(context).push(MaterialPageRoute(
-                      builder: (_) => const ClinicSettingsScreen()));
-                  _checkLetterhead();
-                },
+      body: PinnedSectionBar(
+        // A speaker and a camera in every section (client, 2026-11-22),
+        // pinned so they stay while the page scrolls.
+        bar: proSectionBar(
+          line: 'Say the medicines and doses, or show an old prescription.',
+          photoQuestion: 'Help me write this prescription using this photo.',
+        ),
+        list: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+          children: [
+            if (_letterheadMissing)
+              Material(
+                color: Neon.warning.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(12),
+                child: ListTile(
+                  leading: Icon(Icons.info_outline_rounded, color: Neon.warning),
+                  title: const Text('Add Registration Number'),
+                  subtitle: const Text('Printed on every prescription. Practice Settings →'),
+                  onTap: () async {
+                    await Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => const ClinicSettingsScreen()));
+                    _checkLetterhead();
+                  },
+                ),
               ),
-            ),
-          const SizedBox(height: 10),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _dictation,
-                  minLines: 2,
-                  maxLines: 5,
-                  textCapitalization: TextCapitalization.sentences,
-                  decoration: const InputDecoration(
-                    labelText: 'Dictate or type',
-                    hintText: 'e.g. Paracetamol 650 mg TDS for 3 days after food, review in one week',
-                    alignLabelWithHint: true,
+            const SizedBox(height: 10),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _dictation,
+                    minLines: 2,
+                    maxLines: 5,
+                    textCapitalization: TextCapitalization.sentences,
+                    decoration: const InputDecoration(
+                      labelText: 'Dictate or type',
+                      hintText: 'e.g. Paracetamol 650 mg TDS for 3 days after food, review in one week',
+                      alignLabelWithHint: true,
+                    ),
+                    onSubmitted: (_) => _parse(),
                   ),
-                  onSubmitted: (_) => _parse(),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Column(children: [
-                IconButton.filled(
-                  tooltip: _recording ? 'Stop' : 'Dictate',
-                  style: IconButton.styleFrom(
-                      backgroundColor: _recording ? Neon.error : Neon.violet),
-                  onPressed: _transcribing ? null : _toggleDictate,
-                  icon: Icon(_recording ? Icons.stop_rounded : Icons.mic_rounded,
-                      color: Colors.white),
-                ),
-                IconButton(
-                  tooltip: 'Add from Text',
-                  onPressed: _parsing ? null : _parse,
-                  icon: Icon(Icons.playlist_add_rounded, color: Neon.violet),
-                ),
-              ]),
-            ],
-          ),
-          if (_recording || _transcribing || _parsing)
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Text(
-                _recording
-                    ? 'Listening… tap Stop when finished'
-                    : _transcribing
-                        ? 'Transcribing…'
-                        : 'Reading the prescription…',
-                style: TextStyle(color: Neon.violet, fontSize: 12.5, fontWeight: FontWeight.w600),
-              ),
+                const SizedBox(width: 8),
+                Column(children: [
+                  IconButton.filled(
+                    tooltip: _recording ? 'Stop' : 'Dictate',
+                    style: IconButton.styleFrom(
+                        backgroundColor: _recording ? Neon.error : Neon.violet),
+                    onPressed: _transcribing ? null : _toggleDictate,
+                    icon: Icon(_recording ? Icons.stop_rounded : Icons.mic_rounded,
+                        color: Colors.white),
+                  ),
+                  IconButton(
+                    tooltip: 'Add from Text',
+                    onPressed: _parsing ? null : _parse,
+                    icon: Icon(Icons.playlist_add_rounded, color: Neon.violet),
+                  ),
+                ]),
+              ],
             ),
-          const SizedBox(height: 18),
-          GroupLabel('Medicines · ${_rows.length}'),
-          for (var i = 0; i < _rows.length; i++) _medCard(i),
-          TextButton.icon(
-            onPressed: () => setState(() => _rows.add(_MedRow.from(RxItem()))),
-            icon: const Icon(Icons.add_rounded),
-            label: const Text('Add Medicine'),
-          ),
-          const SizedBox(height: 10),
-          const GroupLabel('Patient & Visit'),
-          Row(children: [
-            SizedBox(
-              width: 90,
-              child: TextField(
-                controller: _age,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Age'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            for (final s in const ['M', 'F', 'Other'])
+            if (_recording || _transcribing || _parsing)
               Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: ChoiceChip(
-                  label: Text(s),
-                  selected: _sex == s,
-                  showCheckmark: false,
-                  selectedColor: Neon.violet.withValues(alpha: 0.15),
-                  onSelected: (_) => setState(() => _sex = _sex == s ? '' : s),
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  _recording
+                      ? 'Listening… tap Stop when finished'
+                      : _transcribing
+                          ? 'Transcribing…'
+                          : 'Reading the prescription…',
+                  style: TextStyle(color: Neon.violet, fontSize: 12.5, fontWeight: FontWeight.w600),
                 ),
               ),
-          ]),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _diagnosis,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(labelText: 'Diagnosis (optional)'),
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _advice,
-            minLines: 1,
-            maxLines: 4,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(labelText: 'Advice (optional)'),
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _followUp,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-                labelText: 'Review after (days, optional)'),
-          ),
-          const SizedBox(height: 20),
-          ApplePrimaryButton(
-            label: _creating ? 'Creating…' : 'Create Prescription PDF',
-            icon: Icons.picture_as_pdf_rounded,
-            onPressed: _creating || _recording ? null : _create,
-          ),
-        ],
+            const SizedBox(height: 18),
+            GroupLabel('Medicines · ${_rows.length}'),
+            for (var i = 0; i < _rows.length; i++) _medCard(i),
+            TextButton.icon(
+              onPressed: () => setState(() => _rows.add(_MedRow.from(RxItem()))),
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Add Medicine'),
+            ),
+            const SizedBox(height: 10),
+            const GroupLabel('Patient & Visit'),
+            Row(children: [
+              SizedBox(
+                width: 90,
+                child: TextField(
+                  controller: _age,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Age'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              for (final s in const ['M', 'F', 'Other'])
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: ChoiceChip(
+                    label: Text(s),
+                    selected: _sex == s,
+                    showCheckmark: false,
+                    selectedColor: Neon.violet.withValues(alpha: 0.15),
+                    onSelected: (_) => setState(() => _sex = _sex == s ? '' : s),
+                  ),
+                ),
+            ]),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _diagnosis,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(labelText: 'Diagnosis (optional)'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _advice,
+              minLines: 1,
+              maxLines: 4,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(labelText: 'Advice (optional)'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _followUp,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                  labelText: 'Review after (days, optional)'),
+            ),
+            const SizedBox(height: 20),
+            ApplePrimaryButton(
+              label: _creating ? 'Creating…' : 'Create Prescription PDF',
+              icon: Icons.picture_as_pdf_rounded,
+              onPressed: _creating || _recording ? null : _create,
+            ),
+          ],
+        ),
       ),
     );
   }

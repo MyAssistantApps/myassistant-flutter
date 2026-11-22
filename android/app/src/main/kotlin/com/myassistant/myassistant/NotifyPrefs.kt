@@ -49,4 +49,17 @@ object NotifyPrefs {
     /** The floating mic over other apps. */
     fun bubbleOn(ctx: Context): Boolean = p(ctx).getBoolean("bubble_on", false)
     fun setBubbleOn(ctx: Context, on: Boolean) = p(ctx).edit().putBoolean("bubble_on", on).apply()
+
+    /**
+     * The app's theme colours (accent, its gradient partner, the third ring
+     * colour) for the floating mic, so it matches the app even when the app
+     * is closed. 0 means none handed over yet.
+     */
+    fun themeColors(ctx: Context): IntArray = p(ctx).let {
+        intArrayOf(it.getInt("theme_accent", 0), it.getInt("theme_partner", 0), it.getInt("theme_cyan", 0))
+    }
+    fun setThemeColors(ctx: Context, accent: Int, partner: Int, cyan: Int) {
+        p(ctx).edit().putInt("theme_accent", accent).putInt("theme_partner", partner)
+            .putInt("theme_cyan", cyan).apply()
+    }
 }

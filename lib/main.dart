@@ -90,6 +90,8 @@ Future<void> main() async {
   // bars to match — light bars/dark icons or the other way around).
   await ThemeController.load();
   await AccentController.load();
+  // The floating mic is drawn natively: give it the loaded colours.
+  unawaited(OverlayBridge.syncTheme());
   // Runtime server override (Diagnostics screen) — must resolve before
   // the first request, or the engine would connect to the wrong host.
   ApiService.loadServerOverride();

@@ -6,6 +6,7 @@ import '../../design/neon_tokens.dart';
 import '../../design/neon_widgets.dart';
 import 'flight_search.dart';
 import 'premium_photo_card.dart';
+import '../../widgets/section_assistant_bar.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  FLIGHTS (owner, 2026-11-04): two large cards, one under the other —
@@ -30,9 +31,8 @@ extension FlightKindText on FlightKind {
   Alignment get focus => this == FlightKind.domestic
       ? const Alignment(-0.2, -0.3)
       : const Alignment(0.1, 0);
-  IconData get icon => this == FlightKind.domestic
-      ? Icons.flight_rounded
-      : Icons.public_rounded;
+  IconData get icon =>
+      this == FlightKind.domestic ? Icons.flight_rounded : Icons.public_rounded;
 }
 
 class FlightsScreen extends StatelessWidget {
@@ -42,42 +42,53 @@ class FlightsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return NeonScaffold(
       appBar: appleAppBar(context, 'Flights'),
-      body: ListView(
-        padding: EdgeInsets.fromLTRB(
-            16, 8, 16, 24 + MediaQuery.paddingOf(context).bottom),
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(4, 4, 4, 18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Flight Options',
-                    style: NeonType.manrope(30, FontWeight.w800).copyWith(
-                        color: Neon.textHi, letterSpacing: -0.8)),
-                const SizedBox(height: 4),
-                Text('Select the type of flight.',
-                    style: TextStyle(color: Neon.textLo, fontSize: 15)),
-              ],
+      body: PinnedSectionBar(
+        // A speaker and a camera in every section (client, 2026-11-22),
+        // pinned so they stay while the list scrolls.
+        bar: const SectionAssistantBar(
+          role: SectionRoles.flights,
+          title: 'Ask the Flights Assistant',
+          line:
+              'Say where and when you want to fly, or show a ticket or boarding pass.',
+          photoQuestion: 'Help me with my flight using this photo.',
+        ),
+        list: ListView(
+          padding: EdgeInsets.fromLTRB(
+              16, 8, 16, 24 + MediaQuery.paddingOf(context).bottom),
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 4, 4, 18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Flight Options',
+                      style: NeonType.manrope(30, FontWeight.w800)
+                          .copyWith(color: Neon.textHi, letterSpacing: -0.8)),
+                  const SizedBox(height: 4),
+                  Text('Select the type of flight.',
+                      style: TextStyle(color: Neon.textLo, fontSize: 15)),
+                ],
+              ),
             ),
-          ),
-          for (final k in FlightKind.values) ...[
-            PremiumPhotoCard(
-              photo: k.photo,
-              focus: k.focus,
-              tag: k.tag,
-              tagIcon: k.icon,
-              headline: k.headline,
-              line: k.line,
-              footer: const _FlightPath(),
-              onTap: () {
-                HapticFeedback.selectionClick();
-                Navigator.of(context).push(MaterialPageRoute<void>(
-                    builder: (_) => FlightSearchScreen(kind: k)));
-              },
-            ),
-            const SizedBox(height: 18),
+            for (final k in FlightKind.values) ...[
+              PremiumPhotoCard(
+                photo: k.photo,
+                focus: k.focus,
+                tag: k.tag,
+                tagIcon: k.icon,
+                headline: k.headline,
+                line: k.line,
+                footer: const _FlightPath(),
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  Navigator.of(context).push(MaterialPageRoute<void>(
+                      builder: (_) => FlightSearchScreen(kind: k)));
+                },
+              ),
+              const SizedBox(height: 18),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -123,8 +134,8 @@ class _FlightPath extends StatelessWidget {
         const SizedBox(width: 6),
         Transform.rotate(
           angle: 1.5708,
-          child: const Icon(Icons.flight_rounded,
-              color: Colors.white, size: 20),
+          child:
+              const Icon(Icons.flight_rounded, color: Colors.white, size: 20),
         ),
         const SizedBox(width: 6),
         dashes(),

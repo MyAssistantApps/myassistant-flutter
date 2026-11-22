@@ -8,6 +8,7 @@ import '../../design/neon_tokens.dart';
 import '../../design/neon_widgets.dart';
 import '../../services/api_service.dart';
 import 'partner_app.dart';
+import '../../widgets/section_assistant_bar.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  EVERYDAY SERVICES — Quick tools → Misc (owner, 2026-11-04: "apps we
@@ -26,6 +27,7 @@ class _Partner {
         pkg = j['pkg'] as String?,
         color = _hex('${j['color'] ?? ''}');
   final String id;
+
   /// Its Android app: opened when installed, else its Play Store page.
   final String? pkg;
   final String name;
@@ -89,8 +91,8 @@ class _ServicesScreenState extends State<ServicesScreen> {
     final url = j?['url'] as String?;
     if (url == null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Unable to open ${p.name}.")));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text("Unable to open ${p.name}.")));
       }
       return;
     }
@@ -130,61 +132,71 @@ class _ServicesScreenState extends State<ServicesScreen> {
     for (final p in shown) {
       if (!cats.contains(p.category)) cats.add(p.category);
     }
-    return ListView(
-      padding: EdgeInsets.fromLTRB(
-          16, 8, 16, 28 + MediaQuery.paddingOf(context).bottom),
-      children: [
-        Text('All Your Daily Services',
-            style: NeonType.manrope(26, FontWeight.w800)
-                .copyWith(color: Neon.textHi, letterSpacing: -0.6)),
-        const SizedBox(height: 4),
-        Text('Shopping, moving, travel and more, in one place.',
-            style: TextStyle(color: Neon.textLo, fontSize: 14.5)),
-        const SizedBox(height: 14),
-        TextField(
-          onChanged: (v) => setState(() => _q = v),
-          style: TextStyle(color: Neon.textHi),
-          decoration: InputDecoration(
-            hintText: 'Search for a service',
-            prefixIcon: Icon(Icons.search_rounded, color: Neon.textDim),
-            filled: true,
-            fillColor: Neon.glassFill.colors.first,
-            border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide.none),
-            enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(color: Neon.glassEdge.first)),
-          ),
-        ),
-        const SizedBox(height: 8),
-        for (final c in cats) ...[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(4, 18, 4, 10),
-            child: Row(children: [
-              Icon(_categoryIcons[c] ?? Icons.apps_rounded,
-                  size: 18, color: Neon.violet),
-              const SizedBox(width: 8),
-              Text(c.toUpperCase(),
-                  style: NeonType.eyebrow.copyWith(color: Neon.textLo)),
-            ]),
-          ),
-          Reveal(
-            child: GridView.count(
-              crossAxisCount: 4,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 10,
-              childAspectRatio: 0.9,
-              children: [
-                for (final p in shown.where((p) => p.category == c))
-                  _tile(p),
-              ],
+    // A speaker and a camera in every section (client, 2026-11-22),
+    // pinned so they stay while the list scrolls.
+    return PinnedSectionBar(
+      bar: const SectionAssistantBar(
+        role: SectionRoles.services,
+        title: 'Ask the Services Assistant',
+        line:
+            'Say what you need done, or show a product, a medicine or a label.',
+        photoQuestion: 'Help me find the right service for this photo.',
+      ),
+      list: ListView(
+        padding: EdgeInsets.fromLTRB(
+            16, 8, 16, 28 + MediaQuery.paddingOf(context).bottom),
+        children: [
+          Text('All Your Daily Services',
+              style: NeonType.manrope(26, FontWeight.w800)
+                  .copyWith(color: Neon.textHi, letterSpacing: -0.6)),
+          const SizedBox(height: 4),
+          Text('Shopping, moving, travel and more, in one place.',
+              style: TextStyle(color: Neon.textLo, fontSize: 14.5)),
+          const SizedBox(height: 14),
+          TextField(
+            onChanged: (v) => setState(() => _q = v),
+            style: TextStyle(color: Neon.textHi),
+            decoration: InputDecoration(
+              hintText: 'Search for a service',
+              prefixIcon: Icon(Icons.search_rounded, color: Neon.textDim),
+              filled: true,
+              fillColor: Neon.glassFill.colors.first,
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none),
+              enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: Neon.glassEdge.first)),
             ),
           ),
+          const SizedBox(height: 8),
+          for (final c in cats) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 18, 4, 10),
+              child: Row(children: [
+                Icon(_categoryIcons[c] ?? Icons.apps_rounded,
+                    size: 18, color: Neon.violet),
+                const SizedBox(width: 8),
+                Text(c.toUpperCase(),
+                    style: NeonType.eyebrow.copyWith(color: Neon.textLo)),
+              ]),
+            ),
+            Reveal(
+              child: GridView.count(
+                crossAxisCount: 4,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 10,
+                childAspectRatio: 0.9,
+                children: [
+                  for (final p in shown.where((p) => p.category == c)) _tile(p),
+                ],
+              ),
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 

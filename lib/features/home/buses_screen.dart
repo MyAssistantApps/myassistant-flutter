@@ -6,6 +6,7 @@ import '../../design/neon_tokens.dart';
 import '../../design/neon_widgets.dart';
 import 'bus_search.dart';
 import 'premium_photo_card.dart';
+import '../../widgets/section_assistant_bar.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  BUSES (owner, 2026-11-04): Premium, Standard, Sleeper and Government
@@ -78,41 +79,51 @@ class BusesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return NeonScaffold(
       appBar: appleAppBar(context, 'Buses'),
-      body: ListView(
-        padding: EdgeInsets.fromLTRB(
-            16, 8, 16, 24 + MediaQuery.paddingOf(context).bottom),
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(4, 4, 4, 18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Bus Travel Options',
-                    style: NeonType.manrope(28, FontWeight.w800).copyWith(
-                        color: Neon.textHi, letterSpacing: -0.8)),
-                const SizedBox(height: 4),
-                Text('Select the type of bus.',
-                    style: TextStyle(color: Neon.textLo, fontSize: 15)),
-              ],
+      body: PinnedSectionBar(
+        // A speaker and a camera in every section (client, 2026-11-22),
+        // pinned so they stay while the list scrolls.
+        bar: const SectionAssistantBar(
+          role: SectionRoles.buses,
+          title: 'Ask the Buses Assistant',
+          line: 'Say your route and date, or show a ticket or a bus stop sign.',
+          photoQuestion: 'Help me with my bus journey using this photo.',
+        ),
+        list: ListView(
+          padding: EdgeInsets.fromLTRB(
+              16, 8, 16, 24 + MediaQuery.paddingOf(context).bottom),
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 4, 4, 18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Bus Travel Options',
+                      style: NeonType.manrope(28, FontWeight.w800)
+                          .copyWith(color: Neon.textHi, letterSpacing: -0.8)),
+                  const SizedBox(height: 4),
+                  Text('Select the type of bus.',
+                      style: TextStyle(color: Neon.textLo, fontSize: 15)),
+                ],
+              ),
             ),
-          ),
-          for (final k in BusKind.values) ...[
-            PremiumPhotoCard(
-              photo: k.photo,
-              tag: k.tag,
-              tagIcon: k.icon,
-              headline: k.headline,
-              line: k.line,
-              footer: _Features(k.features),
-              onTap: () {
-                HapticFeedback.selectionClick();
-                Navigator.of(context).push(MaterialPageRoute<void>(
-                    builder: (_) => BusSearchScreen(kind: k)));
-              },
-            ),
-            const SizedBox(height: 18),
+            for (final k in BusKind.values) ...[
+              PremiumPhotoCard(
+                photo: k.photo,
+                tag: k.tag,
+                tagIcon: k.icon,
+                headline: k.headline,
+                line: k.line,
+                footer: _Features(k.features),
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  Navigator.of(context).push(MaterialPageRoute<void>(
+                      builder: (_) => BusSearchScreen(kind: k)));
+                },
+              ),
+              const SizedBox(height: 18),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

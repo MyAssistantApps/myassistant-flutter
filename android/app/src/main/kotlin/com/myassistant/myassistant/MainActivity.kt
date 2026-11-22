@@ -201,6 +201,14 @@ class MainActivity : FlutterFragmentActivity() {
                         if (on) BubbleService.start(ctx) else BubbleService.stop(ctx)
                         result.success(true)
                     }
+                    "setTheme" -> {
+                        val a = call.argument<Number>("accent")?.toInt() ?: 0
+                        val b = call.argument<Number>("partner")?.toInt() ?: 0
+                        val cy = call.argument<Number>("cyan")?.toInt() ?: 0
+                        NotifyPrefs.setThemeColors(ctx, a, b, cy)
+                        Overlay.applyTheme(a, b, cy)
+                        result.success(true)
+                    }
                     "setAuth" -> {
                         NotifyPrefs.setAuth(ctx, call.argument<String>("token"), call.argument<String>("baseUrl"))
                         result.success(true)

@@ -13,6 +13,8 @@ import '../../services/app_feedback.dart';
 import '../../services/clinic_service.dart';
 import 'clinic_sheets.dart';
 import 'prescription_screen.dart';
+import '../../widgets/section_assistant_bar.dart';
+import '../pro_assistant_screen.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  CONSULT NOTE — the doctor talks to the patient; the note writes itself.
@@ -223,9 +225,17 @@ class _ConsultNoteScreenState extends State<ConsultNoteScreen> {
     return Scaffold(
       backgroundColor: Neon.bg,
       appBar: appleAppBar(context, 'Consultation: ${widget.patient.name}'),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
-        children: _note == null ? _captureStep() : _reviewStep(),
+      body: PinnedSectionBar(
+        // A speaker and a camera in every section (client, 2026-11-22),
+        // pinned so they stay while the page scrolls.
+        bar: proSectionBar(
+          line: 'Dictate the consultation, or show a report or an old note.',
+          photoQuestion: 'Help me with this consultation note using this photo.',
+        ),
+        list: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+          children: _note == null ? _captureStep() : _reviewStep(),
+        ),
       ),
     );
   }

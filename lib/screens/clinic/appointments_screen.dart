@@ -9,6 +9,8 @@ import '../../services/app_feedback.dart';
 import '../../services/clinic_service.dart';
 import '../clients_screen.dart';
 import 'clinic_sheets.dart';
+import '../../widgets/section_assistant_bar.dart';
+import '../pro_assistant_screen.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  BOOKED APPOINTMENTS (owner, 2026-11-21: "I want like already booked
@@ -127,49 +129,57 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         icon: const Icon(Icons.add_rounded),
         label: const Text('New'),
       ),
-      body: _loading && _list == null
-          ? const Center(child: NeonLoader())
-          : _list == null
-              ? NeonErrorState(
-                  message: 'Unable to Load Appointments', onRetry: _load)
-              : RefreshIndicator(
-                  onRefresh: _load,
-                  child: list.isEmpty
-                      ? ListView(children: const [
-                          SizedBox(height: 80),
-                          NeonEmptyState(
-                            icon: Icons.event_available_rounded,
-                            title: 'No Upcoming Appointments',
-                            body:
-                                'Appointments booked by you, by voice, from your public page '
-                                'or by patients talking to your assistant appear here.',
-                          ),
-                        ])
-                      : ListView(
-                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
-                          children: [
-                            _Summary(list: list),
-                            for (final e in groups.entries) ...[
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(4, 18, 4, 8),
-                                child: Text(
-                                    '${e.key.toUpperCase()} · ${e.value.length}',
-                                    style: NeonType.eyebrow
-                                        .copyWith(color: Neon.textLo)),
-                              ),
-                              for (final a in e.value) ...[
-                                AppointmentCard(
-                                  appt: a,
-                                  busy: _busy.contains(a.id),
-                                  onOpen: () => _open(a),
-                                  onStatus: (s) => _status(a, s),
+      body: PinnedSectionBar(
+        // A speaker and a camera in every section (client, 2026-11-22),
+        // pinned so they stay while the page scrolls.
+        bar: proSectionBar(
+          line: 'Say who to book and when, or show an appointment slip.',
+          photoQuestion: 'Help me with this appointment using this photo.',
+        ),
+        list: _loading && _list == null
+            ? const Center(child: NeonLoader())
+            : _list == null
+                ? NeonErrorState(
+                    message: 'Unable to Load Appointments', onRetry: _load)
+                : RefreshIndicator(
+                    onRefresh: _load,
+                    child: list.isEmpty
+                        ? ListView(children: const [
+                            SizedBox(height: 80),
+                            NeonEmptyState(
+                              icon: Icons.event_available_rounded,
+                              title: 'No Upcoming Appointments',
+                              body:
+                                  'Appointments booked by you, by voice, from your public page '
+                                  'or by patients talking to your assistant appear here.',
+                            ),
+                          ])
+                        : ListView(
+                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
+                            children: [
+                              _Summary(list: list),
+                              for (final e in groups.entries) ...[
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(4, 18, 4, 8),
+                                  child: Text(
+                                      '${e.key.toUpperCase()} · ${e.value.length}',
+                                      style: NeonType.eyebrow
+                                          .copyWith(color: Neon.textLo)),
                                 ),
-                                const SizedBox(height: 10),
+                                for (final a in e.value) ...[
+                                  AppointmentCard(
+                                    appt: a,
+                                    busy: _busy.contains(a.id),
+                                    onOpen: () => _open(a),
+                                    onStatus: (s) => _status(a, s),
+                                  ),
+                                  const SizedBox(height: 10),
+                                ],
                               ],
                             ],
-                          ],
-                        ),
-                ),
+                          ),
+                  ),
+      ),
     );
   }
 }

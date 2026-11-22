@@ -1,6 +1,9 @@
 import 'package:flutter/services.dart';
 
 import '../core/log.dart';
+import '../design/accent_controller.dart';
+import '../design/neon_tokens.dart';
+import '../design/theme_controller.dart';
 import 'api_service.dart';
 import 'auth_service.dart';
 
@@ -60,6 +63,11 @@ class OverlayBridge {
       return null;
     });
     AuthService.instance.onSignIn(syncAuth);
+    // The floating mic is drawn natively: hand it the app's colours now and
+    // whenever the accent or light/dark changes, so it matches the app.
+    // A microtask later: the seed changes before Neon takes the new accent.
+    AccentController.seed.addListener(() => Future.microtask(syncTheme));
+    ThemeController.dark.addListener(syncTheme);
     AuthService.instance.onSignOut(() => _call('setAuth', {'token': '', 'baseUrl': ''}));
   }
 
@@ -69,6 +77,16 @@ class OverlayBridge {
     if (t == null || t.isEmpty) return;
     await _call('setAuth', {'token': t, 'baseUrl': ApiService.baseUrl});
   }
+
+  /// The theme colours the native floating mic paints itself in.
+  static Map<String, int> themeColors() => {
+        'accent': Neon.violet.toARGB32(),
+        'partner': Neon.pink.toARGB32(),
+        'cyan': Neon.cyan.toARGB32(),
+      };
+
+  /// Hands the app's current theme colours to the floating mic.
+  static Future<void> syncTheme() => _call('setTheme', themeColors());
 
   static Future<OverlayStatus> status() async {
     try {

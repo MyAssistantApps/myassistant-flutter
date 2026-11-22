@@ -1620,6 +1620,15 @@ class _MuteButton extends StatelessWidget {
 
 /// Shown above the text box while the microphone is paused for typing and
 /// captions have pushed the status line off the screen.
+/// Camera or gallery — the "Ask About a Picture" sheet, for anywhere that
+/// hands the assistant a photo (the type bar's "+", a section's camera).
+Future<ImageSource?> pickAskPhotoSource(BuildContext context) =>
+    showAppSheet<ImageSource>(
+      context: context,
+      backgroundColor: Neon.textHi.withValues(alpha: 0),
+      builder: (_) => const _PhotoSourceSheet(),
+    );
+
 /// Camera or gallery, for the type bar's "+".
 class _PhotoSourceSheet extends StatelessWidget {
   const _PhotoSourceSheet();

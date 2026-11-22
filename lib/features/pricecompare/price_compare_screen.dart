@@ -16,6 +16,7 @@ import 'product_screens.dart';
 import 'price_service.dart';
 import 'price_widgets.dart';
 import 'shop_browser.dart';
+import '../../widgets/section_assistant_bar.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  PRICE COMPARE, THE HUB (2026-11-04, owner: "layout of the feature like
@@ -118,55 +119,65 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
   Widget build(BuildContext context) {
     return NeonScaffold(
       appBar: appleAppBar(context, 'Price Compare'),
-      body: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
-        child: ListView(
-          padding: EdgeInsets.fromLTRB(16, 4, 16, 32 + MediaQuery.paddingOf(context).bottom),
-          children: [
-            _searchCard(),
-            const SizedBox(height: 22),
-            _sectionTitle('Shop in the App'),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(4, 2, 4, 10),
-              child: Text('Open a store here. On any product page, tap Compare to view its price across stores.',
-                  style: TextStyle(color: Neon.textLo, fontSize: 13, height: 1.35)),
-            ),
-            _shopStores(),
-            const SizedBox(height: 22),
-            _sectionTitle('Select a Category'),
-            const SizedBox(height: 10),
-            _categories(),
-            if (svc.watches.isNotEmpty) ...[
-              const SizedBox(height: 24),
-              _sectionTitle('Your Price Alerts'),
+      body: PinnedSectionBar(
+        // A speaker and a camera in every section (client, 2026-11-22),
+        // pinned so they stay while the page scrolls.
+        bar: const SectionAssistantBar(
+          role: SectionRoles.prices,
+          title: 'Ask the Price Compare Assistant',
+          line: 'Say the product you want, or show a photo of it or its label.',
+          photoQuestion: 'Find the best price for the product in this photo.',
+        ),
+        list: GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: ListView(
+            padding: EdgeInsets.fromLTRB(16, 4, 16, 32 + MediaQuery.paddingOf(context).bottom),
+            children: [
+              _searchCard(),
+              const SizedBox(height: 22),
+              _sectionTitle('Shop in the App'),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 2, 4, 10),
+                child: Text('Open a store here. On any product page, tap Compare to view its price across stores.',
+                    style: TextStyle(color: Neon.textLo, fontSize: 13, height: 1.35)),
+              ),
+              _shopStores(),
+              const SizedBox(height: 22),
+              _sectionTitle('Select a Category'),
               const SizedBox(height: 10),
-              _alerts(),
-            ],
-            if (svc.recent.isNotEmpty) ...[
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(child: _sectionTitle('Recently Compared')),
-                  TextButton(onPressed: svc.clearRecent, child: const Text('Clear')),
-                ],
+              _categories(),
+              if (svc.watches.isNotEmpty) ...[
+                const SizedBox(height: 24),
+                _sectionTitle('Your Price Alerts'),
+                const SizedBox(height: 10),
+                _alerts(),
+              ],
+              if (svc.recent.isNotEmpty) ...[
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(child: _sectionTitle('Recently Compared')),
+                    TextButton(onPressed: svc.clearRecent, child: const Text('Clear')),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                _recent(),
+              ],
+              const SizedBox(height: 22),
+              Text(
+                'Prices are sourced from the web via Google Search and may change at any time — the store '
+                'shows the final price at checkout. Price alerts are checked each time you open Price Compare.',
+                style: TextStyle(color: Neon.textDim, fontSize: NeonType.caption, height: 1.4),
               ),
-              const SizedBox(height: 4),
-              _recent(),
-            ],
-            const SizedBox(height: 22),
-            Text(
-              'Prices are sourced from the web via Google Search and may change at any time — the store '
-              'shows the final price at checkout. Price alerts are checked each time you open Price Compare.',
-              style: TextStyle(color: Neon.textDim, fontSize: NeonType.caption, height: 1.4),
-            ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton(
-                onPressed: () => showPhotoCredits(context),
-                child: const Text('Photo Credits'),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  onPressed: () => showPhotoCredits(context),
+                  child: const Text('Photo Credits'),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
