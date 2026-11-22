@@ -120,6 +120,8 @@ dependencies:
   firebase_analytics: ^12.6.0
   simple_icons: ^16.23.0
   webview_flutter: ^4.14.1
+  razorpay_flutter: ^1.4.7
+  play_install_referrer: ^0.6.0
 
 dev_dependencies:
   flutter_test:

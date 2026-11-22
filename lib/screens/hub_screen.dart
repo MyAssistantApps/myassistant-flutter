@@ -26,6 +26,8 @@ import '../features/home/try_now_cards.dart';
 import '../features/shopping/shopping_list_screen.dart';
 import '../design/motion.dart';
 import '../features/premium/premium_screen.dart';
+import '../features/wallet/wallet_api.dart';
+import '../features/wallet/wallet_screen.dart';
 
 /// HUB TAB — every feature as a front door.
 ///
@@ -54,11 +56,16 @@ class _HubScreenState extends State<HubScreen> {
   void initState() {
     super.initState();
     Persona.notifier.addListener(_onPersona);
+    // The Wallet row appears only when the server has the wallet on for
+    // this account (the staged launch); a read here keeps it current.
+    WalletApi.instance.summary.addListener(_onPersona);
+    WalletApi.instance.refresh();
   }
 
   @override
   void dispose() {
     Persona.notifier.removeListener(_onPersona);
+    WalletApi.instance.summary.removeListener(_onPersona);
     _featureQuery.dispose();
     super.dispose();
   }
@@ -303,6 +310,14 @@ class _HubScreenState extends State<HubScreen> {
             ),
           ]),
           _group(context, 'App', [
+            if (WalletApi.instance.summary.value?.available == true)
+              _Row(
+                'Wallet',
+                'Your balance, add money and refer friends',
+                Icons.account_balance_wallet_rounded,
+                Neon.success,
+                (c) => const WalletScreen(),
+              ),
             _Row(
               'MyAssistant Premium',
               'Plans, free trial and credits',

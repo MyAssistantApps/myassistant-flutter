@@ -18,6 +18,27 @@ import 'net_status.dart';
 
 /// All network traffic goes app → backend → AI providers.
 /// The app never holds AI provider keys.
+/// What [ApiService.request] hands back: the HTTP status (0 when the
+/// request never got an answer) and the decoded JSON body.
+class ApiResult {
+  const ApiResult(this.status, this.body);
+  final int status;
+  final Map<String, dynamic> body;
+
+  bool get ok => status >= 200 && status < 300;
+
+  /// The server's machine word for a refusal ("insufficient_balance"…).
+  String get error => (body['error'] as String?) ?? (status == 0 ? 'offline' : 'error');
+
+  /// The server's sentence for the user, or a fallback.
+  String message([String fallback = 'Something went wrong. Please try again.']) =>
+      (body['message'] as String?)?.trim().isNotEmpty == true
+          ? body['message'] as String
+          : status == 0
+              ? 'No internet connection. Please try again.'
+              : fallback;
+}
+
 class ApiService {
   /// Compile-time BASE_URL wins when provided:
   ///   flutter run --dart-define=BASE_URL=http://192.168.1.5:3000
@@ -218,6 +239,40 @@ class ApiService {
       if (isConnectError(e)) NetStatus.instance.requestFailed();
       AppLog.add('api', '$path -> $e');
       return null;
+    }
+  }
+
+  /// A request whose ANSWER matters even when it is a refusal: the status
+  /// and the server's own body come back either way (status 0 = no
+  /// network). For money screens (the wallet), where "not enough balance"
+  /// and "enter your PIN" must be told apart from a dead connection, and
+  /// where extra headers (Idempotency-Key, step-up) ride along.
+  static Future<ApiResult> request(String method, String path,
+      {Object? body,
+      Map<String, String> headers = const {},
+      Duration timeout = const Duration(seconds: 20)}) async {
+    try {
+      final req = http.Request(method, Uri.parse('$baseUrl$path'))
+        ..headers.addAll({..._authHeaders, ...headers});
+      if (body != null) req.body = jsonEncode(body);
+      final streamed = await _client.send(req).timeout(timeout);
+      final r = await http.Response.fromStream(streamed).timeout(timeout);
+      if (r.statusCode >= 300) {
+        _flagAuthFailure(r.statusCode);
+        AppLog.add('api', '$method $path -> ${r.statusCode}');
+      }
+      Map<String, dynamic> decoded = const {};
+      if (r.body.isNotEmpty) {
+        try {
+          final d = jsonDecode(r.body);
+          if (d is Map<String, dynamic>) decoded = d;
+        } catch (_) {/* not JSON: an empty body is enough */}
+      }
+      return ApiResult(r.statusCode, decoded);
+    } catch (e) {
+      if (isConnectError(e)) NetStatus.instance.requestFailed();
+      AppLog.add('api', '$method $path -> $e');
+      return const ApiResult(0, {});
     }
   }
 

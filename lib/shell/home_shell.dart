@@ -53,6 +53,7 @@ import '../features/pricecompare/price_compare_screen.dart';
 import '../features/pricecompare/flight_search_screen.dart';
 import '../features/pricecompare/hotel_search_screen.dart';
 import '../screens/reminders_screen.dart';
+import '../features/wallet/wallet_api.dart';
 import '../services/location_service.dart';
 import '../screens/listing/my_listing_screen.dart' show ListingNav;
 import '../services/share_intake_service.dart';
@@ -519,6 +520,9 @@ class _HomeShellState extends State<HomeShell>
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkQuickTaskLaunch());
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkTalkLaunch());
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkWidgetRoute());
+    // REFERRALS (2026-11-22): a code that came with the Play Store install
+    // (a friend's share link) is applied once, quietly, a little after start.
+    unawaited(Future<void>.delayed(const Duration(seconds: 8), WalletApi.instance.tryInstallReferrer));
     // HOME-SCREEN WIDGETS (2026-11-08): My day follows the brief, and the
     // app offers the widgets once, a few seconds after it opens.
     BriefService.instance.addListener(_syncDayWidget);
