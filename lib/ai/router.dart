@@ -5,11 +5,10 @@
 //  1. the whole text is one of the user's shortcut names  -> shortcut
 //  2. attachments, or a yes to a waiting question          -> cloud
 //  3. a tool or personal-data word (config.routing)        -> cloud
-//  4. a fresh-public-fact word, with no tool word           -> search
-//  5. everything else                                       -> cloud
+//  4. everything else                                       -> cloud
 import 'config.dart';
 
-enum AiRoute { cloud, search, shortcut }
+enum AiRoute { cloud, shortcut }
 
 class RouteRequest {
   const RouteRequest({
@@ -66,8 +65,6 @@ RouteDecision chooseRoute(RouteRequest r, AiConfig config) {
   }
   final tool = WordMatcher.of(config.routing.toolWords).firstMatch(r.text);
   if (tool != null) return RouteDecision(AiRoute.cloud, 'tool_word:$tool');
-  final fresh = WordMatcher.of(config.routing.freshWords).firstMatch(r.text);
-  if (fresh != null) return RouteDecision(AiRoute.search, 'fresh_word:$fresh');
   return const RouteDecision(AiRoute.cloud, 'conversation');
 }
 

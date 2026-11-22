@@ -2,10 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'api_service.dart';
 import 'auth_service.dart';
-import 'momentum_service.dart';
 import 'notification_service.dart';
 
 /// THE COUNTDOWN'S ARITHMETIC — pure, so it can be tested, persisted and
@@ -178,7 +179,7 @@ class _ShadeAlerts implements FocusAlerts {
 }
 
 /// ─────────────────────────────────────────────────────────────────────────
-///  FOCUS — the session behind the Focus screen (2026-09-25, Momentum).
+///  FOCUS — the session behind the Focus screen (2026-09-25).
 ///
 ///  "Start a 25-minute focus on the report": a calm countdown that keeps
 ///  going with the screen off or the app killed (the session is saved
@@ -274,7 +275,7 @@ class FocusService extends ChangeNotifier {
   Future<void> _announce(FocusSession s) async {
     await _arm();
     if (s.kind != FocusKind.focus) return;
-    final id = await MomentumService.instance.startFocus(s.clock.plannedMin, label: s.label);
+    final id = await _FocusLog.start(s.clock.plannedMin, label: s.label);
     if (identical(session, s) && id != null) {
       s.serverId = id;
       await _save();
@@ -388,12 +389,11 @@ class FocusService extends ChangeNotifier {
   Future<void> _log() async {
     final s = session;
     if (s == null || !s.done || s.logged || s.kind != FocusKind.focus) return;
-    final m = MomentumService.instance;
     var id = s.serverId;
-    id ??= await m.startFocus(s.clock.plannedMin.clamp(5, 180), label: s.label);
+    id ??= await _FocusLog.start(s.clock.plannedMin.clamp(5, 180), label: s.label);
     if (id == null) return; // offline: tried again at the next launch
     s.serverId = id;
-    final ok = await m.finishFocus(id, s.minutes.clamp(0, 300), completed: s.completed);
+    final ok = await _FocusLog.finish(id, s.minutes.clamp(0, 300), completed: s.completed);
     if (ok && identical(session, s)) {
       s.logged = true;
       await _save();
@@ -411,5 +411,44 @@ class FocusService extends ChangeNotifier {
         await prefs.setString(_key, jsonEncode(s.toJson()));
       }
     } catch (_) {}
+  }
+}
+
+/// The server's record of focus sessions (/momentum/focus). Every request
+/// names the phone's own date, so a session lands on the user's day. Never
+/// throws: offline, [start] answers null and [finish] false.
+class _FocusLog {
+  static final http.Client _client = http.Client();
+
+  static String _today() {
+    final d = DateTime.now();
+    return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+  }
+
+  /// Opens a session on the server; its id, or null when that failed.
+  static Future<int?> start(int plannedMin, {String label = ''}) async {
+    final json = await _send('POST', '/focus', {'plannedMin': plannedMin, if (label.isNotEmpty) 'label': label});
+    return json == null ? null : (json['focusId'] as num?)?.toInt();
+  }
+
+  /// Logs what a session did.
+  static Future<bool> finish(int id, int actualMin, {required bool completed}) async =>
+      await _send('PATCH', '/focus/$id', {'actualMin': actualMin, 'completed': completed}) != null;
+
+  /// The reply's JSON when the server said ok, otherwise null.
+  static Future<Map<String, dynamic>?> _send(String method, String path, Map<String, dynamic> body) async {
+    try {
+      final req = http.Request(method, Uri.parse('${ApiService.baseUrl}/momentum$path?day=${_today()}'))
+        ..headers.addAll(ApiService.authHeaders)
+        ..body = jsonEncode(body);
+      final res = await http.Response.fromStream(
+          await _client.send(req).timeout(const Duration(seconds: 12)));
+      ApiService.noteAuthStatus(res.statusCode);
+      if (res.statusCode < 200 || res.statusCode >= 300) return null;
+      final d = jsonDecode(res.body);
+      return d is Map<String, dynamic> && d['ok'] == true ? d : null;
+    } catch (_) {
+      return null;
+    }
   }
 }

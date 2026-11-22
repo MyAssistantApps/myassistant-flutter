@@ -159,10 +159,22 @@ class ClinicService extends ChangeNotifier {
       'reason': reason,
       'remindPatient': remindPatient,
     });
-    if (r == null) return null;
+    // An older or failing server may answer without the row: no row, no
+    // crash (product audit 2026-11-21).
+    final a = r?['appointment'];
+    if (a is! Map) return null;
     refresh(force: true);
-    return Appointment.fromJson(
-        (r['appointment'] as Map).cast<String, dynamic>());
+    return Appointment.fromJson(a.cast<String, dynamic>());
+  }
+
+  /// Every appointment still to happen (from the start of today, next
+  /// [days] days), whoever booked it: the doctor, by voice, the public page
+  /// or another person's assistant. Null when offline.
+  Future<List<Appointment>?> upcoming({int days = 30}) async {
+    final j = await ApiService.getJson('/clinic/appointments/upcoming?days=$days',
+        timeout: const Duration(seconds: 10));
+    if (j == null || j['appointments'] is! List) return null;
+    return Appointment.list(j['appointments']);
   }
 
   Future<bool> setAppointmentStatus(int id, String status) async {

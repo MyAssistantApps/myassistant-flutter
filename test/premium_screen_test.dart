@@ -67,7 +67,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 600));
     expect(find.text('Included in Business'), findsOneWidget);
 
-    await tester.tap(find.text('Subscribe').at(1));
+    await tester.tap(find.text('Join Early Access').at(1));
     await tester.pump(const Duration(milliseconds: 600));
     expect(bought, 'pro/monthly');
     expect(tester.takeException(), isNull);

@@ -81,7 +81,7 @@ void main() {
     t.view.physicalSize = const Size(1080, 2400);
     t.view.devicePixelRatio = 3;
     addTearDown(t.view.reset);
-    PriceService.instance.ask = (_) async => (text: _answer, sources: const <SourceLink>[], suggestionsHtml: null);
+    PriceService.instance.ask = (_) async => (text: _answer, sources: const <SourceLink>[]);
     final date = DateTime.now().add(const Duration(days: 5));
     final trip = FlightTrip(legs: [FlightLeg(from: airports[0], to: airports[1], date: date)]);
     await t.pumpWidget(MaterialApp(
@@ -114,7 +114,7 @@ void main() {
     final asked = <String>[];
     PriceService.instance.ask = (p) async {
       asked.add(p);
-      return (text: _answer, sources: const <SourceLink>[], suggestionsHtml: null);
+      return (text: _answer, sources: const <SourceLink>[]);
     };
     final d = DateTime.now().add(const Duration(days: 5));
     final trip = FlightTrip(
@@ -149,7 +149,7 @@ void main() {
               '{"store": "Cleartrip", "price": 6643, "title": "Air India AI 887, 21:00 - 23:15, non-stop"},'
               '{"store": "ixigo", "price": 6700, "title": "Air India AI 887 21:00–23:15 nonstop"},'
               '{"store": "MakeMyTrip", "price": 5200, "title": "IndiGo 6E 2134 06:10-08:25, 1 stop"}]}';
-      return (text: text, sources: const <SourceLink>[], suggestionsHtml: null);
+      return (text: text, sources: const <SourceLink>[]);
     };
     final trip = FlightTrip(
         legs: [FlightLeg(from: airports[1], to: airports[0], date: DateTime.now().add(const Duration(days: 3)))]);

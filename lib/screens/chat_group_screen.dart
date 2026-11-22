@@ -84,8 +84,8 @@ class _ChatGroupScreenState extends State<ChatGroupScreen> {
       // with this screen still open marked every arriving message read
       // within 12 seconds, and the assistant then declined to answer on
       // the member's behalf — silently, in precisely the "they are away"
-      // case the feature exists for. Both sibling pollers in
-      // chat_screen.dart already gate on the app being on screen.
+      // case the feature exists for. The thread poller in chat_screen.dart
+      // already gates on the app being on screen.
       if (!mounted ||
           ModalRoute.of(context)?.isCurrent != true ||
           WidgetsBinding.instance.lifecycleState !=

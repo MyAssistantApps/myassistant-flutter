@@ -12,7 +12,7 @@ import '../design/neon_widgets.dart' show NeonScaffold, NeonSuccess;
 import '../services/focus_service.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
-///  FOCUS (2026-09-25, Momentum) — "start a 25-minute focus on the report".
+///  FOCUS (2026-09-25) — "start a 25-minute focus on the report".
 ///
 ///  A calm page: one ring in the theme colour emptying as the time runs,
 ///  the minutes left, what it is for, and three controls — pause, +5 min,
@@ -31,10 +31,10 @@ class FocusScreen extends StatefulWidget {
   final int? minutes;
   final String label;
 
-  /// Start at once (the voice path and the Momentum screen's buttons).
+  /// Start at once (the voice path).
   final bool autoStart;
 
-  /// How many are open (MomentumNav does not stack a second).
+  /// How many are open (FocusNav does not stack a second).
   static int showing = 0;
 
   @override

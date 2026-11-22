@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 
-import 'ai/identity.dart';
+import 'ai/config.dart' show AiConfigStore;
 import 'services/overlay_bridge.dart';
 import 'core/bundled_fonts.dart';
 import 'design/accent_controller.dart';
@@ -29,7 +29,6 @@ import 'services/avatar_message_service.dart';
 import 'services/brief_service.dart';
 import 'services/clinic_service.dart';
 import 'services/persona.dart';
-import 'services/style_prefs.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'services/background_scan.dart';
@@ -54,13 +53,16 @@ Future<void> main() async {
   // from build 107 has never downloaded. They load while the rest of
   // startup runs, and runApp waits at most 400 ms for them (NeonType).
   final fonts = NeonType.preload();
+  // A fresh /ai/config on every sign-in; sign-out empties it, so the next
+  // account never inherits this one's shortcuts or voice.
+  AuthService.instance.onSignIn(() async {
+    await AiConfigStore.instance.refresh();
+  });
+  AuthService.instance.onSignOut(() async => AiConfigStore.instance.clear());
   try {
     await Firebase.initializeApp();
     // Crashes, unhandled errors, turn traces and usage — from here on.
     unawaited(Telemetry.instance.enable());
-    // The assistant's AI Logic identity: App Check now, the Firebase user
-    // on every sign-in (lib/ai/identity.dart). Not awaited.
-    unawaited(AiIdentity.instance.start());
     // The notification listener and floating mic keep their own copy of
     // the session (lib/services/overlay_bridge.dart).
     OverlayBridge.install();
@@ -88,9 +90,6 @@ Future<void> main() async {
   // bars to match — light bars/dark icons or the other way around).
   await ThemeController.load();
   await AccentController.load();
-  // Style + language prefs load in parallel with the first frame; every
-  // later read is a plain field access (no disk on hot paths).
-  StylePrefs.instance.load();
   // Runtime server override (Diagnostics screen) — must resolve before
   // the first request, or the engine would connect to the wrong host.
   ApiService.loadServerOverride();

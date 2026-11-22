@@ -1,5 +1,5 @@
-// SPEECH OUT — Gemini TTS through Firebase AI Logic (firebase_ai: a TTS
-// model, responseModalities audio + SpeechConfig voice/language): every
+// SPEECH OUT — the server's TTS through a [ModelPort] (firebase_ai's wire
+// shape: responseModalities audio + SpeechConfig voice/language): every
 // spoken reply is voiced here; model, voice and language come from
 // /ai/config.
 //
@@ -275,10 +275,6 @@ class SpeechEngine {
       ..onCancel = s.cancel;
     return out.stream;
   }
-
-  /// [synthesizeChunks], as the PCM bytes alone.
-  Stream<Uint8List> synthesize(String text, {String? style}) =>
-      synthesizeChunks(text, style: style).map((c) => c.pcm);
 
   /// Synthesise and play through [sink]. Returns how many pieces of audio
   /// were handed to it.

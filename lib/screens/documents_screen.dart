@@ -9,6 +9,8 @@ import '../design/neon_widgets.dart';
 import '../models/user_document.dart';
 import '../services/api_service.dart';
 import '../services/document_events.dart';
+import '../services/documents_lock.dart';
+import '../widgets/glow_cta.dart';
 import '../widgets/document_tile.dart';
 import '../widgets/my_photo_card.dart';
 import '../services/app_feedback.dart';
@@ -160,12 +162,30 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
   List<UserDocument>? _docs; // null = loading
   String? _error;
   int _seenVersion = DocumentEvents.version.value;
+  // Behind the phone's screen lock (owner, 2026-11-21): nothing is
+  // fetched or drawn until it is unlocked.
+  bool _locked = !DocumentsLock.instance.isUnlocked;
 
   @override
   void initState() {
     super.initState();
     DocumentEvents.version.addListener(_onDocumentsChanged);
-    _load();
+    if (_locked) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _unlock());
+    } else {
+      _load();
+    }
+  }
+
+  Future<void> _unlock() async {
+    final ok = await DocumentsLock.instance.unlock();
+    if (!mounted) return;
+    if (ok) {
+      setState(() => _locked = false);
+      _load();
+    } else {
+      setState(() => _locked = true);
+    }
   }
 
   @override
@@ -175,6 +195,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
   }
 
   void _onDocumentsChanged() {
+    if (_locked) return;
     if (DocumentEvents.version.value == _seenVersion) return;
     _seenVersion = DocumentEvents.version.value;
     _load();
@@ -231,8 +252,49 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       // The mic and chat moved down beside Upload, as one dock
       // (owner, 2026-11-17).
       appBar: appleAppBar(context, 'My Documents'),
-      body: StateSwitch.of(_body(docs)),
-      bottomNavigationBar: _DocumentsDock(docs: docs),
+      body: _locked ? _lockedBody() : StateSwitch.of(_body(docs)),
+      bottomNavigationBar: _locked ? null : _DocumentsDock(docs: docs),
+    );
+  }
+
+  Widget _lockedBody() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 84,
+              height: 84,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [Neon.violet, Neon.accentC],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                boxShadow: [
+                  BoxShadow(color: Neon.violet.withValues(alpha: 0.45), blurRadius: 28),
+                ],
+              ),
+              child: const Icon(Icons.lock_rounded, color: Colors.white, size: 38),
+            ),
+            const SizedBox(height: 22),
+            Text('Your Documents Are Locked',
+                textAlign: TextAlign.center,
+                style: NeonType.manrope(20, FontWeight.w800).copyWith(color: Neon.textHi)),
+            const SizedBox(height: 8),
+            Text(
+                'Please unlock with your fingerprint, face or screen lock to view your IDs and files.',
+                textAlign: TextAlign.center,
+                style: NeonType.manrope(14, FontWeight.w500)
+                    .copyWith(color: Neon.textLo, height: 1.45)),
+            const SizedBox(height: 24),
+            GlowCta(label: 'Unlock', icon: Icons.fingerprint_rounded, onPressed: _unlock),
+          ],
+        ),
+      ),
     );
   }
 
@@ -425,19 +487,28 @@ AssistantRole documentsRoleFor(List<UserDocument>? docs) {
       'You help the owner with their saved documents: finding, reading and '
       'explaining them, and the renewals coming up. ');
   if (docs.isEmpty) {
-    b.write('The owner has no documents saved yet. Say so plainly and tell '
-        'them to tap Add a Document at the bottom of this page.');
+    b.write('No documents were saved when this conversation started. If the '
+        'owner asks for one, call find_document first (it may have just been '
+        'added); only if nothing is found, say so and tell them to tap Add a '
+        'Document at the bottom of this page.');
     return AssistantRole('the Documents Assistant', b.toString());
   }
-  b.write("These are ALL ${docs.length} documents saved on the owner's "
-      'account, newest first. Answer questions about what is stored from '
-      'this list directly. ');
+  // A SNAPSHOT, NOT THE TRUTH (owner, 2026-11-21: "open my PAN card" was
+  // refused because the PAN card was uploaded after this list was taken).
+  // The list answers "what do I have?" quickly; whether a named document
+  // exists is always settled by find_document, which reads the account.
+  b.write("These are the ${docs.length} documents that were saved on the "
+      "owner's account when this conversation started, newest first. Answer "
+      'general questions about what is stored from this list. The owner may '
+      'have added files since, so this list may be incomplete. ');
   b.write('When the owner asks to see, show, open or pull up a document, '
       'call find_document AT ONCE with its exact title as the query and '
       'show true, so it opens on their screen immediately. Do not ask which '
       'one unless two documents match equally. To answer a question about '
       'what a document SAYS, call find_document with show false and read '
-      'it. Never invent a document that is not on this list.\n');
+      'it. If the owner names a document that is NOT on this list, call '
+      'find_document anyway before answering: it may have just been added. '
+      'Only say a document is not saved after find_document found nothing.\n');
   var budget = 7000;
   for (final d in docs) {
     final parts = <String>[

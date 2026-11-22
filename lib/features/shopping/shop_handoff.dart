@@ -563,13 +563,4 @@ class ShopHandoffRunner {
     final p = await SharedPreferences.getInstance();
     await p.remove(stateKey);
   }
-
-  /// Reads the saved trip again, as a fresh start of the app would (tests).
-  @visibleForTesting
-  void forgetInMemory() {
-    _steps = null;
-    _at = -1;
-    _touchedAt = null;
-    _restored = false;
-  }
 }

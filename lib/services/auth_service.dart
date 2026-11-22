@@ -38,9 +38,13 @@ class AppUser {
   /// Doctor's specialty ("Dentist") — optional free text.
   final String specialty;
 
+  /// What they do in their own words ("Chartered Accountant"); '' if unset.
+  final String profession;
+
   bool get isDoctor => persona == 'doctor';
 
-  AppUser copyWith({String? persona, String? specialty}) => AppUser(
+  AppUser copyWith({String? persona, String? specialty, String? profession}) =>
+      AppUser(
         id: id,
         email: email,
         name: name,
@@ -51,6 +55,7 @@ class AppUser {
         phoneVerified: phoneVerified,
         persona: persona ?? this.persona,
         specialty: specialty ?? this.specialty,
+        profession: profession ?? this.profession,
       );
 
   const AppUser({
@@ -64,6 +69,7 @@ class AppUser {
     this.phoneVerified = false,
     this.persona = '',
     this.specialty = '',
+    this.profession = '',
   });
 
   factory AppUser.fromJson(Map<String, dynamic> j) => AppUser(
@@ -77,6 +83,7 @@ class AppUser {
         phoneVerified: j['phoneVerified'] == true,
         persona: (j['persona'] as String?) ?? '',
         specialty: (j['specialty'] as String?) ?? '',
+        profession: (j['profession'] as String?) ?? '',
       );
 }
 
@@ -227,6 +234,10 @@ class AuthService extends ChangeNotifier {
         Uri.parse('${ApiService.baseUrl}/auth/me'),
         headers: {'Authorization': 'Bearer $token'},
       ).timeout(const Duration(seconds: 8));
+      // The user may have signed out (or in as someone else) while this
+      // ran in the background: a late answer about the OLD token must not
+      // restore it, nor sign out the new session.
+      if (ApiService.sessionToken != token) return;
       if (r.statusCode == 200) {
         final body = jsonDecode(r.body);
         final m = body['user'];
@@ -250,7 +261,7 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Re-fetch the account (e.g. after the onboarding survey updated
+  /// Re-fetch the account (e.g. after onboarding updated
   /// name/gender) so the avatar and greetings pick changes up at once.
   Future<void> refreshUser() async {
     final token = ApiService.sessionToken;
@@ -273,10 +284,11 @@ class AuthService extends ChangeNotifier {
   /// waiting for /auth/me — so the UI switches workspaces instantly and a
   /// failed refresh can't revert it. The next refreshUser() overwrites it
   /// with the server's copy anyway.
-  void applyPersona(String persona, {String? specialty}) {
+  void applyPersona(String persona, {String? specialty, String? profession}) {
     final u = user;
     if (u == null) return;
-    user = u.copyWith(persona: persona, specialty: specialty);
+    user = u.copyWith(
+        persona: persona, specialty: specialty, profession: profession);
     notifyListeners();
   }
 
@@ -289,29 +301,6 @@ class AuthService extends ChangeNotifier {
           String? gender}) =>
       _post('/auth/signup',
           {'email': email, 'password': password, 'name': name, 'gender': gender});
-
-  /// Set or change the user's gender (used by social sign-ins that have no
-  /// sign-up form, and by settings later).
-  Future<void> setGender(String gender) async {
-    final token = ApiService.sessionToken;
-    if (token == null) return;
-    try {
-      final r = await http.patch(
-        Uri.parse('${ApiService.baseUrl}/auth/me'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({'gender': gender}),
-      ).timeout(const Duration(seconds: 8));
-      if (r.statusCode == 200) {
-        user = AppUser.fromJson(jsonDecode(r.body)['user']);
-        notifyListeners();
-      }
-    } catch (_) {
-      // Non-fatal — the avatar just uses the default until next sync.
-    }
-  }
 
   Future<void> logIn({required String email, required String password}) =>
       _post('/auth/login', {'email': email, 'password': password});
@@ -369,6 +358,8 @@ class AuthService extends ChangeNotifier {
   /// (sliding renewal) — keep it so regular users are never signed out.
   void _adoptRenewedToken(dynamic body) {
     final fresh = body is Map ? body['token'] : null;
+    // Never resurrect a session that was signed out meanwhile.
+    if (ApiService.sessionToken == null) return;
     if (fresh is String && fresh.isNotEmpty && fresh != ApiService.sessionToken) {
       ApiService.sessionToken = fresh;
       _storage.write(key: _tokenKey, value: fresh).catchError((_) {});
@@ -389,7 +380,8 @@ class AuthService extends ChangeNotifier {
       ).timeout(const Duration(seconds: 8));
       // Only an authoritative 401 signs the user out; network errors and
       // 5xx keep the session — the account may be fine and the server not.
-      if (r.statusCode == 401) {
+      // And only for the token that was checked: a newer sign-in stands.
+      if (r.statusCode == 401 && ApiService.sessionToken == token) {
         sessionEnded = true; // the login screen explains why
         await _clear();
         notifyListeners(); // AuthGate swaps to the login screen
@@ -411,8 +403,8 @@ class AuthService extends ChangeNotifier {
   void onSignOut(Future<void> Function() hook) => _signOutHooks.add(hook);
 
   /// The other side: run once there is a session — a restored one at
-  /// launch, or a fresh sign-in. The AI brain signs its Firebase identity
-  /// in here (lib/ai/identity.dart). Not awaited: nothing waits on them.
+  /// launch, or a fresh sign-in. The AI config refreshes itself here
+  /// (main.dart). Not awaited: nothing waits on them.
   final List<Future<void> Function()> _signInHooks = [];
   void onSignIn(Future<void> Function() hook) => _signInHooks.add(hook);
 

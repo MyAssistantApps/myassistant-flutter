@@ -159,8 +159,7 @@ class _TodayTab extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 20),
                   child: Text(
-                    '${Persona.value == 'business' || Persona.value == 'advocate' ? 'No ${ProWords.current.appointments.toLowerCase()} scheduled today. Schedule one above' : 'No scheduled patient appointments today. Schedule a consultation above'}'
-                    ' — or configure your automated receptionist to book incoming callers (${ProWords.current.settings}).',
+                    '${Persona.value == 'business' || Persona.value == 'advocate' ? 'No ${ProWords.current.appointments.toLowerCase()} scheduled today. Schedule one above' : 'No scheduled patient appointments today. Schedule a consultation above'}.',
                     style: TextStyle(color: Neon.textLo, fontSize: 13.5, height: 1.4),
                   ),
                 )

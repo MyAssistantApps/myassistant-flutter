@@ -7,7 +7,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../ai/cloud.dart';
 import '../../ai/config.dart';
 import '../../ai/model_port.dart';
-import '../../ai/search_suggestions.dart';
 import '../../ai/types.dart';
 import '../../core/log.dart';
 import '../../services/notification_service.dart';
@@ -15,23 +14,20 @@ import 'flight_fares.dart';
 import 'flight_trip.dart';
 import 'price_models.dart';
 
-/// A comparison with what the grounding terms require beside it: the
-/// pages the prices came from and Google's search suggestions.
+/// A comparison with the pages the prices came from.
 class PriceAnswer {
-  const PriceAnswer(this.result, {this.sources = const [], this.suggestions = const []});
+  const PriceAnswer(this.result, {this.sources = const []});
   final PriceResult result;
   final List<SourceLink> sources;
-  final List<SearchSuggestion> suggestions;
 }
 
 /// A flight search: the flights with every site's fare, the same as a
-/// plain comparison ([result], for alerts), and the grounding beside it.
+/// plain comparison ([result], for alerts), and the pages it came from.
 class FlightAnswer {
-  const FlightAnswer(this.fares, this.result, {this.sources = const [], this.suggestions = const []});
+  const FlightAnswer(this.fares, this.result, {this.sources = const []});
   final FlightFares fares;
   final PriceResult result;
   final List<SourceLink> sources;
-  final List<SearchSuggestion> suggestions;
 }
 
 class PriceCompareException implements Exception {
@@ -42,9 +38,8 @@ class PriceCompareException implements Exception {
 }
 
 /// ─────────────────────────────────────────────────────────────────────────
-///  THE PRICE LOOK-UP: one Google-Search-grounded Gemini answer (the same
-///  engine as the assistant's web answers, lib/ai/cloud.dart), asked for
-///  JSON only. Recent comparisons and price alerts are kept on the phone.
+///  THE PRICE LOOK-UP: one web-search-grounded cloud answer
+///  (CloudEngine.search, lib/ai/cloud.dart), asked for JSON only. Recent comparisons and price alerts are kept on the phone.
 ///
 ///  ALERTS are checked when Price Compare opens (at most a few, once a day
 ///  each): a lowest price at or under the target sends one notification
@@ -60,7 +55,7 @@ class PriceService extends ChangeNotifier {
 
   /// The look-up itself; replaced in tests.
   @visibleForTesting
-  Future<({String text, List<SourceLink> sources, String? suggestionsHtml})> Function(String prompt)? ask;
+  Future<({String text, List<SourceLink> sources})> Function(String prompt)? ask;
 
   final List<PriceResult> _recent = [];
   final Map<String, PriceWatch> _watches = {};
@@ -114,7 +109,7 @@ class PriceService extends ChangeNotifier {
     final q = query.trim();
     if (q.isEmpty) throw const PriceCompareException('Enter the item to compare.');
     final prompt = promptFor(category, q, budget: budget, now: DateTime.now());
-    final ({String text, List<SourceLink> sources, String? suggestionsHtml}) out;
+    final ({String text, List<SourceLink> sources}) out;
     try {
       out = await (ask ?? _askGemini)(prompt);
     } on TimeoutException {
@@ -130,7 +125,7 @@ class PriceService extends ChangeNotifier {
     _remember(result);
     unawaited(_save());
     notifyListeners();
-    return PriceAnswer(result, sources: out.sources, suggestions: parseSearchSuggestions(out.suggestionsHtml));
+    return PriceAnswer(result, sources: out.sources);
   }
 
   /// THE RESULTS GRID for a product search: up to 12 matching products
@@ -147,7 +142,7 @@ A shopper in India searches for "$q". Use Google Search to find up to 12 matchin
 Answer with ONLY this JSON (no markdown):
 {"products": [{"name": "full product name with variant", "price": 0, "mrp": 0, "store": "store name", "rating": 4.5, "reviews": 2850, "image": "an https product photo URL from the store or brand, or empty", "url": "the store's https product page, or empty"}]}
 Prices are numbers in rupees. Leave out mrp, rating, reviews, image or url you could not find — never guess them.""";
-    final ({String text, List<SourceLink> sources, String? suggestionsHtml}) out;
+    final ({String text, List<SourceLink> sources}) out;
     try {
       out = await (ask ?? _askGemini)(prompt);
     } on TimeoutException {
@@ -197,7 +192,7 @@ Prices are numbers in rupees. Leave out mrp, rating, reviews, image or url you c
     await load();
     final query = trip.describe();
     final prompt = flightPromptFor(trip, now: DateTime.now());
-    final ({String text, List<SourceLink> sources, String? suggestionsHtml}) out;
+    final ({String text, List<SourceLink> sources}) out;
     try {
       out = await (ask ?? _askGemini)(prompt);
     } on TimeoutException {
@@ -208,7 +203,6 @@ Prices are numbers in rupees. Leave out mrp, rating, reviews, image or url you c
     }
     var fares = FlightFares.parse(out.text);
     var sources = out.sources;
-    var suggestionsHtml = out.suggestionsHtml;
     if (fares == null) {
       final raw = out.text.replaceAll(RegExp(r'\s+'), ' ');
       AppLog.add('price',
@@ -221,7 +215,6 @@ Prices are numbers in rupees. Leave out mrp, rating, reviews, image or url you c
         if (r != null) {
           fares = FlightFares.fromOffers(r);
           sources = plain.sources;
-          suggestionsHtml = plain.suggestionsHtml;
         } else {
           AppLog.add('price', 'plain flight compare had no prices either');
         }
@@ -239,7 +232,7 @@ Prices are numbers in rupees. Leave out mrp, rating, reviews, image or url you c
     _remember(result);
     unawaited(_save());
     notifyListeners();
-    return FlightAnswer(fares, result, sources: sources, suggestions: parseSearchSuggestions(suggestionsHtml));
+    return FlightAnswer(fares, result, sources: sources);
   }
 
   @visibleForTesting
@@ -288,7 +281,7 @@ Answer with ONLY this JSON (no markdown):
   "alternatives": [{"name": "", "price": 0, "why": "one short line"}]
 }
 "pick" is the number of the product to buy (1 if only one). "items" follows the order above; "score" is out of 10. Never invent a price or a spec.''';
-    final ({String text, List<SourceLink> sources, String? suggestionsHtml}) out;
+    final ({String text, List<SourceLink> sources}) out;
     try {
       out = await (ask ?? _askGemini)(prompt);
     } on TimeoutException {
@@ -299,7 +292,7 @@ Answer with ONLY this JSON (no markdown):
     }
     final a = ProductAdvice.parse(out.text, count: products.length);
     if (a == null) throw const PriceCompareException("The AI was unable to provide a recommendation. Please try again.");
-    return a.withSources(out.sources, parseSearchSuggestions(out.suggestionsHtml));
+    return a.withSources(out.sources);
   }
 
   void _remember(PriceResult r) {
@@ -382,7 +375,7 @@ Answer with ONLY this JSON (no markdown):
     }
   }
 
-  Future<({String text, List<SourceLink> sources, String? suggestionsHtml})> _askGemini(String prompt) async {
+  Future<({String text, List<SourceLink> sources})> _askGemini(String prompt) async {
     final config = await AiConfigStore.instance.get();
     final engine = CloudEngine(ModelPorts.cloud());
     Future<CloudFinished> run(String model) async {
@@ -406,7 +399,7 @@ Answer with ONLY this JSON (no markdown):
       AppLog.add('price', '${config.models.cloud} failed ($e); trying ${config.models.cloudFallback}');
       f = await run(config.models.cloudFallback);
     }
-    return (text: f.text, sources: f.sources, suggestionsHtml: f.searchSuggestionsHtml);
+    return (text: f.text, sources: f.sources);
   }
 
   static const _system = 'You are a careful price-comparison researcher for shoppers in India. '
@@ -499,7 +492,6 @@ class ProductAdvice {
     this.items = const [],
     this.alternatives = const [],
     this.sources = const [],
-    this.suggestions = const [],
   });
 
   final String verdict;
@@ -510,10 +502,9 @@ class ProductAdvice {
   final List<({String name, List<String> good, List<String> bad, int? score})> items;
   final List<({String name, double? price, String why})> alternatives;
   final List<SourceLink> sources;
-  final List<SearchSuggestion> suggestions;
 
-  ProductAdvice withSources(List<SourceLink> s, List<SearchSuggestion> g) => ProductAdvice(
-      verdict: verdict, pick: pick, why: why, items: items, alternatives: alternatives, sources: s, suggestions: g);
+  ProductAdvice withSources(List<SourceLink> s) => ProductAdvice(
+      verdict: verdict, pick: pick, why: why, items: items, alternatives: alternatives, sources: s);
 
   static ProductAdvice? parse(String text, {required int count}) {
     final j = firstJsonObject(text);

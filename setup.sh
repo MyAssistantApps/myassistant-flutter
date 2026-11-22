@@ -17,8 +17,8 @@
 #      node_modules, google-services.json …) are never touched.
 #   3. pulls the secrets from the team Bitwarden vault (both repos are
 #      PUBLIC — secrets never go in git) and writes .env,
-#      firebase-adminsdk.json, google-services.json, the App Check debug
-#      token, .env.dev.json and the team debug keystore
+#      firebase-adminsdk.json, google-services.json, .env.dev.json and the
+#      team debug keystore
 #   4. starts Postgres in Docker, installs packages, starts the backend in
 #      the background and waits for /health
 #   5. builds the app and runs it on the connected phone (flutter run stays
@@ -52,7 +52,6 @@ BW_COLLECTION="${BW_COLLECTION:-Dev secrets}"
 ITEM_ENV="MyAssistant backend .env"
 ITEM_ADMINSDK="MyAssistant firebase-adminsdk.json"
 ITEM_GSERVICES="MyAssistant google-services.json"
-ITEM_APPCHECK="MyAssistant app-check-debug-token"
 ITEM_KEYSTORE="MyAssistant debug.keystore (base64)"
 # Lines that differ per machine: never uploaded, always written locally.
 PER_MACHINE_KEYS="JWT_SECRET|ADMIN_KEY|DATABASE_URL|PUBLIC_BASE_URL"
@@ -208,14 +207,6 @@ write_secrets() {
     || die "Bitwarden item '$ITEM_GSERVICES' not found"
   ok "app google-services.json"
 
-  if bw_note "$ITEM_APPCHECK" | tr -d '[:space:]' > "$FLUTTER/android/app-check-debug-token.txt" \
-     && [ -s "$FLUTTER/android/app-check-debug-token.txt" ]; then
-    ok "app App Check debug token"
-  else
-    rm -f "$FLUTTER/android/app-check-debug-token.txt"
-    warn "no '$ITEM_APPCHECK' in Bitwarden — the app's own Firebase AI calls will be refused"
-  fi
-
   # Shared debug keystore: its SHA-1 is the one registered for Google
   # Sign-In, so every machine signs debug builds the same way.
   local ks="$HOME/.android/debug.keystore" tmpks
@@ -335,8 +326,6 @@ run_app() {
   ok "phone $dev"
 
   local defines=(--dart-define-from-file=.env.dev.json)
-  local tok; tok="$(tr -d '[:space:]' < "$FLUTTER/android/app-check-debug-token.txt" 2>/dev/null || true)"
-  [ -n "$tok" ] && defines+=("--dart-define=APP_CHECK_DEBUG_TOKEN=$tok")
 
   echo
   echo "    Backend keeps running in the background. Stop it with:"
@@ -366,7 +355,6 @@ publish_secrets() {
   grep -E '^[A-Z_]+=' "$BACKEND/.env" | grep -vE "^($PER_MACHINE_KEYS)=" > "$tmp/env"
   cp "$FLUTTER/android/app/google-services.json" "$tmp/gs" 2>/dev/null || true
   cp "$BACKEND/firebase-adminsdk.json" "$tmp/admin" 2>/dev/null || true
-  cp "$FLUTTER/android/app-check-debug-token.txt" "$tmp/token" 2>/dev/null || true
   base64 < "$HOME/.android/debug.keystore" | tr -d '\n' > "$tmp/ks" 2>/dev/null || true
 
   put() { # item-name file
@@ -386,7 +374,6 @@ publish_secrets() {
   put "$ITEM_ENV" "$tmp/env"
   put "$ITEM_ADMINSDK" "$tmp/admin"
   put "$ITEM_GSERVICES" "$tmp/gs"
-  put "$ITEM_APPCHECK" "$tmp/token"
   put "$ITEM_KEYSTORE" "$tmp/ks"
   rm -rf "$tmp"
   bw sync >/dev/null

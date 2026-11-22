@@ -195,8 +195,8 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
               'enter it below.';
     }
     if (m.typed) {
-      return "Your network is not yet able to confirm numbers automatically. For "
-          'testing, enter your number instead.';
+      return 'Your number allows friends and family to reach you through their '
+          'assistant. Enter your number to continue.';
     }
     return "Your network is not yet able to confirm numbers automatically, so this "
         'step is currently unavailable on this phone.';
@@ -237,9 +237,11 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
                         color: Neon.textLo, fontSize: 15, height: 1.45),
                   ),
                   const SizedBox(height: 26),
-                  if (_methods?.sim == false &&
-                      ((_methods?.call == true && _calledTo == null) ||
-                          (_methods?.call != true && _methods?.typed == true)))
+                  // The number field: for the call, the typed path, and the
+                  // skip (testing) whenever the server allows a typed number.
+                  if (_calledTo == null &&
+                      (_methods?.typed == true ||
+                          (_methods?.sim == false && _methods?.call == true)))
                     Row(
                       children: [
                         SizedBox(
@@ -256,7 +258,7 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
                           child: TextField(
                             controller: _phone,
                             keyboardType: TextInputType.phone,
-                            autofocus: true,
+                            autofocus: _methods?.sim != true,
                             decoration: const InputDecoration(
                               labelText: 'Phone Number',
                               prefixIcon: Icon(Icons.phone_outlined),
@@ -329,7 +331,7 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
                     GlowCta(label: 'Request Code by Call', onPressed: _callMe)
                   else if (_methods!.typed)
                     GlowCta(
-                      label: 'Use This Number (Testing)',
+                      label: 'Continue',
                       onPressed: _typed,
                     )
                   else
@@ -364,18 +366,27 @@ class _PhoneVerifyScreenState extends State<PhoneVerifyScreen> {
                         ),
                       ],
                     ),
-                  // While the server still has its testing switch on, a
-                  // typed number stays possible — as the quiet option.
-                  if (_methods?.call == true &&
-                      _methods?.sim == false &&
+                  // TESTING PHASE (owner, 2026-11-21: every user is a tester,
+                  // and SIM checks fail on Wi-Fi): while the server allows a
+                  // typed number, anyone can skip the SIM check or the call.
+                  if (!_busy &&
                       _methods?.typed == true &&
-                      _calledTo == null)
-                    TextButton(
-                      onPressed: _busy ? null : _typed,
-                      child: Text('Testing: Use This Number Without a Call',
-                          style: TextStyle(
-                              color: Neon.textLo, fontSize: NeonType.footnote)),
+                      _calledTo == null &&
+                      (_methods!.sim || _methods!.call)) ...[
+                    const SizedBox(height: 12),
+                    OutlinedButton(
+                      onPressed: _typed,
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(50),
+                        foregroundColor: Neon.textHi,
+                        side: BorderSide(color: Neon.textLo.withValues(alpha: 0.5)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
+                      ),
+                      child: const Text('Skip Verification',
+                          style: TextStyle(fontWeight: FontWeight.w600)),
                     ),
+                  ],
                   const SizedBox(height: 6),
                   TextButton(
                     onPressed:

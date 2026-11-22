@@ -1,3 +1,4 @@
+import 'dart:async' show TimeoutException;
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kReleaseMode;
@@ -7,8 +8,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/log.dart';
 import '../models/client.dart';
-import '../models/memory_item.dart';
-import '../models/place.dart';
 import '../models/reminder.dart';
 import '../models/call_outcome.dart';
 import '../models/user_document.dart';
@@ -85,9 +84,6 @@ class ApiService {
   /// Shared secret matching the backend's APP_API_KEY (dev/X-App-Key mode).
   /// Pass with: --dart-define=APP_API_KEY=...
   static const String _appApiKey = String.fromEnvironment('APP_API_KEY');
-
-  /// Exposed for the live-mode WebSocket URL (query-string auth).
-  static String get appApiKey => _appApiKey;
 
   /// Generic JSON request helper (POST/PUT/DELETE) used by MCP settings.
   /// Returns the decoded body, or null on any failure — callers surface a
@@ -179,9 +175,23 @@ class ApiService {
   static Future<Map<String, dynamic>?> getJson(String path,
       {Duration timeout = const Duration(seconds: 6)}) async {
     try {
-      final r = await _client
-          .get(Uri.parse('$baseUrl$path'), headers: _authHeaders)
-          .timeout(timeout);
+      http.Response r;
+      try {
+        r = await _client
+            .get(Uri.parse('$baseUrl$path'), headers: _authHeaders)
+            .timeout(timeout);
+      } catch (e) {
+        // ONE RETRY on a dropped connection (product audit 2026-11-21):
+        // on Indian mobile networks a socket reset or a failed handshake
+        // is common and the second try usually works. Only fast transport
+        // failures retry — a timeout does not, so a probe's budget holds —
+        // and a GET is safe to repeat.
+        if (!isConnectError(e) || e is TimeoutException) rethrow;
+        await Future<void>.delayed(const Duration(milliseconds: 800));
+        r = await _client
+            .get(Uri.parse('$baseUrl$path'), headers: _authHeaders)
+            .timeout(timeout);
+      }
       if (r.statusCode != 200) {
         _flagAuthFailure(r.statusCode);
         AppLog.add('api', '$path -> ${r.statusCode}');
@@ -218,6 +228,32 @@ class ApiService {
       if (isConnectError(e)) NetStatus.instance.requestFailed();
       AppLog.add('api', '$path -> $e');
       return null;
+    }
+  }
+
+  /// POST a JSON body and read the answer as it arrives (server-sent
+  /// events — the Jyotish reading). Same auth headers as [postJson]. The
+  /// caller reads `statusCode` and `stream`; a dead network throws, as
+  /// http's send does.
+  static Future<http.StreamedResponse> postStream(String path, Object body,
+      {Duration timeout = const Duration(seconds: 30)}) async {
+    final req = http.Request('POST', Uri.parse('$baseUrl$path'))
+      ..headers.addAll({
+        ..._authHeaders,
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream',
+      })
+      ..body = jsonEncode(body);
+    try {
+      final resp = await _client.send(req).timeout(timeout);
+      if (resp.statusCode < 200 || resp.statusCode >= 300) {
+        _flagAuthFailure(resp.statusCode);
+        AppLog.add('api', '$path -> ${resp.statusCode}');
+      }
+      return resp;
+    } catch (e) {
+      if (isConnectError(e)) NetStatus.instance.requestFailed();
+      rethrow;
     }
   }
 
@@ -282,7 +318,7 @@ class ApiService {
   /// open between turns, saving a full handshake on every voice exchange.
   static final http.Client _client = http.Client();
 
-  /// Public alias for feature modules (avatar screen etc.).
+  /// Public alias for feature modules that build their own requests.
   static Map<String, String> get authHeaders => _authHeaders;
 
   static Map<String, String> get _authHeaders => {
@@ -312,15 +348,6 @@ class ApiService {
   /// charge out of its answer rather than guessing at it.
   static int? batteryPct;
   static bool batteryCharging = false;
-
-  /// Chat calls also carry the user's clock + location so backend tools
-  /// (reminder time parsing, weather) work on THEIR wall clock and place.
-  static Map<String, String> get _chatHeaders => {
-        ..._authHeaders,
-        'X-TZ-Offset': DateTime.now().timeZoneOffset.inMinutes.toString(),
-        if (geoLat != null) 'X-Geo-Lat': geoLat!.toStringAsFixed(4),
-        if (geoLng != null) 'X-Geo-Lng': geoLng!.toStringAsFixed(4),
-      };
 
   /// HAND A TASK OVER AND WALK AWAY — the home-screen widget's one call.
   ///
@@ -353,28 +380,7 @@ class ApiService {
         .ignore();
   }
 
-  /// C3 — nearby places search; geo rides on the standard headers.
-  static Future<List<Place>> fetchPlaces(String q) async {
-    final r = await _client
-        .get(
-          Uri.parse('$baseUrl/places?q=${Uri.encodeQueryComponent(q)}'),
-          headers: _chatHeaders, // includes X-Geo-Lat/Lng when known
-        )
-        .timeout(const Duration(seconds: 15));
-    if (r.statusCode != 200) {
-      _flagAuthFailure(r.statusCode);
-      throw Exception('places ${r.statusCode}');
-    }
-    return ((jsonDecode(r.body)['places'] as List?) ?? [])
-        .map((j) => Place.fromJson(j as Map<String, dynamic>))
-        .toList();
-  }
-
-  /// Proxied Google place photo (key stays server-side).
-  static String placePhotoUrl(String ref) =>
-      '$baseUrl/places/photo?ref=${Uri.encodeQueryComponent(ref)}';
-
-  /// Auth headers for Image.network on protected endpoints (place photos).
+  /// Auth headers for Image.network on protected image endpoints.
   static Map<String, String> get imageHeaders =>
       Map.of(_authHeaders)..remove('Content-Type');
 
@@ -684,24 +690,9 @@ class ApiService {
     return r.statusCode == 200;
   }
 
-  // ----------------------------------------------------------------------
-  // Admin & Analytics Data
-  // ----------------------------------------------------------------------
-
-  static Future<Map<String, dynamic>> fetchAnalytics() async {
-    final r = await _client
-        .get(Uri.parse('$baseUrl/analytics'), headers: _authHeaders)
-        .timeout(const Duration(seconds: 15));
-    if (r.statusCode != 200) {
-      _flagAuthFailure(r.statusCode);
-      throw Exception('analytics ${r.statusCode}');
-    }
-    return jsonDecode(r.body) as Map<String, dynamic>;
-  }
-
   // ---------------- AGENT CALLS ----------------
   // "Call Allen Lobo and ask him what time he'll be home": the BACKEND
-  // places the call (Plivo — India-capable) and the AI talks on it; the app polls the
+  // places the call and the AI talks on it; the app polls the
   // call state and speaks the contact's answer back to the user.
 
   /// Starts an agent call. Returns the call id, or throws:
@@ -760,40 +751,10 @@ class ApiService {
                   ? 'the calling service refused our caller number'
                   : 'the calling service did not accept the call');
     }
-    return jsonDecode(r.body)['id'] as String;
-  }
-
-  /// G2 — exactly what Hari will say when the contact answers, plus a
-  /// server verdict on the user's own call rules (hours, daily limit,
-  /// master switch). Nothing is dialed. 403 rule blocks on the real
-  /// POST carry a ready-to-speak `say` line.
-  static Future<({String opening, bool allowed, String? reason})>
-      agentCallPreview({
-    required String contactName,
-    required String task,
-    String? lang,
-  }) async {
-    final r = await _client
-        .post(
-          Uri.parse('$baseUrl/agent-call/preview'),
-          headers: _authHeaders,
-          body: jsonEncode({
-            'contactName': contactName,
-            'task': task,
-            if (lang != null) 'lang': lang,
-          }),
-        )
-        .timeout(const Duration(seconds: 12));
-    if (r.statusCode != 200) {
-      _flagAuthFailure(r.statusCode);
-      throw Exception('preview ${r.statusCode}');
-    }
-    final j = jsonDecode(r.body) as Map<String, dynamic>;
-    return (
-      opening: j['opening'] as String? ?? '',
-      allowed: j['allowed'] as bool? ?? true,
-      reason: j['reason'] as String?,
-    );
+    final j = jsonDecode(r.body);
+    final id = j is Map ? j['id']?.toString() : null;
+    if (id == null || id.isEmpty) throw AgentCallFailed(r.statusCode, 'the calling service did not accept the call');
+    return id;
   }
 
   // ---------------- PRIVACY (F2) ----------------
@@ -834,24 +795,12 @@ class ApiService {
       _flagAuthFailure(r.statusCode);
       throw Exception('status ${r.statusCode}');
     }
-    final j = jsonDecode(r.body) as Map<String, dynamic>;
-    return (state: j['state'] as String, result: j['result'] as String?);
+    final j = jsonDecode(r.body);
+    if (j is! Map) throw Exception('status: unexpected reply');
+    return (state: (j['state'] ?? 'unknown').toString(), result: j['result']?.toString());
   }
 
-  // ---------------- BILLING ----------------
-  // Plans, usage, Razorpay checkout (hosted payment page opened in the
-  // browser; the backend webhook activates the plan), family accounts.
-
-  static Future<Map<String, dynamic>> fetchBilling() async {
-    final r = await _client
-        .get(Uri.parse('$baseUrl/billing'), headers: _authHeaders)
-        .timeout(const Duration(seconds: 15));
-    if (r.statusCode != 200) {
-      _flagAuthFailure(r.statusCode);
-      throw Exception('billing ${r.statusCode}');
-    }
-    return jsonDecode(r.body) as Map<String, dynamic>;
-  }
+  // ---------------- QUOTA ----------------
 
   /// Throws [QuotaExceeded] when the backend answers 402 (plan limit).
   static void checkQuota(int statusCode, String body) {
@@ -862,27 +811,6 @@ class ApiService {
     } catch (_) {}
     throw QuotaExceeded(msg);
   }
-
-  // ---------------- PER-USER MEMORY ----------------
-  // Backs the "Privacy & memory → WHAT I REMEMBER" screen. All calls
-  // require a signed-in session (memory is per-account, not per-device).
-
-  /// Everything Hari remembers about the signed-in user.
-  static Future<List<MemoryItem>> fetchMemories() async {
-    final r = await http
-        .get(Uri.parse('$baseUrl/memory'), headers: _authHeaders)
-        .timeout(const Duration(seconds: 15));
-    if (r.statusCode != 200) {
-      _flagAuthFailure(r.statusCode);
-      throw Exception('Could not load memories (${r.statusCode})');
-    }
-    final list = (jsonDecode(r.body)['memories'] as List? ?? []);
-    return list
-        .map((m) => MemoryItem.fromJson(m as Map<String, dynamic>))
-        .toList();
-  }
-
-  // ---------------- SWIGGY (FOOD ORDERING) ----------------
 
   // ---------------- GOOGLE (GMAIL + CALENDAR) ----------------
 
@@ -914,37 +842,6 @@ class ApiService {
     } catch (_) {
       return false;
     }
-  }
-
-  /// null = Gmail not linked yet (409).
-  static Future<List<Map<String, dynamic>>?> fetchGmailInbox() async {
-    final r = await http
-        .get(Uri.parse('$baseUrl/google/inbox'), headers: _authHeaders)
-        .timeout(const Duration(seconds: 20));
-    if (r.statusCode == 409) return null;
-    if (r.statusCode != 200) {
-      _flagAuthFailure(r.statusCode);
-      throw Exception('inbox ${r.statusCode}');
-    }
-    return ((jsonDecode(r.body)['emails'] as List?) ?? [])
-        .cast<Map<String, dynamic>>();
-  }
-
-  /// null = Calendar not linked yet (409). Throws when the fetch itself
-  /// failed, so "nothing today" is never a guess.
-  static Future<List<Map<String, dynamic>>?> fetchCalendarEvents(
-      {int days = 7}) async {
-    final r = await http
-        .get(Uri.parse('$baseUrl/google/calendar?days=$days'),
-            headers: _authHeaders)
-        .timeout(const Duration(seconds: 20));
-    if (r.statusCode == 409) return null;
-    if (r.statusCode != 200) {
-      _flagAuthFailure(r.statusCode);
-      throw Exception('calendar ${r.statusCode}');
-    }
-    return ((jsonDecode(r.body)['events'] as List?) ?? [])
-        .cast<Map<String, dynamic>>();
   }
 
   // ---------------- REMINDERS ----------------
@@ -1005,48 +902,9 @@ class ApiService {
       throw Exception('reminders ${r.statusCode}');
     }
   }
-
-  // ---------------- TODAY-SCREEN LIVE DATA ----------------
-
-  /// Weather for the Today card. Uses the last GPS fix, else [city].
-  static Future<Map<String, dynamic>?> fetchWeather({String? city}) async {
-    try {
-      final q = geoLat != null
-          ? 'lat=$geoLat&lng=$geoLng'
-          : (city != null ? 'city=${Uri.encodeComponent(city)}' : null);
-      if (q == null) return null;
-      final r = await http
-          .get(Uri.parse('$baseUrl/tools/weather?$q'), headers: _authHeaders)
-          .timeout(const Duration(seconds: 12));
-      if (r.statusCode != 200) return null;
-      return jsonDecode(r.body) as Map<String, dynamic>;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /// null = the fetch failed; [] = a good answer with no headlines.
-  static Future<List<Map<String, dynamic>>?> fetchNews() async {
-    try {
-      final r = await http
-          .get(Uri.parse('$baseUrl/tools/news'), headers: _authHeaders)
-          .timeout(const Duration(seconds: 12));
-      if (r.statusCode != 200) {
-        _flagAuthFailure(r.statusCode);
-        return null;
-      }
-      return ((jsonDecode(r.body)['headlines'] as List?) ?? [])
-          .cast<Map<String, dynamic>>();
-    } catch (_) {
-      return null;
-    }
-  }
 }
 
-/// The backend answered 402 pro_required — this feature needs Pro.
-class ProRequired implements Exception {}
-
-/// The backend has no telephony (Plivo) configured — agent calls are
+/// The backend has no telephony configured — agent calls are
 /// unavailable; the app falls back to placing a normal direct call.
 class AgentCallUnavailable implements Exception {}
 

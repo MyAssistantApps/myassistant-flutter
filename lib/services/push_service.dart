@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:myassistant/services/api_service.dart';
 
 import '../core/log.dart';
+import '../features/home/ride_strip.dart';
+import '../features/home/order_strip.dart';
 import '../features/assistant/state/assistant_engine.dart';
 import 'app_feedback.dart';
 import 'app_update_service.dart';
@@ -14,10 +16,9 @@ import 'notification_service.dart';
 import 'avatar_message_service.dart';
 import 'brief_service.dart';
 import 'call_service.dart';
-import '../screens/bills_email_screen.dart' show BillsEmailNav;
 import '../screens/listing/my_listing_screen.dart' show ListingNav;
 import 'listing_service.dart';
-import 'document_events.dart';
+import 'connect_service.dart';
 
 /// Registers this device with the backend so other people's agents can
 /// reach the user.
@@ -84,15 +85,29 @@ class PushService {
           }
           BriefService.instance.refresh(force: true);
         }
+        // URGENT ALERT, app open: ring it ourselves (Android won't), on the
+        // loud channel for the repeats. Seen = tapped (openNotificationPayload).
+        if (m.data['kind'] == 'agent_message_urgent') {
+          final id = int.tryParse('${m.data['alertId']}') ?? 0;
+          final n = int.tryParse('${m.data['ping']}') ?? 1;
+          AppLog.add('push', 'urgent alert $id ping $n (foreground)');
+          unawaited(ReminderNotifications.instance.showUrgent(
+              id, m.notification?.title ?? 'Urgent Alert', m.notification?.body ?? '',
+              loud: n >= 2));
+          AppFeedback.toast('An urgent message has arrived. Tap the alert to read it.');
+          BriefService.instance.refresh(force: true);
+          return;
+        }
         // Scheduled call, app in front: dial NOW, in front of the user —
         // that is the whole point of scheduling it.
         if (m.data['kind'] == 'scheduled_call') {
           AppLog.add('push', 'scheduled call arrived (foreground)');
           _placeScheduledCall(m);
         }
-        // Bills by email: a document arrived — open lists reload.
-        final isMail = m.data['kind'] == 'mail_filed' || m.data['kind'] == 'mail_confirm';
-        if (isMail) DocumentEvents.bump();
+        // A booked cab moved on (driver assigned, arriving…): Home's ride
+        // card refreshes; the notification itself is shown below.
+        if (m.data['kind'] == 'ride_update') RideService.instance.refresh();
+        if (m.data['kind'] == 'order_update') OrderService.instance.refresh();
         // A booking request from the public page: the badge moves at once.
         final isListing = m.data['kind'] == 'listing_request';
         if (isListing) ListingService.instance.newRequests.value++;
@@ -154,7 +169,7 @@ class PushService {
           ReminderNotifications.instance.showNow(
             n.title ?? 'MyAssistant',
             n.body ?? '',
-            payload: isMail ? 'bills_email' : (isListing ? ListingNav.payload : (group ?? dm)),
+            payload: isListing ? ListingNav.payload : (group ?? dm),
           );
         }
       });
@@ -163,6 +178,10 @@ class PushService {
         if (m.data['kind'] == 'app_update') {
           AppLog.add('push', 'update notification tapped');
           _checkForUpdateNow();
+        }
+        if (m.data['kind'] == 'agent_message_urgent') {
+          AppLog.add('push', 'urgent alert opened from notification');
+          unawaited(openUrgent(int.tryParse('${m.data['alertId']}')));
         }
         if (m.data['kind'] == 'agent_message') {
           AppLog.add('push', 'agent message opened from notification');
@@ -181,10 +200,6 @@ class PushService {
           final g = _dmPayload(m);
           if (g != null) ReminderNotifications.route(g);
         }
-        if (m.data['kind'] == 'mail_filed' || m.data['kind'] == 'mail_confirm') {
-          AppLog.add('push', 'bills email opened');
-          unawaited(BillsEmailNav.open());
-        }
         if (m.data['kind'] == 'listing_request') unawaited(ListingNav.open());
       });
       // Cold start FROM the notification (app was killed).
@@ -192,6 +207,10 @@ class PushService {
         if (m != null && m.data['kind'] == 'app_update') {
           AppLog.add('push', 'update notification launched the app');
           _checkForUpdateNow();
+        }
+        if (m != null && m.data['kind'] == 'agent_message_urgent') {
+          AppLog.add('push', 'urgent alert launched the app');
+          unawaited(openUrgent(int.tryParse('${m.data['alertId']}')));
         }
         if (m != null && m.data['kind'] == 'agent_message') {
           AppLog.add('push', 'agent message launched the app');
@@ -208,10 +227,6 @@ class PushService {
         if (m != null && m.data['kind'] == 'direct_message') {
           final g = _dmPayload(m);
           if (g != null) ReminderNotifications.route(g);
-        }
-        if (m != null && (m.data['kind'] == 'mail_filed' || m.data['kind'] == 'mail_confirm')) {
-          AppLog.add('push', 'bills email launched the app');
-          unawaited(BillsEmailNav.open());
         }
         if (m != null && m.data['kind'] == 'listing_request') unawaited(ListingNav.open());
       });
@@ -275,6 +290,14 @@ class PushService {
   /// long while, or when the user chose to see the rest later: its tap
   /// goes the way a tapped video-note push does.
   Future<void> openVideoNotes() => _deliver(avatar: true);
+
+  /// A tapped urgent alert: it is seen (the pings stop, the sender is
+  /// told), and the assistant reads it out.
+  Future<void> openUrgent(int? alertId) async {
+    unawaited(ConnectService.ackUrgent(alertId));
+    BriefService.instance.refresh(force: true);
+    await _deliver(avatar: false);
+  }
 
   /// A tapped agent message: avatar media (the sender's AI face/voice)
   /// shows as a popup; anything without media is spoken by the assistant

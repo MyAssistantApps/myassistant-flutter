@@ -46,7 +46,7 @@ class VoiceChoice {
   }
 
   /// "Hello Madam." when the profile says female, "Hello Sir." otherwise —
-  /// the same line the server gives GPT-Live (ai/gptLive.js).
+  /// the same line the realtime voice is told to say (AssistantEngine.openingLine).
   static String openingLine() =>
       (AuthService.instance.user?.gender ?? '').trim().toLowerCase() == 'female'
           ? 'Hello Madam.'

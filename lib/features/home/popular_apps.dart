@@ -6,6 +6,7 @@ import '../../design/neon_tokens.dart';
 import '../../services/api_service.dart';
 import '../pricecompare/shop_browser.dart';
 import 'partner_app.dart';
+import 'ride_sheet.dart';
 import 'services_screen.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
@@ -70,6 +71,16 @@ class _PopularAppsSectionState extends State<PopularAppsSection> {
 
   Future<void> _open(_App a) async {
     HapticFeedback.selectionClick();
+    // Uber and Ola ask "Where to?" and open on a ready trip (2026-11-21).
+    if (a.id == 'uber' || a.id == 'ola') {
+      await RideSheet.show(context,
+          provider: a.id, label: a.name, openApp: () => _openPlain(a));
+      return;
+    }
+    await _openPlain(a);
+  }
+
+  Future<void> _openPlain(_App a) async {
     // Its own app when installed, else its Play Store page (2026-11-13).
     if (await openPartnerApp(a.id, a.pkg)) return;
     final j = await ApiService.getJson('/go/${a.id}');

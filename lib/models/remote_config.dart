@@ -4,8 +4,6 @@ class RemoteConfig {
   final String latestVersionName;
   final int forceUpdateBelow;
   final List<String> changelog;
-  final String? announcement;
-  final Map<String, bool> features;
 
   /// Self-hosted update channel (sideload builds): direct APK download URL
   /// + its sha256, published via the backend's POST /admin/apk. Null when
@@ -22,8 +20,6 @@ class RemoteConfig {
     this.latestVersionName = '0.1.0',
     this.forceUpdateBelow = 0,
     this.changelog = const [],
-    this.announcement,
-    this.features = const {},
     this.apkUrl,
     this.apkSha256,
     this.apkSize = 0,
@@ -34,12 +30,8 @@ class RemoteConfig {
         latestVersionName: j['latestVersionName'] ?? '0.1.0',
         forceUpdateBelow: j['forceUpdateBelow'] ?? 0,
         changelog: List<String>.from(j['changelog'] ?? const []),
-        announcement: j['announcement'],
-        features: Map<String, bool>.from(j['features'] ?? const {}),
         apkUrl: j['apkUrl'],
         apkSha256: j['apkSha256'],
         apkSize: (j['apkSize'] as num?)?.toInt() ?? 0,
       );
-
-  bool isEnabled(String feature) => features[feature] == true;
 }

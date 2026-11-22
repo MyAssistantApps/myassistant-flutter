@@ -1,0 +1,17 @@
+# Weekly dependency updates as pull requests into hardening (reviewed and
+# merged by the owner; Flutter CI analyses and tests each one).
+version: 2
+updates:
+  - package-ecosystem: pub
+    directory: /
+    target-branch: hardening
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 5
+  - package-ecosystem: gradle
+    directory: /android
+    target-branch: hardening
+    schedule: { interval: monthly }
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: hardening
+    schedule: { interval: monthly }

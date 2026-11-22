@@ -41,8 +41,7 @@ ios/Flutter/Generated.xcconfig
 !.env.example
 !.env.*.example
 
-# App Check debug token for App Distribution builds (tool/build_apk.sh
-# compiles it in) — never commit
+# Former App Check debug token (no longer used) — never commit
 android/app-check-debug-token.txt
 
 # Release signing — never commit

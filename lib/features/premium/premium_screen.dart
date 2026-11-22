@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../../design/motion.dart' show Tappable;
 import '../../design/neon_tokens.dart';
+import '../../services/api_service.dart';
 import '../../services/app_feedback.dart';
 import '../../widgets/robot_badge.dart';
 import 'premium_plans.dart';
@@ -65,17 +66,39 @@ class _PremiumScreenState extends State<PremiumScreen> {
     super.dispose();
   }
 
+  bool _joining = false;
+
   Future<void> _buy(String productId) async {
     HapticFeedback.mediumImpact();
     final cb = widget.onPurchase;
     if (cb == null) {
-      AppFeedback.show(
-        "Payments arrive in the next update. Thank you for your interest.",
-        context: context,
-      );
+      await _joinEarlyAccess(productId);
       return;
     }
     await cb(productId, _period);
+  }
+
+  /// EARLY ACCESS, NOT A DEAD END (product audit 2026-11-21). Until Play
+  /// Billing is live, a plan tap puts the user on the list for that plan:
+  /// the owner sees who wants which plan at which period in the Feedback
+  /// inbox (source "premium") — real demand before a price is fixed.
+  Future<void> _joinEarlyAccess(String productId) async {
+    if (_joining) return;
+    _joining = true;
+    final period = _period == BillingPeriod.yearly ? 'yearly' : 'monthly';
+    final r = await ApiService.postJson('/feedback', {
+      'kind': 'feature',
+      'source': 'premium',
+      'summary': 'Pro early access: $productId ($period)',
+    });
+    _joining = false;
+    if (!mounted) return;
+    AppFeedback.show(
+      r != null
+          ? 'You are on the early-access list. You will be notified as soon as this plan opens.'
+          : 'Unable to join the early-access list. Please try again.',
+      context: context,
+    );
   }
 
   void _toPlans() {
@@ -521,7 +544,7 @@ class _PlanCard extends StatelessWidget {
         const Spacer(),
         const SizedBox(height: 8),
         _BuyButton(
-          label: 'Subscribe',
+          label: kBillingLive ? 'Subscribe' : 'Join Early Access',
           filled: featured,
           onTap: onBuy,
         ),
@@ -629,7 +652,9 @@ class _TrialNote extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Tappable(
-      semanticLabel: 'Start your $freeTrialDays-day free trial of Pro',
+      semanticLabel: kBillingLive
+          ? 'Start your $freeTrialDays-day free trial of Pro'
+          : 'Join the early-access list for a $freeTrialDays-day free trial of Pro',
       onTap: onStart,
       child: _Glass(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -651,8 +676,10 @@ class _TrialNote extends StatelessWidget {
                       color: _P.text, fontWeight: FontWeight.w700, fontSize: 15)),
               const SizedBox(height: 2),
               Text(
-                  'All Pro features and ${grouped(freeTrialCredits)} credits. '
-                  "We will remind you 2 days before it ends.",
+                  kBillingLive
+                      ? 'All Pro features and ${grouped(freeTrialCredits)} credits. '
+                          'We will remind you 2 days before it ends.'
+                      : 'Join the early-access list. Your free trial begins when Pro opens.',
                   style: TextStyle(color: _P.textLo, fontSize: 12.5, height: 1.3)),
             ]),
           ),

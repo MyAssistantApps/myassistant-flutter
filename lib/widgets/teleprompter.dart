@@ -88,9 +88,6 @@ class TeleprompterTimeline {
           .allMatches(line)
           .length;
 
-  /// When line [i] starts.
-  Duration startOf(int i) => Duration(microseconds: _startsUs[i]);
-
   /// The line being read at [t]: the first before the start, the last
   /// once the script is over.
   int lineAt(Duration t) {

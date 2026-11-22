@@ -20,7 +20,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           # The version the tree is verified against (analyze + test clean).
-          # Keep release.yml on the same one.
+          # Keep in-app-update.yml on the same one.
           flutter-version: "3.47.5"
           channel: stable
           cache: true

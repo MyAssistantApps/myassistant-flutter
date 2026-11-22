@@ -113,10 +113,6 @@ class ShortcutRunner {
     } catch (_) {}
   }
 
-  /// Is a tail waiting for the owner to come back?
-  Future<bool> hasPending() async =>
-      (await SharedPreferences.getInstance()).getString(tailKey) != null;
-
   Future<void> _keep(ShortcutRunDirective tail) async {
     final p = await SharedPreferences.getInstance();
     await p.setString(

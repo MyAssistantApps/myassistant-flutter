@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -16,7 +18,10 @@ import '../splash_screen.dart';
 import 'guide_screen.dart';
 import 'permissions_screen.dart';
 import 'profession_screen.dart';
+import 'photo_step_screen.dart';
 import 'welcome_screen.dart';
+import '../../features/home/horoscope_card.dart';
+import '../../services/horoscope.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  NAME YOUR ASSISTANT — the last step of registration.
@@ -48,6 +53,9 @@ class _AssistantSetupGateState extends State<AssistantSetupGate> {
   /// this step existed get it once too, on their next launch.
   bool _personaNeeded = false;
 
+  /// Right after the profession step in a fresh onboarding.
+  bool _photoStep = false;
+
   /// Permission gate: false until the MICROPHONE is granted — the one the
   /// app cannot work without (see permissions_screen.dart). Checked on
   /// every launch, so revoking it brings the gate back; the recommended
@@ -66,11 +74,27 @@ class _AssistantSetupGateState extends State<AssistantSetupGate> {
   @override
   void initState() {
     super.initState();
+    Horoscope.load();
     _check();
+  }
+
+  // AN OFFLINE FIRST LAUNCH ASKS AGAIN (product audit 2026-11-21): when the
+  // profile could not be read, naming and the profession were skipped
+  // silently and the user met an assistant called "Assistant" until some
+  // later launch. Now the gate re-checks every 30 s, a few times, and shows
+  // the steps as soon as the server answers.
+  Timer? _recheck;
+  int _rechecks = 0;
+
+  @override
+  void dispose() {
+    _recheck?.cancel();
+    super.dispose();
   }
 
   Future<void> _check() async {
     bool needed = false;
+    bool unknown = false;
     bool welcomed = false;
     bool personaNeeded = false;
     try {
@@ -97,6 +121,7 @@ class _AssistantSetupGateState extends State<AssistantSetupGate> {
         needed = false;
       } else {
         p ??= await ApiService.getJson('/profile/full');
+        unknown = p == null;
         if (p != null) {
           final n =
               (((p['assistant'] as Map?)?['name'] as String?) ?? '').trim();
@@ -111,6 +136,13 @@ class _AssistantSetupGateState extends State<AssistantSetupGate> {
       }
     } catch (_) {}
     final permsOk = await allRequiredPermissionsGranted();
+    _recheck?.cancel();
+    if (unknown && _rechecks < 6 && mounted) {
+      _rechecks++;
+      _recheck = Timer(const Duration(seconds: 30), () {
+        if (mounted && _needed != true) _check();
+      });
+    }
     if (mounted) {
       setState(() {
         _needed = needed;
@@ -147,7 +179,15 @@ class _AssistantSetupGateState extends State<AssistantSetupGate> {
   Widget build(BuildContext context) {
     if (_needed != null && _personaNeeded) {
       return ProfessionScreen(
-          onDone: () => setState(() => _personaNeeded = false));
+          onDone: () => setState(() {
+                _personaNeeded = false;
+                // Fresh onboarding only: the photo step follows the
+                // profession it is dressed for.
+                _photoStep = true;
+              }));
+    }
+    if (_photoStep) {
+      return PhotoStepScreen(onDone: () => setState(() => _photoStep = false));
     }
     return switch (_needed) {
       null => const SplashScreen(),
@@ -373,6 +413,20 @@ class _AssistantSetupScreenState extends State<AssistantSetupScreen> {
                           ],
                         ),
                       ),
+                    ),
+                  ),
+                  // TODAY'S HOROSCOPE (owner, 2026-11-15): optional here,
+                  // also in Settings; Home shows the day's reading.
+                  const SizedBox(height: 20),
+                  ValueListenableBuilder<ZodiacSign?>(
+                    valueListenable: Horoscope.current,
+                    builder: (context, sign, _) => OutlinedButton.icon(
+                      onPressed: () => pickZodiacSign(context),
+                      icon: Text(sign?.symbol ?? '✦',
+                          style: TextStyle(color: Neon.violet, fontSize: 18)),
+                      label: Text(sign == null
+                          ? 'Zodiac Sign (Optional)'
+                          : 'Zodiac Sign: ${sign.name}'),
                     ),
                   ),
                   if (_error != null) ...[

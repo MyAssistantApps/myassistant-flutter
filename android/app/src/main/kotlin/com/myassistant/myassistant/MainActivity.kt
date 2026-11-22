@@ -748,6 +748,26 @@ class MainActivity : FlutterFragmentActivity() {
                         applicationContext,
                         call.argument<ByteArray>("bytes") ?: ByteArray(0),
                         call.argument<String>("name") ?: "card.png"))
+                    // EVERY APP WITH A LAUNCHER ICON, by name (Home's "Add App"
+                    // picker): [{label, pkg}], sorted by name, this app left out.
+                    "installedApps" -> {
+                        try {
+                            val pm = packageManager
+                            val main = Intent(Intent.ACTION_MAIN)
+                                .addCategory(Intent.CATEGORY_LAUNCHER)
+                            val seen = HashSet<String>()
+                            val out = ArrayList<Map<String, String>>()
+                            for (ri in pm.queryIntentActivities(main, 0)) {
+                                val pkg = ri.activityInfo?.packageName ?: continue
+                                if (pkg == packageName || !seen.add(pkg)) continue
+                                out.add(mapOf("label" to ri.loadLabel(pm).toString(), "pkg" to pkg))
+                            }
+                            out.sortBy { (it["label"] ?: "").lowercase() }
+                            result.success(out)
+                        } catch (_: Exception) {
+                            result.success(emptyList<Map<String, String>>())
+                        }
+                    }
                     // AN INSTALLED APP'S OWN ICON, as PNG (Home's "Order and
                     // shop" banners show each platform's real logo from the
                     // phone itself; null when the app is not installed).
@@ -999,10 +1019,6 @@ class MainActivity : FlutterFragmentActivity() {
         // The phone's own call history ("any missed calls?", the Missed
         // calls card), read here and summarised in Dart (CallLogBridge).
         CallLogBridge.register(flutterEngine.dartExecutor.binaryMessenger, this)
-
-        // "Send feedback" on the You tab: opens App Distribution's own
-        // feedback form (TesterFeedbackBridge).
-        TesterFeedbackBridge.register(flutterEngine.dartExecutor.binaryMessenger, this)
 
         // The sign-up's phone step: Google confirms the SIM's number with
         // its carrier, no SMS code (PhoneNumberVerificationBridge).

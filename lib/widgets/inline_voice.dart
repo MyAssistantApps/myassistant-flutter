@@ -56,7 +56,7 @@ OrbMood orbMoodFor(AssistantEngine e, {bool micPaused = false}) {
   if (e.greetingPlaying) return OrbMood.speaking;
   if (p == AssistantPhase.speaking) return OrbMood.speaking;
   // Until her first word (2026-10-06, the owner: "add the connecting
-  // animation"): the ~1.5 s GPT-Live takes to start shows as connecting.
+  // animation"): the ~1.5 s the realtime voice takes to connect shows as connecting.
   if (e.connecting) return OrbMood.connecting;
   if (p == AssistantPhase.responding ||
       p == AssistantPhase.searching ||
@@ -874,17 +874,12 @@ class _InlineCaptionOverlayState extends State<InlineCaptionOverlay>
                         top: MediaQuery.of(context).viewPadding.top, bottom: 4),
                     child: Row(
                       children: [
-                        // THE MANAGER, when they asked for it: slides in here.
                         // HER NAME AS THE HEADING (2026-11-02, Karthik: not
-                        // in the middle of the ball). The Manager's card
-                        // slides in over it when they have the conversation.
+                        // in the middle of the ball).
                         Expanded(
-                          child: Stack(
+                          child: Align(
                             alignment: Alignment.centerLeft,
-                            children: [
-                              _SessionTitle(engine: engine),
-                              ManagerPanel(engine: engine),
-                            ],
+                            child: _SessionTitle(engine: engine),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -2105,305 +2100,8 @@ class _TypeBarState extends State<_TypeBar> with WidgetsBindingObserver {
   }
 }
 
-/// THE ANSWER OUTLIVES THE VOICE. When an inline session ends, its last
-/// spoken reply lingers as a small card above the dock — spoken words
-/// evaporate, and "what did it just say?" was a real complaint. Dismiss
-/// with the ✕ or let it fade on its own.
-class AnswerAfterglow extends StatefulWidget {
-  const AnswerAfterglow({super.key, this.dismissOn});
-
-  /// Fires when the card no longer belongs on screen (HomeShell: a tab
-  /// switch — the answer was about the screen being left).
-  final Listenable? dismissOn;
-
-  @override
-  State<AnswerAfterglow> createState() => _AnswerAfterglowState();
-}
-
-class _AnswerAfterglowState extends State<AnswerAfterglow> {
-  final engine = AssistantEngine.instance;
-  bool _wasActive = false;
-  String? _text;
-  Timer? _hide;
-
-  /// What the card shows — kept through its fade-out. The words used to be
-  /// swapped for nothing the moment it was dismissed, so the fade had
-  /// nothing to fade and the card blinked out instead.
-  String? _shown;
-
-  /// THIS session's last answer, from its captions. A live reply is shown
-  /// as captions and never written to the transcript, so reading the
-  /// transcript re-showed an OLDER answer (or a relayed message) after
-  /// every live session.
-  String? _lastAnswer;
-  int _transcriptMark = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    engine.addListener(_sync);
-    engine.caption.addListener(_onCaption);
-    widget.dismissOn?.addListener(_close);
-    AppFeedback.changes.addListener(_onToast);
-  }
-
-  @override
-  void didUpdateWidget(AnswerAfterglow old) {
-    super.didUpdateWidget(old);
-    if (old.dismissOn != widget.dismissOn) {
-      old.dismissOn?.removeListener(_close);
-      widget.dismissOn?.addListener(_close);
-    }
-  }
-
-  @override
-  void dispose() {
-    engine.removeListener(_sync);
-    engine.caption.removeListener(_onCaption);
-    widget.dismissOn?.removeListener(_close);
-    AppFeedback.changes.removeListener(_onToast);
-    _hide?.cancel();
-    super.dispose();
-  }
-
-  void _onToast() {
-    if (mounted) setState(() {});
-  }
-
-  void _close() {
-    _hide?.cancel();
-    if (mounted && _text != null) setState(() => _text = null);
-  }
-
-  void _onCaption() {
-    final c = engine.caption.value;
-    if (c == null || c.speaker == 'you') return;
-    final t = c.text.trim();
-    if (t.isNotEmpty && voiceSessionOnScreen(engine)) _lastAnswer = t;
-  }
-
-  void _sync() {
-    if (!mounted) return;
-    final active = voiceSessionOnScreen(engine);
-    if (active && !_wasActive) {
-      // A new session: forget the last one's answer.
-      _lastAnswer = null;
-      _transcriptMark = engine.transcript.length;
-    }
-    if (active && _text != null) {
-      // A new session replaces the old afterglow immediately.
-      _close();
-    }
-    if (_wasActive && !active && engine.takeQuietEnd()) {
-      // Closed for a task, not by the owner: "On it, doing this in
-      // Swiggy…" is no answer to keep on screen (2026-09-26).
-      _lastAnswer = null;
-    } else if (_wasActive && !active) {
-      var last = _lastAnswer;
-      if (last == null) {
-        // Classic turns write to the transcript — but only THIS session's.
-        final t = engine.transcript;
-        for (var i = t.length - 1; i >= _transcriptMark && i >= 0; i--) {
-          if (t[i].role == TranscriptRole.assistant &&
-              t[i].text.trim().isNotEmpty) {
-            last = t[i].text.trim();
-            break;
-          }
-        }
-      }
-      _lastAnswer = null;
-      // Only a real answer earns an afterglow — never the greeting alone.
-      if (last != null && last.length > 12 && !last.endsWith('?')) {
-        setState(() => _text = last);
-        _hide?.cancel();
-        _hide = Timer(const Duration(seconds: 12), () {
-          if (mounted) setState(() => _text = null);
-        });
-      }
-    }
-    _wasActive = active;
-    // A result card is showing: it is the answer on screen — one card.
-    if (_text != null && _cardShowing) setState(() {});
-  }
-
-  bool get _cardShowing =>
-      engine.pendingConfirmation != null ||
-      engine.presentedText != null ||
-      engine.searchResults.isNotEmpty ||
-      engine.searchSuggestions.isNotEmpty ||
-      engine.generatedImage != null;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = _cardShowing ? null : _text;
-    if (t != null) _shown = t;
-    final shown = _shown;
-    // Above the dock and the mic, and above the toast while one is up.
-    final bottom = AppFeedback.clearOfToast(Dock.clearance(context, gap: 12));
-    return IgnorePointer(
-      ignoring: t == null,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 240),
-        // In on the arrival curve (with the rise below); out easing in.
-        // Both were linear.
-        curve: t == null ? Motion.easeFadeOut : Motion.easeEnter,
-        opacity: t == null ? 0 : 1,
-        // Faded all the way out: now the words can go.
-        onEnd: () {
-          final gone = _cardShowing || _text == null;
-          if (mounted && gone && _shown != null) {
-            setState(() => _shown = null);
-          }
-        },
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: AnimatedPadding(
-            duration: const Duration(milliseconds: 200),
-            curve: Motion.easeMove,
-            padding: EdgeInsets.only(left: 16, right: 16, bottom: bottom),
-            child: shown == null
-                ? const SizedBox.shrink()
-                // It rises 8 dp as it fades in, like every other card that
-                // comes out of the mic (the fade itself is above).
-                : EnterOnce(
-                    key: ValueKey(shown),
-                    duration: const Duration(milliseconds: 240),
-                    fade: false,
-                    rise: 8,
-                    child: Container(
-                      padding: const EdgeInsets.fromLTRB(14, 4, 2, 4),
-                      decoration: BoxDecoration(
-                        color: Neon.surfaceHigh,
-                        borderRadius: BorderRadius.circular(Neon.rMd),
-                        border: Border.all(color: Neon.line),
-                        boxShadow: Neon.cardShadow,
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(top: 10),
-                            child: Icon(Icons.auto_awesome,
-                                size: 15, color: Neon.violet),
-                          ),
-                          const SizedBox(width: 9),
-                          Flexible(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              child: Text(
-                                shown,
-                                maxLines: 4,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                    color: Neon.textHi,
-                                    fontSize: 13,
-                                    height: 1.4),
-                              ),
-                            ),
-                          ),
-                          // A real target (was a 16 px icon, ~24 dp to tap).
-                          IconButton(
-                            tooltip: 'Dismiss',
-                            constraints: const BoxConstraints(
-                                minWidth: 48, minHeight: 48),
-                            padding: EdgeInsets.zero,
-                            onPressed: _close,
-                            icon: Icon(Icons.close_rounded,
-                                size: 18, color: Neon.textDim),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// THE MANAGER PANEL (owner, 2026-11-01): it slides in at the top of the
-/// voice screen while the Manager has the conversation — its badge, its
-/// name, and what it is doing right now (the tool at work) — and slides
-/// away when it hands back.
-class ManagerPanel extends StatelessWidget {
-  const ManagerPanel({super.key, required this.engine});
-  final AssistantEngine engine;
-
-  static const _gold = Color(0xFFFFC857);
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: engine.managerOn,
-      builder: (context, on, _) => AnimatedSlide(
-        offset: on ? Offset.zero : const Offset(0, -1.4),
-        duration: const Duration(milliseconds: 320),
-        curve: on ? Curves.easeOutBack : Curves.easeIn,
-        child: AnimatedOpacity(
-          opacity: on ? 1 : 0,
-          duration: const Duration(milliseconds: 220),
-          child: Semantics(
-            liveRegion: true,
-            label: on ? 'The Manager is handling the conversation' : null,
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(8, 8, 14, 8),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: _gold.withValues(alpha: 0.55)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: const LinearGradient(
-                          colors: [Color(0xFFFFD98A), Color(0xFFE09A2D)]),
-                      boxShadow: [BoxShadow(color: _gold.withValues(alpha: 0.45), blurRadius: 12)],
-                    ),
-                    child: const Icon(Icons.workspace_premium_rounded,
-                        size: 20, color: Color(0xFF3A2400)),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text('Manager',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700)),
-                        ValueListenableBuilder<String?>(
-                          valueListenable: engine.activityLabel,
-                          builder: (_, doing, __) => Text(
-                            doing ?? 'Taking over from your assistant',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.7), fontSize: 12.5),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 /// The assistant's name at the top of the talking page, lit in the orb's
-/// time-of-day colours, with a small glowing dot beside it. It fades away
-/// while the Manager's card has the spot.
+/// time-of-day colours, with a small glowing dot beside it.
 class _SessionTitle extends StatelessWidget {
   const _SessionTitle({required this.engine});
   final AssistantEngine engine;
@@ -2411,12 +2109,7 @@ class _SessionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pal = NeuronPalette.at(DateTime.now());
-    return ValueListenableBuilder<bool>(
-      valueListenable: engine.managerOn,
-      builder: (_, manager, __) => AnimatedOpacity(
-        opacity: manager ? 0 : 1,
-        duration: const Duration(milliseconds: 220),
-        child: ValueListenableBuilder<String>(
+    return ValueListenableBuilder<String>(
           valueListenable: AssistantIdentity.notifier,
           builder: (_, name, __) => Semantics(
             header: true,
@@ -2457,8 +2150,6 @@ class _SessionTitle extends StatelessWidget {
               ],
             ),
           ),
-        ),
-      ),
-    );
+        );
   }
 }

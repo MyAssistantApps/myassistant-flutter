@@ -10,7 +10,6 @@ import '../../design/apple_kit.dart';
 import '../../design/motion.dart';
 import '../../design/neon_scaffold.dart';
 import '../../design/neon_tokens.dart';
-import '../assistant/widgets/action_cards.dart' show SearchSuggestionChips;
 import 'airlines.dart';
 import 'flight_fares.dart';
 import 'flight_trip.dart';
@@ -865,10 +864,6 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
           Text('Sources', style: NeonType.manrope(13, FontWeight.w800).copyWith(color: Neon.textLo)),
           const SizedBox(height: 4),
           for (final s in a.sources.take(6)) _source(s),
-        ],
-        if (a.suggestions.isNotEmpty) ...[
-          const SizedBox(height: 10),
-          SearchSuggestionChips(suggestions: a.suggestions),
         ],
       ];
 

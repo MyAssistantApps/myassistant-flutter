@@ -32,7 +32,6 @@ import '../services/notification_service.dart';
 import '../services/avatar_message_service.dart';
 import '../services/push_service.dart';
 import 'focus_nav.dart';
-import '../screens/bills_email_screen.dart' show BillsEmailNav;
 import '../core/log.dart';
 import '../services/auth_service.dart';
 import '../services/overlay_bridge.dart';
@@ -45,6 +44,7 @@ import '../screens/hub_screen.dart';
 import '../features/shopping/shopping_list_screen.dart' show ShoppingNav;
 import '../screens/quick_task_screen.dart';
 import '../services/app_feedback.dart';
+import '../services/documents_lock.dart';
 import '../services/app_update_service.dart';
 import '../services/assistant_identity.dart';
 import '../services/brief_service.dart';
@@ -63,21 +63,22 @@ import '../services/device_control_service.dart';
 import '../features/reminders/reminder_popup.dart';
 
 /// Where a tapped notification goes, by its payload: a video note left in
-/// the tray opens the notes again, a Bills by email one opens that screen
-/// (build 120), a focus one opens Focus; anything else just opens the app.
-/// [billsEmail] is for tests.
-Future<void> openNotificationPayload(String what,
-    {Future<void> Function()? billsEmail}) {
+/// the tray opens the notes again, a focus one opens Focus; anything else
+/// just opens the app.
+Future<void> openNotificationPayload(String what) {
   if (what == AvatarMessageService.videoNotePayload) {
     return PushService.instance.openVideoNotes();
   }
-  if (what == 'bills_email') return (billsEmail ?? BillsEmailNav.open)();
   // The shopping trip's notification and its Next / Done (build 124).
   if (what == ReminderNotifications.shoppingPayload ||
       what.startsWith('${ReminderNotifications.shoppingPayload}:')) {
     return ShoppingNav.fromNotification(what);
   }
   if (what == 'focus') return FocusNav.open();
+  // An urgent alert shown while the app was open (2026-11-21).
+  if (what.startsWith('urgent:')) {
+    return PushService.instance.openUrgent(int.tryParse(what.substring(7)));
+  }
   if (what == ListingNav.payload) return ListingNav.open();
   // A direct message (2026-10-04): that person's chat.
   if (what.startsWith('dm:')) {
@@ -348,7 +349,6 @@ class _HomeShellState extends State<HomeShell>
       e.scheduleItems.isNotEmpty ||
       voiceSessionOnScreen(e) ||
       e.searchResults.isNotEmpty ||
-      e.searchSuggestions.isNotEmpty ||
       e.presentedText != null ||
       e.generatedImage != null;
 
@@ -364,7 +364,7 @@ class _HomeShellState extends State<HomeShell>
       e.dismissPresentedText();
     } else if (e.generatedImage != null) {
       e.dismissGeneratedImage();
-    } else if (e.searchResults.isNotEmpty || e.searchSuggestions.isNotEmpty) {
+    } else if (e.searchResults.isNotEmpty) {
       e.dismissSearchResults();
     }
   }
@@ -558,6 +558,19 @@ class _HomeShellState extends State<HomeShell>
     // conversation keeps running underneath, mic stays hot.
     engine.onShowDocuments = (docs) {
       if (!mounted || docs.isEmpty) return false;
+      // Behind the screen lock (owner, 2026-11-21): a document asked for by
+      // voice opens only after the phone's own unlock.
+      if (!DocumentsLock.instance.isUnlocked) {
+        DocumentsLock.instance.unlock().then((ok) {
+          if (!mounted) return;
+          if (ok) {
+            engine.onShowDocuments?.call(docs);
+          } else {
+            AppFeedback.show('Your documents stay locked. Please unlock to view them.');
+          }
+        });
+        return true;
+      }
       // The keyboard goes down first (tester run, 2026-10-01): it came back
       // over the voice screen when the picture closed, hiding the dock orb
       // — so the one tap that stops the session had nothing to land on.
@@ -899,9 +912,6 @@ class _HomeShellState extends State<HomeShell>
                 }),
           // Floating captions for the inline (no-screen) conversation.
           const InlineCaptionOverlay(),
-          // The answer card that lingered after a voice chat (AnswerAfterglow)
-          // is off (owner, 2026-10-07): the spoken reply is enough, and the
-          // card covered Home.
           // The cards a turn produces — a confirmation to tap, a call in
           // progress, a written piece, search results. These lived only
           // inside the old conversation screen, which is why Home had to

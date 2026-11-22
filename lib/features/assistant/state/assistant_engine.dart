@@ -6,15 +6,22 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
+import '../../../core/store_build.dart';
+import '../../home/quick_app_store.dart';
+import '../../home/ride_strip.dart';
+import '../../home/order_strip.dart';
+import 'contact_pick.dart';
+import '../../../screens/linked_accounts_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../jyotish/jyotish_screen.dart';
 import '../../../ai/assistant_role.dart';
 import '../../../ai/brain.dart';
 import '../../../ai/listen.dart';
 import '../../../ai/live_voice.dart';
 import '../../../ai/model_port.dart';
-import '../../../ai/search_suggestions.dart';
 import '../../../ai/speech.dart' show SpeechEngine;
 import '../../../ai/types.dart' show AgentTurn, AiToolSpec;
 import '../../../core/log.dart';
@@ -24,6 +31,7 @@ import '../../../services/notification_service.dart';
 import '../../../design/motion.dart' show showAppDialog;
 import '../../../design/theme_controller.dart';
 import '../../../shell/home_shell.dart';
+import '../../../screens/connect/assistant_call_screen.dart';
 import '../../../screens/documents_screen.dart';
 import '../../../screens/phone/call_notes_screen.dart';
 import '../../../screens/reminders_screen.dart';
@@ -46,7 +54,6 @@ import '../../../screens/voice_picker_screen.dart';
 import '../../../models/shortcut.dart';
 import '../../../services/shortcut_runner.dart';
 import '../../../services/turn_audio_uploader.dart';
-import '../../../screens/bills_email_screen.dart';
 import '../../../models/user_document.dart';
 import '../../../models/vision_result.dart';
 import '../../../models/news_item.dart';
@@ -100,10 +107,9 @@ class AssistantEngine extends ChangeNotifier {
   static final AssistantEngine instance = AssistantEngine._();
 
   // ---------------- THE BRAIN ----------------
-  // Owner, 2026-09-29: the app talks to the models itself, through Firebase
-  // AI Logic — Gemini in the cloud for every turn (Nano was removed the
-  // same night), Gemini TTS for the voice — and the server is the tool
-  // server (lib/ai/brain.dart). Every spoken, typed and tapped
+  // The brain runs in the app and asks our server's models for every turn
+  // and for the voice; the server is also the tool server
+  // (lib/ai/brain.dart). Every spoken, typed and tapped
   // request is ONE brain turn: its words become the captions, its device
   // actions run through [_onEvent] exactly as they always did (and are
   // always answered), and its reply is spoken sentence by sentence through
@@ -178,9 +184,6 @@ class AssistantEngine extends ChangeNotifier {
       !_liveGaveUp &&
       LiveVoicePrefs.enabled &&
       AiConfigStore.instance.current.live.on;
-
-  /// The conversation is on the fast (Live) voice right now.
-  bool get fastVoice => _liveMode;
 
   /// Test seam: a scripted brain, listener, player and voice. The barge-in
   /// microphone stays off unless [bargeWatch]; the fast voice is off unless
@@ -449,6 +452,23 @@ class AssistantEngine extends ChangeNotifier {
     if (_starting) _startCancelled = true;
     inlineVoice = false;
     await leaveConversation();
+    if (_nameStale) await nameChanged();
+  }
+
+  /// RENAMED (owner, 2026-11-22: renamed to Saanvi, the voice still said
+  /// "My name is Maya"). A voice session warmed before the rename carries
+  /// the old name in its instruction, and the cached greeting may say it:
+  /// both are let go so the next tap connects with the new name. In the
+  /// middle of a conversation (renamed by voice) it waits for the end.
+  bool _nameStale = false;
+  Future<void> nameChanged() async {
+    unawaited(GreetingVoice.instance.clear());
+    if (_starting || inlineVoice || _voiceOn) {
+      _nameStale = true;
+      return;
+    }
+    _nameStale = false;
+    await _live.discard();
   }
 
   /// Which professional assistant answers (Doctor's, Advocate's, …); null
@@ -467,10 +487,6 @@ class AssistantEngine extends ChangeNotifier {
 
   String? searchQuery;
   List<SearchResult> searchResults = const [];
-
-  /// Google's search suggestions for a grounded answer, shown as chips
-  /// beside its sources (the grounding terms require them).
-  List<SearchSuggestion> searchSuggestions = const [];
 
   /// Saved documents recalled by this turn ("pull up patient Ramesh's
   /// file") — shown as cards while the reply is spoken.
@@ -507,15 +523,6 @@ class AssistantEngine extends ChangeNotifier {
     try {
       final p = await SharedPreferences.getInstance();
       captionsEnabled = p.getBool(_captionsPrefKey) ?? false;
-    } catch (_) {}
-  }
-
-  static Future<void> setCaptionsEnabled(bool v) async {
-    captionsEnabled = v;
-    if (!v) instance.caption.value = null;
-    try {
-      final p = await SharedPreferences.getInstance();
-      await p.setBool(_captionsPrefKey, v);
     } catch (_) {}
   }
 
@@ -653,21 +660,14 @@ class AssistantEngine extends ChangeNotifier {
 
   final ValueNotifier<String?> activityLabel = ValueNotifier(null);
 
-  /// THE MANAGER HAS THE CONVERSATION (owner, 2026-11-01: "if user says I
-  /// want to talk to your manager agent the manager agent should pop up").
-  /// On when the server hands the turn to the Manager (backend
-  /// agents/manager.js) or the live voice calls hand_to_manager; off when
-  /// it hands back, on any other turn, and when the conversation ends.
-  final ValueNotifier<bool> managerOn = ValueNotifier(false);
-
   /// Who has control of the running turn — the manager agent and the
   /// specialists it chose — and which of them runs the current tool.
   /// Null between turns and when the manager stayed out of it.
   /// [done]: the specialist ids that have finished their part; [over]:
-  /// the reply is out — the hand-off stays on screen a moment, all done.
+  /// the reply is out — the turn stays on screen a moment, all done.
   final ValueNotifier<AgentTurn?> agentControl = ValueNotifier(null);
 
-  /// The turn the hand-off lane shows; cleared shortly after it ends.
+  /// Clears [agentControl] shortly after the turn ends.
   Timer? _agentClear;
 
   /// The status line's words for the phase: while a tool runs
@@ -763,8 +763,6 @@ class AssistantEngine extends ChangeNotifier {
           CallStatusInfo? s, DateTime changedAt, DateTime now) =>
       s != null && !s.done && now.difference(changedAt) < _callStatusCap;
 
-  bool get micBusy => phase == AssistantPhase.listening;
-
   /// Set by HomeShell: opens the conversation screen (same navigation as
   /// tapping the mic) and returns true, or returns false when it is
   /// already on screen. A tapped message notification uses this so the
@@ -796,7 +794,7 @@ class AssistantEngine extends ChangeNotifier {
   /// Says [text] in the assistant's own voice with NO model behind it:
   /// Gemini TTS through the speech engine, into the player. For words that
   /// are fixed — someone's message read out when no conversation is
-  /// running, the greeting.
+  /// running.
   Future<void> _speakDirect(String text) async {
     final line = text.trim();
     if (line.isEmpty || speakerMuted || !_foreground) {
@@ -1021,7 +1019,7 @@ class AssistantEngine extends ChangeNotifier {
     // Keep the realtime opener short and deterministic. The realtime voice
     // says this itself after the mic is live; no separately recorded clip.
     final line = _openingLine;
-    // GPT-Live speaks first only when told plainly to begin now (OpenAI's
+    // The realtime model speaks first only when told plainly to begin now (OpenAI's
     // guide: say what to say, that it starts immediately, then listen).
     final said = await _live.greet(
         '[SYSTEM] Speak first, right now, in English: say exactly '
@@ -1432,7 +1430,22 @@ class AssistantEngine extends ChangeNotifier {
     final epoch = _voiceEpoch;
     if (e.code == 'permission') {
       unawaited(_stopVoice());
-      _setLocalError('Microphone access is required. Enable it in Settings.');
+      // Declined at sign-up ("Continue With Typing Only"): ask now, once
+      // per tap, where the user can see why. Blocked for good: Settings.
+      unawaited(() async {
+        try {
+          final st = await Permission.microphone.request();
+          if (st.isGranted) {
+            _setLocalError('Microphone allowed. Please tap again to talk.');
+            return;
+          }
+          if (st.isPermanentlyDenied) {
+            _setLocalError('Microphone access is blocked. Please allow it in Settings to talk to your assistant.');
+            return;
+          }
+        } catch (_) {}
+        _setLocalError('Microphone access is required to talk. You can still type your request.');
+      }());
       return;
     }
     _hearFailures++;
@@ -1746,7 +1759,7 @@ class AssistantEngine extends ChangeNotifier {
       case LiveSpeaking():
         _liveTurnBegins();
         _finishTools();
-        // GPT-Live's voice plays on the call, not our player: her words
+        // The realtime voice plays on the call, not our player: her words
         // are what turn the orb to speaking.
         if (phase != AssistantPhase.speaking)
           _setPhase(AssistantPhase.speaking, silent: true);
@@ -2109,12 +2122,10 @@ class AssistantEngine extends ChangeNotifier {
                 '${control == null ? '' : ' — ${control.summary} (${control.via})'}');
             // ONE ASSISTANT ON SCREEN (owner, 2026-11-01: "the user should
             // not be able to see the underlying agents"): no hand-off lane,
-            // no agent name under the orb — except the Manager, when asked.
+            // no agent name under the orb (the Manager persona was removed
+            // on 2026-11-22: one personal assistant only).
             _agentClear?.cancel();
             agentControl.value = null;
-            if (control != null && !control.skipped) {
-              managerOn.value = control.addressed?.id == 'manager';
-            }
           case BrainPartialText(:final text):
             _finishTools();
             if (phase == AssistantPhase.responding) {
@@ -2140,7 +2151,7 @@ class AssistantEngine extends ChangeNotifier {
           case final BrainFinalText fin:
             _uploadHeard(fin.turnId);
             _finishTools();
-            live = _onFinal(fin, words, live);
+            live = _onFinal(fin, live);
           case BrainSpokenAudio():
             // Already queued on the player; the orb follows the player.
             break;
@@ -2182,8 +2193,7 @@ class AssistantEngine extends ChangeNotifier {
     return entry;
   }
 
-  TranscriptEntry? _onFinal(
-      BrainFinalText e, String asked, TranscriptEntry? live) {
+  TranscriptEntry? _onFinal(BrainFinalText e, TranscriptEntry? live) {
     connected = true;
     _turnFailures = 0;
     final text = e.text.trim();
@@ -2195,33 +2205,8 @@ class AssistantEngine extends ChangeNotifier {
       return null;
     }
     _captionLine('hari', text);
-    // A Google-Search-grounded answer shows the pages it used and Google's
-    // search suggestions beside it (the grounding terms require both).
-    if (e.sources.isNotEmpty || (e.searchSuggestionsHtml ?? '').isNotEmpty) {
-      searchQuery = asked;
-      searchResults = [
-        for (final s in e.sources.take(5))
-          SearchResult(
-            title:
-                (s.title ?? '').trim().isEmpty ? _host(s.uri) : s.title!.trim(),
-            url: s.uri,
-            snippet: '',
-            source: (s.title ?? '').trim().isEmpty ? '' : s.title!.trim(),
-          ),
-      ];
-      searchSuggestions = parseSearchSuggestions(e.searchSuggestionsHtml);
-    }
     _refreshBriefSoon();
     return _liveReply(live, text);
-  }
-
-  static String _host(String url) {
-    try {
-      final h = Uri.parse(url).host;
-      return h.startsWith('www.') ? h.substring(4) : h;
-    } catch (_) {
-      return url;
-    }
   }
 
   void _onBrainError(String code, String message, bool fatal) {
@@ -2267,8 +2252,6 @@ class AssistantEngine extends ChangeNotifier {
 
   void _toolStarted(String tool, [Map<String, Object?> args = const {}]) {
     _finishTools();
-    if (tool == 'hand_to_manager') managerOn.value = true;
-    if (tool == 'hand_back_to_assistant') managerOn.value = false;
     if (LocationService.locationTools.contains(tool)) {
       unawaited(_maybeAskLocation());
     }
@@ -2329,9 +2312,6 @@ class AssistantEngine extends ChangeNotifier {
   /// [SYSTEM] notes waiting for a turn of their own.
   final _notes = <({String line, bool untrusted})>[];
   bool _notesRunning = false;
-
-  /// [_tellModel] for feature modules (the photo-card actions).
-  Future<void> tellModel(String line) => _tellModel(line);
 
   /// [_tellModel] with [untrusted] (tests).
   @visibleForTesting
@@ -2486,7 +2466,6 @@ class AssistantEngine extends ChangeNotifier {
     _conversationOpen = false;
     inlineVoice = false;
     _endAfterTurn = false;
-    managerOn.value = false;
     // Every way a conversation ends comes through here.
     _endBubbleTalk();
     // MUTE BELONGS TO THE CONVERSATION THAT SET IT: the only unmute control
@@ -2497,7 +2476,6 @@ class AssistantEngine extends ChangeNotifier {
     // Web results belong to the conversation they answered.
     searchQuery = null;
     searchResults = const [];
-    searchSuggestions = const [];
     translatorActive = false; // the interpreter never outlives the screen
     _clearCaption();
     activityLabel.value = null;
@@ -2528,20 +2506,13 @@ class AssistantEngine extends ChangeNotifier {
   /// The user's display name, supplied by the screen once it is known.
   String? greetingName;
 
-  /// Suppresses the automatic spoken greeting when a conversation opens.
-  ///
-  /// OFF since 2026-09-20 at the owner's request (the orb tap's cached
-  /// hello stays). It stays a switch rather than deleted code: flipping it
-  /// back is one word.
-  bool greetingEnabled = false;
-
   /// How the owner is addressed (owner, 2026-09-23: "should say hello
   /// Sir, and give more respect"; 2026-09-24: "don't call them ji, call
   /// them Sir"). Ma'am when the profile says female, Sir otherwise — never
   /// "<name> ji". The server tells the model the same thing, so the voice
   /// and this greeting never disagree.
   /// The opening line (2026-10-06): "Hello Madam." when the profile says
-  /// female, "Hello Sir." otherwise. GPT-Live gets the same from the server.
+  /// female, "Hello Sir." otherwise. The realtime voice is told the same line in greet().
   static String openingLine({String? gender}) =>
       (gender ?? '').trim().toLowerCase() == 'female' ? 'Hello Madam.' : 'Hello Sir.';
 
@@ -2549,50 +2520,6 @@ class AssistantEngine extends ChangeNotifier {
 
   static String honorific({String? name, String? gender}) {
     return (gender ?? '').trim().toLowerCase() == 'female' ? "Ma'am" : 'Sir';
-  }
-
-  /// What the orb tap says, instantly, in the assistant's own voice.
-  /// About 2 s spoken (2026-10-04): it plays the instant the orb is tapped
-  /// and covers the fast voice's connect, so nobody waits in silence.
-  static String orbGreeting({String? name, String? gender}) {
-    final who = honorific(name: name, gender: gender);
-    return who.isEmpty
-        ? 'Hello. How may I assist you today?'
-        : 'Hello $who, how may I assist you today?';
-  }
-
-  /// Time-appropriate greeting text.
-  static String greetingFor(String? name, {String? gender, DateTime? now}) {
-    final h0 = honorific(name: name, gender: gender);
-    final who = h0.isEmpty ? 'there' : h0;
-    // Short and professional — the greeting is also the app's first
-    // latency impression, so one crisp sentence beats a flourish.
-    final h = (now ?? DateTime.now()).hour;
-    final part = h < 12
-        ? 'Good morning'
-        : h < 17
-            ? 'Good afternoon'
-            : 'Good evening';
-    return '$part, $who. How may I assist you today?';
-  }
-
-  /// The spoken greeting, when it is switched on: a FIXED line, so it goes
-  /// straight through the speech engine — no model is asked to say it.
-  /// Refuses while offline to the conversation, mid-turn, in a phone call,
-  /// or when it was said recently.
-  Future<void> greetOnce({String? name}) async {
-    if (name != null && name.isNotEmpty) greetingName = name;
-    if (!greetingEnabled || !_conversationOpen) return;
-    if (DateTime.now().difference(_lastGreetedAt) < _greetCooldown) return;
-    if (_turnRunning || PhoneStateGuard.instance.inCall) return;
-    _lastGreetedAt = DateTime.now();
-    final text =
-        greetingFor(greetingName, gender: AuthService.instance.user?.gender);
-    transcript.add(TranscriptEntry(TranscriptRole.assistant, text));
-    replyComplete = true;
-    _captionLine('hari', text);
-    notifyListeners();
-    await _speakDirect(text);
   }
 
   /// Resets the greeting clock — used when a DIFFERENT user signs in, so
@@ -2816,6 +2743,16 @@ class AssistantEngine extends ChangeNotifier {
             .toList();
         break;
 
+      case 'ride_booked':
+        // A cab booked by voice: Home's ride card shows it at once.
+        RideService.instance.refresh();
+        break;
+
+      case 'order_placed':
+        // An order placed by voice: Home's orders card shows it at once.
+        OrderService.instance.refresh();
+        break;
+
       case 'documents':
         // Saved documents matched by this turn (doc recall or a client's
         // case file) — pop them on screen while Hari speaks the answer.
@@ -2892,8 +2829,11 @@ class AssistantEngine extends ChangeNotifier {
           final msg = (e['message'] ?? '').toString();
           final err = await SmsService.instance.send(to, msg);
           final ok = err == null;
-          AppFeedback.toast(
-              ok ? 'Text message sent to $who.' : "Unable to send a text message to $who: $err.");
+          AppFeedback.toast(ok
+              ? (kPlayStoreBuild
+                  ? 'Your message to $who is ready. Please tap Send.'
+                  : 'Text message sent to $who.')
+              : "Unable to send a text message to $who: $err.");
           try {
             await ApiService.sendJson('/outcomes', method: 'POST', body: {
               'kind': 'message',
@@ -2987,6 +2927,28 @@ class AssistantEngine extends ChangeNotifier {
         // a phone task last) and keeps the rest for the owner's return.
         unawaited(ShortcutRunner.instance
             .run(ShortcutRunDirective.fromJson(e), shortcutPorts));
+        break;
+
+      case 'connect_assistant':
+        // "Connect me to Alan's assistant" (2026-11-21): a live call with
+        // Alan's own assistant — his assistant's name, voice and photo.
+        {
+          final id = (e['hostId'] as num?)?.toInt();
+          final nav = AvatarMessageService.navigatorKey.currentState;
+          if (id == null || nav == null) {
+            _reportDeviceFailure('connect_assistant',
+                target: '${e['ownerName'] ?? ''}', reason: 'the call screen could not open');
+          } else {
+            // Our own conversation ends first (after "Connecting you to…"
+            // is spoken): two live sessions would share one microphone and
+            // one speaker.
+            unawaited(() async {
+              await Future<void>.delayed(const Duration(milliseconds: 1800));
+              await endInlineConversation().catchError((Object _) {});
+              nav.push(MaterialPageRoute(builder: (_) => AssistantCallScreen(hostId: id)));
+            }());
+          }
+        }
         break;
 
       case 'open_app_screen':
@@ -3165,7 +3127,11 @@ class AssistantEngine extends ChangeNotifier {
         // claiming an app opened.
         {
           final want = (e['name'] as String? ?? '').trim();
-          final pkg = (e['pkg'] as String? ?? '').trim();
+          var pkg = (e['pkg'] as String? ?? '').trim();
+          // AN APP THEY ADDED TO HOME (Quick Apps / Payments → Add App):
+          // its exact package, so "open <their app>" never lands on a
+          // lookalike by label.
+          if (pkg.isEmpty) pkg = await QuickAppStore.instance.pkgFor(want) ?? '';
           // INSTALL ONLY ON THE OWNER'S WORDS. Owner, 2026-09-24: "open X"
           // on a phone without X installed it unasked. The server now says
           // whether they asked to install / download it (or said yes to
@@ -3333,6 +3299,7 @@ class AssistantEngine extends ChangeNotifier {
         final newName = (e['name'] as String?)?.trim();
         if (newName != null && newName.isNotEmpty) {
           AssistantIdentity.set(newName);
+          unawaited(nameChanged());
         }
         break;
 
@@ -3521,17 +3488,6 @@ class AssistantEngine extends ChangeNotifier {
               : 'Translator off.');
         }
         break;
-
-      case 'open_video':
-        // Face-to-face video rode the live socket, which is gone: said
-        // plainly rather than opening an empty room.
-        _reportDeviceFailure('open_video',
-            reason: 'face-to-face video is not in this version');
-        await _tellModel(
-            '[SYSTEM] ERROR: face-to-face video is not available in '
-            'this version of the app, so nothing opened. Say that plainly in '
-            'one sentence.');
-        break;
     }
     notifyListeners();
   }
@@ -3572,10 +3528,6 @@ class AssistantEngine extends ChangeNotifier {
     }
     await _askWithPicture(shot, question);
   }
-
-  /// Dashboard "Scan" button — same flow as the voice command, but entered
-  /// deterministically: the camera opens immediately, no voice turn needed.
-  Future<void> startScan() => _captureDocument('');
 
   /// LOOK AT A PICTURE THEY ALREADY HAVE (look_at_screenshot) and answer
   /// about it, as a turn with the picture. When it shows an upcoming event
@@ -3866,6 +3818,16 @@ class AssistantEngine extends ChangeNotifier {
       String? language,
       String? voice}) async {
     if (name.trim().isEmpty) return;
+    // THE ANSWER TO "WHICH ONE?" (2026-11-21): with several matches on the
+    // table, "2", "the second one" or "ending 8765" picks that contact.
+    if (ambiguousContacts.isNotEmpty) {
+      final i = pickNumberedContact(name, ambiguousContacts);
+      if (i != null) {
+        if (message != null && message.trim().isNotEmpty) _localCallTask = message;
+        await _actOnResolvedCall(ambiguousContacts[i]);
+        return;
+      }
+    }
     // Whatever the user decided about a no-answer. Zero means one
     // attempt — the assistant never invents a retry.
     _localCallRetryTimes = retryTimes;
@@ -4025,13 +3987,16 @@ class AssistantEngine extends ChangeNotifier {
     notifyListeners();
     _offerContactPicker();
 
-    final names = ambiguousContacts.map((c) => c.name).join(', ');
+    // NUMBERED (owner, 2026-11-21): the same name saved twice cannot be
+    // told apart by name, so each option is read with its number and the
+    // last digits of its phone number, and the user answers by number.
     await _tellModel(
         '[SYSTEM] "$name" matches ${ambiguousContacts.length} saved '
-        'contacts: $names. NO call was placed. Ask the user which one '
-        'you should call, in ONE short question that says the names as '
-        'they are saved. When they answer, call place_phone_call again '
-        'with that exact saved name.');
+        'contacts: ${numberedContacts(ambiguousContacts)}. NO call was placed. '
+        'Read the options to the user exactly like that, numbered, and ask '
+        'which number to call, in ONE short question. When they answer, call '
+        'place_phone_call again with name set to the NUMBER they chose (for '
+        'example "2"), or the last digits they said.');
   }
 
   /// Acts on a resolved contact: agent relay (Hari speaks the message on
@@ -4721,6 +4686,7 @@ class AssistantEngine extends ChangeNotifier {
         'reminders' => (_) => const RemindersScreen(),
         'call_notes' => (_) => const CallNotesScreen(),
         'documents' => (_) => const DocumentsScreen(),
+        'linked_accounts' => (_) => const LinkedAccountsScreen(),
         'clients' => (_) => const ClientsScreen(),
         'finance' => (_) => const FinanceScreen(),
         'stocks' => (_) => const StocksScreen(),
@@ -4734,12 +4700,10 @@ class AssistantEngine extends ChangeNotifier {
         // "Send a video note to …" with no video recorded yet: the server
         // opens the place to record it (send_video_note, 2026-09-26).
         'avatar_identity' => (_) => const AvatarIdentityScreen(),
-        // "Connect my Notion" (build 120).
+        // "Open my connected apps" (build 120).
         'connected_apps' => (_) => const ConnectedAppsScreen(),
         // "Show my shortcuts" (build 120).
         'shortcuts' => (_) => const ShortcutsScreen(),
-        // "What's my bills email" (bills_email tool, build 120).
-        'bills_email' => (_) => const BillsEmailScreen(),
         // "Show my shopping list" (shopping_list_show, build 124), or one
         // kind of it ("my grocery list").
         'shopping_list' => (_) => ShoppingListScreen(
@@ -4747,6 +4711,8 @@ class AssistantEngine extends ChangeNotifier {
                   ? null
                   : (e['category'] as String).trim(),
             ),
+        // "Open my kundli" (jyotish, 2026-11-22): the Vedic horoscope.
+        'jyotish' => (_) => const JyotishScreen(),
         _ => null,
       };
 
@@ -4817,11 +4783,6 @@ class AssistantEngine extends ChangeNotifier {
   /// The shortcut runner's view of this app.
   late final ShortcutPorts shortcutPorts = _EngineShortcutPorts(this);
 
-  /// Whether a voice command can open [screen] (open_app_screen).
-  @visibleForTesting
-  bool canOpenAppScreen(String screen) =>
-      screen == 'voice_settings' || _appScreenBuilder(screen) != null;
-
   /// "OPEN VOICE SETTINGS" (2026-10-06). The conversation ends once her
   /// "Opening voice settings." has played — a session's voice is fixed, so
   /// the new one can only start fresh — then the picker opens, where every
@@ -4888,8 +4849,8 @@ class AssistantEngine extends ChangeNotifier {
     _leftForExternalApp = true;
     String? opened;
     try {
-      opened = await const MethodChannel('hari/intent')
-          .invokeMethod<String>('launchApp', {'name': app, 'pkg': ''});
+      opened = await const MethodChannel('hari/intent').invokeMethod<String>(
+          'launchApp', {'name': app, 'pkg': await QuickAppStore.instance.pkgFor(app) ?? ''});
     } catch (_) {}
     if (opened == null || opened.isEmpty) {
       _leftForExternalApp = false;
@@ -4906,23 +4867,6 @@ class AssistantEngine extends ChangeNotifier {
     await _tellModel('[SYSTEM] The task in $app ${r.ok ? 'is finished' : 'did not finish'}: '
         '${r.summary} Tell me that in one short sentence, in my language.'
         '${r.ok ? '' : ' Do not say it was done.'}');
-  }
-
-  /// When the conversation was last closed for a task rather than by the
-  /// owner: its last line ("On it…") is not an answer to keep on screen.
-  DateTime? _quietEndAt;
-
-  /// True once, just after a conversation closed for a task — read by the
-  /// answer card (AnswerAfterglow). Stale after a few seconds, so a close
-  /// nobody was watching cannot hide a later, real answer.
-  @visibleForTesting
-  void debugMarkQuietEnd() => _quietEndAt = DateTime.now();
-
-  bool takeQuietEnd() {
-    final at = _quietEndAt;
-    _quietEndAt = null;
-    return at != null &&
-        DateTime.now().difference(at) < const Duration(seconds: 5);
   }
 
   /// "Scan this visiting card" — the camera, the server's reading, and the
@@ -4976,12 +4920,9 @@ class AssistantEngine extends ChangeNotifier {
 
   /// User closed the web results.
   void dismissSearchResults() {
-    if (searchResults.isEmpty &&
-        searchQuery == null &&
-        searchSuggestions.isEmpty) return;
+    if (searchResults.isEmpty && searchQuery == null) return;
     searchQuery = null;
     searchResults = const [];
-    searchSuggestions = const [];
     notifyListeners();
   }
 
@@ -5042,7 +4983,6 @@ class AssistantEngine extends ChangeNotifier {
   /// that a live session manages itself.
   void _clearAnswerCards() {
     if (searchResults.isEmpty &&
-        searchSuggestions.isEmpty &&
         documentCards.isEmpty &&
         presentedText == null &&
         generatedImage == null) {
@@ -5050,7 +4990,6 @@ class AssistantEngine extends ChangeNotifier {
     }
     searchQuery = null;
     searchResults = const [];
-    searchSuggestions = const [];
     documentCards = const [];
     presentedTitle = null;
     presentedText = null;
@@ -5063,7 +5002,6 @@ class AssistantEngine extends ChangeNotifier {
     errorMessage = null;
     searchQuery = null;
     searchResults = const [];
-    searchSuggestions = const [];
     documentCards = const [];
     generatedImage = null;
     generatedImagePrompt = '';

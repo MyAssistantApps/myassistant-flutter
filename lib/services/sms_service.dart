@@ -1,5 +1,8 @@
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../core/store_build.dart';
 
 /// TRUE automatic SMS — the delivery ladder's second rung. When the
 /// recipient isn't an app user, the assistant's message goes out as a
@@ -16,6 +19,20 @@ class SmsService {
   Future<String?> send(String to, String body) async {
     final number = to.trim();
     if (number.isEmpty || body.trim().isEmpty) return 'nothing to send';
+    // Play builds hold no SEND_SMS (a restricted permission): the phone's
+    // own SMS app opens with the message filled in, and the user taps Send.
+    if (kPlayStoreBuild) {
+      try {
+        final ok = await launchUrl(
+            // encodeComponent, not queryParameters: some SMS apps show the
+            // "+" a form-encoded space becomes.
+            Uri.parse('sms:$number?body=${Uri.encodeComponent(body)}'),
+            mode: LaunchMode.externalApplication);
+        return ok ? null : 'no messaging app is available';
+      } catch (_) {
+        return 'no messaging app is available';
+      }
+    }
     try {
       var status = await Permission.sms.status;
       if (!status.isGranted) {

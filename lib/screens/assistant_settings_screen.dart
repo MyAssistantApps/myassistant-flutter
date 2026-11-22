@@ -9,6 +9,7 @@ import '../ai/live_voice.dart';
 import '../design/accent_controller.dart';
 import '../features/home/home_memory.dart';
 import '../design/apple_kit.dart';
+import '../design/motion.dart' show showAppSheet;
 import '../design/dock_metrics.dart';
 import '../design/neon_tokens.dart';
 import '../design/neon_widgets.dart';
@@ -16,7 +17,10 @@ import '../design/theme_controller.dart';
 import '../services/voice_choice.dart';
 import '../services/api_service.dart';
 import '../services/assistant_identity.dart';
+import '../features/assistant/state/assistant_engine.dart';
 import 'account_section.dart';
+import 'help_feedback_sheet.dart';
+import 'linked_accounts_screen.dart';
 import '../features/premium/premium_screen.dart';
 import 'app_lock_section.dart';
 import 'theme_colour_screen.dart';
@@ -24,21 +28,18 @@ import 'voice_picker_screen.dart';
 import 'avatar_identity_screen.dart';
 import 'memory_screen.dart';
 import 'overlay_section.dart';
-import 'bills_email_screen.dart';
-import '../models/mail_inbox.dart';
-import '../services/mail_inbox_service.dart';
 import '../services/app_feedback.dart';
-import '../services/tester_feedback.dart';
 import '../features/widgets/widget_picker.dart';
+import '../features/home/horoscope_card.dart';
+import '../services/horoscope.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  ASSISTANT SETTINGS — how the assistant sounds and looks, plus the
 ///  user's standing rules.
 ///
-///  Deliberately NO name field and NO style dropdown: identity is set by
-///  TALKING ("your name is Maya from now on") — the conversation is the
-///  interface. Everything left on this page saves the moment it's tapped;
-///  there is no Save button to forget.
+///  The name: tap the top card to type one, or just say "your name is Maya
+///  from now on" (owner, 2026-11-22). Everything else on this page saves
+///  the moment it's tapped; there is no Save button to forget.
 /// ─────────────────────────────────────────────────────────────────────────
 class AssistantSettingsScreen extends StatefulWidget {
   const AssistantSettingsScreen({super.key});
@@ -57,9 +58,8 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
   @override
   void initState() {
     super.initState();
-    // Bills by email: is it switched on for this server? (hidden if not)
-    unawaited(MailInboxService.instance.refresh());
     _load();
+    unawaited(Horoscope.load());
   }
 
   @override
@@ -136,26 +136,14 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
     await _load();
   }
 
-  /// Opens the tester feedback form (TesterFeedback). When it opened,
-  /// the form speaks for itself; when it could not, one toast says so.
-  ///
-  /// Two messages, each only when it is true (review, 2026-09-25). The one
-  /// toast used to say "Check your internet" for every failure, but the
-  /// failures that reach here were never the internet (Firebase not
-  /// started, no Android half); the connection is now checked before the
-  /// form starts, and only that check's answer asks about the connection.
-  Future<void> _sendFeedback() async {
-    final started = await TesterFeedback.start();
-    if (!mounted) return;
-    final msg = switch (started) {
-      FeedbackStart.opened => null,
-      FeedbackStart.offline =>
-        'Feedback requires an internet connection. Check your network and try again.',
-      FeedbackStart.unavailable =>
-        "Feedback is unavailable right now. Please try again later.",
-    };
-    if (msg == null) return;
-    AppFeedback.show(msg, context: context, tone: FeedbackTone.error);
+  Future<void> _rename(BuildContext context) async {
+    HapticFeedback.selectionClick();
+    final saved = await showAppSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => const _RenameSheet(),
+    );
+    if (saved != null) AppFeedback.toast('Your assistant is now called $saved.');
   }
 
   @override
@@ -188,12 +176,18 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                   valueListenable: AssistantIdentity.notifier,
                   builder: (_, n, __) => GlowCard(
                     halo: 0.5,
+                    // RENAME BY HAND OR BY VOICE (owner, 2026-11-22): tap to
+                    // type a new name; saying "your name is … from now on"
+                    // still renames it, and this card follows either way.
                     child: AppleRow(
                       leading: IconTile(
                           Icons.auto_awesome_rounded, AppleColors.purple),
                       title: n,
-                      subtitle: 'To rename your assistant, say "your name is '
-                          'Maya from now on".',
+                      subtitle: 'Tap to rename, or say "your name is Asha '
+                          'from now on".',
+                      trailing: Icon(Icons.edit_rounded,
+                          color: Neon.textDim, size: 20),
+                      onTap: () => _rename(context),
                     ),
                   ),
                 ),
@@ -207,12 +201,33 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                       leading: IconTile(
                           Icons.workspace_premium_rounded, AppleColors.purple),
                       title: 'MyAssistant Premium',
-                      subtitle: 'Try Pro free for 14 days',
+                      subtitle: 'Join the Pro early-access list',
                       trailing: Icon(Icons.chevron_right_rounded,
                           color: Neon.textDim, size: 20),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                             builder: (_) => const PremiumScreen()),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // LINKED ACCOUNTS (2026-11-21): Uber, Swiggy… so the
+                // assistant books and orders on the user's own account.
+                const GroupLabel('Linked Accounts'),
+                GroupedCard(
+                  dividerInset: 60,
+                  children: [
+                    AppleRow(
+                      leading: IconTile(Icons.link_rounded, AppleColors.teal),
+                      title: 'Linked Accounts',
+                      subtitle: 'Uber, Swiggy and more, for booking by voice',
+                      trailing: Icon(Icons.chevron_right_rounded,
+                          color: Neon.textDim, size: 20),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const LinkedAccountsScreen()),
                       ),
                     ),
                   ],
@@ -308,6 +323,21 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                               builder: (_) => const ThemeColourScreen()),
                         ),
                       ),
+                      // TODAY'S HOROSCOPE (owner, 2026-11-15): the sign Home reads.
+                      ValueListenableBuilder<ZodiacSign?>(
+                        valueListenable: Horoscope.current,
+                        builder: (_, sign, __) => AppleRow(
+                          leading: IconTile(
+                              Icons.auto_awesome_rounded, AppleColors.indigo),
+                          title: 'Zodiac Sign',
+                          subtitle: sign == null
+                              ? 'Select a sign for your daily horoscope'
+                              : '${sign.symbol} ${sign.name} · ${sign.dates}',
+                          trailing: Icon(Icons.chevron_right_rounded,
+                              color: Neon.textDim, size: 20),
+                          onTap: () => pickZodiacSign(context),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -392,9 +422,6 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // "Video avatar → Avatar face" was here. It appeared whenever
-                // the server listed faces, but the app has no video renderer
-                // (face mode is off), so a pick changed nothing visible.
                 const GroupLabel('Your Avatar Identity'),
                 GroupedCard(
                   dividerInset: 60,
@@ -413,40 +440,6 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                   ],
                 ),
                 const SizedBox(height: 24),
-
-                // Bills by email (build 120): only when the server says it
-                // is switched on — until then there is nothing to show.
-                ValueListenableBuilder<MailInboxState?>(
-                  valueListenable: MailInboxService.instance.state,
-                  builder: (context, s, _) => s?.available != true
-                      ? const SizedBox.shrink()
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const GroupLabel('Documents'),
-                            GroupedCard(
-                              dividerInset: 60,
-                              children: [
-                                AppleRow(
-                                  leading: IconTile(
-                                      Icons.forward_to_inbox_rounded,
-                                      AppleColors.blue),
-                                  title: 'Bills by Email',
-                                  subtitle:
-                                      "Forward bills and tickets; your assistant will file "
-                                      'them and remind you',
-                                  onTap: () => Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                        builder: (_) =>
-                                            const BillsEmailScreen()),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 24),
-                          ],
-                        ),
-                ),
 
                 const GroupLabel('Standing Rules'),
                 Padding(
@@ -522,29 +515,17 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // SEND FEEDBACK (owner, 2026-09-25: "yes add the send
-                // feedback button"). Opens the feedback form of the service
-                // the client installs the app from; what they write reaches
-                // the owner with the build it is about. Next to About,
-                // where a person looks for "tell someone".
-                const GroupLabel('Help'),
-                GroupedCard(
-                  dividerInset: 60,
-                  children: [
-                    AppleRow(
-                      leading:
-                          IconTile(Icons.feedback_outlined, AppleColors.blue),
-                      title: 'Send Feedback',
-                      subtitle: 'Report an issue or suggest an improvement',
-                      onTap: _sendFeedback,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-
                 const GroupLabel('About & Legal'),
                 GroupedCard(
                   children: [
+                    AppleRow(
+                      leading: IconTile(Icons.support_agent_rounded, AppleColors.blue),
+                      title: 'Help & Feedback',
+                      subtitle: 'Report a problem or suggest an idea',
+                      trailing: Icon(Icons.chevron_right_rounded,
+                          color: Neon.textDim, size: 20),
+                      onTap: () => HelpFeedbackSheet.show(context),
+                    ),
                     _legalRow('Privacy Policy', '/legal/privacy'),
                     _legalRow('Terms & Conditions', '/legal/terms'),
                   ],
@@ -577,4 +558,115 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
             borderRadius: BorderRadius.circular(10),
             borderSide: BorderSide.none),
       );
+}
+
+/// Type the assistant's new name. Saved to the profile (the same route the
+/// first-run naming uses); a name the server refuses — say, a male name on
+/// a female voice — comes back with its own sentence, shown under the field.
+class _RenameSheet extends StatefulWidget {
+  const _RenameSheet();
+
+  @override
+  State<_RenameSheet> createState() => _RenameSheetState();
+}
+
+class _RenameSheetState extends State<_RenameSheet> {
+  late final _name = TextEditingController(
+      text: AssistantIdentity.name == AssistantIdentity.fallback ? '' : AssistantIdentity.name);
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  String? get _problem {
+    final n = _name.text.trim();
+    if (n.isEmpty) return null;
+    if (n.length > 24) return 'Please keep the name to 24 characters or fewer.';
+    if (!RegExp(r"^[\p{L}\p{M}][\p{L}\p{M} .'-]*$", unicode: true).hasMatch(n)) {
+      return 'Please use letters only.';
+    }
+    return null;
+  }
+
+  Future<void> _save() async {
+    final n = _name.text.trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (n.isEmpty || _problem != null || _busy) return;
+    if (n == AssistantIdentity.name) {
+      Navigator.pop(context);
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final r = await ApiService.sendJson('/profile/assistant', method: 'PUT', body: {'name': n});
+    if (!mounted) return;
+    if (r == null || r['rejected'] == true) {
+      setState(() {
+        _busy = false;
+        _error = (r?['message'] as String?) ??
+            'Unable to save the name. Check your connection and try again.';
+      });
+      return;
+    }
+    await AssistantIdentity.set(n);
+    unawaited(AssistantEngine.instance.nameChanged());
+    HapticFeedback.lightImpact();
+    if (mounted) Navigator.pop(context, n);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final problem = _problem;
+    final n = _name.text.trim();
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, 8, 20, 20 + MediaQuery.viewInsetsOf(context).bottom),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('Rename Your Assistant',
+                style: NeonType.manrope(19, FontWeight.w800).copyWith(color: Neon.textHi)),
+            const SizedBox(height: 6),
+            Text('This is the name your assistant answers to and uses everywhere in the app.',
+                style: NeonType.manrope(14, FontWeight.w500).copyWith(color: Neon.textLo, height: 1.4)),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _name,
+              autofocus: true,
+              maxLength: 24,
+              textCapitalization: TextCapitalization.words,
+              textInputAction: TextInputAction.done,
+              onChanged: (_) => setState(() => _error = null),
+              onSubmitted: (_) => _save(),
+              style: NeonType.manrope(17, FontWeight.w700).copyWith(color: Neon.textHi),
+              decoration: InputDecoration(
+                hintText: 'For example, Asha',
+                counterText: '',
+                filled: true,
+                fillColor: Neon.surfaceHigh,
+                errorText: problem ?? _error,
+                errorMaxLines: 3,
+                prefixIcon: Icon(Icons.auto_awesome_rounded, color: Neon.violet, size: 20),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ApplePrimaryButton(
+              label: _busy ? 'Saving…' : 'Save Name',
+              icon: Icons.check_rounded,
+              onPressed: n.isEmpty || problem != null || _busy ? null : _save,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

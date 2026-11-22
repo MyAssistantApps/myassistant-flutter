@@ -345,7 +345,6 @@ VoiceListener bookingListener() {
       limits: c.limits,
       live: c.live,
       listen: const AiListen(cloudStt: 'device'),
-      provider: c.provider,
       fromServer: c.fromServer,
     );
   }
@@ -374,7 +373,6 @@ AiConfig bookingConfig() {
     limits: c.limits,
     live: c.live,
     listen: const AiListen(cloudStt: 'device'),
-    provider: c.provider,
     fromServer: c.fromServer,
   );
 }

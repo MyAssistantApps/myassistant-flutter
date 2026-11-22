@@ -146,7 +146,7 @@ class ListingPost {
   bool get isOffer => kind == 'offer';
 
   factory ListingPost.fromJson(Map<String, dynamic> j) => ListingPost(
-        id: (j['id'] as num).toInt(),
+        id: (j['id'] as num?)?.toInt() ?? 0,
         kind: _s(j['kind']),
         title: _s(j['title']),
         body: _s(j['body']),
@@ -183,7 +183,7 @@ class BookingRequest {
   bool get isNew => status == 'new';
 
   factory BookingRequest.fromJson(Map<String, dynamic> j) => BookingRequest(
-        id: (j['id'] as num).toInt(),
+        id: (j['id'] as num?)?.toInt() ?? 0,
         name: _s(j['name']),
         phone: _s(j['phone']),
         preferred: _s(j['preferred']),
