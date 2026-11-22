@@ -191,7 +191,7 @@ class _HotelsScreenState extends State<HotelsScreen> {
     final nights = _stay.end.difference(_stay.start).inDays;
     return NeonScaffold(
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: VoiceFillButton(form: _voiceForm()),
+      floatingActionButton: BookingVoiceOrb(form: _voiceForm()),
       appBar: appleAppBar(context, 'Hotels'),
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),

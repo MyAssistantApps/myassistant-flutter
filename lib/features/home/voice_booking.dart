@@ -5,13 +5,20 @@ import 'package:firebase_ai/firebase_ai.dart' show Content, TextPart;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../ai/assistant_role.dart';
 import '../../ai/config.dart';
 import '../../ai/listen.dart';
+import '../../ai/local_tools.dart';
 import '../../ai/model_port.dart';
 import '../../ai/speech.dart';
+import '../../ai/types.dart' show AiToolSpec;
+import '../assistant/state/assistant_engine.dart';
 import '../../core/log.dart';
 import '../../design/neon_tokens.dart';
 import '../../services/audio/pcm_player.dart';
+import '../../widgets/neuron_orb.dart';
+import '../../widgets/role_mic_orb.dart';
+import '../../widgets/voice_orb.dart' show OrbMood;
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  SPEAK TO FILL (2026-11-21, Manish: "add a mic so you can speak and book
@@ -349,24 +356,25 @@ VoiceListener bookingListener() {
   return VoiceListener(config: deviceFirst);
 }
 
-/// Speak to book talks to Gemini through Firebase AI Logic directly
-/// (2026-11-22, Manish: "use Gemini directly"), not through our server,
-/// whatever provider /ai/config serves — the server's OpenAI key was
-/// failing (401). When the served model names are not Gemini ones (the
-/// server's OpenAI setup), the app's own Gemini defaults are used.
-ModelPort bookingPort() => _gemini ??= FirebaseModelPort();
-ModelPort? _gemini;
+/// Speak to book thinks and speaks with the same AI as the main assistant
+/// (2026-11-22, Manish: "don't use Gemini, use OpenAI for the booking
+/// too"): the app's model port, which follows /ai/config — the backend
+/// serves OpenAI (backend.envisionsit.in, src/ai/config.js), so the words
+/// go to our server's OpenAI and the replies come back in the assistant's
+/// OpenAI voice. (An earlier build called Gemini directly while the old
+/// server's OpenAI key was failing.)
+ModelPort bookingPort() => ModelPorts.cloud();
 
+/// The served config, but always the phone's own recogniser for the mic.
 AiConfig bookingConfig() {
   final c = AiConfigStore.instance.current;
-  final gemini = c.models.cloudFast.startsWith('gemini') && c.models.tts.startsWith('gemini');
   return AiConfig(
-    models: gemini ? c.models : const AiModels(),
+    models: c.models,
     routing: c.routing,
     limits: c.limits,
     live: c.live,
     listen: const AiListen(cloudStt: 'device'),
-    provider: 'gemini',
+    provider: c.provider,
     fromServer: c.fromServer,
   );
 }
@@ -448,8 +456,8 @@ class AgentReply {
 }
 
 /// THE BOOKING AGENT (2026-11-22, Manish: "add the AI the main assistant
-/// uses, so it talks with you and can book too"). Gemini through Firebase
-/// AI Logic, as the assistant uses it ([bookingPort]), given the screen's form, today and the
+/// uses, so it talks with you and can book too"). The assistant's own AI
+/// ([bookingPort]: our server's OpenAI), given the screen's form, today and the
 /// conversation so far; it answers with the fields to set, a short spoken
 /// reply and, when the user wants to go ahead, an action.
 class BookingAgent {
@@ -606,6 +614,12 @@ class _VoiceFillButtonState extends State<VoiceFillButton> with TickerProviderSt
   bool _stopped = false;
   bool _busy = false;
 
+  /// The microphone level for the orb.
+  final _levelNote = ValueNotifier<double>(0);
+
+  /// The orb's size.
+  static const double _orb = 72;
+
   /// How long it waits for the first words.
   static const _wait = Duration(seconds: 12);
 
@@ -617,6 +631,7 @@ class _VoiceFillButtonState extends State<VoiceFillButton> with TickerProviderSt
     _stopped = true;
     _hide?.cancel();
     _breath.dispose();
+    _levelNote.dispose();
     unawaited(_sub?.cancel());
     unawaited(_listener?.cancel().catchError((_) {}));
     if (widget.talk) unawaited(_speechMade?.cancel(sink: PcmPlayer.instance).catchError((_) {}));
@@ -777,6 +792,7 @@ class _VoiceFillButtonState extends State<VoiceFillButton> with TickerProviderSt
           case HearPartial(:final text):
             setState(() => _words = text);
           case HearLevel(:final level):
+            _levelNote.value = level;
             if ((level - _level).abs() > 0.04) setState(() => _level = level);
           case HearFinal(:final text, :final fromCloud):
             said = text.trim();
@@ -821,56 +837,86 @@ class _VoiceFillButtonState extends State<VoiceFillButton> with TickerProviderSt
           child: _phase == _Phase.idle ? const SizedBox(key: ValueKey('none')) : _panel(width),
         ),
         const SizedBox(height: 10),
+        // THE ORB (2026-11-22, Manish: "that kind of mic design" — the
+        // assistant pages' Tap to talk): a dark disc with a glowing rim and
+        // the neuron orb inside, which follows the voice while it listens
+        // and shows thinking and speaking; a word under it.
         Semantics(
           button: true,
           label: _busy ? 'Stop' : 'Speak to book',
           excludeSemantics: true,
           child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onTap: _tap,
-            child: AnimatedBuilder(
-              animation: _breath,
-              builder: (_, child) {
-                final t = _breath.value;
-                final glow = listening ? 0.55 + 0.45 * _level : 0.35 + 0.2 * t;
-                return Container(
-                  height: 62,
-                  padding: const EdgeInsets.fromLTRB(8, 8, 22, 8),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(Neon.rPill),
-                    gradient: const LinearGradient(colors: _hot),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1.5),
-                    boxShadow: [
-                      BoxShadow(
-                        color: _hot.first.withValues(alpha: glow),
-                        blurRadius: 18 + (listening ? 26 * _level : 10 * t),
-                        spreadRadius: listening ? 2 + 6 * _level : 1 + 2 * t,
-                        offset: const Offset(0, 6),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedBuilder(
+                  animation: _breath,
+                  builder: (_, child) {
+                    final t = _breath.value;
+                    return Container(
+                      width: _orb,
+                      height: _orb,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.black.withValues(alpha: 0.55),
+                        border: Border.all(color: _hot.last.withValues(alpha: 0.85), width: 1.8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: _hot.last.withValues(alpha: _busy ? 0.55 + 0.35 * _level : 0.3 + 0.2 * t),
+                            blurRadius: _busy ? 22 + 18 * _level : 14 + 8 * t,
+                            spreadRadius: _busy ? 1 + 4 * _level : 0.5 + t,
+                          ),
+                        ],
                       ),
+                      child: child,
+                    );
+                  },
+                  child: Stack(
+                    alignment: Alignment.center,
+                    clipBehavior: Clip.none,
+                    children: [
+                      Positioned(
+                        left: -_orb * 0.25,
+                        right: -_orb * 0.25,
+                        top: -_orb * 0.25,
+                        bottom: -_orb * 0.25,
+                        child: IgnorePointer(
+                          child: NeuronOrb(
+                            radius: _orb * 0.28,
+                            mood: switch (_phase) {
+                              _Phase.listening => OrbMood.listening,
+                              _Phase.thinking => OrbMood.thinking,
+                              _Phase.speaking => OrbMood.speaking,
+                              _ => OrbMood.idle,
+                            },
+                            levelListenable: listening ? _levelNote : null,
+                            active: true,
+                          ),
+                        ),
+                      ),
+                      if (!_busy) const Icon(Icons.mic_rounded, color: Colors.white, size: _orb * 0.38),
                     ],
                   ),
-                  child: child,
-                );
-              },
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 46,
-                    height: 46,
-                    decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                    child: Icon(_busy ? Icons.stop_rounded : Icons.mic_rounded, color: _hot.first, size: 28),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.45),
+                    borderRadius: BorderRadius.circular(Neon.rPill),
                   ),
-                  const SizedBox(width: 12),
-                  Text(
+                  child: Text(
                       switch (_phase) {
-                        _Phase.listening => 'Tap to stop',
+                        _Phase.listening => 'Listening…',
                         _Phase.thinking => 'Thinking…',
                         _Phase.speaking => 'Speaking…',
                         _ => 'Speak to book',
                       },
-                      style: NeonType.manrope(16.5, FontWeight.w800).copyWith(color: Colors.white)),
-                ],
-              ),
+                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+                ),
+              ],
             ),
           ),
         ),
@@ -976,6 +1022,183 @@ class _Meter extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 1.5),
             decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2)),
           ),
+      ],
+    );
+  }
+}
+
+// ── Speak to book through the main assistant ───────────────────────────
+
+/// SPEAK TO BOOK, THE MAIN ASSISTANT'S WAY (2026-11-22, Manish: "it should
+/// work as it works in the main" and "that kind of mic design"). The orb
+/// is the assistant pages' own [RoleMicOrb]: a tap starts the main
+/// assistant's voice conversation — the same listening, the same OpenAI
+/// brain and the same voice as the dock mic — as "the booking assistant"
+/// of this screen. While the screen is open it lends the brain two local
+/// tools: [fillTool] sets the fields the owner mentioned, [bookTool]
+/// searches or opens a booking site. What changed shows under the orb.
+class BookingVoiceOrb extends StatefulWidget {
+  const BookingVoiceOrb({super.key, required this.form, this.tools, this.now, this.orb});
+
+  final BookingForm form;
+
+  /// For tests: what stands in for the [RoleMicOrb].
+  final Widget Function(AssistantRole role)? orb;
+
+  /// Where the tools are lent (the main brain's by default; tests pass
+  /// their own).
+  final LocalToolRegistry? tools;
+
+  /// For tests.
+  final DateTime Function()? now;
+
+  static const fillTool = 'fill_booking_form';
+  static const bookTool = 'start_booking';
+
+  /// The role the main assistant takes on this screen. Stable for the day
+  /// (the orb compares roles), so the form's values come from the tools.
+  static AssistantRole roleFor(BookingForm form, DateTime now) {
+    final places = form.places;
+    final cities = places == null
+        ? ''
+        : ' Cities must be one of these exact names (Bangalore = Bengaluru, Bombay = Mumbai, Delhi = New Delhi, '
+            'Mangalore = Mangaluru, Mysore = Mysuru, Cochin = Kochi): ${places.toSet().join(', ')}.';
+    return AssistantRole(
+      'the booking assistant on the ${form.screen} screen',
+      'Today is ${BookingAgent.iso(now)}. You help the owner fill in this booking form by voice: '
+      '${form.fields.entries.map((e) => '${e.key} (${e.value})').join('; ')}.$cities '
+      'Whenever the owner says any of these, call $fillTool with ONLY the fields they mentioned '
+      '(dates as YYYY-MM-DD, never in the past); it answers with the whole form. Then confirm '
+      'briefly in one short sentence and ask for anything still missing. When they want to go ahead '
+      '(search, book, yes, show me), call $bookTool with the action. Keep every reply short.',
+    );
+  }
+
+  @override
+  State<BookingVoiceOrb> createState() => _BookingVoiceOrbState();
+}
+
+class _BookingVoiceOrbState extends State<BookingVoiceOrb> {
+  final _removers = <void Function()>[];
+  String _changed = '';
+  Timer? _hide;
+
+  LocalToolRegistry get _tools => widget.tools ?? AssistantEngine.instance.brain.localTools;
+
+  @override
+  void initState() {
+    super.initState();
+    final f = widget.form;
+    _removers
+      ..add(_tools.register(LocalTool(
+        spec: AiToolSpec(
+          name: BookingVoiceOrb.fillTool,
+          description: 'Fill in the ${f.screen} booking form on screen. Pass only the fields the owner '
+              'mentioned. Returns what changed and the whole form.',
+          parameters: {
+            'type': 'object',
+            'properties': {
+              for (final e in f.fields.entries) e.key: {'type': 'string', 'description': e.value},
+            },
+          },
+        ),
+        available: () => mounted,
+        handler: (call) async {
+          final set = {
+            for (final e in call.args.entries)
+              if (f.fields.containsKey(e.key) && e.value != null && '${e.value}'.trim().isNotEmpty) e.key: e.value,
+          };
+          final changed = set.isEmpty || !mounted ? '' : f.apply(set);
+          AppLog.add('voicefill', 'main fill ${jsonEncode(set)} -> ${changed.isEmpty ? '(no change)' : changed}');
+          if (changed.isNotEmpty) _show(changed);
+          return LocalToolResult(result: {'changed': changed, 'form': f.state()});
+        },
+      )))
+      ..add(_tools.register(LocalTool(
+        spec: AiToolSpec(
+          name: BookingVoiceOrb.bookTool,
+          description: 'Go ahead with the ${f.screen} booking form as it is now.',
+          parameters: {
+            'type': 'object',
+            'properties': {
+              'action': {
+                'type': 'string',
+                'enum': f.actions.keys.toList(),
+                'description': f.actions.entries.map((e) => '${e.key}: ${e.value.$1}').join('; '),
+              },
+            },
+            'required': ['action'],
+          },
+        ),
+        available: () => mounted && f.actions.isNotEmpty,
+        handler: (call) async {
+          final id = '${call.args['action'] ?? ''}';
+          final act = f.actions[id] ?? (f.actions.length == 1 ? f.actions.values.first : null);
+          if (act == null) return LocalToolResult.failed('Unknown action "$id".');
+          AppLog.add('voicefill', 'main action $id');
+          // After the reply is spoken, so the voice is not cut off.
+          unawaited(Future<void>.delayed(const Duration(milliseconds: 1200), () {
+            if (mounted) act.$2();
+          }));
+          return LocalToolResult(result: {'opening': id, 'form': f.state()});
+        },
+      )));
+  }
+
+  void _show(String changed) {
+    _hide?.cancel();
+    HapticFeedback.heavyImpact();
+    setState(() => _changed = changed);
+    _hide = Timer(const Duration(seconds: 6), () {
+      if (mounted) setState(() => _changed = '');
+    });
+  }
+
+  @override
+  void dispose() {
+    _hide?.cancel();
+    for (final r in _removers) {
+      r();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final role = BookingVoiceOrb.roleFor(widget.form, (widget.now ?? DateTime.now)());
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AnimatedSwitcher(
+          duration: Neon.med,
+          child: _changed.isEmpty
+              ? const SizedBox(key: ValueKey('none'))
+              : Container(
+                  key: ValueKey(_changed),
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Neon.surfaceHigh,
+                    borderRadius: BorderRadius.circular(Neon.rPill),
+                    border: Border.all(color: Neon.success.withValues(alpha: 0.6)),
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 14)],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.edit_note_rounded, size: 16, color: Neon.success),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(_changed,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: Neon.textHi, fontSize: 13, fontWeight: FontWeight.w700)),
+                      ),
+                    ],
+                  ),
+                ),
+        ),
+        widget.orb?.call(role) ?? RoleMicOrb(role: role, tint: _hot.last, size: 72),
       ],
     );
   }

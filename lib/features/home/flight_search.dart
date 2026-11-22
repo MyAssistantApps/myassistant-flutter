@@ -305,7 +305,7 @@ class _FlightSearchScreenState extends State<FlightSearchScreen> {
   Widget build(BuildContext context) {
     return NeonScaffold(
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: VoiceFillButton(form: _voiceForm()),
+      floatingActionButton: BookingVoiceOrb(form: _voiceForm()),
       appBar: appleAppBar(
           context, _domestic ? 'Domestic Flights' : 'International Flights'),
       body: ListView(

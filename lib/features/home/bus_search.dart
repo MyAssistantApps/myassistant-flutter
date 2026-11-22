@@ -161,7 +161,7 @@ class _BusSearchScreenState extends State<BusSearchScreen> {
     final k = widget.kind;
     return NeonScaffold(
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: VoiceFillButton(form: _voiceForm()),
+      floatingActionButton: BookingVoiceOrb(form: _voiceForm()),
       appBar: appleAppBar(context, '${k.title} Buses'),
       body: ListView(
         padding: EdgeInsets.fromLTRB(

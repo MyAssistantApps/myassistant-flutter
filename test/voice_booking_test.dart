@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myassistant/ai/config.dart';
 import 'package:myassistant/ai/listen.dart';
+import 'package:myassistant/ai/local_tools.dart';
 import 'package:myassistant/features/home/bus_search.dart' show busCities;
 import 'package:myassistant/features/home/flight_search.dart' show indianAirports, worldAirports;
 import 'package:myassistant/features/home/voice_booking.dart';
@@ -153,6 +154,50 @@ void main() {
       expect(sys, contains('Saturday, 2026-11-21'));
       expect(sys, contains('"city":"Goa"'));
       expect(sys, contains('"booking": open Booking.com'));
+    });
+  });
+
+  group('speak to book through the main assistant', () {
+    test('the role tells the assistant the screen, today, the fields and the tools', () {
+      final r = BookingVoiceOrb.roleFor(_form(), now);
+      expect(r.name, contains('Hotels'));
+      expect(r.brief, contains('2026-11-21'));
+      expect(r.brief, contains(BookingVoiceOrb.fillTool));
+      expect(r.brief, contains(BookingVoiceOrb.bookTool));
+      // Stable, so the orb knows the conversation is its own.
+      expect(BookingVoiceOrb.roleFor(_form(), now), r);
+    });
+
+    testWidgets('the tools fill the form and open the booking', (t) async {
+      final tools = LocalToolRegistry();
+      final applied = <Map<String, Object?>>[];
+      var opened = '';
+      await t.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: BookingVoiceOrb(
+              form: _form(applied: applied, onAction: (id) => opened = id),
+              tools: tools,
+              now: () => now,
+              orb: (_) => const SizedBox(width: 72, height: 72),
+            ),
+          ),
+        ),
+      ));
+      expect(tools.available().map((x) => x.name), containsAll([BookingVoiceOrb.fillTool, BookingVoiceOrb.bookTool]));
+      final r = await tools.run(const LocalToolCall(
+          name: BookingVoiceOrb.fillTool, args: {'city': 'Goa', 'adults': '2', 'nope': 'x'}, userText: 'Goa for two'));
+      expect(r.ok, isTrue);
+      expect(applied.single, {'city': 'Goa', 'adults': '2'}); // unknown fields dropped
+      expect(r.result['changed'], 'applied');
+      expect(r.result['form'], {'city': 'Goa', 'adults': 2});
+      final b = await tools.run(const LocalToolCall(name: BookingVoiceOrb.bookTool, args: {'action': 'booking'}, userText: 'book it'));
+      expect(b.ok, isTrue);
+      await t.pump(const Duration(milliseconds: 1300));
+      expect(opened, 'booking');
+      await t.pump(const Duration(seconds: 7));
+      await t.pumpWidget(const SizedBox());
+      expect(tools.isEmpty, isTrue); // lent only while the screen is open
     });
   });
 
