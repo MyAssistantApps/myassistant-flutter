@@ -231,6 +231,32 @@ class ApiService {
     }
   }
 
+  /// POST a JSON body and read the answer as it arrives (server-sent
+  /// events — the Jyotish reading). Same auth headers as [postJson]. The
+  /// caller reads `statusCode` and `stream`; a dead network throws, as
+  /// http's send does.
+  static Future<http.StreamedResponse> postStream(String path, Object body,
+      {Duration timeout = const Duration(seconds: 30)}) async {
+    final req = http.Request('POST', Uri.parse('$baseUrl$path'))
+      ..headers.addAll({
+        ..._authHeaders,
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream',
+      })
+      ..body = jsonEncode(body);
+    try {
+      final resp = await _client.send(req).timeout(timeout);
+      if (resp.statusCode < 200 || resp.statusCode >= 300) {
+        _flagAuthFailure(resp.statusCode);
+        AppLog.add('api', '$path -> ${resp.statusCode}');
+      }
+      return resp;
+    } catch (e) {
+      if (isConnectError(e)) NetStatus.instance.requestFailed();
+      rethrow;
+    }
+  }
+
   /// GET a protected binary resource (voice samples, for example).
   /// Uses the same authentication and failure logging as the JSON helpers.
   static Future<Uint8List?> getBytes(String path,

@@ -27,6 +27,7 @@ import '../../widgets/neon_cards.dart';
 import '../../widgets/whats_new_card.dart';
 import '../assistant/state/assistant_engine.dart';
 import '../briefing/brief_player.dart';
+import '../jyotish/jyotish_card.dart';
 import '../meeting_prep/meeting_prep_sheet.dart';
 import 'messages_card.dart';
 import 'appointment_strip.dart';
@@ -358,6 +359,12 @@ class _HomeFeedViewState extends State<HomeFeedView> {
             // above what needs the user.
             const SizedBox(height: 20),
             const WhatsNewCard(),
+            // JYOTISH (2026-11-22): the Vedic horoscope, last on Home.
+            const SizedBox(height: 20),
+            Reveal(
+              delayMs: 180,
+              child: JyotishCard(onOpen: (page) => _do.open(context, page)),
+            ),
             ]),
            ),
           ],
