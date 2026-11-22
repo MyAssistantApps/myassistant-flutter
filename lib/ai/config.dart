@@ -238,13 +238,22 @@ class AiLive {
 /// the language spoken — and the recording is sent for review, so every turn
 /// can be heard in the admin panel.
 class AiListen {
-  const AiListen({this.cloudStt = 'device'});
+  const AiListen({this.cloudStt = 'device', this.denoise = true});
   final String cloudStt;
   bool get record => cloudStt == 'record';
 
+  /// The app's own noise suppressor (services/audio/noise_suppressor.dart)
+  /// on the microphone, both voices. On unless the server sends
+  /// `"denoise": false` — a way back without a release if a phone's audio
+  /// ever comes out worse for it.
+  final bool denoise;
+
   factory AiListen.fromJson(Object? j) {
     if (j is! Map) return const AiListen();
-    return AiListen(cloudStt: j['cloudStt'] == 'record' ? 'record' : 'device');
+    return AiListen(
+      cloudStt: j['cloudStt'] == 'record' ? 'record' : 'device',
+      denoise: j['denoise'] != false,
+    );
   }
 }
 

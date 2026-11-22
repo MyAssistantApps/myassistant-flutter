@@ -47,6 +47,7 @@ import '../services/audio/barge_in.dart';
 import '../services/audio/mic_preroll.dart';
 import '../services/audio/mic_stats.dart';
 import '../services/audio/mic_stream.dart';
+import '../services/audio/noise_suppressor.dart';
 import '../services/audio/pcm_player.dart';
 import 'brain.dart';
 import 'config.dart';
@@ -536,6 +537,12 @@ class LiveVoice {
   final PcmPlayer _player;
   final MicStream _mic;
   final AiConfigStore _configs;
+
+  /// BACKGROUND NOISE OUT before anything hears the microphone — Live, the
+  /// room's VAD and the TV gate all get the cleaned audio, so a fan or
+  /// traffic neither reaches the model nor looks like him talking.
+  final NoiseSuppressor _denoiser = NoiseSuppressor();
+  bool _denoise = true;
   final Future<Map<String, Object?>> Function()? _deviceContext;
   final bool Function() _enabled;
 
@@ -921,6 +928,9 @@ class LiveVoice {
     _idle?.cancel();
     if (_micOn) return true;
 
+    // Each conversation learns its own room (served switch: listen.denoise).
+    _denoise = _configs.current.listen.denoise;
+    _denoiser.reset();
     unawaited(_player.warm());
     _micOn = true; // collect any speech while the websocket finishes
     final micFuture = _openMic();
@@ -1123,7 +1133,9 @@ class LiveVoice {
 
   void _onMic(Uint8List pcm, double? _) {
     if (!_micOn) return;
-    for (final c in MicStream.split(pcm)) {
+    final clean = _denoise ? _denoiser.process(pcm) : pcm;
+    if (clean.isEmpty) return; // under one 16 ms hop: comes with the next
+    for (final c in MicStream.split(clean)) {
       _frame(c, MicStream.levelOf(c) ?? 0);
     }
   }

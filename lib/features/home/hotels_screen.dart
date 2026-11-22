@@ -13,7 +13,8 @@ import '../../services/api_service.dart';
 ///  partner chosen, through /go so the company's affiliate tracking rides
 ///  along. Booking.com and Agoda open on the search itself; MakeMyTrip and
 ///  Goibibo on their hotels page (their search links need their own city
-///  codes).
+///  codes). Airbnb (2026-11-16) sits above them for homes, villas and
+///  apartments, also opened on the dated search.
 /// ─────────────────────────────────────────────────────────────────────────
 class HotelsScreen extends StatefulWidget {
   const HotelsScreen({super.key});
@@ -59,6 +60,9 @@ class _HotelsScreenState extends State<HotelsScreen> {
     final c = Uri.encodeQueryComponent(_city.text.trim());
     final a = _iso(_stay.start), b = _iso(_stay.end);
     return switch (partner) {
+      'airbnb' => 'https://www.airbnb.co.in/s/'
+          '${Uri.encodeComponent(_city.text.trim())}/homes'
+          '?checkin=$a&checkout=$b&adults=$_adults',
       'booking' => 'https://www.booking.com/searchresults.html?ss=$c'
           '&checkin=$a&checkout=$b&group_adults=$_adults&no_rooms=$_rooms',
       'agoda' => 'https://www.agoda.com/search?textToSearch=$c'
@@ -89,7 +93,7 @@ class _HotelsScreenState extends State<HotelsScreen> {
   Widget build(BuildContext context) {
     final nights = _stay.end.difference(_stay.start).inDays;
     return NeonScaffold(
-      appBar: appleAppBar(context, 'Hotels'),
+      appBar: appleAppBar(context, 'Hotels & Airbnb'),
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: ListView(
@@ -129,7 +133,7 @@ class _HotelsScreenState extends State<HotelsScreen> {
                                   .copyWith(
                                       color: Colors.white,
                                       letterSpacing: -0.6)),
-                          Text('Hotels, resorts and homestays',
+                          Text('Hotels, resorts and Airbnb homes',
                               style: TextStyle(
                                   color: Colors.white.withValues(alpha: 0.85),
                                   fontSize: 14)),
@@ -221,59 +225,66 @@ class _HotelsScreenState extends State<HotelsScreen> {
               ),
             ),
             const SizedBox(height: 22),
-            Padding(
-              padding: const EdgeInsets.only(left: 4, bottom: 10),
-              child: Text('SEARCH ON',
-                  style: NeonType.eyebrow.copyWith(color: Neon.textLo)),
-            ),
+            _eyebrow('HOMES & VILLAS'),
+            _partner('airbnb', 'Airbnb',
+                'Homes, villas and apartments · opens your search'),
+            const SizedBox(height: 12),
+            _eyebrow('HOTELS'),
             for (final (id, name, line) in const [
               ('booking', 'Booking.com', 'Hotels worldwide · opens your search'),
               ('agoda', 'Agoda', 'Competitive rates in Asia · opens your search'),
               ('makemytrip', 'MakeMyTrip', 'Hotels across India'),
               ('goibibo', 'Goibibo', 'Hotels and homestays in India'),
             ])
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(Neon.rLg),
-                    onTap: () => _open(id),
-                    child: Ink(
-                      padding: const EdgeInsets.all(12),
-                      decoration: Neon.glassBox(Neon.rLg),
-                      child: Row(children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.asset('assets/brands/$id.png',
-                              width: 44, height: 44, fit: BoxFit.cover),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(name,
-                                  style: NeonType.manrope(15.5, FontWeight.w800)
-                                      .copyWith(color: Neon.textHi)),
-                              Text(line,
-                                  style: TextStyle(
-                                      color: Neon.textDim, fontSize: 12.5)),
-                            ],
-                          ),
-                        ),
-                        Icon(Icons.open_in_new_rounded,
-                            color: Neon.textDim, size: 18),
-                      ]),
-                    ),
-                  ),
-                ),
-              ),
+              _partner(id, name, line),
           ],
         ),
       ),
     );
   }
+
+  Widget _eyebrow(String text) => Padding(
+        padding: const EdgeInsets.only(left: 4, bottom: 10),
+        child: Text(text, style: NeonType.eyebrow.copyWith(color: Neon.textLo)),
+      );
+
+  Widget _partner(String id, String name, String line) => Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(Neon.rLg),
+            onTap: () => _open(id),
+            child: Ink(
+              padding: const EdgeInsets.all(12),
+              decoration: Neon.glassBox(Neon.rLg),
+              child: Row(children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.asset('assets/brands/$id.png',
+                      width: 44, height: 44, fit: BoxFit.cover),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(name,
+                          style: NeonType.manrope(15.5, FontWeight.w800)
+                              .copyWith(color: Neon.textHi)),
+                      Text(line,
+                          style:
+                              TextStyle(color: Neon.textDim, fontSize: 12.5)),
+                    ],
+                  ),
+                ),
+                Icon(Icons.open_in_new_rounded,
+                    color: Neon.textDim, size: 18),
+              ]),
+            ),
+          ),
+        ),
+      );
 
   Widget _step(IconData i, VoidCallback? onTap) => IconButton(
         visualDensity: VisualDensity.compact,

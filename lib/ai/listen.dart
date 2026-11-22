@@ -7,6 +7,7 @@
 // (config.models.cloudFast): the fallback, never the first choice.
 import 'dart:async';
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:firebase_ai/firebase_ai.dart';
@@ -14,6 +15,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
+import '../services/audio/noise_suppressor.dart';
 import 'config.dart';
 import 'model_port.dart';
 
@@ -200,11 +202,18 @@ class RecordRecorder implements RecorderPort {
       final path = '${dir.path}/hari_listen_${DateTime.now().millisecondsSinceEpoch}.wav';
       _path = path;
       // Never paused by a notification sound (MicStream.config says why).
+      // NOISE: the platform's noise suppressor and echo canceller are put on
+      // the capture (fans, traffic, a TV, her own voice from the speaker),
+      // so the transcriber gets the owner's words, not the room. The audio
+      // source stays the default one: voiceCommunication makes some phones
+      // (the S24 Ultra) so quiet that the speech level below never trips.
       await _rec.start(
         const RecordConfig(
           encoder: AudioEncoder.wav,
           sampleRate: 16000,
           numChannels: 1,
+          echoCancel: true,
+          noiseSuppress: true,
           audioInterruption: AudioInterruptionMode.none,
         ),
         path: path,
@@ -261,7 +270,9 @@ class CloudTranscriber {
       'Transcribe the speech in this recording exactly as it was said, in the '
       "language it was spoken in, written in that language's own script. The "
       "speaker's usual language is $language. Reply with the words only: no "
-      'quotes, labels or notes. If there is no speech, reply with nothing.';
+      'quotes, labels or notes. Ignore background noise, music, a TV and '
+      'other voices far from the microphone: write down only the main '
+      'speaker. If there is no speech, reply with nothing.';
 
   Future<String> transcribe(Uint8List audio, String mimeType, {String? languageCode}) async {
     final cfg = _config();
@@ -477,7 +488,18 @@ class VoiceListener {
     if (!heard || audio == null || audio.bytes.isEmpty) {
       return s.finish('', fromCloud: true);
     }
-    final text = await tr.transcribe(audio.bytes, audio.mimeType, languageCode: s.language);
+    // Background noise out before the words are written down. The review
+    // upload keeps the recording as it was. Its own isolate: a long
+    // recording is a few hundred ms of work, never on the UI thread.
+    var heardBytes = audio.bytes;
+    if (_config().listen.denoise && audio.mimeType == 'audio/wav') {
+      try {
+        final raw = audio.bytes;
+        heardBytes = await Isolate.run(() => NoiseSuppressor.cleanWav(raw));
+      } catch (_) {} // the raw recording is still worth transcribing
+      if (s.closed) return;
+    }
+    final text = await tr.transcribe(heardBytes, audio.mimeType, languageCode: s.language);
     s.finish(text, fromCloud: true, audio: audio);
   }
 }
