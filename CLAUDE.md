@@ -130,6 +130,30 @@ Every request carries the phone's location (`X-Geo-Lat/Lng`, from
 - `lib/features/pricecompare/` — Price compare offers products only;
   `PriceCategory.shown` lists what is offered (flights, hotels, rides and
   grocery were removed on 2026-11-14 but stay in the enum for old history).
+- `lib/features/voice_call_contacts/` — voice calling's contacts: a Drift
+  (SQLite) database on the phone only, never uploaded. Entries sharing a
+  number are one person with every saved name as an alias ("Rohan" and
+  "Dad" → one person); scoring is `CallService.nameScore`. Opened on
+  demand by `_handleResolveAndCall` or Settings → Calling Contacts
+  (`ResolvedContactsPage`: aliases, Sync From Phone), closed after 2 min
+  idle; re-imports once when a name matches nobody. Schema changes: edit
+  `voice_call_contacts_db.dart`, run `dart run build_runner build`, commit
+  the `.g.dart` (CI does not generate it). `ContactsSyncService` still
+  uploads names/numbers for the server's messaging tools — separate.
+  Hub → Phone → Contacts (`ContactsScreen`) lists the same people A–Z
+  under letter headers (`sectionsOf`; numbers saved without a name last
+  under '#'), syncs from the phone on open. One mic orb at the bottom of
+  the page (`parseContactsCommand`: "Give alias X to Y", "Change Y's
+  alias A to B", "Remove alias A from Y", "Call Y", "Open Y") resolves
+  the contact, opens their card and does it there. The main assistant
+  does the same: backend `open_app_screen` with `screen: "contacts"` plus
+  `contact`/`contact_action`/`alias`/`new_alias` → `ContactsRequest` →
+  `AssistantEngine._openContacts` (Hub tab, then the screen, or
+  `ContactsScreen.requests` when it is already open). A voice call to a
+  local contact also opens their card. The card has Call and Add Alias;
+  custom aliases can be changed or removed, names saved on the phone
+  cannot. Every result is also spoken (server TTS via `SpeechEngine` into
+  `PcmPlayer.instance`), silenced when the mic opens.
 - Pushes are routed by their `kind` in `lib/services/push_service.dart`;
   notification taps by payload in `openNotificationPayload` (home_shell.dart).
 

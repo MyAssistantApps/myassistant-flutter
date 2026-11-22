@@ -4,10 +4,11 @@ import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// VOICE CALLING (B1) — "Hey Hari, call amma".
+/// VOICE CALLING (B1) — "call amma".
 ///
-/// All on-device: contact lookup + dialing never touch the backend, so
-/// the user's contact list stays private.
+/// Name matching (the scoring below, shared with the local contacts
+/// module in lib/features/voice_call_contacts/), emergency short codes,
+/// and dialing: normal, WhatsApp, and other calling apps on the phone.
 ///
 /// Android manifest additions (android/ is generated locally):
 ///   <uses-permission android:name="android.permission.READ_CONTACTS"/>
@@ -17,63 +18,6 @@ import 'package:url_launcher/url_launcher.dart';
 class CallService {
   CallService._();
   static final CallService instance = CallService._();
-
-  static final _trailingNoise = RegExp(
-      r'\b(now|please|for me|right now|immediately|karo|kar|lagao|maadu|madi)\b\s*$',
-      caseSensitive: false);
-
-  // ---------------- AGENT CALL PARSING ----------------
-  // "call allen lobo and ask him at what time he will come home"
-  // → the AI itself talks on the call and reports the answer back.
-
-  static final List<RegExp> _agentPatterns = [
-    // "call X and ask/tell/find out …", "phone X to inform her that …"
-    RegExp(
-        r'\b(?:call|dial|phone|ring)\s+(?:to\s+)?([\p{L}\p{M} .\-]{2,40}?)\s+(?:and|to)\s+((?:ask|tell|inform|say|find out|check|confirm|know|let)\b.*)$',
-        caseSensitive: false, unicode: true),
-    // "ask allen lobo when he will come home" / "ask amma if dinner is ready"
-    RegExp(
-        r'^\s*(?:please\s+|can you\s+|hari[, ]+)*ask\s+([\p{L}\p{M} .\-]{2,40}?)\s+((?:if|whether|when|what|where|why|how|at|about|to)\b.*)$',
-        caseSensitive: false, unicode: true),
-  ];
-
-  /// Returns (contactName, task) when [text] asks Hari to call someone
-  /// AND speak to them ("…and ask him when he'll be home"). The task is
-  /// re-phrased around the person's name so the backend AI has full
-  /// context ("ask Allen Lobo at what time he will come home").
-  (String, String)? parseAgentCallIntent(String text) {
-    final t = text.trim();
-    if (t.isEmpty) return null;
-    for (final re in _agentPatterns) {
-      final m = re.firstMatch(t);
-      if (m == null) continue;
-      var name = _cleanName(m.group(1) ?? '');
-      var task = (m.group(2) ?? '').trim();
-      if (name.length < 2 || task.length < 3) continue;
-      // "ask him …" → "ask Allen Lobo …" (unambiguous for the call AI).
-      task = task.replaceFirst(
-          RegExp(r'^(ask|tell|inform|let|say to|confirm with|remind)\s+(him|her|them)\b',
-              caseSensitive: false),
-          '${task.split(' ').first} $name');
-      if (!RegExp(r'^(ask|tell|inform|say|find out|check|confirm|know|let)',
-              caseSensitive: false)
-          .hasMatch(task)) {
-        task = 'ask $name $task';
-      }
-      return (name, task);
-    }
-    return null;
-  }
-
-  String _cleanName(String raw) {
-    var name = raw.trim();
-    String prev = '';
-    while (prev != name) {
-      prev = name;
-      name = name.replaceAll(_trailingNoise, '').trim();
-    }
-    return name.replaceAll(RegExp(r'^(my|the)\s+', caseSensitive: false), '');
-  }
 
   // ---------------- CONTACT MATCHING ----------------
 
@@ -116,6 +60,10 @@ class CallService {
     if (sim >= 0.88) return 30 + ((sim - 0.88) * 66).round().clamp(0, 8);
     return 0;
   }
+
+  /// How well [saved] matches [spoken], 0 (no match) to 100 (exact) — the
+  /// same rules findContacts uses, shared with the local contacts module.
+  int nameScore(String saved, String spoken) => _score(saved, spoken);
 
   /// True when [saved] matches [spoken] only by SOUND, not by its text —
   /// a guess the user must confirm before anyone is dialled.

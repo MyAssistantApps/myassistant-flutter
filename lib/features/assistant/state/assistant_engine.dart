@@ -71,6 +71,8 @@ import '../../../services/app_update_service.dart';
 import '../../../services/assistant_identity.dart';
 import '../../../services/call_history.dart';
 import '../../../services/call_service.dart';
+import '../../voice_call_contacts/voice_call_contacts.dart';
+import '../../voice_call_contacts/contacts_screen.dart';
 import '../../../services/location_service.dart';
 import '../../../services/missed_calls_service.dart';
 import '../../../services/phone_calendar.dart';
@@ -2761,12 +2763,10 @@ class AssistantEngine extends ChangeNotifier {
         break;
 
       case 'resolve_and_call':
-        // LIVE MODE calling. The place_phone_call tool emits this action;
-        // on the SSE path the server converts it into the contact_lookup
-        // handshake, but on the LIVE socket it arrives here AS-IS — and
-        // nothing handled it, so Hari said "Calling…" and the phone never
-        // dialled. The whole flow is on-device anyway (contacts + dialler
-        // live here), so resolve, confirm and dial locally.
+        // LIVE MODE calling. The place_phone_call tool emits this action
+        // and the phone does the rest: the name is resolved against the
+        // local contacts database (lib/features/voice_call_contacts/),
+        // then confirmed and dialled here.
         await _handleResolveAndCall(
           e['name'] as String? ?? '',
           e['message'] as String?,
@@ -2965,6 +2965,10 @@ class AssistantEngine extends ChangeNotifier {
             unawaited(_openVoiceSettings());
           } else if (tabs.containsKey(screen)) {
             HomeShell.requestedTab.value = tabs[screen];
+          } else if (screen == 'contacts') {
+            // HUB → CONTACTS BY VOICE (2026-11-22): "give alias Papa to
+            // Allen" opens Allen's card there and makes the change.
+            _openContacts(ContactsRequest.fromAction(e));
           } else {
             final nav = AvatarMessageService.navigatorKey.currentState;
             final builder = _appScreenBuilder(screen, e);
@@ -3872,19 +3876,20 @@ class AssistantEngine extends ChangeNotifier {
       return;
     }
 
+    // LOCAL CONTACTS (2026-11-22): one person per number, any of their
+    // names ("Rohan" or "Dad"), from the on-phone database only.
     List<ContactMatch> matches = const [];
+    bool? localSoundOnly;
     try {
-      final found = await CallService.instance.findContacts(name);
+      final found = await VoiceCallContacts.instance.resolve(name);
       matches = [
-        for (final c in found)
-          if (CallService.instance.bestNumber(c).isNotEmpty)
-            ContactMatch(
-              id: c.id,
-              name: c.displayName,
-              phone: CallService.instance.bestNumber(c),
-            ),
+        for (final m in found)
+          ContactMatch(id: 'vcc:${m.personId}', name: m.name, phone: m.phone),
       ];
-    } catch (_) {}
+      if (found.length == 1) localSoundOnly = found.first.soundOnly;
+    } catch (e) {
+      AppLog.add('contacts', 'local resolve failed: $e');
+    }
 
     // Device contacts had nothing — ask the SERVER, which knows the synced
     // address book, the client files, AND registered app users. This is
@@ -3936,7 +3941,8 @@ class AssistantEngine extends ChangeNotifier {
     // instead of "I couldn't find anyone" or dialling a guess.
     if (matches.length == 1 &&
         matches.first.id.isNotEmpty &&
-        CallService.instance.onlySoundsLike(matches.first.name, name)) {
+        (localSoundOnly ??
+            CallService.instance.onlySoundsLike(matches.first.name, name))) {
       _localCallFlow = true;
       ambiguousContacts = [matches.first];
       _pendingLookupName = name;
@@ -4008,6 +4014,16 @@ class AssistantEngine extends ChangeNotifier {
     }
     final task = _localCallTask;
     _localCallTask = null;
+    // A person from the local contacts: count the call (never awaited).
+    final vcc = contact.id.startsWith('vcc:')
+        ? int.tryParse(contact.id.substring(4))
+        : null;
+    if (vcc != null) {
+      unawaited(VoiceCallContacts.instance.recordCall(vcc).catchError((_) {}));
+      // Their card opens in Hub → Contacts too (the call itself is
+      // unchanged): who was called is on screen when the user comes back.
+      _openContacts(ContactsRequest(personId: vcc));
+    }
 
     // A WhatsApp call is placed BY THE PHONE, so the relay service (which
     // only dials normal numbers) is skipped entirely — _dialAndReport
@@ -4664,6 +4680,25 @@ class AssistantEngine extends ChangeNotifier {
     }
   }
 
+  /// Hub → Contacts, with [request] carried out on the contact's card. An
+  /// open Contacts screen takes the request; otherwise the Hub tab is
+  /// selected and the screen is pushed over it.
+  void _openContacts(ContactsRequest? request) {
+    if (ContactsScreen.showing > 0) {
+      if (request != null) ContactsScreen.requests.value = request;
+      return;
+    }
+    final nav = AvatarMessageService.navigatorKey.currentState;
+    if (nav == null) {
+      _reportDeviceFailure('open_app_screen',
+          target: 'contacts', reason: 'that screen is not available');
+      return;
+    }
+    HomeShell.requestedTab.value = 1;
+    nav.push(MaterialPageRoute(
+        builder: (_) => ContactsScreen(request: request)));
+  }
+
   /// The app's own screens that a voice command may open. Returning null
   /// for anything unknown is deliberate: the tool already validates its
   /// enum, and a screen that cannot be built must be reported as a
@@ -4698,6 +4733,7 @@ class AssistantEngine extends ChangeNotifier {
         'connected_apps' => (_) => const ConnectedAppsScreen(),
         // "Show my shortcuts" (build 120).
         'shortcuts' => (_) => const ShortcutsScreen(),
+        'contacts' => (_) => const ContactsScreen(),
         // "Show my shopping list" (shopping_list_show, build 124), or one
         // kind of it ("my grocery list").
         'shopping_list' => (_) => ShoppingListScreen(

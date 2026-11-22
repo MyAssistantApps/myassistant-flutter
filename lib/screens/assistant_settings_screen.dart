@@ -22,6 +22,7 @@ import 'account_section.dart';
 import 'help_feedback_sheet.dart';
 import 'linked_accounts_screen.dart';
 import '../features/premium/premium_screen.dart';
+import '../features/voice_call_contacts/resolved_contacts_page.dart';
 import 'app_lock_section.dart';
 import 'theme_colour_screen.dart';
 import 'voice_picker_screen.dart';
@@ -250,6 +251,27 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                             builder: (_) => const MemoryScreen()),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // CALLING CONTACTS (2026-11-22): who "call Dad" reaches —
+                // the on-phone contacts database, with custom aliases.
+                const GroupLabel('Calling'),
+                GroupedCard(
+                  dividerInset: 60,
+                  children: [
+                    AppleRow(
+                      leading: IconTile(Icons.contacts_rounded, AppleColors.green),
+                      title: 'Calling Contacts',
+                      subtitle: 'Names your assistant can call, stored on this phone',
+                      trailing: Icon(Icons.chevron_right_rounded,
+                          color: Neon.textDim, size: 20),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const ResolvedContactsPage()),
                       ),
                     ),
                   ],

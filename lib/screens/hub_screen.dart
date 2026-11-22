@@ -24,6 +24,7 @@ import 'stocks_screen.dart';
 import 'studio/studio_screen.dart';
 import '../features/home/try_now_cards.dart';
 import '../features/shopping/shopping_list_screen.dart';
+import '../features/voice_call_contacts/contacts_screen.dart';
 import '../design/motion.dart';
 import '../features/premium/premium_screen.dart';
 import 'connect/assistants_screen.dart';
@@ -246,6 +247,15 @@ class _HubScreenState extends State<HubScreen> {
               Icons.alternate_email_rounded,
               Neon.accentF,
               (c) => const EmailSetupScreen(),
+            ),
+            // CONTACTS (2026-11-22): the phone's contacts by name; a tap
+            // shows every other name that reaches them. Syncs on open.
+            _Row(
+              'Contacts',
+              'Your contacts and the other names they go by',
+              Icons.contacts_rounded,
+              Neon.accentC,
+              (c) => const ContactsScreen(),
             ),
           ]),
           _group(context, 'Connections', [
