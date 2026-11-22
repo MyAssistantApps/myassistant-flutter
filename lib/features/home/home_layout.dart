@@ -29,6 +29,7 @@ class HomeLayout {
     'quick_tools',
     'popular_apps',
     'price_compare',
+    'payment_apps',
     'quick_apps',
     'horoscope',
   ];
@@ -46,8 +47,10 @@ class HomeLayout {
         'Food, rides and shopping apps', Icons.apps_rounded),
     'price_compare': HomeSection('price_compare', 'Price Compare',
         'The best price across stores', Icons.price_check_rounded),
+    'payment_apps': HomeSection('payment_apps', 'Payments',
+        'GPay, PhonePe, Paytm and PayPal', Icons.account_balance_wallet_rounded),
     'quick_apps': HomeSection('quick_apps', 'Quick Apps',
-        'GPay, WhatsApp, YouTube and more', Icons.grid_view_rounded),
+        'WhatsApp, YouTube, Gmail and more', Icons.grid_view_rounded),
     'horoscope': HomeSection('horoscope', "Today's Horoscope",
         'Your sign for the day', Icons.auto_awesome_rounded),
   };

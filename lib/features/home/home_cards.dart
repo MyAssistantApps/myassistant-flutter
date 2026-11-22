@@ -207,6 +207,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
         'quick_tools' => QuickToolsSection(onOpen: (page) => _do.open(context, page)),
         'popular_apps' => PopularAppsSection(onOpen: (page) => _do.open(context, page)),
         'price_compare' => PriceCompareSection(onOpen: (page) => _do.open(context, page)),
+        'payment_apps' => const PaymentApps(),
         'quick_apps' => const QuickApps(),
         'horoscope' => const HoroscopeCard(),
         _ => null,

@@ -67,7 +67,9 @@ Widget _paytmBadge(double size) => Container(
       ),
     );
 
-const quickApps = <QuickApp>[
+/// PAYMENTS (2026-11-22): the payment apps, in their own Home section
+/// above Quick Apps.
+const paymentApps = <QuickApp>[
   QuickApp('GPay', ['com.google.android.apps.nbu.paisa.user'],
       SimpleIcons.googlepay, SimpleIconColors.googlepay),
   QuickApp('PhonePe', ['com.phonepe.app'], SimpleIcons.phonepe,
@@ -78,6 +80,10 @@ const quickApps = <QuickApp>[
   QuickApp('PayPal', ['com.paypal.android.p2pmobile'], SimpleIcons.paypal,
       SimpleIconColors.paypal,
       iosScheme: 'paypal', iosStoreId: '283646709'),
+];
+
+/// Everything else on Quick Apps.
+const otherApps = <QuickApp>[
   QuickApp('Gmail', ['com.google.android.gm'], SimpleIcons.gmail,
       SimpleIconColors.gmail),
   QuickApp('Google', ['com.google.android.googlequicksearchbox'],
@@ -104,6 +110,9 @@ const quickApps = <QuickApp>[
   QuickApp('Instagram', ['com.instagram.android'], SimpleIcons.instagram,
       SimpleIconColors.instagram),
 ];
+
+/// Every app on both sections.
+const quickApps = <QuickApp>[...paymentApps, ...otherApps];
 
 const _channel = MethodChannel('hari/intent');
 
@@ -238,8 +247,36 @@ Future<void> _notInstalled(BuildContext context, QuickApp a, Widget icon) {
 
 String get _storeName => _isIOS ? 'App Store' : 'Play Store';
 
+/// Home's "Quick Apps" section: the apps that are not payment apps.
 class QuickApps extends StatelessWidget {
   const QuickApps({super.key});
+
+  @override
+  Widget build(BuildContext context) =>
+      const _AppGrid(title: 'Quick Apps', apps: otherApps);
+}
+
+/// Home's "Payments" section: GPay, PhonePe, Paytm and PayPal.
+class PaymentApps extends StatelessWidget {
+  const PaymentApps({super.key});
+
+  @override
+  Widget build(BuildContext context) =>
+      const _AppGrid(title: 'Payments', apps: paymentApps);
+}
+
+/// Up to five a row, the rows evened out (four: one row of four; six: two
+/// of three) so no app sits alone on a last row.
+int tilesPerRow(int n) {
+  if (n <= 5) return n < 1 ? 1 : n;
+  final rows = (n + 4) ~/ 5;
+  return (n + rows - 1) ~/ rows;
+}
+
+class _AppGrid extends StatelessWidget {
+  const _AppGrid({required this.title, required this.apps});
+  final String title;
+  final List<QuickApp> apps;
 
   @override
   Widget build(BuildContext context) {
@@ -250,7 +287,7 @@ class QuickApps extends StatelessWidget {
           header: true,
           child: Padding(
             padding: const EdgeInsets.only(left: Neon.s1, bottom: 10),
-            child: Text('Quick Apps',
+            child: Text(title,
                 style: NeonType.manrope(21, FontWeight.w800)
                     .copyWith(color: Neon.textHi, letterSpacing: -0.6)),
           ),
@@ -259,12 +296,11 @@ class QuickApps extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(8, 16, 8, 6),
           decoration: Neon.glassBox(Neon.rLg),
           child: LayoutBuilder(builder: (context, c) {
-            const perRow = 5;
-            final w = c.maxWidth / perRow;
+            final w = c.maxWidth / tilesPerRow(apps.length);
             return Wrap(
               alignment: WrapAlignment.center,
               children: [
-                for (final a in quickApps)
+                for (final a in apps)
                   SizedBox(width: w, child: _AppTile(app: a)),
               ],
             );
