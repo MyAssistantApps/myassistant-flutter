@@ -67,6 +67,32 @@ Widget _paytmBadge(double size) => Container(
       ),
     );
 
+/// LinkedIn's app icon (no LinkedIn mark ships in simple_icons): "in" in
+/// white on LinkedIn blue.
+Widget _linkedinBadge(double size) => Container(
+      width: size,
+      height: size,
+      color: const Color(0xFF0A66C2),
+      alignment: Alignment.center,
+      child: Text('in',
+          style: TextStyle(
+              color: Colors.white,
+              fontSize: size * 0.55,
+              fontWeight: FontWeight.w800,
+              height: 1,
+              letterSpacing: -size * 0.02)),
+    );
+
+/// Snapchat's app icon: the black ghost on yellow (its yellow mark would
+/// vanish on the white tile).
+Widget _snapchatBadge(double size) => Container(
+      width: size,
+      height: size,
+      color: SimpleIconColors.snapchat,
+      alignment: Alignment.center,
+      child: Icon(SimpleIcons.snapchat, color: Colors.black, size: size * 0.6),
+    );
+
 /// PAYMENTS (2026-11-22): the payment apps, in their own Home section
 /// above Quick Apps.
 const paymentApps = <QuickApp>[
@@ -109,6 +135,22 @@ const otherApps = <QuickApp>[
       SimpleIconColors.whatsapp),
   QuickApp('Instagram', ['com.instagram.android'], SimpleIcons.instagram,
       SimpleIconColors.instagram),
+  // The essentials (2026-11-22).
+  QuickApp('LinkedIn', ['com.linkedin.android'], Icons.work_rounded,
+      Color(0xFF0A66C2),
+      badge: _linkedinBadge),
+  QuickApp('X', ['com.twitter.android'], SimpleIcons.x, SimpleIconColors.x),
+  QuickApp('Telegram', ['org.telegram.messenger'], SimpleIcons.telegram,
+      SimpleIconColors.telegram),
+  QuickApp('Snapchat', ['com.snapchat.android'], SimpleIcons.snapchat,
+      SimpleIconColors.snapchat,
+      badge: _snapchatBadge),
+  QuickApp('Spotify', ['com.spotify.music'], SimpleIcons.spotify,
+      SimpleIconColors.spotify),
+  QuickApp('Maps', ['com.google.android.apps.maps'], SimpleIcons.googlemaps,
+      SimpleIconColors.googlemaps),
+  QuickApp('Chrome', ['com.android.chrome'], SimpleIcons.googlechrome,
+      SimpleIconColors.googlechrome),
 ];
 
 /// Every app on both sections.

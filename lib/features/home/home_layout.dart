@@ -50,7 +50,7 @@ class HomeLayout {
     'payment_apps': HomeSection('payment_apps', 'Payments',
         'GPay, PhonePe, Paytm and PayPal', Icons.account_balance_wallet_rounded),
     'quick_apps': HomeSection('quick_apps', 'Quick Apps',
-        'WhatsApp, YouTube, Gmail and more', Icons.grid_view_rounded),
+        'WhatsApp, LinkedIn, X, YouTube and more', Icons.grid_view_rounded),
     'horoscope': HomeSection('horoscope', "Today's Horoscope",
         'Your sign for the day', Icons.auto_awesome_rounded),
   };

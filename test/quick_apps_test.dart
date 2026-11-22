@@ -23,8 +23,21 @@ void main() {
     expect(tilesPerRow(11), 4);
   });
 
+  test('the essentials are on Quick Apps, each with its Android package', () {
+    final pkgs = {for (final a in otherApps) a.name: a.pkgs.first};
+    expect(pkgs['LinkedIn'], 'com.linkedin.android');
+    expect(pkgs['X'], 'com.twitter.android');
+    expect(pkgs['Telegram'], 'org.telegram.messenger');
+    expect(pkgs['Snapchat'], 'com.snapchat.android');
+    expect(pkgs['Spotify'], 'com.spotify.music');
+    expect(pkgs['Maps'], 'com.google.android.apps.maps');
+    expect(pkgs['Chrome'], 'com.android.chrome');
+  });
+
   test('quick app names are unique', () {
     final names = quickApps.map((a) => a.name).toList();
     expect(names.toSet().length, names.length);
+    final pkgs = quickApps.expand((a) => a.pkgs).toList();
+    expect(pkgs.toSet().length, pkgs.length);
   });
 }
