@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:simple_icons/simple_icons.dart';
@@ -9,9 +10,11 @@ import '../../design/neon_tokens.dart';
 
 /// QUICK APPS (2026-11-08): the apps people open most, one tap away on
 /// Home — where the "Order and shop" banners used to be. Each opens the
-/// installed app; when it is not installed, its Play Store page.
+/// installed app; when it is not installed, its Play Store page (App
+/// Store on an iPhone, for the apps that name their [iosScheme]).
 class QuickApp {
-  const QuickApp(this.name, this.pkgs, this.mark, this.color, {this.badge});
+  const QuickApp(this.name, this.pkgs, this.mark, this.color,
+      {this.badge, this.iosScheme, this.iosStoreId});
 
   final String name;
 
@@ -23,7 +26,17 @@ class QuickApp {
   /// The app's own icon, drawn, for when it is not installed ([mark] on
   /// white otherwise).
   final Widget Function(double size)? badge;
+
+  /// iPhone: the app's URL scheme ('paypal'), which opens it and tells
+  /// whether it is installed. Must also be listed under
+  /// LSApplicationQueriesSchemes in ios/Runner/Info.plist.
+  final String? iosScheme;
+
+  /// iPhone: its App Store id (apps.apple.com/app/id<this>).
+  final String? iosStoreId;
 }
+
+bool get _isIOS => !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
 
 /// Paytm's app icon: light blue over navy, a white circle, the wordmark.
 Widget _paytmBadge(double size) => Container(
@@ -62,6 +75,9 @@ const quickApps = <QuickApp>[
   QuickApp(
       'Paytm', ['net.one97.paytm'], SimpleIcons.paytm, SimpleIconColors.paytm,
       badge: _paytmBadge),
+  QuickApp('PayPal', ['com.paypal.android.p2pmobile'], SimpleIcons.paypal,
+      SimpleIconColors.paypal,
+      iosScheme: 'paypal', iosStoreId: '283646709'),
   QuickApp('Gmail', ['com.google.android.gm'], SimpleIcons.gmail,
       SimpleIconColors.gmail),
   QuickApp('Google', ['com.google.android.googlequicksearchbox'],
@@ -96,6 +112,20 @@ final _found = <String, Future<(String, Uint8List)?>>{};
 
 Future<(String, Uint8List)?> _lookup(QuickApp a) =>
     _found[a.name] ??= () async {
+      if (_isIOS) {
+        // No icon from another app on iOS: an empty PNG marks "installed"
+        // and the tile draws [QuickApp.mark].
+        final scheme = a.iosScheme;
+        if (scheme != null) {
+          try {
+            if (await canLaunchUrl(Uri.parse('$scheme://'))) {
+              return (scheme, Uint8List(0));
+            }
+          } catch (_) {}
+        }
+        _found.remove(a.name);
+        return null;
+      }
       for (final pkg in a.pkgs) {
         try {
           final png = await _channel
@@ -113,6 +143,14 @@ Future<bool> _launch(QuickApp a) async {
   AppLog.add('home', 'quick app ${a.name}');
   final hit = await _lookup(a);
   if (hit == null) return false;
+  if (_isIOS) {
+    try {
+      return await launchUrl(Uri.parse('${hit.$1}://'),
+          mode: LaunchMode.externalApplication);
+    } catch (_) {
+      return false;
+    }
+  }
   try {
     final opened = await _channel
         .invokeMethod<String>('launchApp', {'name': a.name, 'pkg': hit.$1});
@@ -122,8 +160,17 @@ Future<bool> _launch(QuickApp a) async {
   }
 }
 
-/// Its Play Store page (Gallery → Google Photos).
+/// Its Play Store page (Gallery → Google Photos); on an iPhone, its App
+/// Store page.
 Future<void> _store(QuickApp a) async {
+  if (_isIOS) {
+    final id = a.iosStoreId;
+    final page = id != null
+        ? 'https://apps.apple.com/app/id$id'
+        : 'https://apps.apple.com/search?term=${Uri.encodeQueryComponent(a.name)}';
+    await launchUrl(Uri.parse(page), mode: LaunchMode.externalApplication);
+    return;
+  }
   final pkg = a.pkgs.last;
   final market = Uri.parse('market://details?id=$pkg');
   if (!await launchUrl(market, mode: LaunchMode.externalApplication)) {
@@ -156,7 +203,7 @@ Future<void> _notInstalled(BuildContext context, QuickApp a, Widget icon) {
             const SizedBox(height: 8),
             Text(
                 "${a.name} is not installed on this phone. Please install it from the "
-                "Play Store, then tap it here to open it.",
+                "$_storeName, then tap it here to open it.",
                 textAlign: TextAlign.center,
                 style:
                     TextStyle(color: Neon.textLo, fontSize: 14, height: 1.4)),
@@ -188,6 +235,8 @@ Future<void> _notInstalled(BuildContext context, QuickApp a, Widget icon) {
     ),
   );
 }
+
+String get _storeName => _isIOS ? 'App Store' : 'Play Store';
 
 class QuickApps extends StatelessWidget {
   const QuickApps({super.key});
@@ -257,7 +306,7 @@ class _AppTileState extends State<_AppTile> {
     final png = _png;
     return ClipRRect(
       borderRadius: BorderRadius.circular(size * 0.26),
-      child: png != null
+      child: png != null && png.isNotEmpty
           ? Image.memory(png,
               width: size,
               height: size,
