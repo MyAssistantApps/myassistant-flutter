@@ -120,24 +120,4 @@ class AccentController {
   }
 
   static void _apply() => Neon.setAccent(seed.value);
-
-  /// The gradient partner: the seed, moved a third of the way round the
-  /// wheel and lifted slightly, so light and dark both stay readable.
-  static Color partnerOf(Color c) {
-    final h = HSLColor.fromColor(c);
-    return h
-        .withHue((h.hue + 22) % 360)
-        .withSaturation((h.saturation * 1.02).clamp(0.35, 1.0))
-        .withLightness((h.lightness + 0.04).clamp(0.35, 0.80))
-        .toColor();
-  }
-
-  /// The darker, denser version a light background needs.
-  static Color inkOf(Color c) {
-    final h = HSLColor.fromColor(c);
-    return h
-        .withSaturation((h.saturation * 1.05).clamp(0.45, 1.0))
-        .withLightness((h.lightness * 0.52).clamp(0.24, 0.48))
-        .toColor();
-  }
 }

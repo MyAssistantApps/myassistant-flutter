@@ -4,22 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../design/motion.dart';
 import '../design/neon_tokens.dart';
 
-/// Legacy color names, remapped onto the Neon V2 palette.
-///
-/// Twenty files still reference these identifiers; keeping the names (with
-/// new values) re-skins every screen in one move. New code should import
-/// `design/neon_tokens.dart` and use [Neon] directly — treat these as
-/// deprecated aliases to be burned down screen by screen.
-class AppColors {
-  static final peacock = Neon.violet; // primary actions
-  static const peacockDeep = Color(0xFF5B21B6); // pressed / emphasis violet
-  static final peacockLight = Neon.cyan; // orb + info highlights
-  static final marigold = Neon.warning; // voice & alerts (amber)
-  static final ink = Neon.bg; // app background
-  static final mist = Neon.textHi; // primary text on dark
-  static final danger = Neon.error;
-}
-
 class AppTheme {
   /// Space Grotesk for display/headlines (techy, geometric), Manrope for
   /// body (clean, readable) — Neon Design System V2.0.

@@ -22,7 +22,9 @@ void main() {
 
   test('no documents: the assistant says so and points at the button', () {
     final r = documentsRoleFor(const []);
-    expect(r.brief, contains('no documents saved yet'));
+    expect(r.brief, contains('No documents were saved'));
+    // Still searches first: a file may have been added a moment ago.
+    expect(r.brief, contains('call find_document first'));
     expect(r.brief, contains('Add a Document'));
   });
 
@@ -31,7 +33,10 @@ void main() {
       _doc(1, 'Electricity bill', summary: 'BESCOM bill for October, Rs 1,240.'),
       _doc(2, 'Passport', category: 'id', expires: '2027-01-10'),
     ]);
-    expect(r.brief, contains('ALL 2 documents'));
+    expect(r.brief, contains('the 2 documents'));
+    // The list is a snapshot: a named file not on it is searched for, not
+    // refused (owner, 2026-11-21: "open my PAN card").
+    expect(r.brief, contains('NOT on this list, call find_document anyway'));
     expect(r.brief, contains('"Electricity bill" (bill, saved 2026-11-16): BESCOM bill'));
     expect(r.brief, contains('"Passport" (id, expires 2027-01-10'));
     // Asked to show one: it opens at once.

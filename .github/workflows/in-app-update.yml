@@ -1,4 +1,4 @@
-# IN-APP UPDATE — every push to hardening builds the app and publishes it to
+# IN-APP UPDATE — every push to production builds the app and publishes it to
 # the backend's update channel (owner, 2026-11-14). Installed apps see
 # "Update available" on their next launch (GET /config → latestVersionCode,
 # GET /app/latest.apk). App Distribution is no longer used.
@@ -10,15 +10,22 @@
 #   4. upload to POST /admin/apk on the production backend
 #
 # Secrets: DEBUG_KEYSTORE_BASE64 (team key), GOOGLE_SERVICES_JSON,
-# APP_CHECK_DEBUG_TOKEN, UPDATE_ADMIN_KEY (the backend's ADMIN_KEY).
+# UPDATE_ADMIN_KEY (the backend's ADMIN_KEY).
 # Docs-only pushes are skipped; "Run workflow" publishes on demand.
 name: in-app update
 on:
   push:
-    branches: [hardening]
+    branches: [production]
     paths-ignore:
       - "**.md"
       - "docs/**"
+      # Rules, tests and Claude Code settings change no app code.
+      - "test/**"
+      - ".claude/**"
+      - "tool/claude_check.sh"
+      - ".gitattributes"
+      - ".github/workflows/in-app-update.yml"
+      - ".github/workflows/preview.yml"
   workflow_dispatch:
 
 concurrency:
@@ -30,10 +37,14 @@ permissions:
 
 env:
   BACKEND: https://backend.envisionsit.in
+  DEV_BACKEND: https://dev.189-72-146-77.sslip.io
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    # Release secrets live on this environment, which only the protected
+    # production branch may use — a teammate's branch cannot read them.
+    environment: production
     steps:
       - uses: actions/checkout@v4
 
@@ -48,11 +59,10 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Signing, Firebase config and App Check token
+      - name: Signing and Firebase config
         env:
           KEYSTORE_B64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
           GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
-          APP_CHECK_DEBUG_TOKEN: ${{ secrets.APP_CHECK_DEBUG_TOKEN }}
           ADMIN_KEY: ${{ secrets.UPDATE_ADMIN_KEY }}
         run: |
           missing=0
@@ -69,11 +79,11 @@ jobs:
             "keyAlias=androiddebugkey" \
             "keyPassword=android" > android/key.properties
           printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
-          if [ -n "$APP_CHECK_DEBUG_TOKEN" ]; then
-            printf '%s' "$APP_CHECK_DEBUG_TOKEN" > android/app-check-debug-token.txt
-          fi
 
       - run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos
 
       - name: Tests
         run: flutter test
@@ -82,7 +92,10 @@ jobs:
         id: ver
         run: |
           current=$(curl -fsS -m 20 "$BACKEND/config" | python3 -c 'import json,sys; print(int(json.load(sys.stdin).get("latestVersionCode") or 0))')
-          next=$(( current + 1 ))
+          # Above any preview build too (preview.yml), so a release always
+          # installs over the preview on the owner's phone. Dev down → 0.
+          dev=$(curl -fsS -m 20 "$DEV_BACKEND/config" 2>/dev/null | python3 -c 'import json,sys; print(int(json.load(sys.stdin).get("latestVersionCode") or 0))' 2>/dev/null || echo 0)
+          next=$(( (current > dev ? current : dev) + 1 ))
           name=$(grep -m1 '^version:' pubspec.yaml | sed -E 's/version:[[:space:]]*([^+]+).*/\1/')
           echo "code=$next" >> "$GITHUB_OUTPUT"
           echo "name=$name" >> "$GITHUB_OUTPUT"

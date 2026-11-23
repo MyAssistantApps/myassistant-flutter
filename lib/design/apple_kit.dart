@@ -323,11 +323,15 @@ class AppleSearchField extends StatelessWidget {
   final String hint;
   final ValueChanged<String> onChanged;
   final TextEditingController? controller;
+
+  /// At the end of the field (a mic, a clear button).
+  final Widget? trailing;
   const AppleSearchField({
     super.key,
     required this.hint,
     required this.onChanged,
     this.controller,
+    this.trailing,
   });
 
   @override
@@ -340,6 +344,7 @@ class AppleSearchField extends StatelessWidget {
         hintText: hint,
         hintStyle: TextStyle(color: Neon.textDim, fontSize: 15),
         prefixIcon: Icon(Icons.search_rounded, color: Neon.textDim, size: 20),
+        suffixIcon: trailing,
         isDense: true,
         filled: true,
         fillColor: Neon.surfaceHigh,

@@ -1,4 +1,4 @@
-// CLOUD — Gemini through Firebase AI Logic (firebase_ai): every turn,
+// CLOUD — the cloud model through a [ModelPort] (our server): every turn,
 // with the tools, the user's own data and attachments.
 //
 // A turn is: the server's system instruction + the recent conversation +
@@ -7,7 +7,7 @@
 // each call goes to the [ToolRunner] (the brain: /ai/tool, device actions)
 // and its answer goes back as the function response, for up to
 // maxToolRounds rounds, after which the model must answer in words.
-// [search] is the same without tools, grounded in Google Search, keeping
+// [search] is the same without tools, grounded in a web search, keeping
 // the pages it used.
 import 'dart:async';
 
@@ -80,7 +80,6 @@ final class CloudFinished extends CloudEvent {
   const CloudFinished({
     required this.text,
     this.sources = const [],
-    this.searchSuggestionsHtml,
     this.toolRounds = 0,
     this.hitToolLimit = false,
   });
@@ -89,10 +88,6 @@ final class CloudFinished extends CloudEvent {
 
   /// Pages a grounded answer used.
   final List<SourceLink> sources;
-
-  /// Google's "Search suggestions" chip HTML, which a grounded answer's UI
-  /// is required to show (Gemini API grounding terms).
-  final String? searchSuggestionsHtml;
   final int toolRounds;
   final bool hitToolLimit;
 }
@@ -238,7 +233,7 @@ class CloudEngine {
     yield CloudFinished(text: text.toString(), toolRounds: rounds, hitToolLimit: hitLimit);
   }
 
-  /// A fresh-facts answer grounded in Google Search (no function tools).
+  /// A fresh-facts answer grounded in a web search (no function tools).
   Stream<CloudEvent> search(CloudRequest r) async* {
     final request = ModelRequest(
       model: r.model,
@@ -249,16 +244,11 @@ class CloudEngine {
     );
     final text = StringBuffer();
     final sources = <SourceLink>[];
-    String? suggestions;
     await for (final resp in _within(port.stream(request), r.roundTimeout, first: r.firstTimeout)) {
       _throwIfBlocked(resp);
       for (final s in sourcesOf(resp)) {
         if (!sources.contains(s)) sources.add(s);
       }
-      final entry = resp.candidates.isEmpty
-          ? null
-          : resp.candidates.first.groundingMetadata?.searchEntryPoint?.renderedContent;
-      if (entry != null && entry.isNotEmpty) suggestions = entry;
       if (resp.candidates.isEmpty) continue;
       for (final p in resp.candidates.first.content.parts) {
         if (p is TextPart && p.isThought != true && p.text.isNotEmpty) {
@@ -267,8 +257,7 @@ class CloudEngine {
         }
       }
     }
-    yield CloudFinished(
-        text: text.toString(), sources: sources, searchSuggestionsHtml: suggestions);
+    yield CloudFinished(text: text.toString(), sources: sources);
   }
 
   static void _throwIfBlocked(GenerateContentResponse resp) {

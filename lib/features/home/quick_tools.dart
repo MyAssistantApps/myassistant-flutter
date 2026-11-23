@@ -10,12 +10,10 @@ import 'buses_screen.dart';
 import 'flights_screen.dart';
 import 'hotels_screen.dart';
 import 'services_screen.dart';
-import '../shop/shop_api.dart';
-import '../shop/shop_screens.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  QUICK TOOLS (owner, 2026-11-04): sliding cards on Home like Try now —
-///  Flights, Buses, Groceries, Food and Misc — each opening its own page.
+///  Flights, Buses, Hotels and Everyday — each opening its own page.
 ///  The pages are placeholders until the owner describes each one.
 ///  Slides every 4 s; a finger on the cards pauses it, and "Remove
 ///  animations" stops it. Each card carries a photo of what it is for
@@ -40,10 +38,6 @@ const quickTools = <QuickTool>[
       Icons.directions_bus_rounded, 52),
   QuickTool('hotels', 'Hotels', 'Hotels and resorts, at the best prices.',
       Icons.hotel_rounded, 70),
-  QuickTool('groceries', 'Groceries', 'Order from nearby stores and pay within the app.',
-      Icons.shopping_basket_rounded, -86),
-  QuickTool('food', 'Food', 'Order from nearby restaurants within the app.',
-      Icons.restaurant_rounded, 30),
   QuickTool('misc', 'Everyday', 'Fashion, beauty, medicines, moving and more.',
       Icons.widgets_rounded, 0),
 ];
@@ -109,8 +103,6 @@ class _QuickToolsSectionState extends State<QuickToolsSection> {
       'flights' => const FlightsScreen(),
       'buses' => const BusesScreen(),
       'hotels' => const HotelsScreen(),
-      'groceries' => const ShopHomeScreen(domain: ShopDomain.grocery),
-      'food' => const ShopHomeScreen(domain: ShopDomain.food),
       'misc' => const ServicesScreen(),
       _ => QuickToolScreen(tool: t),
     };

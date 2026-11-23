@@ -84,8 +84,8 @@ class UserDocument {
   /// licence, passport, PUC, warranty…), or '' — read by the server.
   final String expiresOn;
 
-  /// Bills by email (build 120): 'email' when it arrived from an outside
-  /// sender, else ''. [sourceLabel] is the sending DOMAIN (never a name the
+  /// 'email' when it arrived by email from an outside sender (build 120),
+  /// else ''. [sourceLabel] is the sending DOMAIN (never a name the
   /// sender chose); [sourceVerified] is true when its signature checked out
   /// or the user said the address is theirs. Older servers send neither.
   final String source;

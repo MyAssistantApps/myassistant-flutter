@@ -25,11 +25,8 @@
      Android 14+ gates this; ordinary reminders never use it. -->
 <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
 <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION"/>
-<!-- Network state — required for WebRTC ICE candidate gathering -->
+<!-- Network state: the updater's metered-network check (MainActivity). -->
 <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-<uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"/>
-<uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
-<uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
 <!-- Incoming-call guard: detect ringing/active calls so the assistant
      stops speaking immediately and releases the microphone. -->
 <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
@@ -272,6 +269,12 @@
         <receiver
             android:name=".InstallResultReceiver"
             android:exported="false" />
+        <!-- Quiet updates (2026-11-23): installs a downloaded build a few
+             minutes after the app is left, even when Android has frozen it. -->
+        <service
+            android:name=".QuietInstallJob"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="false" />
         <!-- Gift cards (2026-09-26): hands the finished card to WhatsApp
              (PosterShareBridge). Not exported; each share grants read on
              that one file only. -->
@@ -364,22 +367,6 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-        <!-- CONNECTED APPS (build 120): "Connect Notion" opens the consent page
-             in a Custom Tab; the backend finishes the exchange and sends the
-             tab to com.myassistant.myassistant://connected?result=… (a result
-             word only, never a code or a token). This activity catches it and
-             hands it to flutter_web_auth_2. MainActivity is not touched. -->
-        <activity
-            android:name="com.linusu.flutter_web_auth_2.CallbackActivity"
-            android:exported="true"
-            android:taskAffinity="">
-            <intent-filter android:label="flutter_web_auth_2">
-                <action android:name="android.intent.action.VIEW"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="com.myassistant.myassistant" android:host="connected"/>
-            </intent-filter>
-        </activity>
         <!-- Tasks inside other apps (ScreenAgentService.kt): runs only once
              the owner switches it on in Settings → Accessibility. -->
         <service

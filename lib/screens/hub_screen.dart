@@ -28,6 +28,9 @@ import '../design/motion.dart';
 import '../features/premium/premium_screen.dart';
 import '../features/wallet/wallet_api.dart';
 import '../features/wallet/wallet_screen.dart';
+import 'connect/assistants_screen.dart';
+import 'pro_assistant_screen.dart';
+import 'workspace/workspace_screen.dart';
 
 /// HUB TAB — every feature as a front door.
 ///
@@ -135,6 +138,43 @@ class _HubScreenState extends State<HubScreen> {
               ),
             ),
           ),
+          // THE WORKSPACE DOORS IN ONE PLACE (product audit 2026-11-21):
+          // a doctor's, advocate's or business assistant, the workspace and
+          // Connect were reachable only through Home cards, so a user who
+          // scrolled past them could not find them again.
+          _group(context, 'Your Assistant', [
+            if (_proKind() != null)
+              _Row(
+                switch (_proKind()!) {
+                  ProKind.doctor => 'Clinic Assistant',
+                  ProKind.advocate => 'Chambers Assistant',
+                  ProKind.business => 'Business Assistant',
+                },
+                switch (_proKind()!) {
+                  ProKind.doctor => 'Appointments, follow-ups, notes and dues',
+                  ProKind.advocate => 'Cases, hearings, drafts and invoices',
+                  ProKind.business => 'Invoices, leads and follow-ups',
+                },
+                Icons.work_rounded,
+                Neon.accentA,
+                (c) => ProAssistantScreen(kind: _proKind()!),
+              )
+            else
+              _Row(
+                'Your Workspace',
+                'Your routines and the plan for your day',
+                Icons.dashboard_customize_rounded,
+                Neon.accentA,
+                (c) => const WorkspaceScreen(),
+              ),
+            _Row(
+              'Talk to an Assistant',
+              "Message, alert or book through a contact's assistant",
+              Icons.forum_rounded,
+              Neon.accentC,
+              (c) => const AssistantsScreen(),
+            ),
+          ]),
           _group(context, 'Your Day', [
             // The month, moved off Home (2026-09-29): Home shows what is
             // next; everything with a date lives here.
@@ -218,7 +258,7 @@ class _HubScreenState extends State<HubScreen> {
           _group(context, 'Connections', [
             _Row(
               'Connected Apps',
-              'Notes, mail, and more in one place',
+              'Google and mail in one place',
               Icons.hub_rounded,
               Neon.accentA,
               (c) => const ConnectedAppsScreen(),
@@ -320,7 +360,7 @@ class _HubScreenState extends State<HubScreen> {
               ),
             _Row(
               'MyAssistant Premium',
-              'Plans, free trial and credits',
+              'Plans and early access',
               Icons.workspace_premium_rounded,
               Neon.accentA,
               (c) => const PremiumScreen(),
@@ -450,3 +490,11 @@ class _Row {
   const _Row(this.title, this.subtitle, this.icon, this.color, this.builder,
       {this.trailing});
 }
+
+/// The signed-in profession as the Pro assistant it opens, or null.
+ProKind? _proKind() => switch (Persona.proKind) {
+      'doctor' => ProKind.doctor,
+      'advocate' => ProKind.advocate,
+      'business' => ProKind.business,
+      _ => null,
+    };

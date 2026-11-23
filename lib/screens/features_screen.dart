@@ -49,7 +49,7 @@ class FeaturesScreen extends StatelessWidget {
       ('Calls on Any App', 'WhatsApp, Telegram, and Signal calls by name'),
       ('Missed Calls & Call Notes', "'Any missed calls?' — recorded calls are analysed, so you can ask what Ravi said"),
       ('Messages', 'To another user via their assistant, by WhatsApp (you tap Send), or by SMS'),
-      ('Email', 'Reads, replies to, and sends your mail; Bills by Email'),
+      ('Email', 'Reads, replies to, and sends your mail'),
       ('People Memory', "Facts, dates, and addresses for your contacts — 'What is Ravi's address?'"),
       ('Nearby Places', "'Find a well-rated restaurant nearby' — real places on the map"),
       ('Interpreter', 'Live interpretation between two languages'),
@@ -65,7 +65,7 @@ class FeaturesScreen extends StatelessWidget {
       ('Record Books', "Dictated figures and running totals — 'What is my total?'"),
       ('Indian Law', 'Statutes, case law, rules, and procedure — cited, never invented'),
       ('Research', 'In-depth research and live web search'),
-      ('Notion & Connected Tools', 'Search, read, and create pages; your own tool servers'),
+      ('Connected Tools', 'Your own tool servers'),
     ]),
     ('THE ASSISTANT', [
       ('Live Voice Conversation', 'English, Kannada, Hindi, Tamil, Telugu, Malayalam, and more — interrupt at any time'),
@@ -74,10 +74,6 @@ class FeaturesScreen extends StatelessWidget {
       ('Personalisation', 'Name, voice, theme colour, app lock, and privacy controls'),
       ('Automatic Updates', 'New versions install automatically'),
     ]),
-  ];
-
-  static const _building = <(String, String)>[
-    ('Video Avatar Messages', 'Your assistant delivers messages as a talking avatar'),
   ];
 
   static const _planned = <(String, String)>[
@@ -95,17 +91,14 @@ class FeaturesScreen extends StatelessWidget {
             20, 8, 20, 32 + MediaQuery.paddingOf(context).bottom),
         children: [
           // Each tier in its meaning's light (2026-09-30, NeonTone): live
-          // is done-and-well green and the brightest; in progress amber;
-          // coming soon the purple of something to discover.
+          // is done-and-well green and the brightest; coming soon the
+          // purple of something to discover.
           for (var g = 0; g < _groups.length; g++) ...[
             if (g > 0) const SizedBox(height: 22),
             _section(_groups[g].$1, NeonTone.success,
                 Icons.check_circle_rounded, _groups[g].$2, g * 60,
                 halo: g == 0 ? 0.6 : 0.4),
           ],
-          const SizedBox(height: 22),
-          _section('IN PROGRESS', NeonTone.warning, Icons.build_circle_rounded,
-              _building, 360),
           const SizedBox(height: 22),
           _section('COMING SOON', NeonTone.discovery, Icons.schedule_rounded,
               _planned, 420),

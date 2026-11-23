@@ -1,5 +1,5 @@
-// SPEECH OUT — Gemini TTS through Firebase AI Logic (firebase_ai: a TTS
-// model, responseModalities audio + SpeechConfig voice/language): every
+// SPEECH OUT — the server's TTS through a [ModelPort] (firebase_ai's wire
+// shape: responseModalities audio + SpeechConfig voice/language): every
 // spoken reply is voiced here; model, voice and language come from
 // /ai/config.
 //
@@ -18,6 +18,7 @@ import 'dart:typed_data';
 import 'package:firebase_ai/firebase_ai.dart';
 
 import '../core/log.dart';
+import 'assistant_role.dart';
 import 'config.dart';
 import 'model_port.dart';
 import 'speech_markup.dart';
@@ -276,10 +277,6 @@ class SpeechEngine {
     return out.stream;
   }
 
-  /// [synthesizeChunks], as the PCM bytes alone.
-  Stream<Uint8List> synthesize(String text, {String? style}) =>
-      synthesizeChunks(text, style: style).map((c) => c.pcm);
-
   /// Synthesise and play through [sink]. Returns how many pieces of audio
   /// were handed to it.
   Future<int> speak(
@@ -450,12 +447,17 @@ class SpeechStream {
         .stream(ModelRequest(
           model: cfg.models.tts,
           contents: [
-            Content.text(SpeechEngine.prompt(p.text, style, model: cfg.models.tts)),
+            // The current role's manner (Guruji's) as a <tone: …> note for
+            // the OpenAI speech model; Gemini's takes its style in prompt().
+            Content.text(SpeechEngine.prompt(
+                cfg.models.tts.contains('2.5') ? p.text : AssistantRole.toned(p.text),
+                style,
+                model: cfg.models.tts)),
           ],
           generationConfig: GenerationConfig(
             responseModalities: [ResponseModalities.audio],
             speechConfig: SpeechConfig(
-              voiceName: cfg.models.ttsVoice,
+              voiceName: AssistantRole.voiceOr(cfg.models.ttsVoice),
               languageCode: SpeechEngine.languageFor(p.text, cfg.models.ttsLanguage),
             ),
           ),

@@ -29,6 +29,23 @@ val emulatorOnlyBuild: Boolean = (project.findProperty("target-platform") as Str
     ?.let { platforms -> platforms.isNotEmpty() && platforms.all { it.contains("x64") || it.contains("x86") } }
     ?: false
 
+// GOOGLE PLAY BUILD (product audit 2026-11-21): `-Pstore=play`
+// (flutter build appbundle --dart-define=STORE=play
+//  --android-project-arg=store=play) merges src/playRelease/AndroidManifest.xml
+// into the release, removing the permissions Play refuses. The default
+// (sideloaded) build is unchanged.
+val playStoreBuild: Boolean = (project.findProperty("store") as String?) == "play"
+
+// A Play upload must carry the real key: packaging a store=play release
+// without android/key.properties fails instead of falling back to the
+// debug keystore.
+gradle.taskGraph.whenReady {
+    val packaging = allTasks.any { it.name == "bundleRelease" || it.name == "assembleRelease" }
+    if (playStoreBuild && packaging && !rootProject.file("key.properties").exists()) {
+        throw GradleException("store=play needs android/key.properties (the upload key).")
+    }
+}
+
 android {
     namespace = "com.myassistant.myassistant"
     compileSdk = 36
@@ -58,9 +75,8 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        // Real phones only: x86/x86_64 are emulator ABIs, and with the
-        // onnxruntime + webrtc native libs they were ~70 MB of dead
-        // weight in every shared APK.
+        // Real phones only: x86/x86_64 are emulator ABIs, and their plugin
+        // native libs are dead weight in every shared APK.
         // Except an emulator-only `flutter run` (it passes just android-x64
         // or android-x86): that build needs the x86 libs to start at all.
         if (!emulatorOnlyBuild) {
@@ -78,6 +94,12 @@ android {
                 storeFile = file(keystoreProperties["storeFile"] as String)
                 storePassword = keystoreProperties["storePassword"] as String
             }
+        }
+    }
+
+    sourceSets {
+        getByName("release") {
+            if (playStoreBuild) manifest.srcFile("src/playRelease/AndroidManifest.xml")
         }
     }
 
@@ -100,8 +122,8 @@ android {
     }
 
     // The abiFilters above are overridden by the Flutter gradle plugin,
-    // so plugin .so files (onnxruntime 25 MB, webrtc 16 MB, sherpa 5 MB)
-    // still shipped for the emulator-only x86_64 ABI. Packaging excludes
+    // so plugin .so files still shipped for the emulator-only x86_64
+    // ABI. Packaging excludes
     // are applied last and actually stick.
     packaging {
         jniLibs {
@@ -124,18 +146,6 @@ flutter {
 }
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
-
-    // SEND FEEDBACK (owner, 2026-09-25: "yes add the send feedback button").
-    // The client gets the app through Firebase App Distribution; this SDK
-    // opens its feedback form (TesterFeedbackBridge), and what the client
-    // writes shows up in the Firebase console under the release.
-    //
-    // The FULL SDK, because this app is sideloaded and never on Play. It
-    // also carries App Distribution's own self-update code, which Play
-    // forbids: a Play build must use "firebase-appdistribution-api"
-    // instead. We never call that update code (updateIfNewReleaseAvailable,
-    // checkForNewRelease, updateApp) — our own updater stays the only one.
-    implementation("com.google.firebase:firebase-appdistribution:16.0.0-beta20")
 
     // PHONE NUMBER VERIFICATION (owner, 2026-09-29): the SIM's number, read
     // from the carrier by Google after Android's consent sheet — it replaced

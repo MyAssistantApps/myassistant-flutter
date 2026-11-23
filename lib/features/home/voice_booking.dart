@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:firebase_ai/firebase_ai.dart' show Content, TextPart;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -345,7 +344,6 @@ VoiceListener bookingListener() {
       limits: c.limits,
       live: c.live,
       listen: const AiListen(cloudStt: 'device'),
-      provider: c.provider,
       fromServer: c.fromServer,
     );
   }
@@ -374,7 +372,6 @@ AiConfig bookingConfig() {
     limits: c.limits,
     live: c.live,
     listen: const AiListen(cloudStt: 'device'),
-    provider: c.provider,
     fromServer: c.fromServer,
   );
 }

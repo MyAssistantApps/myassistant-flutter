@@ -71,7 +71,7 @@ void main() {
   test('compare remembers it and an alert records its price', () async {
     SharedPreferences.setMockInitialValues({});
     final svc = PriceService.instance;
-    svc.ask = (_) async => (text: answer, sources: const <SourceLink>[], suggestionsHtml: null);
+    svc.ask = (_) async => (text: answer, sources: const <SourceLink>[]);
     final a = await svc.compare(PriceCategory.shopping, 'iphone 16');
     expect(svc.recent.first.product, a.result.product);
     svc.watch(a.result, 70000);
@@ -121,7 +121,6 @@ void main() {
               '"history": {"lowest": 69999, "highest": 79900, "average": 75000}, '
               '"deals": [{"store": "Flipkart", "text": "10% off with HDFC cards", "code": "HDFC10"}]}',
           sources: const <SourceLink>[],
-          suggestionsHtml: null,
         );
     await t.pumpWidget(MaterialApp(
       builder: (c, child) =>
@@ -152,7 +151,7 @@ void main() {
       t.view.physicalSize = const Size(1080, 2400);
       t.view.devicePixelRatio = 3;
       addTearDown(t.view.reset);
-      PriceService.instance.ask = (_) async => (text: answer, sources: const <SourceLink>[], suggestionsHtml: null);
+      PriceService.instance.ask = (_) async => (text: answer, sources: const <SourceLink>[]);
       await t.pumpWidget(MaterialApp(
         builder: (ctx, child) =>
             MediaQuery(data: MediaQuery.of(ctx).copyWith(textScaler: const TextScaler.linear(1.2)), child: child!),

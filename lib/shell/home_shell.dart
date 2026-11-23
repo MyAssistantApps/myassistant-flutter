@@ -1,8 +1,9 @@
 import 'dart:async';
+import 'dart:math' show sqrt;
+import 'dart:ui' show ImageFilter, PathOperation;
 
 import '../screens/chat_screen.dart' show ChatThreadScreen;
 import '../screens/chat_group_screen.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -31,7 +32,6 @@ import '../services/notification_service.dart';
 import '../services/avatar_message_service.dart';
 import '../services/push_service.dart';
 import 'focus_nav.dart';
-import '../screens/bills_email_screen.dart' show BillsEmailNav;
 import '../core/log.dart';
 import '../services/auth_service.dart';
 import '../services/overlay_bridge.dart';
@@ -44,6 +44,7 @@ import '../screens/hub_screen.dart';
 import '../features/shopping/shopping_list_screen.dart' show ShoppingNav;
 import '../screens/quick_task_screen.dart';
 import '../services/app_feedback.dart';
+import '../services/documents_lock.dart';
 import '../services/app_update_service.dart';
 import '../services/assistant_identity.dart';
 import '../services/brief_service.dart';
@@ -63,21 +64,22 @@ import '../services/device_control_service.dart';
 import '../features/reminders/reminder_popup.dart';
 
 /// Where a tapped notification goes, by its payload: a video note left in
-/// the tray opens the notes again, a Bills by email one opens that screen
-/// (build 120), a focus one opens Focus; anything else just opens the app.
-/// [billsEmail] is for tests.
-Future<void> openNotificationPayload(String what,
-    {Future<void> Function()? billsEmail}) {
+/// the tray opens the notes again, a focus one opens Focus; anything else
+/// just opens the app.
+Future<void> openNotificationPayload(String what) {
   if (what == AvatarMessageService.videoNotePayload) {
     return PushService.instance.openVideoNotes();
   }
-  if (what == 'bills_email') return (billsEmail ?? BillsEmailNav.open)();
   // The shopping trip's notification and its Next / Done (build 124).
   if (what == ReminderNotifications.shoppingPayload ||
       what.startsWith('${ReminderNotifications.shoppingPayload}:')) {
     return ShoppingNav.fromNotification(what);
   }
   if (what == 'focus') return FocusNav.open();
+  // An urgent alert shown while the app was open (2026-11-21).
+  if (what.startsWith('urgent:')) {
+    return PushService.instance.openUrgent(int.tryParse(what.substring(7)));
+  }
   if (what == ListingNav.payload) return ListingNav.open();
   // A direct message (2026-10-04): that person's chat.
   if (what.startsWith('dm:')) {
@@ -348,7 +350,6 @@ class _HomeShellState extends State<HomeShell>
       e.scheduleItems.isNotEmpty ||
       voiceSessionOnScreen(e) ||
       e.searchResults.isNotEmpty ||
-      e.searchSuggestions.isNotEmpty ||
       e.presentedText != null ||
       e.generatedImage != null;
 
@@ -364,7 +365,7 @@ class _HomeShellState extends State<HomeShell>
       e.dismissPresentedText();
     } else if (e.generatedImage != null) {
       e.dismissGeneratedImage();
-    } else if (e.searchResults.isNotEmpty || e.searchSuggestions.isNotEmpty) {
+    } else if (e.searchResults.isNotEmpty) {
       e.dismissSearchResults();
     }
   }
@@ -561,6 +562,19 @@ class _HomeShellState extends State<HomeShell>
     // conversation keeps running underneath, mic stays hot.
     engine.onShowDocuments = (docs) {
       if (!mounted || docs.isEmpty) return false;
+      // Behind the screen lock (owner, 2026-11-21): a document asked for by
+      // voice opens only after the phone's own unlock.
+      if (!DocumentsLock.instance.isUnlocked) {
+        DocumentsLock.instance.unlock().then((ok) {
+          if (!mounted) return;
+          if (ok) {
+            engine.onShowDocuments?.call(docs);
+          } else {
+            AppFeedback.show('Your documents stay locked. Please unlock to view them.');
+          }
+        });
+        return true;
+      }
       // The keyboard goes down first (tester run, 2026-10-01): it came back
       // over the voice screen when the picture closed, hiding the dock orb
       // — so the one tap that stops the session had nothing to land on.
@@ -870,58 +884,38 @@ class _HomeShellState extends State<HomeShell>
               ],
             ),
           ),
-          // CONTENT MUST NOT END MID-LETTER. Every tab is a scrolling
-          // list under a floating mic and a notched dock, so whatever is
-          // passing behind them showed as ghost text sliced by the orb.
-          //
-          // SOLID FROM THE BAR DOWN (2026-09-24, hub.png / you.png). The
-          // fade used to be a fixed 92 dp that ignored how tall the dock
-          // really is (66 dp + the system navigation inset), so at the
-          // notch around the mic it was only ~20% opaque and list text
-          // showed through the ring. It is now sized from the body's own
-          // padding (bar + inset): fully opaque from the bar's top edge
-          // down — the notch ring is always plain ground — with a short
-          // fade above it where the mic rises over the list.
-          if (!keyboardUp)
-            Builder(builder: (context) {
-              final dockTop = MediaQuery.paddingOf(context).bottom;
-              const rise = 52.0; // the mic rises 38 dp over the bar + glow
-              final h = dockTop + rise;
-              return Positioned(
-                key: const ValueKey('dock-fade'),
-                left: 0,
-                right: 0,
-                bottom: 0,
-                height: h,
-                child: IgnorePointer(
-                  // It comes back with the dock when the keyboard closes:
-                  // faded in, not switched on in one frame.
-                  child: EnterOnce(
-                    duration: Motion.micro,
-                    child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Neon.bg.withValues(alpha: 0.0),
-                          Neon.bg.withValues(alpha: 0.85),
-                          Neon.bg,
-                          Neon.bg,
-                        ],
-                        stops: [0.0, 0.6 * rise / h, rise / h, 1.0],
+              // THE SCREEN'S EDGE, SOFTENED (2026-11-22, floating dock). The old
+              // fade was solid from the bar down, to hide text passing behind an
+              // edge-to-edge notched bar. The floating dock is glass — what
+              // passes under it is blurred — and content should stay visible
+              // around it, so only a light fade remains at the very bottom.
+              if (!keyboardUp)
+                Builder(builder: (context) {
+                  final h = MediaQuery.paddingOf(context).bottom + 12;
+                  return Positioned(
+                    key: const ValueKey('dock-fade'),
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    height: h,
+                    child: IgnorePointer(
+                      child: EnterOnce(
+                        duration: Motion.micro,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [Neon.bg.withValues(alpha: 0.0), Neon.bg.withValues(alpha: 0.55)],
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                    ),
-                  ),
-                ),
-              );
-            }),
+                  );
+                }),
           // Floating captions for the inline (no-screen) conversation.
           const InlineCaptionOverlay(),
-          // The answer card that lingered after a voice chat (AnswerAfterglow)
-          // is off (owner, 2026-10-07): the spoken reply is enough, and the
-          // card covered Home.
           // The cards a turn produces — a confirmation to tap, a call in
           // progress, a written piece, search results. These lived only
           // inside the old conversation screen, which is why Home had to
@@ -974,193 +968,148 @@ class _HomeShellState extends State<HomeShell>
         ],
       ),
       ),
+      // THE MIC (2026-11-22, Manish's mockup): a dark ringed circle nested in
+      // the cradle that dips into the middle of the floating navbar. Hidden
+      // while the keyboard is up: docked, it floated over the text box.
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      // TAP: talk right here — the orb wakes in place, captions float above
-      // the dock, no second screen. Tap again to stop.
-      //
-      // There is no second screen any more, so the stale-flag self-heal
-      // that used to guard both handlers is gone with it — the orb now
-      // answers every tap, which is what it should always have done.
-      // Hidden while the keyboard is up: docked, it floated over the text
-      // box (seen 2026-09-24). Send is on the box; Stop is one tap away
-      // once the keyboard closes.
-      //
-      // NO SPIN WHEN TYPING ENDS (2026-09-24). Hiding it used to swap the
-      // button for nothing, so the Scaffold ran its stock FAB change: it
-      // shrank the mic out, and brought it back with a hard-coded 45° turn
-      // on an ease-in scale — every time typing ended the mic visibly spun
-      // and snapped into its notch. The slot now always holds the same
-      // widget and the mic is simply not built while the keyboard is up
-      // (so no halo ticks behind the keyboard either); it plays its own
-      // quiet entrance when it returns (AssistantOrbButton).
       floatingActionButton: Visibility(
         visible: !keyboardUp,
-        // THE CONNECT STARTS AS THE FINGER LANDS (2026-10-04), not when it
-        // lifts: the fast voice gets that head start too.
-        child: Listener(
-        onPointerDown: (_) {
-          final e = AssistantEngine.instance;
-          if (!e.starting && !e.inlineVoice && !e.liveActive) e.prewarmVoice();
-        },
-        child: AssistantOrbButton(
-        onTap: () async {
-          HapticFeedback.mediumImpact();
-          final engine = AssistantEngine.instance;
-          // ONE TAP STOPS, ALWAYS (client, 1 Oct: two taps to get out, and
-          // "Listening" on screen when it was not). A connect in flight, a
-          // conversation still marked open, a live session or a busy turn
-          // all mean "tap = stop"; only a resting engine means "tap = talk".
-          final running = engine.starting ||
-              engine.inlineVoice ||
-              engine.liveActive ||
-              (engine.phase != AssistantPhase.idle &&
-                  engine.phase != AssistantPhase.completed);
-          AppLog.add('orb', running ? 'tap → stop' : 'tap → start');
-          if (running) {
-            await engine.endInlineConversation();
-          } else {
-            await engine.beginInlineConversation(
-                name: AuthService.instance.user?.name);
-          }
-        },
-        // HOLD used to open the conversation screen with the avatar face.
-        // That screen is gone, and face mode is off server-side anyway
-        // (features.face_mode is false), so a hold would have opened an
-        // empty room. It ends the conversation instead — the one thing a
-        // deliberate long press on a live mic should reliably do.
-        onLongPress: () async {
-          HapticFeedback.heavyImpact();
-          final engine = AssistantEngine.instance;
-          if (engine.inlineVoice || engine.liveActive) {
-            AppLog.add('orb', 'hold → stop');
-            await engine.endInlineConversation();
-          }
-        },
+        // Nested low in the bar's cradle, not perched on its edge.
+        child: Transform.translate(
+          offset: const Offset(0, Dock.micDrop),
+          child: Listener(
+                  onPointerDown: (_) {
+                    final e = AssistantEngine.instance;
+                    if (!e.starting && !e.inlineVoice && !e.liveActive) e.prewarmVoice();
+                  },
+                  child: AssistantOrbButton(
+                    ringed: true,
+                    onTap: () async {
+                      HapticFeedback.mediumImpact();
+                      final engine = AssistantEngine.instance;
+                      // ONE TAP STOPS, ALWAYS (client, 1 Oct: two taps to get out, and
+                      // "Listening" on screen when it was not). A connect in flight, a
+                      // conversation still marked open, a live session or a busy turn
+                      // all mean "tap = stop"; only a resting engine means "tap = talk".
+                      final running = engine.starting ||
+                          engine.inlineVoice ||
+                          engine.liveActive ||
+                          (engine.phase != AssistantPhase.idle && engine.phase != AssistantPhase.completed);
+                      AppLog.add('orb', running ? 'tap → stop' : 'tap → start');
+                      if (running) {
+                        await engine.endInlineConversation();
+                      } else {
+                        await engine.beginInlineConversation(name: AuthService.instance.user?.name);
+                      }
+                    },
+                    // HOLD used to open the conversation screen with the avatar face.
+                    // That screen is gone, and face mode is off server-side anyway
+                    // (features.face_mode is false), so a hold would have opened an
+                    // empty room. It ends the conversation instead — the one thing a
+                    // deliberate long press on a live mic should reliably do.
+                    onLongPress: () async {
+                      HapticFeedback.heavyImpact();
+                      final engine = AssistantEngine.instance;
+                      if (engine.inlineVoice || engine.liveActive) {
+                        AppLog.add('orb', 'hold → stop');
+                        await engine.endInlineConversation();
+                      }
+                    },
+                  ),
+                ),
       ),
       ),
-      ),
-      bottomNavigationBar: _DockRim(child: BottomAppBar(
-        color: Neon.surface,
-        elevation: 0,
-        height: Dock.barHeight,
-        shape: const CircularNotchedRectangle(),
-        // A snug cradle: the visible mic is 64 dp inside its 76 dp box, so
-        // a wide margin left a thick ring of whatever was behind the bar.
-        notchMargin: 4,
-        padding: EdgeInsets.zero,
-        child: Row(
+        // THE FLOATING NAVBAR (2026-11-22, Manish's mockup): a glass pill with
+        // a lavender rim, a smooth cradle dipping into its middle for the mic,
+        // two tabs each side; pages scroll underneath and around it.
+        bottomNavigationBar: _FloatingDock(
+          selected: _tab,
           children: [
-            // Two items each side of the notch keeps the row symmetric.
-            _navItem(0, Icons.space_dashboard_outlined,
-                Icons.space_dashboard_rounded, 'Home'),
-            _navItem(
-                1, Icons.grid_view_outlined, Icons.grid_view_rounded, 'Hub'),
-            const SizedBox(width: 72), // notch space for the mic
-            // One family for the resting icons (2026-09-24): Home and Hub
-            // used the square-cornered outlines while Chat and You used
-            // the rounded ones. The selected tab keeps its filled one.
-            // Nearby took the Chat tab (2026-10-01, the owner): people around
-            // who share what they do. Chat moved to the Hub (Messages).
-            // Chats took Nearby's tab (owner, 2026-10-04); Nearby is in the Hub.
-            _navItem(2, Icons.chat_bubble_outline_rounded,
-                Icons.chat_bubble_rounded, 'Chats'),
+            // Two items each side of the mic keeps the row symmetric.
+            _navItem(0, Icons.home_outlined, Icons.home_rounded, 'Home'),
+            _navItem(1, Icons.grid_view_outlined, Icons.grid_view_rounded, 'Hub'),
+            // The cradle the mic sits in.
+            const SizedBox(width: Dock.cradleGap),
+            // One family for the resting icons (2026-09-24); the selected tab
+            // keeps its filled one. Chats took Nearby's tab (owner, 2026-10-04).
+            _navItem(2, Icons.chat_bubble_outline_rounded, Icons.chat_bubble_rounded, 'Chats'),
             _navItem(3, Icons.person_outline, Icons.person_rounded, 'You'),
           ],
         ),
-      )),
-    ),
+      ),
     );
   }
 
+  /// One tab (2026-11-22, Manish's mockup). The violet highlight behind
+  /// the selected tab glides across (_FloatingDock); here the icon grows a
+  /// little and lights up as it arrives, and the label's colour eases.
   Widget _navItem(int i, IconData icon, IconData active, String label) {
     final selected = _tab == i;
+    const grey = Color(0xFF9CA0AB);
     return Expanded(
-      // The button dips under the finger at once (2026-09-30): nothing
-      // scrolls in the dock, so there is no scroll to wait out (PressScale).
       child: PressScale(
-        scale: 0.94,
+        scale: 0.92,
         child: InkWell(
-        onTapDown: (d) => _tapDown = d.globalPosition,
-        onTap: () {
-          HapticFeedback.selectionClick();
-          if (i == _tab) return;
-          _endConversationOnNavigate();
-          _switchTab(i, from: _tapDown);
-        },
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Active tab in the primary accent — the standard convention;
-            // white-on-gray needed a second look to find where you were.
-            //
-            // ONE MOVE, NOT FOUR (2026-09-24). Selecting a tab used to
-            // grow the icon to 1.12 on an overshooting curve (the one
-            // bounce in the shell), fade the pill in linearly, swap the
-            // icon and its colour in one frame and thicken the label from
-            // w500 to w700, which made it re-centre. Now the icon grows a
-            // little (1.06) on the standard curve with its pill, the two
-            // icons cross-fade, and the label keeps one weight and only
-            // changes colour. Taps and haptics are unchanged.
-            AnimatedScale(
-              scale: selected ? 1.06 : 1.0,
-              duration: Motion.short,
-              curve: Motion.easeMove,
-              filterQuality: FilterQuality.medium,
-              // The selected tab sits in its own soft violet pill, so
-              // "where am I" reads at a glance instead of needing a
-              // colour comparison between two small icons.
-              child: AnimatedContainer(
-                duration: Motion.short,
-                curve: Motion.easeMove,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-                // At night the pill is lit (2026-09-30, the client's
-                // reference): cyan glass with its own glow.
-                // Light premium (2026-11-02): a soft violet pill in both
-                // themes; no glow.
-                decoration: BoxDecoration(
-                  color: selected
-                      ? Neon.violet.withValues(alpha: Neon.isDark ? 0.20 : 0.12)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(Neon.rPill),
+          borderRadius: BorderRadius.circular(16),
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          onTapDown: (d) => _tapDown = d.globalPosition,
+          onTap: () {
+            HapticFeedback.selectionClick();
+            if (i == _tab) return;
+            _endConversationOnNavigate();
+            _switchTab(i, from: _tapDown);
+          },
+          child: Semantics(
+            selected: selected,
+            button: true,
+            label: label,
+            excludeSemantics: true,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AnimatedScale(
+                  scale: selected ? 1.12 : 1.0,
+                  duration: const Duration(milliseconds: 380),
+                  curve: Curves.easeOutBack,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 260),
+                    switchInCurve: Curves.easeOut,
+                    switchOutCurve: Curves.easeIn,
+                    transitionBuilder: (child, a) => FadeTransition(opacity: a, child: child),
+                    child: selected
+                        ? ShaderMask(
+                            key: const ValueKey('on'),
+                            blendMode: BlendMode.srcIn,
+                            shaderCallback: (r) => const LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [Color(0xFFE9D5FF), Color(0xFFA855F7)],
+                            ).createShader(r),
+                            child: Icon(active, size: 21, shadows: const [
+                              Shadow(color: Color(0xCCA855F7), blurRadius: 10),
+                            ]),
+                          )
+                        : Icon(icon, key: const ValueKey('off'), size: 21, color: grey),
+                  ),
                 ),
-                child: AnimatedSwitcher(
-                  duration: Motion.micro,
-                  switchInCurve: Motion.easeFadeIn,
-                  switchOutCurve: Motion.easeFadeOut,
-                  child: Icon(selected ? active : icon,
-                      key: ValueKey(selected),
-                      size: 22,
-                      color: selected ? Neon.violet : Neon.textDim),
+                const SizedBox(height: 3),
+                MediaQuery.withClampedTextScaling(
+                  maxScaleFactor: 1.1,
+                  child: TweenAnimationBuilder<Color?>(
+                    tween: ColorTween(end: selected ? Colors.white : grey),
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOut,
+                    builder: (_, c, __) => Text(label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: NeonType.manrope(11, FontWeight.w600).copyWith(color: c)),
+                  ),
                 ),
-              ),
+              ],
             ),
-            const SizedBox(height: 3),
-            // The dock is a fixed 66 dp: its labels grow with the system
-            // text size only up to 1.3x (at 2x they ran out of the bar),
-            // the way the system's own navigation labels do. 12 sp, the
-            // app's floor (was 11), and the selected tab is bold for real:
-            // "Home" and "Chat" measured the same 3 px stems on build 106.
-            MediaQuery.withClampedTextScaling(
-              maxScaleFactor: 1.3,
-              child: TweenAnimationBuilder<Color?>(
-                tween: ColorTween(
-                    end: selected ? Neon.violet : Neon.textDim),
-                duration: Motion.micro,
-                curve: Motion.easeMove,
-                builder: (_, color, __) => Text(label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    // One weight in both states (motion: a label that
-                    // thickens when picked re-centres in one frame); the
-                    // pick shows by colour and the icon's small growth.
-                    style: NeonType.manrope(NeonType.caption, FontWeight.w600)
-                        .copyWith(color: color)),
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -1257,66 +1206,199 @@ class _RenderHoldLayout extends RenderProxyBox {
   }
 }
 
-/// THE DOCK'S LIT EDGE (2026-09-30, the client's reference): the brand's
-/// light traced along the bar's top and around the mic's cradle, with a
-/// soft glow — the same notched outline the bar is cut to.
-class _DockRim extends StatelessWidget {
-  const _DockRim({required this.child});
-  final Widget child;
+/// THE FLOATING NAVBAR (2026-11-22, Manish's reference). A glass pill
+/// floating [Dock.floatGap] above the system navigation and [Dock.sideMargin]
+/// in from each side; the tabs and the mic pill sit inside it.
+///
+/// Layers, bottom to top: the page blurred inside the outline (glass), the
+/// shadow outside it and the tint and fine edge along it, then the row.
+class _FloatingDock extends StatelessWidget {
+  const _FloatingDock({required this.children, required this.selected});
+  final List<Widget> children;
 
-  // LIGHT PREMIUM (2026-11-02): no neon trace — a soft shadow and a fine
-  // edge along the same notched outline, so the bar sits raised on the page.
+  /// The open tab (0–3): the highlight glides to it.
+  final int selected;
+
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      foregroundPainter: _DockRimPainter(
-        geometry: Scaffold.geometryOf(context),
-        colors: [Neon.lineBright, Neon.lineBright],
+    final inset = MediaQuery.viewPaddingOf(context).bottom;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(Dock.sideMargin, 0, Dock.sideMargin, Dock.floatGap + inset),
+      child: SizedBox(
+        height: Dock.barHeight,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // The glass: what scrolls behind, blurred inside the outline.
+            Positioned.fill(
+              child: ClipPath(
+                clipper: const _DockOutline(),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                  child: const SizedBox.expand(),
+                ),
+              ),
+            ),
+            Positioned.fill(
+              child: RepaintBoundary(
+                child: CustomPaint(
+                  painter: _DockGlassPainter(
+                    tint: Neon.isDark ? const Color(0xFF1C1C21) : Neon.surface,
+                    edge: Neon.lineBright,
+                    dark: Neon.isDark,
+                  ),
+                ),
+              ),
+            ),
+            Material(
+              type: MaterialType.transparency,
+              // A little room inside the rounded ends, so the selected
+              // tab's pill never touches the dock's edge.
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: LayoutBuilder(builder: (context, box) {
+                  // The row is: tab, tab, cradle, tab, tab.
+                  final tabW = (box.maxWidth - Dock.cradleGap) / 4;
+                  final left = switch (selected) {
+                    0 => 0.0,
+                    1 => tabW,
+                    2 => tabW * 2 + Dock.cradleGap,
+                    _ => tabW * 3 + Dock.cradleGap,
+                  };
+                  return Stack(children: [
+                    // ONE highlight that GLIDES between tabs (2026-11-22,
+                    // Manish: "improve the animation… the filled box"),
+                    // instead of each tab fading its own box in and out.
+                    AnimatedPositioned(
+                      duration: const Duration(milliseconds: 420),
+                      curve: Curves.easeOutBack,
+                      left: left,
+                      width: tabW,
+                      top: 6,
+                      bottom: 6,
+                      child: const IgnorePointer(child: _TabHighlight()),
+                    ),
+                    Row(children: children),
+                  ]);
+                }),
+              ),
+            ),
+          ],
+        ),
       ),
-      child: child,
     );
   }
 }
 
-class _DockRimPainter extends CustomPainter {
-  _DockRimPainter({required this.geometry, required this.colors})
-      : super(repaint: geometry);
+/// The navbar's outline (Manish's mockup): a stadium whose top edge dips
+/// into a smooth cradle around the mic — rounded shoulders (fillets tangent
+/// to the top edge and to the cradle's circle), no sharp notch.
+Path dockOutline(Size s) {
+  final h = s.height, w = s.width, r = h / 2, cx = w / 2;
+  const rc = Dock.cradleRadius, f = Dock.cradleFillet, cy = Dock.micDrop;
+  // Shoulder circles inside the bar: centres (cx ∓ dx, f), touching y = 0
+  // and the cradle circle (centre (cx, cy), radius rc) from outside.
+  final dx = sqrt((rc + f) * (rc + f) - (f - cy) * (f - cy));
+  const k = f / (rc + f);
+  final tl = Offset(cx - dx + dx * k, f + (cy - f) * k);
+  final tr = Offset(cx + dx - dx * k, f + (cy - f) * k);
+  return Path()
+    ..moveTo(r, 0)
+    ..lineTo(cx - dx, 0)
+    ..arcToPoint(tl, radius: const Radius.circular(f), clockwise: true)
+    ..arcToPoint(tr, radius: const Radius.circular(rc), clockwise: false, largeArc: tl.dy < cy)
+    ..arcToPoint(Offset(cx + dx, 0), radius: const Radius.circular(f), clockwise: true)
+    ..lineTo(w - r, 0)
+    ..arcToPoint(Offset(w - r, h), radius: Radius.circular(r), clockwise: true)
+    ..lineTo(r, h)
+    ..arcToPoint(Offset(r, 0), radius: Radius.circular(r), clockwise: true)
+    ..close();
+}
 
-  final ValueListenable<ScaffoldGeometry> geometry;
-  final List<Color> colors;
+/// The selected tab's highlight: a soft violet glass block — a gentle
+/// gradient, a faint highlight along its top edge and a soft glow, no hard
+/// border.
+class _TabHighlight extends StatelessWidget {
+  const _TabHighlight();
+
+  @override
+  Widget build(BuildContext context) {
+    const violet = Color(0xFFA855F7);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [violet.withValues(alpha: 0.38), const Color(0xFF7C3AED).withValues(alpha: 0.16)],
+        ),
+        boxShadow: [
+          BoxShadow(color: violet.withValues(alpha: 0.32), blurRadius: 16, spreadRadius: -2, offset: const Offset(0, 2)),
+        ],
+      ),
+      child: DecoratedBox(
+        // Light catching the top edge, fading out by the middle.
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.center,
+            colors: [Colors.white.withValues(alpha: 0.14), Colors.white.withValues(alpha: 0.0)],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DockOutline extends CustomClipper<Path> {
+  const _DockOutline();
+  @override
+  Path getClip(Size size) => dockOutline(size);
+  @override
+  bool shouldReclip(_DockOutline old) => false;
+}
+
+class _DockGlassPainter extends CustomPainter {
+  _DockGlassPainter({required this.tint, required this.edge, required this.dark});
+  final Color tint;
+  final Color edge;
+  final bool dark;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final g = geometry.value;
-    final top = g.bottomNavigationBarTop;
-    final fab = g.floatingActionButtonArea;
-    // As BottomAppBar cuts itself: the mic's box, moved into the bar's
-    // coordinates, widened by the notch margin (4).
-    final guest = top == null || fab == null ? null : fab.translate(0, -top).inflate(4);
-    final outline = const CircularNotchedRectangle()
-        .getOuterPath(Offset.zero & size, guest);
-    final shader = LinearGradient(colors: colors).createShader(Offset.zero & size);
+    final outline = dockOutline(size);
+    // The shadow only OUTSIDE the glass: under a see-through bar it would
+    // show through as a grey smear.
     canvas.save();
-    // Only the top edge and the cradle: the sides and bottom are off the
-    // screen's edge or under the system bar.
-    canvas.clipRect(Rect.fromLTWH(0, -40, size.width, 46));
+    canvas.clipPath(Path.combine(PathOperation.difference,
+        Path()..addRect(Rect.fromLTWH(-60, -120, size.width + 120, size.height + 200)), outline));
     canvas.drawPath(
-        outline,
+        outline.shift(const Offset(0, 10)),
         Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 7
-          ..shader = shader
-          ..color = Colors.white.withValues(alpha: 0.22)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5));
-    canvas.drawPath(
-        outline,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.6
-          ..shader = shader);
+          ..color = Colors.black.withValues(alpha: dark ? 0.55 : 0.18)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 18));
     canvas.restore();
+    // Smoky glass, a little lighter at the top, and a fine lavender rim
+    // (Manish's mockup).
+    canvas.drawPath(
+        outline,
+        Paint()
+          ..shader = const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xB83A3946), Color(0xC7222129)],
+          ).createShader(Offset.zero & size));
+    canvas.drawPath(
+        outline,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.2
+          ..shader = const LinearGradient(
+            colors: [Color(0x80A78BFA), Color(0x40FFFFFF), Color(0x80A78BFA)],
+          ).createShader(Offset.zero & size));
   }
 
   @override
-  bool shouldRepaint(_DockRimPainter old) => old.colors != colors;
+  bool shouldRepaint(_DockGlassPainter old) => old.tint != tint || old.edge != edge || old.dark != dark;
 }

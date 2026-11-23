@@ -2,11 +2,6 @@
 <resources>
     <string name="widget_task_label">Speak</string>
     <string name="widget_task_description">A single tap on the orb activates your assistant.</string>
-    <!-- The line above the "Send feedback" form (TesterFeedbackBridge). The
-         form's own picture is always of the You tab, where the row is, so
-         it asks which screen it was, and "Gallery" is the form's button
-         for attaching a different picture. -->
-    <string name="feedback_prompt">Please describe what occurred, or what you would like improved. Mention the screen you were on, or attach a screenshot of it from Gallery.</string>
     <!-- Settings → Accessibility (ScreenAgentService). -->
     <string name="screen_agent_label">MyAssistant Screen Control</string>
     <string name="screen_agent_description">Allows your assistant to perform tasks you request inside other apps, such as opening a chat, typing a message or adding to a cart, by reading the screen and tapping on your behalf. It acts only while a task you requested is running, displays a Stop button throughout, and asks for your confirmation before anything that sends, pays, orders or deletes. It never reads or types passwords or codes.</string>

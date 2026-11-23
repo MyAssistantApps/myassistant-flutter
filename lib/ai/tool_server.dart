@@ -1,12 +1,11 @@
 // TOOL SERVER — the backend's /ai/* routes. No model runs there: the
 // server builds the context a turn needs, executes every tool that touches
-// server data, other people, money, memory or the audit ledger, records the
-// finished turn, and mints the Firebase identity AI Logic requires.
+// server data, other people, money, memory or the audit ledger, and records
+// the finished turn.
 //
 //   POST /ai/context        -> system instruction, tools, history
 //   POST /ai/tool           -> one tool call, through registry.execute
 //   POST /ai/turn           -> the turn recorded; the reply claim-checked
-//   POST /ai/firebase-token -> a custom token for FirebaseAuth
 //   GET  /ai/config         -> models, voice, routing words (config.dart)
 import 'dart:async';
 import 'dart:convert';
@@ -15,6 +14,7 @@ import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
 
 import '../services/api_service.dart';
+import 'assistant_role.dart';
 import 'types.dart';
 
 /// What /ai/context returns for one turn.
@@ -167,16 +167,6 @@ class AiTurnReceipt {
   final bool corrected;
 }
 
-/// What /ai/firebase-token answers.
-class FirebaseTokenResult {
-  const FirebaseTokenResult({required this.token, required this.uid});
-
-  final String token;
-
-  /// "u<id>".
-  final String uid;
-}
-
 class ToolServer {
   ToolServer({
     http.Client? client,
@@ -259,6 +249,9 @@ class ToolServer {
       if (shared) 'shared': true,
       // The reply will be spoken: the model may mark how it should sound.
       if (expressive) 'expressive': true,
+      // The page's role and the tools its work needs (AssistantRole.tools).
+      if (AssistantRole.current.value?.tools.isNotEmpty ?? false)
+        'roleTools': AssistantRole.current.value!.tools,
     };
     final (status, j) = await _send('POST', '/ai/context', body, timeout);
     if (status != 200 || j == null) return null;
@@ -404,18 +397,6 @@ class ToolServer {
       reply: said is String && (said.trim().isNotEmpty || corrected) ? said : reply,
       corrected: corrected,
     );
-  }
-
-  /// POST /ai/firebase-token. Null when unreachable or "firebase unavailable".
-  Future<FirebaseTokenResult?> firebaseToken({
-    Duration timeout = const Duration(seconds: 10),
-  }) async {
-    final (status, j) = await _send('POST', '/ai/firebase-token', const {}, timeout);
-    if (status != 200 || j == null) return null;
-    final token = j['token'];
-    final uid = j['uid'];
-    if (token is! String || token.isEmpty) return null;
-    return FirebaseTokenResult(token: token, uid: uid is String ? uid : '');
   }
 
   static String _platform() {

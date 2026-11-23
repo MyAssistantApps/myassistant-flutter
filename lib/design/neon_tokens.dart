@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'neon_palette.dart';
-
-export 'neon_palette.dart';
-
 /// ─────────────────────────────────────────────────────────────────────────
 ///  MYASSISTANT · Design System — "Night sky neon" (2026-09-30)
 ///  The client's reference: a deep navy ground, cyan / electric blue /
@@ -24,17 +20,6 @@ class Neon {
   static bool isDark = true; // dark is the default (2026-11-03)
 
   static void setDark(bool v) => isDark = v;
-
-  /// A WHOLE SCHEME, when one is chosen ([NeonPalette]): ground, cards,
-  /// words and accents together. Null — the default — leaves every token
-  /// below exactly as it was, the user's accent included.
-  static NeonPalette? _palette;
-  static NeonPalette? get palette => _palette;
-
-  static void usePalette(NeonPalette? p) {
-    _palette = p;
-    if (p != null) isDark = p.dark;
-  }
 
   // Core palette — deep, confident accents on white; PURE BLACK in the
   // dark (owner's call, 2026-09-18: "don't use grey"): true-black ground,
@@ -87,17 +72,17 @@ class Neon {
     0xFF3D8BFF: Color(0xFFE04BF5), // Electric (the default) → magenta
   };
 
-  static Color get violet => _palette?.primary ?? _violet;
+  static Color get violet => _violet;
   static Color get _violet => _accent != null
       ? (isDark ? _accent! : _accentInk!)
       : (isDark ? const Color(0xFF8B6CFF) : const Color(0xFF4B1FD6));
   // LIGHT PREMIUM (2026-11-02, owner's redesign): one deep violet accent;
   // the supporting accents are calm, never neon.
-  static Color get cyan => _palette?.secondary ??
-      (isDark ? const Color(0xFF5BC6E8) : const Color(0xFF0E7490));
+  static Color get cyan =>
+      isDark ? const Color(0xFF5BC6E8) : const Color(0xFF0E7490);
   /// The gradient partner — derived from the accent so every gradient in
   /// the app (orb, mic, tiles, quote card) stays in tune with one choice.
-  static Color get pink => _palette?.partner ?? _pink;
+  static Color get pink => _pink;
   static Color get _pink => _accentPartner != null
       ? (isDark
           ? _accentPartner!
@@ -107,15 +92,13 @@ class Neon {
                       .clamp(0.26, 0.50))
               .toColor())
       : (isDark ? const Color(0xFFFF8AC8) : const Color(0xFFDB2777));
-  static Color get lime => _palette?.tertiary ??
-      (isDark ? const Color(0xFF9FD86B) : const Color(0xFF4D7C0F));
+  static Color get lime =>
+      isDark ? const Color(0xFF9FD86B) : const Color(0xFF4D7C0F);
   /// The page ground. In the dark it is a near-black carrying a trace of
   /// the theme colour rather than #000000 — flat black made every screen
   /// read as empty (2026-09-19). AmbientBackground lays the soft pools of
   /// light on top of this.
   static Color get bg {
-    final p = _palette;
-    if (p != null) return p.bg;
     // LIGHT PREMIUM (2026-11-02): a soft violet-grey paper by day, a deep
     // violet-black by night; white / raised cards sit on it.
     if (!isDark) return const Color(0xFFF3F2F7);
@@ -127,27 +110,27 @@ class Neon {
   // (2026-09-19 — "the colour combination is worst, it looks boring").
   // Navy cards on the blue-black ground (2026-09-30): lifted by a step of
   // blue, never grey.
-  static Color get surface => _palette?.surface ??
-      (isDark ? const Color(0xFF1A1822) : const Color(0xFFFFFFFF));
-  static Color get surfaceHigh => _palette?.surfaceHigh ??
-      (isDark ? const Color(0xFF24212E) : const Color(0xFFECEAF3));
-  static Color get success => _palette?.success ??
-      (isDark ? const Color(0xFF4ADE80) : const Color(0xFF16A34A));
-  static Color get warning => _palette?.warning ??
-      (isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706));
-  static Color get error => _palette?.error ??
-      (isDark ? const Color(0xFFF87171) : const Color(0xFFEF4444));
+  static Color get surface =>
+      isDark ? const Color(0xFF1A1822) : const Color(0xFFFFFFFF);
+  static Color get surfaceHigh =>
+      isDark ? const Color(0xFF24212E) : const Color(0xFFECEAF3);
+  static Color get success =>
+      isDark ? const Color(0xFF4ADE80) : const Color(0xFF16A34A);
+  static Color get warning =>
+      isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706);
+  static Color get error =>
+      isDark ? const Color(0xFFF87171) : const Color(0xFFEF4444);
 
   // Text — ink on paper; on pure black, brighter steps so secondary text
   // still reads instead of sinking into gray mud.
   // Blue-white words on the night ground (2026-09-30).
-  static Color get textHi => _palette?.textHi ??
-      (isDark ? const Color(0xFFF4F3F8) : const Color(0xFF0F0E17));
-  static Color get textLo => _palette?.textLo ??
-      (isDark ? const Color(0xFFB9B6C6) : const Color(0xFF5C5A6E));
+  static Color get textHi =>
+      isDark ? const Color(0xFFF4F3F8) : const Color(0xFF0F0E17);
+  static Color get textLo =>
+      isDark ? const Color(0xFFB9B6C6) : const Color(0xFF5C5A6E);
   // 4.5:1 or better on the page and on cards, in both themes.
-  static Color get textDim => _palette?.textDim ??
-      (isDark ? const Color(0xFF928FA2) : const Color(0xFF67657A));
+  static Color get textDim =>
+      isDark ? const Color(0xFF928FA2) : const Color(0xFF67657A);
 
   /// The GROUND color for things painted in [textHi] — icon-on-ink tiles,
   /// text on the primary button. Tracks the theme so "white on ink" in
@@ -227,13 +210,6 @@ class Neon {
   // test/contrast_test.dart measures them). Colour words with the *Ink
   // token; keep the plain one for icons, borders and fills.
   static Color get cyanInk {
-    final p = _palette;
-    if (p != null) {
-      // The palette's info colour, deep enough to read as words by day.
-      if (p.dark) return p.secondary;
-      final h = HSLColor.fromColor(p.secondary);
-      return h.withLightness((h.lightness * 0.62).clamp(0.18, 0.40)).toColor();
-    }
     return isDark ? const Color(0xFF6CCDEB) : const Color(0xFF155E75);
   }
   static Color get warningInk =>
@@ -327,19 +303,7 @@ class Neon {
   /// The lit edge's colours (a brand card's rim): violet, lit to deep.
   static List<Color> get rim => [Color.lerp(violet, Colors.white, 0.22)!, accentFill];
 
-  // Gradients
-  static LinearGradient get gVioletCyan => LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: [violet, cyan]);
-  static LinearGradient get gPinkViolet => LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: [pink, violet]);
-  static LinearGradient get gCyanLime => LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: [cyan, lime]);
+  // Used by the price compare cards (restored after production removed it).
   static LinearGradient get gVioletPink => LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
@@ -384,12 +348,6 @@ class Neon {
       isDark ? const Color(0xFF7DF9C4) : const Color(0xFF0F9D58); // calls
   static Color get accentF =>
       isDark ? const Color(0xFF8BA9FF) : const Color(0xFF3B5BDB); // system
-
-  /// Tri-color sweep used by the assistant orb — the app's signature.
-  static SweepGradient get gOrb => SweepGradient(
-        colors: [violet, cyan, pink, violet],
-        stops: const [0.0, 0.4, 0.75, 1.0],
-      );
 
   // Spacing scale
   static const s1 = 4.0, s2 = 8.0, s3 = 12.0, s4 = 16.0;

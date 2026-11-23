@@ -7,9 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 /// VOICE CALLING (B1) — "Hey Hari, call amma".
 ///
 /// All on-device: contact lookup + dialing never touch the backend, so
-/// the user's contact list stays private. The AssistantEngine runs
-/// [parseCallIntent] on every heard question BEFORE sending it to the AI;
-/// on a hit, the whole flow is handled locally.
+/// the user's contact list stays private.
 ///
 /// Android manifest additions (android/ is generated locally):
 ///   <uses-permission android:name="android.permission.READ_CONTACTS"/>
@@ -19,24 +17,6 @@ import 'package:url_launcher/url_launcher.dart';
 class CallService {
   CallService._();
   static final CallService instance = CallService._();
-
-  // ---------------- INTENT PARSING ----------------
-  // English + Hinglish + Hindi + Kannada call phrasings. The captured
-  // group / remainder is the person's name.
-
-  static final List<RegExp> _patterns = [
-    // "call amma", "please call dr shah now"
-    RegExp(r'\b(?:call|dial|phone|ring)\s+(?:to\s+)?([\p{L}\p{M} .\-]{2,40})',
-        caseSensitive: false, unicode: true),
-    // "amma ko call karo / lagao / milao" (Hinglish word order)
-    RegExp(r'([\p{L}\p{M} .\-]{2,40}?)\s+(?:ko|se)\s+(?:call|phone|baat)\b',
-        caseSensitive: false, unicode: true),
-    // Hindi script: "अम्मा को कॉल करो"
-    RegExp(r'([\p{L}\p{M} .\-]{2,40}?)\s+को\s+(?:कॉल|फ़ोन|फोन)', unicode: true),
-    // Kannada: "ಅಮ್ಮನಿಗೆ ಕರೆ ಮಾಡು" / "ಅಮ್ಮಗೆ ಫೋನ್ ಮಾಡು"
-    RegExp(r'([\p{L}\p{M} .\-]{2,40}?)(?:ನಿಗೆ|ಗೆ|ಿಗೆ)\s+(?:ಕರೆ|ಫೋನ್)',
-        unicode: true),
-  ];
 
   static final _trailingNoise = RegExp(
       r'\b(now|please|for me|right now|immediately|karo|kar|lagao|maadu|madi)\b\s*$',
@@ -94,32 +74,6 @@ class CallService {
     }
     return name.replaceAll(RegExp(r'^(my|the)\s+', caseSensitive: false), '');
   }
-
-  /// Returns the name to call, or null when [text] isn't a call request.
-  String? parseCallIntent(String text) {
-    final t = text.trim();
-    if (t.isEmpty) return null;
-    for (final re in _patterns) {
-      final m = re.firstMatch(t);
-      if (m != null) {
-        var name = (m.group(1) ?? '').trim();
-        String prev = '';
-        while (prev != name) {
-          prev = name;
-          name = name.replaceAll(_trailingNoise, '').trim();
-        }
-        name = name.replaceAll(RegExp(r'^(my|the)\s+', caseSensitive: false), '');
-        if (name.isNotEmpty && name.length >= 2) return name;
-      }
-    }
-    return null;
-  }
-
-  /// Words that cancel a pending "which one?" disambiguation.
-  bool isCancel(String text) => RegExp(
-          r"\b(cancel|never ?mind|stop|leave it|rehne do|beda|nahi)\b",
-          caseSensitive: false)
-      .hasMatch(text);
 
   // ---------------- CONTACT MATCHING ----------------
 
@@ -286,27 +240,6 @@ class CallService {
       if (out.length == 6) break;
     }
     return out;
-  }
-
-  /// From a pending shortlist, pick whichever the user's reply names.
-  Contact? chooseFrom(List<Contact> options, String reply) {
-    Contact? best;
-    var bestScore = 39;
-    for (final c in options) {
-      final s = _score(c.displayName, reply);
-      if (s > bestScore) {
-        bestScore = s;
-        best = c;
-      }
-    }
-    // Ordinals: "the first one" / "second".
-    final r = reply.toLowerCase();
-    if (best == null) {
-      if (r.contains('first') || r.contains('pehla')) return options.first;
-      if (r.contains('second') && options.length > 1) return options[1];
-      if (r.contains('third') && options.length > 2) return options[2];
-    }
-    return best;
   }
 
   /// Prefer mobile numbers over landline/work.

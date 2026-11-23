@@ -9,8 +9,8 @@ import 'package:flutter/material.dart';
 ///  top, the lowest price first, every store under it, the price history,
 ///  a "buy now or wait" verdict, the offers, and a price alert.
 ///
-///  HONEST BY DESIGN (as deal_banners.dart): there is no price feed from
-///  these platforms. Prices come from a Google-Search-grounded answer,
+///  HONEST BY DESIGN: there is no price feed from these platforms.
+///  Prices come from a Google-Search-grounded answer,
 ///  shown with the pages they came from and labelled "as found on the
 ///  web"; the price history is only what was reported on the web plus
 ///  the prices this phone itself saw on its own checks. A store's button
@@ -104,8 +104,6 @@ enum PriceCategory {
         cabs => 'Ride',
         grocery => 'Grocery',
       };
-
-  String get tileSubtitle => 'Compare';
 
   /// The ribbon over the tile, or '' for none. Cabs say BETA because their
   /// fares are estimates.

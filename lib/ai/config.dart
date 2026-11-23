@@ -4,7 +4,7 @@
 //
 // Cached. A copy younger than 30 minutes is used as it is; an older one is
 // still used while a fresh one is fetched in the background; the store is
-// refreshed on every sign-in (identity.dart) and emptied on sign-out. When
+// refreshed on every sign-in (main.dart) and emptied on sign-out. When
 // the server cannot be reached and nothing was ever fetched, the last good
 // copy saved on the phone applies, and only without one the SAFE DEFAULTS.
 import 'dart:async';
@@ -28,12 +28,11 @@ int _int(Object? v, int fallback) => v is num && v.isFinite && v > 0 ? v.toInt()
 
 class AiModels {
   const AiModels({
-    this.cloud = 'gemini-3-flash-preview',
-    this.cloudFast = 'gemini-flash-lite-latest',
-    this.cloudFallback = 'gemini-flash-lite-latest',
-    this.thinking = 'low',
-    this.tts = 'gemini-3.8-flash-tts',
-    this.ttsVoice = 'Fola',
+    this.cloud = 'gpt-5.4-nano',
+    this.cloudFast = 'gpt-4.1-mini',
+    this.cloudFallback = 'gpt-4.1-mini',
+    this.tts = 'gpt-4o-mini-tts',
+    this.ttsVoice = 'marin',
     this.ttsStyle = 'warm, friendly and natural',
     this.ttsLanguage = 'en-IN',
   });
@@ -44,8 +43,6 @@ class AiModels {
   /// Answers when [cloud] fails or has not started in time.
   final String cloudFallback;
 
-  /// How hard [cloud] thinks first: minimal, low, medium or high.
-  final String thinking;
   final String tts;
   final String ttsVoice;
 
@@ -60,7 +57,6 @@ class AiModels {
         cloud: cloud,
         cloudFast: cloudFast,
         cloudFallback: cloudFallback,
-        thinking: thinking,
         tts: tts,
         ttsVoice: ttsVoice ?? this.ttsVoice,
         ttsStyle: ttsStyle,
@@ -74,7 +70,6 @@ class AiModels {
       cloud: _str(j['cloud'], d.cloud),
       cloudFast: _str(j['cloudFast'], d.cloudFast),
       cloudFallback: _str(j['cloudFallback'], d.cloudFallback),
-      thinking: _str(j['thinking'], d.thinking),
       tts: _str(j['tts'], d.tts),
       ttsVoice: _str(j['ttsVoice'], d.ttsVoice),
       ttsStyle: _str(j['ttsStyle'], d.ttsStyle),
@@ -86,16 +81,11 @@ class AiModels {
 class AiRouting {
   const AiRouting({
     this.toolWords = defaultToolWords,
-    this.freshWords = defaultFreshWords,
     this.shortcutNames = const [],
   });
 
   /// Tool or personal-data words: a turn with one goes to the cloud (tools).
   final List<String> toolWords;
-
-  /// Fresh-public-fact words: with no tool word, the turn is a grounded
-  /// Google Search answer.
-  final List<String> freshWords;
 
   /// This user's shortcut names: said whole, they run with no model.
   final List<String> shortcutNames;
@@ -131,24 +121,11 @@ class AiRouting {
     'near me',
     'my',
   ];
-  static const defaultFreshWords = [
-    'today',
-    'latest',
-    'now',
-    'current',
-    'score',
-    'price',
-    'who won',
-    'news of',
-  ];
-
   factory AiRouting.fromJson(Object? j) {
     if (j is! Map) return const AiRouting();
     final tool = _strings(j['toolWords']);
-    final fresh = _strings(j['freshWords']);
     return AiRouting(
       toolWords: tool.isEmpty ? defaultToolWords : tool,
-      freshWords: fresh.isEmpty ? defaultFreshWords : fresh,
       shortcutNames: _strings(j['shortcutNames']),
     );
   }
@@ -163,18 +140,16 @@ class AiLimits {
       AiLimits(maxToolRounds: j is Map ? _int(j['maxToolRounds'], 6) : 6);
 }
 
-/// THE FAST VOICE (2026-09-30): Gemini Live through Firebase AI Logic —
-/// GET /ai/config `live`. Measured from the PC that day: end of speech to
-/// her first audio 0.62 s on gemini-3.8-live (500 ms silence, high end
-/// sensitivity) against 5-8 s for the recogniser -> model -> TTS cascade,
-/// which stays as the fallback and the typed path. Every field has the
-/// app's own default, so a server that does not send `live` yet still
-/// gets the fast voice.
+/// THE FAST VOICE: OpenAI Realtime through our server — GET /ai/config
+/// `live`. It answers far faster than the recogniser -> model -> TTS
+/// cascade, which stays as the fallback and the typed path. Every field
+/// has the app's own default, so a server that does not send `live` yet
+/// still gets the fast voice.
 class AiLive {
   const AiLive({
     this.on = true,
-    this.model = 'gemini-3.8-live',
-    this.voice = 'Sulafat',
+    this.model = 'gpt-realtime-2.1',
+    this.voice = 'marin',
     this.silenceMs = 800,
     this.prefixMs = 100,
     this.startSensitivity = 'low',
@@ -190,7 +165,7 @@ class AiLive {
   final bool on;
   final String model;
 
-  /// Her Live voice (one of the prebuilt voices; Fola is the cascade's).
+  /// Her Live voice (one of the server's realtime voices).
   final String voice;
 
   /// Silence that ends the owner's turn (Live's own detector).
@@ -209,11 +184,8 @@ class AiLive {
   final int idleCloseSec;
 
   /// Her tone follows the feeling in their voice and in her words (Live's
-  /// affective dialog; the client, 2026-09-30: "more emotion"). OFF: the
-  /// Firebase AI Logic Live endpoint closed the session "before setup"
-  /// with it on (measured on the owner's phone, 2026-09-30); the feeling
-  /// comes from the instruction instead. The server can turn it on when
-  /// the endpoint takes it.
+  /// affective dialog; the client, 2026-09-30: "more emotion"). Served;
+  /// off by default, the feeling comes from the instruction instead.
   final bool affectiveDialog;
 
   /// This phone's own end-of-speech hangover (ms) — how long a pause may
@@ -229,9 +201,9 @@ class AiLive {
   /// The voices the picker offers for Live.
   final List<String> voices;
 
-  // A single feminine fallback voice when a server config is unavailable.
-  // The OpenAI server replaces this with its matching `marin` preset.
-  static const defaultVoices = ['Sulafat'];
+  // A single feminine fallback voice when a server config is unavailable:
+  // the server's own default.
+  static const defaultVoices = ['marin'];
 
   static String _sensitivity(Object? v, String fallback) {
     final s = v is String ? v.trim().toLowerCase() : '';
@@ -262,8 +234,8 @@ class AiLive {
 
 /// HOW THE CLASSIC VOICE HEARS (served, 2026-10-01). 'device' is the
 /// phone's own recogniser: live captions, one locale, "Kannada" heard as
-/// "Canada". 'record' records the turn and has Gemini transcribe it in the
-/// language spoken — and the recording is sent for review, so every turn
+/// "Canada". 'record' records the turn and has the server transcribe it in
+/// the language spoken — and the recording is sent for review, so every turn
 /// can be heard in the admin panel.
 class AiListen {
   const AiListen({this.cloudStt = 'device'});
@@ -283,20 +255,14 @@ class AiConfig {
     this.limits = const AiLimits(),
     this.live = const AiLive(),
     this.listen = const AiListen(),
-    this.provider = 'gemini',
     this.fromServer = false,
   });
-
-  /// Who answers: 'gemini' (the phone calls Firebase AI Logic itself) or
-  /// 'openai' (the phone asks our server, which holds the key). Served.
-  final String provider;
-  bool get viaServer => provider == 'openai';
 
   final AiModels models;
   final AiRouting routing;
   final AiLimits limits;
 
-  /// The fast voice (Gemini Live).
+  /// The fast voice (OpenAI Realtime).
   final AiLive live;
 
   /// How the classic voice hears.
@@ -314,7 +280,6 @@ class AiConfig {
         limits: limits,
         live: live,
         listen: listen,
-        provider: provider,
         fromServer: fromServer,
       );
 
@@ -324,7 +289,6 @@ class AiConfig {
         limits: AiLimits.fromJson(j['limits']),
         live: AiLive.fromJson(j['live']),
         listen: AiListen.fromJson(j['listen']),
-        provider: j['provider'] == 'openai' ? 'openai' : 'gemini',
         fromServer: true,
       );
 }
@@ -350,9 +314,7 @@ class AiConfigStore {
 
   // THE LAST GOOD CONFIG, KEPT ON THE PHONE (2026-10-06). A slow server at
   // launch (one /ai/config timeout) used to put the app on the built-in
-  // defaults: Gemini through Firebase directly, which a build without App
-  // Check cannot use, so every voice and chat turn failed. Now the saved
-  // copy is used until the server answers again.
+  // defaults. Now the saved copy is used until the server answers again.
   static const _savedKey = 'ai_config_last_good';
   static Future<String?> _defaultRead() async {
     try {

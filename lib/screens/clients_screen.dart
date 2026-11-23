@@ -15,6 +15,8 @@ import '../services/api_service.dart';
 import 'business_card_flow.dart';
 import '../services/document_events.dart';
 import '../services/persona.dart';
+import '../services/patient_search.dart';
+import '../ai/listen.dart' show SpeechToTextRecognizer;
 import '../widgets/document_tile.dart';
 import '../services/app_feedback.dart';
 import '../design/motion.dart';
@@ -43,11 +45,92 @@ class _ClientsScreenState extends State<ClientsScreen> {
   List<Client>? _clients; // null = loading
   String? _error;
   String _query = '';
+  final _search = TextEditingController();
+
+  // VOICE SEARCH (owner, 2026-11-22): the mic in the search bar. Say a
+  // name ("Ramesh's reports") or a detail ("diabetic"); the words fill the
+  // bar, and a single match opens that patient's file straight away.
+  final _speech = SpeechToTextRecognizer();
+  bool _listening = false;
+  bool _heard = false;
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    if (_listening) _speech.cancel();
+    _search.dispose();
+    super.dispose();
+  }
+
+  void _setQuery(String q) {
+    _search.value = TextEditingValue(
+        text: q, selection: TextSelection.collapsed(offset: q.length));
+    setState(() => _query = q);
+  }
+
+  Future<void> _mic() async {
+    HapticFeedback.mediumImpact();
+    if (_listening) {
+      await _speech.stop();
+      return;
+    }
+    final ok = await _speech.initialize(
+      onStatus: (s) {
+        if ((s == 'done' || s == 'notListening') && mounted && _listening && !_heard) {
+          setState(() => _listening = false);
+        }
+      },
+      onError: (e, permanent) {
+        if (!mounted) return;
+        setState(() => _listening = false);
+        if (permanent) {
+          AppFeedback.show(e.contains('permission')
+              ? 'Microphone access is required to search by voice.'
+              : 'Voice search is unavailable at the moment. Please type instead.');
+        }
+      },
+    );
+    if (!mounted) return;
+    if (!ok) {
+      AppFeedback.show('Voice search is unavailable on this device. Please type instead.');
+      return;
+    }
+    setState(() {
+      _listening = true;
+      _heard = false;
+    });
+    await _speech.listen(
+      onDevice: false,
+      listenFor: const Duration(seconds: 15),
+      pauseFor: const Duration(seconds: 2),
+      onResult: (words, isFinal) {
+        if (!mounted) return;
+        if (!isFinal) {
+          if (words.isNotEmpty) _setQuery(words);
+          return;
+        }
+        _heard = true;
+        setState(() => _listening = false);
+        final q = spokenPatientQuery(words);
+        _setQuery(q.isEmpty ? words.trim() : q);
+        final hits = _filtered;
+        if (words.trim().isNotEmpty && hits.length == 1) {
+          HapticFeedback.selectionClick();
+          _open(hits.first);
+        }
+      },
+    );
+  }
+
+  Future<void> _open(Client c) async {
+    await Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => ClientDetailScreen(clientId: c.id)));
+    _load(); // notes/docs may have changed the ordering
   }
 
   Future<void> _load() async {
@@ -63,14 +146,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
 
   List<Client> get _filtered {
     final all = _clients ?? const [];
-    if (_query.trim().isEmpty) return all;
-    final q = _query.toLowerCase();
-    return all
-        .where((c) =>
-            c.name.toLowerCase().contains(q) ||
-            c.summary.toLowerCase().contains(q) ||
-            c.tags.toLowerCase().contains(q))
-        .toList();
+    return searchPatients(_query.trim(), all);
   }
 
   Future<void> _addClient() async {
@@ -113,8 +189,12 @@ class _ClientsScreenState extends State<ClientsScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
               child: AppleSearchField(
-                hint: 'Search by name, summary or tag',
+                controller: _search,
+                hint: _listening
+                    ? 'Listening…'
+                    : 'Search by name, summary or tag',
                 onChanged: (v) => setState(() => _query = v),
+                trailing: _MicButton(listening: _listening, onTap: _mic),
               ),
             ),
             Expanded(child: StateSwitch.of(_body())),
@@ -189,11 +269,48 @@ class _ClientsScreenState extends State<ClientsScreen> {
       ),
       title: c.name,
       subtitle: c.summary.isNotEmpty ? c.summary : _kindLabel(c.kind),
-      onTap: () async {
-        await Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => ClientDetailScreen(clientId: c.id)));
-        _load(); // notes/docs may have changed the ordering
-      },
+      onTap: () => _open(c),
+    );
+  }
+}
+
+/// The search bar's mic: brand pink, glowing and pulsing while it listens.
+class _MicButton extends StatelessWidget {
+  const _MicButton({required this.listening, required this.onTap});
+  final bool listening;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(4),
+      child: Tooltip(
+        message: listening ? 'Stop Listening' : 'Search by Voice',
+        child: Material(
+          color: listening ? Neon.violet : NeonTone.brand.fill,
+          shape: const CircleBorder(),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: listening
+                    ? [BoxShadow(color: Neon.violet.withValues(alpha: 0.55), blurRadius: 14)]
+                    : const [],
+              ),
+              child: Icon(
+                listening ? Icons.graphic_eq_rounded : Icons.mic_rounded,
+                size: 20,
+                color: listening ? Colors.white : NeonTone.brand.ink,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

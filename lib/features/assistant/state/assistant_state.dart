@@ -30,29 +30,6 @@ enum AssistantPhase {
   completed,
   error;
 
-  static AssistantPhase fromWire(String s) => switch (s) {
-        'listening' => AssistantPhase.listening,
-        'transcribing' => AssistantPhase.transcribing,
-        'thinking' => AssistantPhase.thinking,
-        'responding' => AssistantPhase.responding,
-        'searching' => AssistantPhase.searching,
-        // The backend enters this while a tool runs (ordering, booking,
-        // looking a place up). Unmapped it fell through to idle, so the
-        // status pill read "Ready" while Hari was mid-errand.
-        'using_tool' => AssistantPhase.searching,
-        'finding_contact' => AssistantPhase.findingContact,
-        'preparing_message' => AssistantPhase.preparingMessage,
-        'generating_voice' => AssistantPhase.generatingVoice,
-        'waiting_for_confirmation' => AssistantPhase.waitingForConfirmation,
-        'dialing' => AssistantPhase.dialing,
-        'ringing' => AssistantPhase.ringing,
-        'in_call' => AssistantPhase.inCall,
-        'speaking' => AssistantPhase.speaking,
-        'completed' => AssistantPhase.completed,
-        'error' => AssistantPhase.error,
-        _ => AssistantPhase.idle,
-      };
-
   /// Short human label for the status pill.
   ///
   /// The user sees what the ASSISTANT is doing, not what the voice
@@ -78,19 +55,6 @@ enum AssistantPhase {
         AssistantPhase.speaking => 'Speaking…',
         AssistantPhase.completed => 'Completed',
         AssistantPhase.error => 'An error has occurred',
-      };
-
-  /// Whether a running action can be cancelled from the UI.
-  bool get cancellable => switch (this) {
-        AssistantPhase.thinking ||
-        AssistantPhase.responding ||
-        AssistantPhase.searching ||
-        AssistantPhase.findingContact ||
-        AssistantPhase.preparingMessage ||
-        AssistantPhase.generatingVoice ||
-        AssistantPhase.waitingForConfirmation =>
-          true,
-        _ => false,
       };
 
   bool get busy =>

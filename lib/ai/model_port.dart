@@ -1,19 +1,17 @@
-// THE ONE DOOR TO firebase_ai. Everything that asks a cloud model for
+// THE ONE DOOR TO THE CLOUD MODEL. Everything that asks a cloud model for
 // something (the conversation, grounded search, speech, the transcription
 // fallback) goes through a [ModelPort], so tests can hand the modules a
-// fake and nothing in a unit test touches Firebase or the network.
+// fake and nothing in a unit test touches the network. The request and
+// reply types come from firebase_ai, which is only the wire format here.
 import 'dart:async';
-import 'config.dart';
-import 'server_model_port.dart';
-import 'dart:io';
 
 import 'package:firebase_ai/firebase_ai.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/io_client.dart';
 
-import '../core/log.dart';
+// The message types a ModelRequest carries, for callers outside lib/ai
+// (they never import firebase_ai themselves).
+export 'package:firebase_ai/firebase_ai.dart' show Content, TextPart;
+
+import 'server_model_port.dart';
 
 /// One request: which model, what it is told, and the conversation.
 class ModelRequest {
@@ -48,112 +46,12 @@ abstract interface class ModelPort {
   Future<void> warmUp();
 }
 
-/// The real thing: the Gemini Developer API through Firebase AI Logic,
-/// with this app's App Check attestation and the Firebase user signed in by
-/// identity.dart on every request.
-///
-/// Speed (measured on the owner's phone, 2026-09-29): every request used to
-/// fetch a fresh limited-use App Check token and open its own TLS
-/// connection, a second or more each before the model saw a word. Now the
-/// SDK's cached App Check token is used and ONE keep-alive client carries
-/// every request, and [warmUp] fetches both tokens and opens the
-/// connection when the assistant opens and when the orb is tapped.
-/// THE PORT THE APP TALKS TO. With the served provider 'openai' every
-/// cloud answer, every spoken sentence and every recorded turn goes to our
-/// own server (server_model_port.dart); otherwise the phone calls
-/// Firebase AI Logic itself, as it always did. Decided per request from
-/// the cached config, so a server-side switch takes effect without a build.
+/// THE PORT THE APP TALKS TO. Every cloud answer, every spoken sentence
+/// and every recorded turn goes to our own server (server_model_port.dart),
+/// which answers with OpenAI in the same wire shape.
 class ModelPorts {
   ModelPorts._();
-  static ModelPort? _firebase;
-  static ModelPort? _server;
-  static AiConfig Function() config = () => AiConfigStore.instance.current;
+  static final ModelPort _server = ServerModelPort();
 
-  static ModelPort cloud() => _Switching();
-
-  static ModelPort _pick() {
-    if (config().viaServer) return _server ??= ServerModelPort();
-    return _firebase ??= FirebaseModelPort();
-  }
-}
-
-class _Switching implements ModelPort {
-  @override
-  Stream<GenerateContentResponse> stream(ModelRequest request) => ModelPorts._pick().stream(request);
-  @override
-  Future<GenerateContentResponse> generate(ModelRequest request) => ModelPorts._pick().generate(request);
-  @override
-  Future<void> warmUp() => ModelPorts._pick().warmUp();
-}
-
-class FirebaseModelPort implements ModelPort {
-  FirebaseModelPort({FirebaseAI Function()? ai}) : _ai = ai ?? defaultAi;
-
-  /// FirebaseAI.googleAI caches one instance per Firebase app, so this is
-  /// cheap to call per request. App Check and Auth are not passed (that is
-  /// deprecated): the SDK finds them on the Firebase app, where each
-  /// registers itself the first time its `instance` is touched — done here
-  /// so a request never goes out before they are.
-  static FirebaseAI defaultAi() {
-    FirebaseAppCheck.instance;
-    FirebaseAuth.instance;
-    return FirebaseAI.googleAI();
-  }
-
-  static const _host = 'https://firebasevertexai.googleapis.com/';
-
-  /// One client for every model call: its connection stays open between
-  /// the turns of a conversation.
-  static final http.Client _client = IOClient(
-    HttpClient()
-      ..idleTimeout = const Duration(seconds: 90)
-      ..connectionTimeout = const Duration(seconds: 10),
-  );
-
-  final FirebaseAI Function() _ai;
-  DateTime? _warmedAt;
-
-  GenerativeModel _model(ModelRequest r) {
-    final system = r.system;
-    return _ai().generativeModel(
-      model: r.model,
-      systemInstruction:
-          system == null || system.trim().isEmpty ? null : Content.system(system),
-      tools: r.tools,
-      toolConfig: r.toolConfig,
-      generationConfig: r.generationConfig,
-      httpClient: _client,
-    );
-  }
-
-  @override
-  Stream<GenerateContentResponse> stream(ModelRequest request) =>
-      _model(request).generateContentStream(request.contents);
-
-  @override
-  Future<GenerateContentResponse> generate(ModelRequest request) =>
-      _model(request).generateContent(request.contents);
-
-  @override
-  Future<void> warmUp() async {
-    final last = _warmedAt;
-    if (last != null && DateTime.now().difference(last) < const Duration(seconds: 20)) return;
-    _warmedAt = DateTime.now();
-    final started = DateTime.now();
-    await Future.wait<void>([
-      FirebaseAppCheck.instance.getToken().then((_) {}, onError: (Object e) {
-        AppLog.add('ai', 'app check token not ready: ${e.runtimeType}');
-      }),
-      (FirebaseAuth.instance.currentUser?.getIdToken() ?? Future<String?>.value())
-          .then((_) {}, onError: (Object e) {
-        AppLog.add('ai', 'sign-in token not ready: ${e.runtimeType}');
-      }),
-      // Any answer will do: the point is the open, TLS-ready connection.
-      _client.head(Uri.parse(_host)).timeout(const Duration(seconds: 8)).then((_) {},
-          onError: (Object e) {
-        AppLog.add('ai', 'model host not reached: ${e.runtimeType}');
-      }),
-    ]);
-    AppLog.add('ai', 'warmed up in ${DateTime.now().difference(started).inMilliseconds} ms');
-  }
+  static ModelPort cloud() => _server;
 }

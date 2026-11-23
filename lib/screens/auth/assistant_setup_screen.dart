@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -16,6 +18,7 @@ import '../splash_screen.dart';
 import 'guide_screen.dart';
 import 'permissions_screen.dart';
 import 'profession_screen.dart';
+import 'photo_step_screen.dart';
 import 'welcome_screen.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
@@ -48,6 +51,9 @@ class _AssistantSetupGateState extends State<AssistantSetupGate> {
   /// this step existed get it once too, on their next launch.
   bool _personaNeeded = false;
 
+  /// Right after the profession step in a fresh onboarding.
+  bool _photoStep = false;
+
   /// Permission gate: false until the MICROPHONE is granted — the one the
   /// app cannot work without (see permissions_screen.dart). Checked on
   /// every launch, so revoking it brings the gate back; the recommended
@@ -69,8 +75,23 @@ class _AssistantSetupGateState extends State<AssistantSetupGate> {
     _check();
   }
 
+  // AN OFFLINE FIRST LAUNCH ASKS AGAIN (product audit 2026-11-21): when the
+  // profile could not be read, naming and the profession were skipped
+  // silently and the user met an assistant called "Assistant" until some
+  // later launch. Now the gate re-checks every 30 s, a few times, and shows
+  // the steps as soon as the server answers.
+  Timer? _recheck;
+  int _rechecks = 0;
+
+  @override
+  void dispose() {
+    _recheck?.cancel();
+    super.dispose();
+  }
+
   Future<void> _check() async {
     bool needed = false;
+    bool unknown = false;
     bool welcomed = false;
     bool personaNeeded = false;
     try {
@@ -97,6 +118,7 @@ class _AssistantSetupGateState extends State<AssistantSetupGate> {
         needed = false;
       } else {
         p ??= await ApiService.getJson('/profile/full');
+        unknown = p == null;
         if (p != null) {
           final n =
               (((p['assistant'] as Map?)?['name'] as String?) ?? '').trim();
@@ -111,6 +133,13 @@ class _AssistantSetupGateState extends State<AssistantSetupGate> {
       }
     } catch (_) {}
     final permsOk = await allRequiredPermissionsGranted();
+    _recheck?.cancel();
+    if (unknown && _rechecks < 6 && mounted) {
+      _rechecks++;
+      _recheck = Timer(const Duration(seconds: 30), () {
+        if (mounted && _needed != true) _check();
+      });
+    }
     if (mounted) {
       setState(() {
         _needed = needed;
@@ -147,7 +176,15 @@ class _AssistantSetupGateState extends State<AssistantSetupGate> {
   Widget build(BuildContext context) {
     if (_needed != null && _personaNeeded) {
       return ProfessionScreen(
-          onDone: () => setState(() => _personaNeeded = false));
+          onDone: () => setState(() {
+                _personaNeeded = false;
+                // Fresh onboarding only: the photo step follows the
+                // profession it is dressed for.
+                _photoStep = true;
+              }));
+    }
+    if (_photoStep) {
+      return PhotoStepScreen(onDone: () => setState(() => _photoStep = false));
     }
     return switch (_needed) {
       null => const SplashScreen(),

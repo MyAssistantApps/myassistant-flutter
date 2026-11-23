@@ -184,7 +184,7 @@ class _AssistantResultOverlayState extends State<AssistantResultOverlay> {
     // WEB RESULTS: a labelled stack with its own ✕, capped in height and
     // scrollable — three bare cards with no way to close them used to sit
     // over the orb and the captions until the next question.
-    if (e.searchResults.isNotEmpty || e.searchSuggestions.isNotEmpty) {
+    if (e.searchResults.isNotEmpty) {
       final results = e.searchResults.take(3).toList(growable: false);
       final h = MediaQuery.of(context).size.height;
       return ConstrainedBox(
@@ -231,13 +231,6 @@ class _AssistantResultOverlayState extends State<AssistantResultOverlay> {
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8),
                         child: SearchResultCard(result: r),
-                      ),
-                    // Google's search suggestions, beside a grounded answer
-                    // (the grounding terms require them).
-                    if (e.searchSuggestions.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: SearchSuggestionChips(suggestions: e.searchSuggestions),
                       ),
                   ],
                 ),

@@ -24,6 +24,28 @@ class BriefService extends ChangeNotifier {
   static final BriefService instance = BriefService._();
 
   TodayBrief brief = const TodayBrief();
+
+  /// Messages marked read here: they leave Home at once and stay gone
+  /// after a refresh, also from a server that cannot mark them read yet.
+  final Set<String> _readMsgs = {};
+  static const _readKey = 'brief_read_messages_v1';
+  static String msgKey(BriefMessage m) =>
+      m.id != null ? 'id${m.id}' : '${m.from}|${m.text}';
+
+  void markMessagesRead(Iterable<BriefMessage> ms) {
+    _readMsgs.addAll(ms.map(msgKey));
+    _dropRead(brief);
+    notifyListeners();
+    SharedPreferences.getInstance().then((p) => p.setStringList(
+        _readKey, _readMsgs.toList().reversed.take(300).toList()));
+  }
+
+  void _dropRead(TodayBrief b) {
+    if (_readMsgs.isEmpty) return;
+    try {
+      b.messages.removeWhere((m) => _readMsgs.contains(msgKey(m)));
+    } catch (_) {} // a const empty list: nothing to drop
+  }
   bool loaded = false;
 
   /// True when there is nothing to show AND the last fetch failed — the
@@ -69,9 +91,11 @@ class BriefService extends ChangeNotifier {
     if (loaded) return;
     try {
       final prefs = await SharedPreferences.getInstance();
+      _readMsgs.addAll(prefs.getStringList(_readKey) ?? const []);
       final s = prefs.getString(_cacheKey);
       if (s == null || loaded) return; // a fast fetch may have won the race
       brief = TodayBrief.fromJson(jsonDecode(s) as Map<String, dynamic>);
+      _dropRead(brief);
       final at = prefs.getInt(_cacheAtKey);
       updatedAt = at == null ? null : DateTime.fromMillisecondsSinceEpoch(at);
       loaded = true;
@@ -114,6 +138,7 @@ class BriefService extends ChangeNotifier {
           b.tomorrow.removeWhere((a) => _gone.containsKey('r${a.id}'));
           b.promises.removeWhere((p) => _gone.containsKey('p${p.id}'));
         }
+        _dropRead(b);
         brief = b;
         loaded = true;
         failed = false;

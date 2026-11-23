@@ -23,12 +23,40 @@ class RoleMicOrb extends StatefulWidget {
     required this.tint,
     this.size = 64,
     this.labelColor = Colors.white,
+    this.showLabel = true,
+    this.endOnDispose = true,
+    this.topic,
+    this.openingNote,
+    this.resetRoleWhenDone = false,
   });
+
+  /// The page speaks first: worked out when the conversation starts (so it
+  /// can say what is saved by then) and handed to the engine as the
+  /// conversation's first turn, in place of the generic hello.
+  final String? Function()? openingNote;
+
+  /// Hand the everyday assistant back as soon as this orb's conversation
+  /// ends — for an orb on a page that stays open (the Jyotish card on Home),
+  /// where no "leaving the page" would do it.
+  final bool resetRoleWhenDone;
+
+  /// What a screen reader says it is about ("Patient Records"), when the
+  /// page has more than one orb.
+  final String? topic;
 
   final AssistantRole role;
   final Color tint;
   final double size;
   final Color labelColor;
+
+  /// The word under the orb ("Tap to talk", "Listening…"). Off on a small
+  /// orb inside a card, where the orb's own motion shows the state.
+  final bool showLabel;
+
+  /// End this orb's conversation when the orb goes away. Off for an orb in
+  /// a scrolling grid — a tile scrolled out of view is not the page being
+  /// left; the page ends it instead (ProAssistantScreen.dispose).
+  final bool endOnDispose;
 
   @override
   State<RoleMicOrb> createState() => _RoleMicOrbState();
@@ -46,7 +74,7 @@ class _RoleMicOrbState extends State<RoleMicOrb> {
   @override
   void dispose() {
     _engine.removeListener(_changed);
-    if (_mine) {
+    if (_mine && widget.endOnDispose) {
       final e = _engine;
       unawaited(() async {
         if (_runningOn(e)) await e.endInlineConversation();
@@ -56,7 +84,14 @@ class _RoleMicOrbState extends State<RoleMicOrb> {
     super.dispose();
   }
 
+  bool _wasTalking = false;
+
   void _changed() {
+    final talking = _talking;
+    if (widget.resetRoleWhenDone && _wasTalking && !talking && _mine) {
+      unawaited(_engine.useRole(null));
+    }
+    _wasTalking = talking;
     if (mounted) setState(() {});
   }
 
@@ -77,9 +112,14 @@ class _RoleMicOrbState extends State<RoleMicOrb> {
       await _engine.endInlineConversation();
       return;
     }
+    await _start();
+  }
+
+  Future<void> _start() async {
     await _engine.useRole(widget.role);
     await _engine.beginInlineConversation(
-        name: AuthService.instance.user?.name);
+        name: AuthService.instance.user?.name,
+        openingNote: widget.openingNote?.call());
   }
 
   String _label(OrbMood mood) {
@@ -99,11 +139,13 @@ class _RoleMicOrbState extends State<RoleMicOrb> {
     final mood = talking ? orbMoodFor(_engine) : OrbMood.idle;
     final s = widget.size;
     final label = _label(mood);
+    final about = widget.topic == null ? '' : ' about ${widget.topic}';
     return Semantics(
+      container: true,
       button: true,
       label: talking
           ? 'Stop speaking to ${widget.role.name}'
-          : 'Speak to ${widget.role.name}',
+          : 'Speak to ${widget.role.name}$about',
       excludeSemantics: true,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -158,12 +200,14 @@ class _RoleMicOrbState extends State<RoleMicOrb> {
                 ],
               ),
             ),
-            const SizedBox(height: 6),
-            Text(label,
-                style: TextStyle(
-                    color: widget.labelColor,
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700)),
+            if (widget.showLabel) ...[
+              const SizedBox(height: 6),
+              Text(label,
+                  style: TextStyle(
+                      color: widget.labelColor,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700)),
+            ],
           ],
         ),
       ),

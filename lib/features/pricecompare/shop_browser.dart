@@ -10,7 +10,6 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../../core/log.dart';
 import '../../design/motion.dart';
 import '../../design/neon_tokens.dart';
-import '../assistant/widgets/action_cards.dart' show SearchSuggestionChips;
 import 'price_models.dart';
 import 'price_result_screen.dart';
 import 'product_screens.dart';
@@ -1066,10 +1065,6 @@ class _AdviceSheetState extends State<_AdviceSheet> {
                         style: const TextStyle(color: Color(0xFF4F46E5), fontSize: 12.5)),
                   ),
                 ),
-            ],
-            if (a.suggestions.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              SearchSuggestionChips(suggestions: a.suggestions),
             ],
             const SizedBox(height: 10),
             const Text('AI advice based on web sources. Please verify the final price and details on the store.',

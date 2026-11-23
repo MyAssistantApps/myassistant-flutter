@@ -337,30 +337,6 @@ class AvatarMessageService {
     return ok;
   }
 
-  static Future<bool> _uploadFile(String path, File file, String mime) async {
-    try {
-      final req = http.MultipartRequest(
-          'POST', Uri.parse('${ApiService.baseUrl}$path'))
-        ..headers.addAll(ApiService.authHeaders..remove('Content-Type'))
-        ..files.add(await http.MultipartFile.fromPath('file', file.path,
-            contentType: MediaType.parse(mime)));
-      final res = await req.send().timeout(const Duration(seconds: 45));
-      return res.statusCode == 200;
-    } catch (e) {
-      AppLog.add('avatarmsg', 'upload $path failed: $e');
-      return false;
-    }
-  }
-
-  // The photo and voice sample are no longer asked for — the identity
-  // video carries both (2026-09-26). Kept for the routes installed builds
-  // (≤117) still call.
-  static Future<bool> uploadFace(File photo) =>
-      _uploadFile('/avatar-profile/face', photo, 'image/jpeg');
-
-  static Future<bool> uploadVoice(File sample) =>
-      _uploadFile('/avatar-profile/voice', sample, 'audio/mp4');
-
   /// THE IDENTITY VIDEO — POST /avatar-profile/video.
   ///
   /// Streamed from disk as it is sent (MultipartFile.fromPath), never read
