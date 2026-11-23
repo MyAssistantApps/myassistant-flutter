@@ -1,13 +1,17 @@
 // JYOTISH (2026-11-22) — the Vedic horoscope, opened from the last card on
-// Home. First the chat onboarding (jyotish_onboarding.dart); then the chart
-// in four tabs: Kundli (North / South drawing, yogas, doshas, gochar),
-// Planets, Dasha and Predictions. People can be saved and switched.
+// Home. It opens on Guruji (owner, 2026-11-23; jyotish_guru.dart): a voice
+// that gives today's bhavishya from the saved chart, or asks for the birth
+// details and casts one. The chart itself — Kundli (North / South drawing,
+// yogas, doshas, gochar), Planets, Dasha and Predictions — opens from "View
+// Your Kundli"; typing the details stays as a fallback. People can be saved
+// and switched.
 
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 
 import '../../design/neon_tokens.dart';
+import 'jyotish_guru.dart';
 import 'jyotish_models.dart';
 import 'jyotish_onboarding.dart';
 import 'jyotish_predict.dart';
@@ -17,43 +21,66 @@ import 'jyotish_voice.dart';
 import 'kundli_chart.dart';
 
 class JyotishScreen extends StatefulWidget {
-  const JyotishScreen({super.key, this.service = const JyotishService(), this.speaker, this.listener});
+  const JyotishScreen({
+    super.key,
+    this.service = const JyotishService(),
+    this.speaker,
+    this.listener,
+    this.music,
+    this.autoStartGuru = true,
+  });
 
   final JyotishService service;
 
-  /// Test seams: the phone's voice out and in.
+  /// Test seams: the phone's voice out and in, and the background music.
   final JyotishSpeaker? speaker;
   final JyotishListener? listener;
+  final JyotishMusic? music;
+
+  /// Guruji speaks as the screen opens (off in tests).
+  final bool autoStartGuru;
 
   @override
   State<JyotishScreen> createState() => _JyotishScreenState();
 }
 
-class _JyotishScreenState extends State<JyotishScreen> {
+class _JyotishScreenState extends State<JyotishScreen> with WidgetsBindingObserver {
   late final JyotishSpeaker _speaker = widget.speaker ?? JyotishSpeaker();
   late final JyotishListener _listener = widget.listener ?? JyotishListener();
+  late final JyotishMusic _music = widget.music ?? JyotishMusic();
 
   bool _loading = true;
   String? _loadError;
   List<SavedProfile> _profiles = const [];
   ChartResult? _result;
-  bool _editing = false;
-  Birth? _editFrom;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    unawaited(_music.start());
     unawaited(_start());
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    unawaited(_music.dispose());
     if (widget.speaker == null) _speaker.dispose();
     if (widget.listener == null) _listener.dispose();
     super.dispose();
   }
 
-  /// The most recent saved person opens straight away; none → onboarding.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _music.resume();
+    } else if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
+      _music.pause();
+    }
+  }
+
+  /// The most recent saved person's chart, ready for "View Your Kundli".
   Future<void> _start() async {
     setState(() {
       _loading = true;
@@ -70,18 +97,23 @@ class _JyotishScreenState extends State<JyotishScreen> {
     }
     _profiles = list;
     if (list.isNotEmpty) {
-      final r = await widget.service.chart(list.first.birth);
+      _result = await widget.service.chart(list.first.birth);
       if (!mounted) return;
-      if (r == null) {
-        setState(() {
-          _loading = false;
-          _loadError = 'Unable to calculate the chart.';
-        });
-        return;
-      }
-      _result = r;
     }
     setState(() => _loading = false);
+  }
+
+  /// Guruji saved a chart by voice: pick it up without leaving the page
+  /// (the conversation goes on).
+  Future<void> _refresh() async {
+    final list = await widget.service.profiles();
+    if (!mounted || list == null || list.isEmpty) return;
+    final r = await widget.service.chart(list.first.birth);
+    if (!mounted) return;
+    setState(() {
+      _profiles = list;
+      if (r != null) _result = r;
+    });
   }
 
   Future<bool> _cast(Birth birth, {required bool save}) async {
@@ -97,29 +129,52 @@ class _JyotishScreenState extends State<JyotishScreen> {
             const SnackBar(content: Text('The chart is ready, but the profile could not be saved.')));
       }
     }
-    setState(() {
-      _result = r;
-      _editing = false;
-    });
+    setState(() => _result = r);
     return true;
+  }
+
+  /// The details typed instead of spoken (also "Edit Birth Details").
+  void _typeDetails({Birth? from}) {
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (ctx) => _JyotishPage(
+        title: 'Birth Details',
+        child: JyotishOnboarding(
+          key: ValueKey(from),
+          service: widget.service,
+          listener: _listener,
+          initial: from,
+          onCast: (birth, {required save}) async {
+            final ok = await _cast(birth, save: save);
+            if (ok && ctx.mounted) {
+              Navigator.of(ctx).pop();
+              if (mounted) _viewKundli();
+            }
+            return ok;
+          },
+        ),
+      ),
+    ));
+  }
+
+  void _viewKundli() {
+    final r = _result;
+    if (r == null) return;
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => _ChartPage(result: r, service: widget.service, speaker: _speaker),
+    ));
   }
 
   Future<void> _open(SavedProfile p) async {
     Navigator.of(context).pop();
-    setState(() => _loading = true);
     final r = await widget.service.chart(p.birth);
     if (!mounted) return;
-    setState(() {
-      _loading = false;
-      if (r != null) {
-        _result = r;
-        _editing = false;
-      }
-    });
     if (r == null) {
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Unable to open that profile. Please try again.')));
+      return;
     }
+    setState(() => _result = r);
+    _viewKundli();
   }
 
   Future<void> _delete(SavedProfile p) async {
@@ -136,23 +191,24 @@ class _JyotishScreenState extends State<JyotishScreen> {
   void _showProfiles() {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF151036),
+      backgroundColor: const Color(0xFF2A0F22),
       showDragHandle: true,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheet) => SafeArea(
           child: ListView(shrinkWrap: true, padding: const EdgeInsets.only(bottom: 16), children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-              child: Text('Saved people', style: Cosmic.title()),
+              child: Text('Saved People', style: Cosmic.title()),
             ),
             if (_profiles.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                child: Text('No one saved yet. Add a name when you cast a chart to save it.', style: Cosmic.label()),
+                child: Text('No one is saved yet. Tell Guruji your birth details to save yours.',
+                    style: Cosmic.label()),
               ),
             for (final p in _profiles)
               ListTile(
-                leading: const Icon(Icons.person_rounded, color: Cosmic.gold),
+                leading: const Icon(Icons.person_rounded, color: Mandir.gold),
                 title: Text(p.name, style: Cosmic.body()),
                 subtitle: Text('${prettyDate(p.birth.date)} · ${prettyTime(p.birth.time)}${p.birth.place != null ? ' · ${p.birth.place}' : ''}',
                     maxLines: 1, overflow: TextOverflow.ellipsis, style: Cosmic.label(NeonType.caption)),
@@ -167,14 +223,11 @@ class _JyotishScreenState extends State<JyotishScreen> {
                 ),
               ),
             ListTile(
-              leading: const Icon(Icons.person_add_alt_1_rounded, color: Cosmic.sky),
-              title: Text('New person', style: Cosmic.body()),
+              leading: const Icon(Icons.person_add_alt_1_rounded, color: Mandir.saffron),
+              title: Text('New Person', style: Cosmic.body()),
               onTap: () {
                 Navigator.of(ctx).pop();
-                setState(() {
-                  _editing = true;
-                  _editFrom = null;
-                });
+                _typeDetails();
               },
             ),
           ]),
@@ -185,68 +238,52 @@ class _JyotishScreenState extends State<JyotishScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final showChart = _result != null && !_editing;
+    final r = _result;
     return Theme(
       data: Cosmic.theme(context),
-      child: CosmicBackdrop(
-        child: DefaultTabController(
-          length: 4,
-          child: Scaffold(
+      child: TempleDoodle(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
             backgroundColor: Colors.transparent,
-            appBar: AppBar(
-              backgroundColor: Colors.transparent,
-              surfaceTintColor: Colors.transparent,
-              foregroundColor: Cosmic.ink,
-              title: Text('Jyotish', style: Cosmic.title(NeonType.title3)),
-              actions: [
-                if (showChart)
-                  IconButton(
-                    tooltip: 'Edit birth details',
-                    icon: const Icon(Icons.edit_rounded),
-                    onPressed: () => setState(() {
-                      _editing = true;
-                      _editFrom = _result!.birth;
-                    }),
-                  ),
-                if (_editing && _result != null)
-                  IconButton(
-                    tooltip: 'Back to the chart',
-                    icon: const Icon(Icons.close_rounded),
-                    onPressed: () => setState(() => _editing = false),
-                  ),
-                IconButton(
-                  tooltip: 'Saved people',
-                  icon: const Icon(Icons.people_alt_rounded),
-                  onPressed: _loading ? null : _showProfiles,
+            surfaceTintColor: Colors.transparent,
+            foregroundColor: Cosmic.ink,
+            title: Text('Jyotish', style: Cosmic.title(NeonType.title3)),
+            actions: [
+              ValueListenableBuilder<bool>(
+                valueListenable: _music.on,
+                builder: (_, on, __) => IconButton(
+                  tooltip: on ? 'Turn Music Off' : 'Turn Music On',
+                  icon: Icon(on ? Icons.music_note_rounded : Icons.music_off_rounded),
+                  onPressed: _music.toggle,
                 ),
-              ],
-              bottom: showChart
-                  ? const TabBar(
-                      isScrollable: true,
-                      tabAlignment: TabAlignment.start,
-                      tabs: [
-                        Tab(text: 'Kundli'),
-                        Tab(text: 'Planets'),
-                        Tab(text: 'Dasha'),
-                        Tab(text: 'Predictions'),
-                      ],
-                    )
-                  : null,
-            ),
-            body: _body(showChart),
+              ),
+              if (r != null)
+                IconButton(
+                  tooltip: 'Edit Birth Details',
+                  icon: const Icon(Icons.edit_rounded),
+                  onPressed: () => _typeDetails(from: r.birth),
+                ),
+              IconButton(
+                tooltip: 'Saved People',
+                icon: const Icon(Icons.people_alt_rounded),
+                onPressed: _loading ? null : _showProfiles,
+              ),
+            ],
           ),
+          body: SafeArea(top: false, child: _body()),
         ),
       ),
     );
   }
 
-  Widget _body(bool showChart) {
+  Widget _body() {
     if (_loading) {
       return Center(
-        child: Semantics(label: 'Loading', child: const CircularProgressIndicator(color: Cosmic.gold)),
+        child: Semantics(label: 'Loading', child: const CircularProgressIndicator(color: Mandir.gold)),
       );
     }
-    if (_loadError != null && _result == null && !_editing) {
+    if (_loadError != null) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -258,33 +295,99 @@ class _JyotishScreenState extends State<JyotishScreen> {
             Text('Check your internet connection and try again.', style: Cosmic.label(), textAlign: TextAlign.center),
             const SizedBox(height: 16),
             Wrap(spacing: 8, children: [
-              FilledButton(onPressed: _start, child: const Text('Try again')),
-              OutlinedButton(
-                onPressed: () => setState(() => _editing = true),
-                child: const Text('Enter details'),
-              ),
+              FilledButton(onPressed: _start, child: const Text('Try Again')),
+              OutlinedButton(onPressed: _typeDetails, child: const Text('Enter Details')),
             ]),
           ]),
         ),
       );
     }
-    if (!showChart) {
-      return JyotishOnboarding(
-        key: ValueKey(_editFrom),
-        service: widget.service,
-        listener: _listener,
-        onCast: _cast,
-        initial: _editFrom,
-      );
-    }
-    final r = _result!;
-    return TabBarView(children: [
-      _KundliTab(result: r, service: widget.service),
-      _PlanetsTab(result: r),
-      _DashaTab(chart: r.chart),
-      JyotishPredict(birth: r.birth, service: widget.service, speaker: _speaker),
-    ]);
+    final r = _result;
+    final saved = _profiles.isEmpty ? null : (r?.birth.name ?? _profiles.first.name);
+    return GuruPage(
+      savedName: saved,
+      music: _music,
+      autoStart: widget.autoStartGuru,
+      onChartSaved: _refresh,
+      actions: [
+        if (r != null)
+          FilledButton.icon(
+            onPressed: _viewKundli,
+            style: FilledButton.styleFrom(
+              backgroundColor: Mandir.gold,
+              foregroundColor: const Color(0xFF3A1206),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            ),
+            icon: const Icon(Icons.auto_awesome_rounded, size: 18),
+            label: const Text('View Your Kundli'),
+          ),
+        TextButton.icon(
+          onPressed: () => _typeDetails(from: r?.birth),
+          style: TextButton.styleFrom(foregroundColor: Mandir.sandal),
+          icon: const Icon(Icons.keyboard_rounded, size: 18),
+          label: Text(r == null ? 'Type the Details Instead' : 'Type New Details'),
+        ),
+      ],
+    );
   }
+}
+
+/// A pushed Jyotish page on the same dusk and temple drawing.
+class _JyotishPage extends StatelessWidget {
+  const _JyotishPage({required this.title, required this.child, this.bottom});
+  final String title;
+  final Widget child;
+  final PreferredSizeWidget? bottom;
+
+  @override
+  Widget build(BuildContext context) => Theme(
+        data: Cosmic.theme(context),
+        child: TempleDoodle(
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            appBar: AppBar(
+              backgroundColor: Colors.transparent,
+              surfaceTintColor: Colors.transparent,
+              foregroundColor: Cosmic.ink,
+              title: Text(title, style: Cosmic.title(NeonType.title3)),
+              bottom: bottom,
+            ),
+            body: child,
+          ),
+        ),
+      );
+}
+
+/// "View Your Kundli": the chart in four tabs.
+class _ChartPage extends StatelessWidget {
+  const _ChartPage({required this.result, required this.service, required this.speaker});
+  final ChartResult result;
+  final JyotishService service;
+  final JyotishSpeaker speaker;
+
+  @override
+  Widget build(BuildContext context) => DefaultTabController(
+        length: 4,
+        child: _JyotishPage(
+          title: result.birth.name ?? 'Your Kundli',
+          bottom: const TabBar(
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            tabs: [
+              Tab(text: 'Kundli'),
+              Tab(text: 'Planets'),
+              Tab(text: 'Dasha'),
+              Tab(text: 'Predictions'),
+            ],
+          ),
+          child: TabBarView(children: [
+            _KundliTab(result: result, service: service),
+            _PlanetsTab(result: result),
+            _DashaTab(chart: result.chart),
+            JyotishPredict(birth: result.birth, service: service, speaker: speaker),
+          ]),
+        ),
+      );
 }
 
 // ── Kundli ─────────────────────────────────────────────────────────────

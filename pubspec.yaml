@@ -150,6 +150,7 @@ flutter:
     - assets/splash/eye_left.png
     - assets/splash/eye_right.png
     - assets/sounds/
+    - assets/jyotish/
     # Doctor's, Advocate's and Business banners (Pexels licence, CREDITS.md).
     - assets/pro/
     - assets/tryon/

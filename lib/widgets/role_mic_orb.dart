@@ -26,7 +26,26 @@ class RoleMicOrb extends StatefulWidget {
     this.showLabel = true,
     this.endOnDispose = true,
     this.topic,
+    this.openingNote,
+    this.autoStart = false,
+    this.orbBuilder,
   });
+
+  /// The page speaks first: worked out when the conversation starts (so it
+  /// can say what is saved by then) and handed to the engine as the
+  /// conversation's first turn, in place of the generic hello.
+  final String? Function()? openingNote;
+
+  /// Start once on arrival, without a tap (the Jyotish guru greets the user
+  /// as the screen opens). Never over a conversation already running.
+  final bool autoStart;
+
+  /// The orb's own look (the Jyotish guru's mandala); the neuron orb when
+  /// null. Gets whether this orb's conversation is running, what the voice
+  /// is doing, and the word for it.
+  final Widget Function(
+          BuildContext context, bool talking, OrbMood mood, String label)?
+      orbBuilder;
 
   /// What a screen reader says it is about ("Patient Records"), when the
   /// page has more than one orb.
@@ -57,6 +76,11 @@ class _RoleMicOrbState extends State<RoleMicOrb> {
   void initState() {
     super.initState();
     _engine.addListener(_changed);
+    if (widget.autoStart) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_runningOn(_engine)) unawaited(_start());
+      });
+    }
   }
 
   @override
@@ -93,9 +117,14 @@ class _RoleMicOrbState extends State<RoleMicOrb> {
       await _engine.endInlineConversation();
       return;
     }
+    await _start();
+  }
+
+  Future<void> _start() async {
     await _engine.useRole(widget.role);
     await _engine.beginInlineConversation(
-        name: AuthService.instance.user?.name);
+        name: AuthService.instance.user?.name,
+        openingNote: widget.openingNote?.call());
   }
 
   String _label(OrbMood mood) {
@@ -115,6 +144,7 @@ class _RoleMicOrbState extends State<RoleMicOrb> {
     final mood = talking ? orbMoodFor(_engine) : OrbMood.idle;
     final s = widget.size;
     final label = _label(mood);
+    final custom = widget.orbBuilder;
     final about = widget.topic == null ? '' : ' about ${widget.topic}';
     return Semantics(
       container: true,
@@ -126,66 +156,69 @@ class _RoleMicOrbState extends State<RoleMicOrb> {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: _tap,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: s,
-              height: s,
-              child: Stack(
-                alignment: Alignment.center,
-                clipBehavior: Clip.none,
+        child: custom != null
+            ? custom(context, talking, mood, label)
+            : Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  // A soft disc behind, so the orb reads over any photo.
-                  Container(
+                  SizedBox(
                     width: s,
                     height: s,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.black.withValues(alpha: 0.35),
-                      border: Border.all(
-                          color: widget.tint.withValues(alpha: 0.7),
-                          width: 1.5),
-                      boxShadow: [
-                        BoxShadow(
-                            color: widget.tint
-                                .withValues(alpha: talking ? 0.6 : 0.35),
-                            blurRadius: talking ? 22 : 14),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      clipBehavior: Clip.none,
+                      children: [
+                        // A soft disc behind, so the orb reads over any photo.
+                        Container(
+                          width: s,
+                          height: s,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.black.withValues(alpha: 0.35),
+                            border: Border.all(
+                                color: widget.tint.withValues(alpha: 0.7),
+                                width: 1.5),
+                            boxShadow: [
+                              BoxShadow(
+                                  color: widget.tint
+                                      .withValues(alpha: talking ? 0.6 : 0.35),
+                                  blurRadius: talking ? 22 : 14),
+                            ],
+                          ),
+                        ),
+                        Positioned(
+                          left: -s * 0.25,
+                          right: -s * 0.25,
+                          top: -s * 0.25,
+                          bottom: -s * 0.25,
+                          child: IgnorePointer(
+                            child: NeuronOrb(
+                              radius: s * 0.28,
+                              mood: mood,
+                              levelListenable:
+                                  talking ? _engine.micLevelListenable : null,
+                              speakerLevel:
+                                  talking ? _engine.speakerLevelNow : null,
+                              active: talking,
+                            ),
+                          ),
+                        ),
+                        if (!talking)
+                          Icon(Icons.mic_rounded,
+                              color: Colors.white, size: s * 0.38),
                       ],
                     ),
                   ),
-                  Positioned(
-                    left: -s * 0.25,
-                    right: -s * 0.25,
-                    top: -s * 0.25,
-                    bottom: -s * 0.25,
-                    child: IgnorePointer(
-                      child: NeuronOrb(
-                        radius: s * 0.28,
-                        mood: mood,
-                        levelListenable:
-                            talking ? _engine.micLevelListenable : null,
-                        speakerLevel: talking ? _engine.speakerLevelNow : null,
-                        active: talking,
-                      ),
-                    ),
-                  ),
-                  if (!talking)
-                    Icon(Icons.mic_rounded,
-                        color: Colors.white, size: s * 0.38),
+                  if (widget.showLabel) ...[
+                    const SizedBox(height: 6),
+                    Text(label,
+                        style: TextStyle(
+                            color: widget.labelColor,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700)),
+                  ],
                 ],
               ),
-            ),
-            if (widget.showLabel) ...[
-              const SizedBox(height: 6),
-              Text(label,
-                  style: TextStyle(
-                      color: widget.labelColor,
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w700)),
-            ],
-          ],
-        ),
       ),
     );
   }

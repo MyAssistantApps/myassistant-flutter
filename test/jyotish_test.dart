@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myassistant/ai/listen.dart';
 import 'package:myassistant/features/jyotish/jyotish_card.dart';
+import 'package:myassistant/features/jyotish/jyotish_guru.dart';
 import 'package:myassistant/features/jyotish/jyotish_models.dart';
 import 'package:myassistant/features/jyotish/jyotish_screen.dart';
 import 'package:myassistant/features/jyotish/jyotish_service.dart';
@@ -170,8 +171,53 @@ void main() {
     });
   });
 
+  group('Guruji', () {
+    test('with a saved chart, Guruji opens with today\'s bhavishya and asks for more', () {
+      final note = guruOpeningNote('Asha');
+      expect(note, contains('Asha'));
+      expect(note, contains("today's Jyotisha Bhavishya"));
+      expect(note, contains('jyotish_reading'));
+      expect(note, contains('range today'));
+      expect(note, contains('other questions'));
+      expect(note, isNot(contains('jyotish_chart')));
+    });
+
+    test('with nothing saved, Guruji asks for the birth details and casts the chart', () {
+      for (final none in [null, '', '  ']) {
+        final note = guruOpeningNote(none);
+        expect(note, contains('no birth chart is saved'));
+        expect(note, contains('my name first'));
+        expect(note, contains('one question at a time'));
+        expect(note, contains('jyotish_chart'));
+        expect(note, contains("today's Jyotisha Bhavishya"));
+      }
+    });
+
+    test('Guruji speaks only from the Jyotish tools, kindly', () {
+      expect(guruRole.name, contains('Guruji'));
+      expect(guruRole.brief, contains('jyotish_chart'));
+      expect(guruRole.brief, contains('jyotish_reading'));
+      expect(guruRole.brief, contains('never invent planetary positions'));
+      expect(guruRole.brief, contains('never sell remedies'));
+    });
+
+    testWidgets('the temple drawing and the orb paint on a phone', (t) async {
+      await t.pumpWidget(const MaterialApp(
+          home: Scaffold(
+              body: TempleDoodle(
+                  child: Center(child: SizedBox(width: 220, height: 220, child: CustomPaint(painter: _Orb())))))));
+      expect(t.takeException(), isNull);
+    });
+  });
+
   group('screens', () {
-    Widget host(Widget child) => MaterialApp(home: child);
+    // Reduced motion: the guru's mandala stays still, so pumpAndSettle can
+    // settle (it turns forever otherwise).
+    Widget host(Widget child) => MaterialApp(
+          home: child,
+          builder: (ctx, w) =>
+              MediaQuery(data: MediaQuery.of(ctx).copyWith(disableAnimations: true), child: w!),
+        );
 
     testWidgets('the Home card opens the horoscope', (t) async {
       Widget? opened;
@@ -196,7 +242,18 @@ void main() {
           places: [PlaceOption(name: 'Udupi, Karnataka, India', lat: 13.3409, lng: 74.7421, tz: 'Asia/Kolkata')],
         );
       await t.pumpWidget(host(JyotishScreen(
-          service: svc, speaker: _QuietSpeaker(), listener: JyotishListener(_QuietRecognizer()))));
+          service: svc,
+          speaker: _QuietSpeaker(),
+          listener: JyotishListener(_QuietRecognizer()),
+          music: SilentJyotishMusic(),
+          autoStartGuru: false)));
+      await t.pumpAndSettle();
+      // Guruji first: the orb, and how to begin.
+      expect(find.text('Tap to Talk to Guruji'), findsOneWidget);
+      expect(find.textContaining('tell Guruji your date, time and place of birth'), findsOneWidget);
+      expect(find.text('View Your Kundli'), findsNothing);
+      // Typing stays as the fallback.
+      await t.tap(find.text('Type the Details Instead'));
       await t.pumpAndSettle();
       expect(find.textContaining('Tell me when and where you were born'), findsOneWidget);
       await t.enterText(find.byType(TextField).first, 'I was born 14 March 2004 around 6:30 am in Udupi');
@@ -218,7 +275,15 @@ void main() {
       final birth = Birth.fromJson(_fixture()['birth'])!;
       final svc = _FakeService(profileList: [SavedProfile(id: 1, name: 'Asha', birth: birth)]);
       await t.pumpWidget(host(JyotishScreen(
-          service: svc, speaker: _QuietSpeaker(), listener: JyotishListener(_QuietRecognizer()))));
+          service: svc,
+          speaker: _QuietSpeaker(),
+          listener: JyotishListener(_QuietRecognizer()),
+          music: SilentJyotishMusic(),
+          autoStartGuru: false)));
+      await t.pumpAndSettle();
+      // Guruji has a saved chart to read from; the kundli is a tap away.
+      expect(find.textContaining("Guruji will tell you today's bhavishya"), findsOneWidget);
+      await t.tap(find.text('View Your Kundli'));
       await t.pumpAndSettle();
       for (final tab in ['Kundli', 'Planets', 'Dasha', 'Predictions']) {
         expect(find.text(tab), findsOneWidget);
@@ -234,4 +299,16 @@ void main() {
       expect(t.takeException(), isNull);
     });
   });
+}
+
+class _Orb extends CustomPainter {
+  const _Orb();
+  @override
+  void paint(Canvas canvas, Size size) {
+    GuruOrbPainter(turn: 0.3, energy: 0.6, talking: true).paint(canvas, size);
+    TempleDoodlePainter(skylineOnly: true).paint(canvas, size);
+  }
+
+  @override
+  bool shouldRepaint(_Orb old) => false;
 }

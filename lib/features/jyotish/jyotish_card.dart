@@ -1,9 +1,11 @@
-// JYOTISH CARD (2026-11-22) — the last card on Home: the way into the
-// Vedic horoscope (jyotish_screen.dart).
+// JYOTISH CARD (2026-11-22; redesigned 2026-11-23 for Guruji) — the last
+// card on Home: the way into the Vedic horoscope (jyotish_screen.dart), in
+// the screen's own temple palette.
 
 import 'package:flutter/material.dart';
 
 import '../../design/neon_tokens.dart';
+import 'jyotish_guru.dart';
 import 'jyotish_screen.dart';
 import 'jyotish_theme.dart';
 
@@ -24,50 +26,71 @@ class JyotishCard extends StatelessWidget {
       }
     }
 
+    final radius = BorderRadius.circular(Neon.rCard);
     return Semantics(
       button: true,
-      label: 'Jyotish. Your Vedic horoscope: kundli, dasha and readings. Opens the horoscope',
+      label: "Jyotish. Talk to Guruji: today's bhavishya, your kundli and dasha. Opens Jyotish",
       excludeSemantics: true,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(Neon.rCard),
+          borderRadius: radius,
           onTap: open,
           child: Ink(
             decoration: BoxDecoration(
-              gradient: Cosmic.brandGradient,
-              borderRadius: BorderRadius.circular(Neon.rCard),
-              border: Border.all(color: Cosmic.gold.withValues(alpha: 0.35)),
-              boxShadow: [BoxShadow(color: const Color(0xFF2A1B6B).withValues(alpha: 0.35), blurRadius: 20, offset: const Offset(0, 8))],
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF5A1424), Color(0xFF3A1238), Color(0xFF1E1145)],
+              ),
+              borderRadius: radius,
+              border: Border.all(color: Mandir.gold.withValues(alpha: 0.45)),
+              boxShadow: [
+                BoxShadow(color: Mandir.saffron.withValues(alpha: 0.22), blurRadius: 24, offset: const Offset(0, 8)),
+              ],
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(Neon.rCard),
+              borderRadius: radius,
               child: CustomPaint(
-                painter: StarsPainter(count: 28, seed: 3),
+                painter: TempleDoodlePainter(skylineOnly: true, opacity: 0.2),
                 child: Padding(
-                  padding: const EdgeInsets.all(18),
+                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 20),
                   child: Row(children: [
-                    Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: const RadialGradient(colors: [Color(0xFFFFE3A3), Cosmic.gold, Color(0xFFB9852E)]),
-                        boxShadow: [BoxShadow(color: Cosmic.gold.withValues(alpha: 0.45), blurRadius: 18)],
-                      ),
-                      child: const Icon(Icons.auto_awesome_rounded, color: Color(0xFF2A1B00), size: 26),
+                    // Guruji's mandala, still on Home.
+                    SizedBox(
+                      width: 84,
+                      height: 84,
+                      child: CustomPaint(painter: GuruOrbPainter(turn: 0, energy: 0, talking: false)),
                     ),
-                    const SizedBox(width: 14),
+                    const SizedBox(width: 12),
                     Expanded(
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text('Jyotish', style: Cosmic.title(NeonType.headline)),
+                      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text('VEDIC ASTROLOGY',
+                            style: NeonType.manrope(10.5, FontWeight.w800)
+                                .copyWith(color: Mandir.gold, letterSpacing: 1.6)),
                         const SizedBox(height: 3),
-                        Text('Your Vedic horoscope — kundli, dasha and readings. Just tell me when and where you were born.',
-                            style: Cosmic.label(NeonType.footnote)),
+                        Text('Jyotish', style: Cosmic.title(NeonType.title3)),
+                        const SizedBox(height: 4),
+                        Text("Talk to Guruji — today's bhavishya, your kundli and dasha.",
+                            style: Cosmic.label(NeonType.footnote).copyWith(color: Mandir.sandal)),
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            gradient: const LinearGradient(colors: [Mandir.gold, Mandir.saffron]),
+                          ),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            const Icon(Icons.mic_rounded, size: 16, color: Color(0xFF3A1206)),
+                            const SizedBox(width: 6),
+                            Text('Talk to Guruji',
+                                style: NeonType.manrope(12.5, FontWeight.w800)
+                                    .copyWith(color: const Color(0xFF3A1206))),
+                          ]),
+                        ),
                       ]),
                     ),
-                    const SizedBox(width: 6),
-                    const Icon(Icons.chevron_right_rounded, color: Cosmic.gold),
+                    const Icon(Icons.chevron_right_rounded, color: Mandir.gold),
                   ]),
                 ),
               ),
