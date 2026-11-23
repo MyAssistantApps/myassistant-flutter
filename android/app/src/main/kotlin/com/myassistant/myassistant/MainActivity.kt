@@ -360,8 +360,11 @@ class MainActivity : FlutterFragmentActivity() {
                 when (call.method) {
                     "install" -> ApkInstaller.install(
                         applicationContext,
-                        call.argument<String>("path") ?: ""
+                        call.argument<String>("path") ?: "",
+                        call.argument<Boolean>("silent") ?: false
                     ) { ok -> result.success(ok) }
+                    // Quiet updates: Android 12+ and not refused for this build.
+                    "silentPossible" -> result.success(ApkInstaller.silentPossible(applicationContext))
                     // Is the connection one the user pays for by the
                     // megabyte? A ~200 MB update must not start itself on
                     // mobile data. Unknown state is treated as metered:

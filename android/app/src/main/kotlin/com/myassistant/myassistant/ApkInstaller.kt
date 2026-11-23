@@ -20,15 +20,42 @@ import java.io.File
 object ApkInstaller {
 
     private const val TAG = "HariUpdater"
+    private const val PREFS = "hari_updater"
+    private const val BLOCKED = "silent_blocked_build"
+
+    /** The running build number (versionCode). */
+    @Suppress("DEPRECATION")
+    fun currentBuild(context: Context): Long = try {
+        val pi = context.packageManager.getPackageInfo(context.packageName, 0)
+        if (Build.VERSION.SDK_INT >= 28) pi.longVersionCode else pi.versionCode.toLong()
+    } catch (_: Exception) {
+        -1L
+    }
+
+    /** QUIET UPDATES (owner, 2026-11-23): can this phone take an update with
+     *  no prompt at all? Android 12+, unless a quiet attempt from this very
+     *  build was turned into a confirmation request — then this build uses
+     *  the visible update instead, and the next build tries quietly again. */
+    fun silentPossible(context: Context): Boolean {
+        if (Build.VERSION.SDK_INT < 31) return false
+        val blocked = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getLong(BLOCKED, -2L)
+        return blocked != currentBuild(context)
+    }
+
+    fun markSilentBlocked(context: Context) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putLong(BLOCKED, currentBuild(context)).apply()
+    }
 
     /** Runs the whole session dance on a WORKER thread — the 185 MB copy
      *  on the platform (UI) thread froze the channel call, the write never
      *  finished, and every attempt left an orphaned uncommitted session.
      *  Calls [done] on the main thread with whether the commit was issued. */
-    fun install(context: Context, apkPath: String, done: (Boolean) -> Unit) {
+    fun install(context: Context, apkPath: String, silent: Boolean, done: (Boolean) -> Unit) {
         Thread {
             val ok = try {
-                doInstall(context, apkPath)
+                doInstall(context, apkPath, silent)
             } catch (e: Exception) {
                 android.util.Log.e(TAG, "install failed", e)
                 false
@@ -37,7 +64,7 @@ object ApkInstaller {
         }.start()
     }
 
-    private fun doInstall(context: Context, apkPath: String): Boolean {
+    private fun doInstall(context: Context, apkPath: String, silent: Boolean): Boolean {
         val file = File(apkPath)
         if (!file.exists()) {
             android.util.Log.e(TAG, "apk missing: $apkPath")
@@ -77,6 +104,7 @@ object ApkInstaller {
                 else PendingIntent.FLAG_UPDATE_CURRENT
             val intent = Intent(context, InstallResultReceiver::class.java)
                 .setAction("com.myassistant.myassistant.INSTALL_RESULT")
+                .putExtra("silent", silent)
             val pending = PendingIntent.getBroadcast(context, sessionId, intent, flags)
             session.commit(pending.intentSender)
             android.util.Log.i(TAG, "session $sessionId committed")
@@ -97,6 +125,17 @@ class InstallResultReceiver : BroadcastReceiver() {
         )
         when (status) {
             PackageInstaller.STATUS_PENDING_USER_ACTION -> {
+                // A QUIET update that Android wants confirmed: never pop a
+                // prompt up unasked (the app is in the background anyway).
+                // Drop the session; this build offers the visible update.
+                if (intent.getBooleanExtra("silent", false)) {
+                    ApkInstaller.markSilentBlocked(context)
+                    val id = intent.getIntExtra(PackageInstaller.EXTRA_SESSION_ID, -1)
+                    try {
+                        if (id != -1) context.packageManager.packageInstaller.abandonSession(id)
+                    } catch (_: Exception) {}
+                    return
+                }
                 @Suppress("DEPRECATION")
                 val confirm: Intent? =
                     if (Build.VERSION.SDK_INT >= 33)

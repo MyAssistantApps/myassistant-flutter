@@ -3329,7 +3329,8 @@ class AssistantEngine extends ChangeNotifier {
                 '[SYSTEM] In-app updates are switched off on this phone; '
                 'nothing is being checked or installed. Say so plainly.');
           } else if (ctx != null) {
-            unawaited(AppUpdateService.instance.check(ctx, force: true));
+            unawaited(AppUpdateService.instance
+                .check(ctx, force: true, userAsked: true));
           } else {
             // NEVER LET "opening the installer" STAND WHEN NOTHING OPENED.
             // The tool has already spoken by the time this runs, so the

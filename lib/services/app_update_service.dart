@@ -23,19 +23,39 @@ import 'api_service.dart';
 /// ─────────────────────────────────────────────────────────────────────────
 ///  SELF-UPDATE — the app is its own distribution channel while it is
 ///  sideloaded. On launch it asks the backend for the newest published
-///  build; if that is newer than what's running, a sheet offers the
-///  update, downloads the APK with progress, verifies its sha256, and
-///  hands it to Android's installer. No more forwarding APK files.
+///  build; if that is newer than what's running, it downloads the APK,
+///  verifies its sha256, and hands it to Android's installer.
+///
+///  QUIETLY (owner, 2026-11-23: "update silently without the user
+///  knowing"): an automatic check downloads on Wi-Fi with nothing on
+///  screen and installs once the app has been in the background for
+///  [_quietFor]; Android 12+ replaces the app with no prompt and it opens
+///  as the new version next time. The sheet below is only for a phone that
+///  cannot update quietly (Android 11 or older, or one where Android asked
+///  for a confirmation), a forced update, or "update the app" by voice.
 ///
 ///  Server side: POST /admin/apk publishes; GET /config advertises
 ///  latestVersionCode + apkUrl + apkSha256; GET /app/latest.apk serves.
 /// ─────────────────────────────────────────────────────────────────────────
 class AppUpdateService {
-  /// SELF-UPDATE IS OFF (owner, 2026-11-03: "turn off auto update features
-  /// completely"). No check, no sheet, no download, no install — at
-  /// launch, on resume, from a push or when asked by voice. Builds are
-  /// installed separately. Flip to true to bring the whole flow back.
-  static const bool enabled = false;
+  /// SELF-UPDATE IS ON, QUIETLY (owner, 2026-11-23). It was off from
+  /// 2026-11-03 ("turn off auto update features completely"); false turns
+  /// the whole flow off again — no check, download or install anywhere.
+  static const bool enabled = true;
+
+  /// How an available update is taken. The sheet whenever the user asked,
+  /// the update is forced, or this phone cannot install without a prompt;
+  /// otherwise quietly — but never a ~70 MB download on mobile data.
+  @visibleForTesting
+  static UpdatePath choosePath({
+    required bool userAsked,
+    required bool forced,
+    required bool silentPossible,
+    required bool metered,
+  }) {
+    if (userAsked || forced || !silentPossible) return UpdatePath.sheet;
+    return metered ? UpdatePath.waitForWifi : UpdatePath.quiet;
+  }
 
   /// Set per check(): the sheet starts the update on its own. Only ever
   /// true on a connection the user is not paying for by the megabyte —
@@ -81,7 +101,13 @@ class AppUpdateService {
     final t = now ?? DateTime.now();
     if (s == AppLifecycleState.paused || s == AppLifecycleState.hidden) {
       _backgroundedAt ??= t;
+      // A quietly downloaded build installs once the app has been left.
+      if (_readyApk != null && _installTimer == null) _scheduleInstall();
     } else if (s == AppLifecycleState.resumed) {
+      // Back in use before the quiet wait ran out: never replace the app
+      // under the user. The next time it is left, the wait starts again.
+      _installTimer?.cancel();
+      _installTimer = null;
       final away = _backgroundedAt;
       _backgroundedAt = null;
       if (away != null && t.difference(away) >= _awayResets && _snoozes.isNotEmpty) {
@@ -90,6 +116,15 @@ class AppUpdateService {
         AppLog.add('update', 'opened again: "Later" forgotten');
       }
     }
+  }
+
+  /// Test seam: a quietly downloaded build, ready to install.
+  @visibleForTesting
+  void debugQuietReady(File apk, int versionCode) {
+    _readyApk = apk;
+    _readyVersion = versionCode;
+    _quietTried.remove(versionCode);
+    _watchLifecycle();
   }
 
   /// Test seam: a lifecycle change at [now].
@@ -113,6 +148,83 @@ class AppUpdateService {
   Future<bool> debugSnoozed(int versionCode) => _snoozed(versionCode);
 
   Future<bool> _snoozed(int versionCode) async => _snoozes.containsKey(versionCode);
+
+  // ── QUIET UPDATES ───────────────────────────────────────────────────
+  /// The app must have been in the background this long before a quietly
+  /// downloaded build replaces it: a camera, a permission page or a quick
+  /// switch to another app is not "left".
+  static const _quietFor = Duration(minutes: 3);
+  bool _quietRunning = false;
+  File? _readyApk;
+  int _readyVersion = 0;
+  Timer? _installTimer;
+
+  /// One quiet install attempt per build per run: a failure is retried
+  /// after the next launch, never in a loop while the app sits in the
+  /// background.
+  final Set<int> _quietTried = {};
+
+  /// Can this phone install an update with no prompt at all? Android 12+,
+  /// unless a quiet attempt from this very build turned into a
+  /// confirmation request (ApkInstaller records that).
+  Future<bool> _silentPossible() async {
+    try {
+      return await const MethodChannel('hari/updater')
+              .invokeMethod<bool>('silentPossible') ??
+          false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _quietUpdate(RemoteConfig cfg) async {
+    final v = cfg.latestVersionCode;
+    if (_quietRunning || _quietTried.contains(v) || _readyVersion == v) return;
+    _quietRunning = true;
+    try {
+      final file = await _download(cfg, onProgress: (_) {});
+      _readyApk = file;
+      _readyVersion = v;
+      AppLog.add('update',
+          'build $v downloaded quietly; it installs once the app is left');
+      _watchLifecycle();
+      final state = WidgetsBinding.instance.lifecycleState;
+      if (state != null && state != AppLifecycleState.resumed) {
+        _backgroundedAt ??= DateTime.now();
+        _scheduleInstall();
+      }
+    } catch (e) {
+      AppLog.add('update', 'quiet download of build $v failed: $e');
+    } finally {
+      _quietRunning = false;
+    }
+  }
+
+  void _scheduleInstall() {
+    _installTimer?.cancel();
+    _installTimer = Timer(_quietFor, () {
+      _installTimer = null;
+      unawaited(_installQuietly());
+    });
+  }
+
+  Future<void> _installQuietly() async {
+    final file = _readyApk;
+    final v = _readyVersion;
+    if (file == null || _quietTried.contains(v)) return;
+    if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
+      return; // in use again — wait for the next time it is left
+    }
+    _quietTried.add(v);
+    _readyApk = null;
+    AppLog.add('update', 'installing build $v quietly');
+    try {
+      await const MethodChannel('hari/updater')
+          .invokeMethod<bool>('install', {'path': file.path, 'silent': true});
+    } catch (e) {
+      AppLog.add('update', 'quiet install of build $v failed: $e');
+    }
+  }
 
   /// True when the active connection is metered (mobile data, a metered
   /// hotspot) — or when we cannot tell. Guessing "unmetered" spends the
@@ -163,8 +275,13 @@ class AppUpdateService {
   /// the foreground — a phone that keeps the app in memory for days used
   /// to never see new releases. Throttled to once per 30 minutes; silent
   /// on any failure — a check must never get in the way of using the app.
-  Future<bool> check(BuildContext context, {bool force = false}) async {
-    if (!enabled) return false;
+  ///
+  /// [force] skips the throttle (a push, or the user asking). [userAsked]
+  /// means the user asked for the update by voice: that one always shows
+  /// the sheet, so they can see it happen.
+  Future<bool> check(BuildContext context,
+      {bool force = false, bool userAsked = false}) async {
+    if (!enabled || !Platform.isAndroid) return false;
     final now = DateTime.now().millisecondsSinceEpoch;
     if (_sheetShowing) return false;
     // Short throttle: back-to-back releases used to hide behind a 30-min
@@ -208,6 +325,23 @@ class AppUpdateService {
       //
       // Snoozing means "stop nagging me", not "never let me ask again".
       final forced = cfg.forceUpdateBelow > current;
+      final metered = await _metered();
+      switch (choosePath(
+        userAsked: userAsked,
+        forced: forced,
+        silentPossible: await _silentPossible(),
+        metered: metered,
+      )) {
+        case UpdatePath.waitForWifi:
+          AppLog.add('update',
+              'build ${cfg.latestVersionCode} waits for Wi-Fi (quiet update)');
+          return false;
+        case UpdatePath.quiet:
+          unawaited(_quietUpdate(cfg));
+          return false;
+        case UpdatePath.sheet:
+          break;
+      }
       if (force) {
         await _unsnooze(cfg.latestVersionCode);
       } else if (!forced && await _snoozed(cfg.latestVersionCode)) {
@@ -219,7 +353,7 @@ class AppUpdateService {
       // data it waits for a tap and says how big the download is.
       // Asked BEFORE the last mounted check so the sheet is never built
       // against a context that went away while we were asking.
-      final unmetered = !await _metered();
+      final unmetered = !metered;
       if (!context.mounted) return false;
 
       _sheetShowing = true;
@@ -264,9 +398,99 @@ class AppUpdateService {
     required void Function(double) onProgress,
     void Function()? onInstalling,
   }) async {
+    final file = await _download(cfg, onProgress: onProgress);
+    if (_cancelled) {
+      throw const _UpdateCancelled();
+    }
+    AppLog.add('update',
+        'downloaded build ${cfg.latestVersionCode}, opening installer');
+    // Android gates "install unknown apps" PER APP, once. Ask up front:
+    // this opens the exact settings page, waits for the user to come
+    // back, and then continues into the installer — instead of the
+    // installer bouncing them to Settings and losing the flow.
+    // Android 8+ gates installs per-app; BELOW API 26 that permission
+    // does not exist (unknown-sources is one global toggle) and the
+    // permission plugin reports it permanently denied — the old check
+    // looped "allow … then Try again" forever on Android 7 phones.
+    final sdk = (await DeviceInfoPlugin().androidInfo).version.sdkInt;
+    if (sdk >= 26 && !await Permission.requestInstallPackages.isGranted) {
+      AppLog.add('update', 'asking for install permission');
+      final granted = await Permission.requestInstallPackages.request();
+      if (!granted.isGranted) {
+        throw Exception(
+            'allow "Install unknown apps" for this app on the settings '
+            'page, then return and tap Retry');
+      }
+    }
+    // HANDS-FREE INSTALL. A PackageInstaller session with
+    // USER_ACTION_NOT_REQUIRED updates silently on Android 12+ once this
+    // app is its own installer of record — which the first such install
+    // establishes (that one shows the system's single confirmation).
+    // From then on, updates apply themselves; the app simply restarts
+    // as the new version.
+    AppLog.add('update', 'committing install session');
+    _installStarted = true;
+    onInstalling?.call();
+    final started = await const MethodChannel('hari/updater')
+        .invokeMethod<bool>('install', {'path': file.path, 'silent': false});
+    if (started != true) {
+      // Session refused (odd OEM) — fall back to the tap-through installer.
+      final result = await OpenFilex.open(
+        file.path,
+        type: 'application/vnd.android.package-archive',
+      );
+      if (result.type != ResultType.done) {
+        throw Exception('installer: ${result.message}');
+      }
+    }
+  }
+
+  /// One download per build at a time: the quiet path and the sheet share
+  /// it, so two never write the same file.
+  Future<File>? _inflight;
+  int _inflightVersion = 0;
+
+  /// The verified APK for [cfg]: the file already in the cache when it is
+  /// intact (downloaded quietly, or before the app was closed), otherwise
+  /// streamed with progress 0..1 and checked against apkSha256.
+  Future<File> _download(RemoteConfig cfg,
+      {required void Function(double) onProgress}) {
+    final running = _inflight;
+    if (running != null && _inflightVersion == cfg.latestVersionCode) {
+      return running;
+    }
+    _inflightVersion = cfg.latestVersionCode;
+    final f = _fetch(cfg, onProgress: onProgress);
+    _inflight = f;
+    unawaited(f.then<void>((_) {}, onError: (_) {}).whenComplete(() {
+      if (identical(_inflight, f)) _inflight = null;
+    }));
+    return f;
+  }
+
+  Future<File> _fetch(RemoteConfig cfg,
+      {required void Function(double) onProgress}) async {
     final dir = await getTemporaryDirectory();
     final file = File('${dir.path}/update-${cfg.latestVersionCode}.apk');
     await _sweepOldApks(keepVersionCode: cfg.latestVersionCode);
+    // REQUIRED, not optional: with no published checksum the file would
+    // be installed unverified. The server computes apkSha256 on every
+    // publish (routes/appUpdate.js), so its absence means something is
+    // wrong — and nothing is downloaded for it.
+    final want = cfg.apkSha256?.trim().toLowerCase() ?? '';
+    if (want.isEmpty) {
+      throw Exception(
+          'no checksum was published for this update, so it was not installed');
+    }
+    if (await file.exists()) {
+      try {
+        if ((await sha256.bind(file.openRead()).first).toString() == want) {
+          onProgress(1);
+          return file;
+        }
+      } catch (_) {}
+      await _safeDelete(file);
+    }
     _cancelled = false;
     final client = http.Client();
     _client = client;
@@ -293,63 +517,16 @@ class AppUpdateService {
       await sink.close();
       hasher.close();
       final hash = digest.events.single.toString();
-      // REQUIRED, not optional. An update is an APK the user is about to
-      // install; with no published checksum the file was installed
-      // unverified. The server computes apkSha256 on every publish
-      // (routes/appUpdate.js), so its absence means something is wrong.
-      final want = cfg.apkSha256?.trim().toLowerCase() ?? '';
-      if (want.isEmpty || hash.toLowerCase() != want) {
+      if (hash.toLowerCase() != want) {
         await _safeDelete(file);
-        throw Exception(want.isEmpty
-            ? 'no checksum was published for this update, so it was not installed'
-            : 'the download was corrupted (checksum mismatch)');
+        throw Exception('the download was corrupted (checksum mismatch)');
       }
       if (_cancelled) {
         await _safeDelete(file);
         throw const _UpdateCancelled();
       }
       onProgress(1);
-      AppLog.add('update',
-          'downloaded build ${cfg.latestVersionCode}, opening installer');
-      // Android gates "install unknown apps" PER APP, once. Ask up front:
-      // this opens the exact settings page, waits for the user to come
-      // back, and then continues into the installer — instead of the
-      // installer bouncing them to Settings and losing the flow.
-      // Android 8+ gates installs per-app; BELOW API 26 that permission
-      // does not exist (unknown-sources is one global toggle) and the
-      // permission plugin reports it permanently denied — the old check
-      // looped "allow … then Try again" forever on Android 7 phones.
-      final sdk = (await DeviceInfoPlugin().androidInfo).version.sdkInt;
-      if (sdk >= 26 && !await Permission.requestInstallPackages.isGranted) {
-        AppLog.add('update', 'asking for install permission');
-        final granted = await Permission.requestInstallPackages.request();
-        if (!granted.isGranted) {
-          throw Exception(
-              'allow "Install unknown apps" for this app on the settings '
-              'page, then return and tap Retry');
-        }
-      }
-      // HANDS-FREE INSTALL. A PackageInstaller session with
-      // USER_ACTION_NOT_REQUIRED updates silently on Android 12+ once this
-      // app is its own installer of record — which the first such install
-      // establishes (that one shows the system's single confirmation).
-      // From then on, updates apply themselves; the app simply restarts
-      // as the new version.
-      AppLog.add('update', 'committing install session');
-      _installStarted = true;
-      onInstalling?.call();
-      final started = await const MethodChannel('hari/updater')
-          .invokeMethod<bool>('install', {'path': file.path});
-      if (started != true) {
-        // Session refused (odd OEM) — fall back to the tap-through installer.
-        final result = await OpenFilex.open(
-          file.path,
-          type: 'application/vnd.android.package-archive',
-        );
-        if (result.type != ResultType.done) {
-          throw Exception('installer: ${result.message}');
-        }
-      }
+      return file;
     } finally {
       client.close();
       if (identical(_client, client)) _client = null;
@@ -626,4 +803,16 @@ class _UpdateLifecycle with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) => service._onLifecycle(state);
+}
+
+/// How an available update is taken (AppUpdateService.choosePath).
+enum UpdatePath {
+  /// The "Update available" sheet: download with progress, then install.
+  sheet,
+
+  /// Downloaded with nothing on screen; installed once the app is left.
+  quiet,
+
+  /// Quiet, but on mobile data: nothing until the phone is on Wi-Fi.
+  waitForWifi,
 }
