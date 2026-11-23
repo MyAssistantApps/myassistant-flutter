@@ -8,6 +8,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myassistant/ai/listen.dart';
+import 'package:myassistant/ai/local_tools.dart';
 import 'package:myassistant/features/jyotish/jyotish_card.dart';
 import 'package:myassistant/features/jyotish/jyotish_guru.dart';
 import 'package:myassistant/features/jyotish/jyotish_models.dart';
@@ -17,6 +18,7 @@ import 'package:myassistant/features/jyotish/jyotish_service.dart';
 import 'package:myassistant/features/jyotish/jyotish_theme.dart';
 import 'package:myassistant/features/jyotish/jyotish_voice.dart';
 import 'package:myassistant/features/jyotish/kundli_chart.dart';
+import 'package:myassistant/features/jyotish/today_horoscope.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Map<String, dynamic> _fixture() =>
@@ -197,7 +199,9 @@ void main() {
 
     testWidgets('the Home card opens the horoscope; its camera uploads one; it has a mic', (t) async {
       Widget? opened;
-      await t.pumpWidget(host(Scaffold(body: JyotishCard(onOpen: (p) => opened = p))));
+      TodayHoroscope.sign.value = null;
+      await t.pumpWidget(host(Scaffold(body: JyotishCard(load: false, onOpen: (p) => opened = p))));
+      expect(find.text("TODAY'S HOROSCOPE"), findsOneWidget);
       expect(find.text('Jyotish'), findsOneWidget);
       await t.tap(find.text('Jyotish'));
       expect(opened, isA<JyotishScreen>());
@@ -324,6 +328,81 @@ void main() {
       expect(find.text('Get my reading'), findsOneWidget);
       expect(find.text('For entertainment and self-reflection only.'), findsOneWidget);
       expect(t.takeException(), isNull);
+    });
+    testWidgets("Today's Horoscope: the saved profile's rashi, its reading, colour and number", (t) async {
+      final sign = TodayHoroscope.byName('Gemini')!;
+      TodayHoroscope.sign.value = sign;
+      addTearDown(() => TodayHoroscope.sign.value = null);
+      await t.pumpWidget(host(const Scaffold(body: SingleChildScrollView(child: JyotishCard(load: false)))));
+      final r = TodayHoroscope.today(sign);
+      expect(find.text('Gemini'), findsOneWidget);
+      expect(find.text(r.outlook), findsOneWidget);
+      expect(find.text(r.luckyColour), findsOneWidget);
+      expect(find.text('No. ${r.luckyNumber}'), findsOneWidget);
+      expect(find.bySemanticsLabel('Upload your horoscope'), findsOneWidget);
+      expect(t.takeException(), isNull);
+      await t.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('the form mic: Guruji fills the birth details as they are spoken, then casts', (t) async {
+      t.view.physicalSize = const Size(1080, 2400);
+      t.view.devicePixelRatio = 3;
+      addTearDown(t.view.reset);
+      final tools = LocalToolRegistry();
+      Birth? cast;
+      await t.pumpWidget(host(Scaffold(
+        body: JyotishOnboarding(
+          service: _FakeService(),
+          listener: JyotishListener(_QuietRecognizer()),
+          tools: tools,
+          orb: const SizedBox(key: Key('orb')),
+          onCast: (b, {required save}) async {
+            cast = b;
+            return true;
+          },
+        ),
+      )));
+      await t.pumpAndSettle();
+      expect(find.byKey(const Key('orb')), findsOneWidget);
+      expect(tools.available().map((x) => x.name), containsAll([fillBirthTool, castBirthTool]));
+
+      Future<LocalToolResult> run(String name, Map<String, Object?> args) async {
+        late LocalToolResult r;
+        await t.runAsync(() async => r = await tools.run(LocalToolCall(name: name, args: args, userText: '')));
+        await t.pumpAndSettle();
+        return r;
+      }
+
+      // Too early to cast: says what is missing.
+      var r = await run(castBirthTool, const {});
+      expect(r.ok, isFalse);
+      expect(cast, isNull);
+
+      r = await run(fillBirthTool, const {'name': 'Asha', 'date': '2004-03-14'});
+      expect(r.result['changed'], ['name', 'date']);
+      expect(r.result['missing'], contains('place of birth'));
+      expect(find.text('14 Mar 2004'), findsOneWidget);
+
+      r = await run(fillBirthTool, const {'time': '06:30', 'place': 'Udupi'});
+      expect(r.result['missing'], isEmpty);
+      expect(find.text('6:30 AM'), findsOneWidget);
+      expect(find.text('Udupi, Karnataka, India'), findsWidgets);
+
+      // A bad date is refused, not guessed.
+      r = await run(fillBirthTool, const {'date': '2999-01-01'});
+      expect(r.result['problems'], isNotEmpty);
+      expect(find.text('14 Mar 2004'), findsOneWidget);
+
+      r = await run(castBirthTool, const {});
+      expect(r.ok, isTrue);
+      expect(cast?.name, 'Asha');
+      expect(cast?.date, '2004-03-14');
+      expect(cast?.time, '06:30');
+      expect(cast?.place, 'Udupi, Karnataka, India');
+
+      // The tools leave with the form.
+      await t.pumpWidget(const SizedBox());
+      expect(tools.isEmpty, isTrue);
     });
   });
 }

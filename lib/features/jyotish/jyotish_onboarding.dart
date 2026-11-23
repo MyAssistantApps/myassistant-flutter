@@ -1,13 +1,26 @@
 // JYOTISH ONBOARDING (2026-11-22) — tell the AI when and where you were
 // born, in your own words (typed or spoken); it fills the form below, asks
 // for what is missing, and you confirm. The form also works on its own.
+//
+// THE MIC IS GURUJI (2026-11-23): a tap starts the assistant's voice
+// conversation as Guruji (guruFormRole), who asks for the details one at a
+// time and fills the form as they are spoken — two local tools lent to the
+// brain while the form is open, the same way as the booking forms
+// (voice_booking.dart). Typing still goes through /jyotish/extract.
 
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import '../../ai/local_tools.dart';
+import '../../ai/types.dart' show AiToolSpec;
+import '../../core/log.dart';
 import '../../design/neon_tokens.dart';
+import '../../widgets/role_mic_orb.dart';
+import '../assistant/state/assistant_engine.dart';
+import 'jyotish_guru.dart';
 import 'jyotish_models.dart';
 import 'jyotish_service.dart';
 import 'jyotish_theme.dart';
@@ -23,6 +36,8 @@ class JyotishOnboarding extends StatefulWidget {
     required this.onCast,
     this.initial,
     this.extracted,
+    this.tools,
+    this.orb,
   });
 
   final JyotishService service;
@@ -33,6 +48,13 @@ class JyotishOnboarding extends StatefulWidget {
   /// What an uploaded horoscope was read as (2026-11-23): the form starts
   /// filled with it, for the person to check.
   final Extracted? extracted;
+
+  /// Where the voice tools are lent (the main brain's by default; tests
+  /// pass their own).
+  final LocalToolRegistry? tools;
+
+  /// For tests: what stands in for the Guruji mic.
+  final Widget? orb;
 
   @override
   State<JyotishOnboarding> createState() => _JyotishOnboardingState();
@@ -46,7 +68,7 @@ class _Msg {
 
 class _JyotishOnboardingState extends State<JyotishOnboarding> {
   static const _greeting =
-      'Namaste! Tell me when and where you were born — for example, "14 March 2004, around 6:30 in the morning, in Udupi". You can type or tap the mic.';
+      'Namaste! Tell me when and where you were born — for example, "14 March 2004, around 6:30 in the morning, in Udupi". You can type, or tap the mic and I will fill in the form as you speak.';
 
   final _messages = <_Msg>[const _Msg('assistant', _greeting)];
   final _input = TextEditingController();
@@ -54,6 +76,8 @@ class _JyotishOnboardingState extends State<JyotishOnboarding> {
   final _place = TextEditingController();
   final _scroll = ScrollController();
   final _composerKey = GlobalKey();
+  final _formKey = GlobalKey();
+  final _removers = <void Function()>[];
 
   DateTime? _date;
   TimeOfDay? _time;
@@ -68,11 +92,13 @@ class _JyotishOnboardingState extends State<JyotishOnboarding> {
   bool _casting = false;
   String? _placeError;
   String? _formError;
-  String _micLang = 'en';
+
+  LocalToolRegistry get _tools => widget.tools ?? AssistantEngine.instance.brain.localTools;
 
   @override
   void initState() {
     super.initState();
+    _lendVoiceTools();
     final b = widget.initial;
     if (b != null) {
       _name.text = b.name ?? '';
@@ -119,6 +145,9 @@ class _JyotishOnboardingState extends State<JyotishOnboarding> {
 
   @override
   void dispose() {
+    for (final r in _removers) {
+      r();
+    }
     _input.dispose();
     _name.dispose();
     _place.dispose();
@@ -174,22 +203,153 @@ class _JyotishOnboardingState extends State<JyotishOnboarding> {
     _scrollDown();
   }
 
-  Future<void> _mic() async {
-    final l = widget.listener;
-    if (l.listening.value) {
-      await l.stop();
-      return;
+  // ── Guruji fills the form (2026-11-23) ────────────────────────────────
+
+  void _lendVoiceTools() {
+    _removers
+      ..add(_tools.register(LocalTool(
+        spec: const AiToolSpec(
+          name: fillBirthTool,
+          description: 'Fill in the birth details form on screen. Pass ONLY what the owner said. '
+              'Returns what changed, the whole form, what is still missing, and the matching '
+              'places when the place needs choosing.',
+          parameters: {
+            'type': 'object',
+            'properties': {
+              'name': {'type': 'string', 'description': 'The person\'s name.'},
+              'date': {'type': 'string', 'description': 'Date of birth, YYYY-MM-DD.'},
+              'time': {'type': 'string', 'description': 'Time of birth, 24-hour HH:MM.'},
+              'time_unknown': {'type': 'boolean', 'description': 'True when they do not know the birth time.'},
+              'place': {
+                'type': 'string',
+                'description': 'Place of birth: town and state, or one of the places the last call listed, exactly.'
+              },
+            },
+          },
+        ),
+        available: () => mounted,
+        handler: _voiceFill,
+      )))
+      ..add(_tools.register(LocalTool(
+        spec: const AiToolSpec(
+          name: castBirthTool,
+          description: 'Cast the chart from the birth details form as it is now (and save the profile '
+              'when it has a name). Only after the owner said yes.',
+          parameters: {'type': 'object', 'properties': {}},
+        ),
+        available: () => mounted,
+        handler: (_) => _voiceCast(),
+      )));
+  }
+
+  /// What the form still needs before the chart can be cast.
+  List<String> _missing() => [
+        if (_date == null) 'date of birth',
+        if (_time == null && !_timeUnknown) 'time of birth (or that it is unknown)',
+        if (_picked == null) _places.length > 1 ? 'which of the listed places' : 'place of birth',
+      ];
+
+  Map<String, Object?> _formState() => {
+        'name': _name.text.trim(),
+        'date': _date == null ? null : ymd(_date!),
+        'time': _timeUnknown
+            ? 'unknown'
+            : _time == null
+                ? null
+                : '${_time!.hour.toString().padLeft(2, '0')}:${_time!.minute.toString().padLeft(2, '0')}',
+        'place': _picked?.name,
+      };
+
+  Future<LocalToolResult> _voiceFill(LocalToolCall call) async {
+    if (!mounted) return const LocalToolResult.failed('The form is closed.');
+    String? arg(String k) {
+      final v = call.args[k]?.toString().trim();
+      return v == null || v.isEmpty || v == 'null' ? null : v;
     }
-    final ok = await l.listen(kReadingLanguages[_micLang]!.$2, (words, fin) {
-      if (!mounted) return;
-      _input.text = words;
-      _input.selection = TextSelection.collapsed(offset: words.length);
-      if (fin && words.trim().isNotEmpty) unawaited(_send(words));
+
+    final changed = <String>[];
+    final problems = <String>[];
+    setState(() {
+      _formError = null;
+      if (arg('name') case final n?) {
+        _name.text = n;
+        changed.add('name');
+      }
+      if (arg('date') case final d?) {
+        final day = DateTime.tryParse(d);
+        if (day == null || day.isAfter(DateTime.now())) {
+          problems.add('"$d" is not a date of birth; use YYYY-MM-DD, not in the future.');
+        } else {
+          _date = DateTime(day.year, day.month, day.day);
+          changed.add('date');
+        }
+      }
+      if (call.args['time_unknown'] == true) {
+        _time = null;
+        _timeUnknown = true;
+        changed.add('time unknown');
+      } else if (arg('time') case final t?) {
+        final tm = _parseTime(t);
+        if (tm == null || tm.hour > 23 || tm.minute > 59) {
+          problems.add('"$t" is not a time; use 24-hour HH:MM.');
+        } else {
+          _time = tm;
+          _timeUnknown = false;
+          changed.add('time');
+        }
+      }
     });
-    if (!ok && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Voice input is not available. Please allow the microphone or type instead.')));
+    if (arg('place') case final q?) {
+      final want = q.toLowerCase();
+      PlaceOption? hit;
+      for (final p in _places) {
+        if (p.name.toLowerCase() == want) hit = p;
+      }
+      if (hit != null) {
+        setState(() {
+          _picked = hit;
+          _place.text = hit!.name;
+          _placeError = null;
+        });
+      } else {
+        _place.text = q;
+        await _searchPlace();
+      }
+      if (!mounted) return const LocalToolResult.failed('The form is closed.');
+      if (_picked != null) changed.add('place');
+      if (_placeError != null) problems.add(_placeError!);
     }
+    AppLog.add('voicefill', 'jyotish ${changed.isEmpty ? '(no change)' : changed.join(', ')}');
+    if (changed.isNotEmpty) {
+      HapticFeedback.selectionClick();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final ctx = _formKey.currentContext;
+        if (ctx != null && ctx.mounted) {
+          Scrollable.ensureVisible(ctx, alignment: 0.1, duration: const Duration(milliseconds: 250));
+        }
+      });
+    }
+    final missing = _missing();
+    return LocalToolResult(result: {
+      'changed': changed,
+      'form': _formState(),
+      'missing': missing,
+      if (problems.isNotEmpty) 'problems': problems,
+      if (_picked == null && _places.length > 1) 'places': [for (final p in _places) p.name],
+      if (missing.isEmpty) 'next': 'Read the details back and ask whether to cast the chart.',
+    });
+  }
+
+  Future<LocalToolResult> _voiceCast() async {
+    if (!mounted) return const LocalToolResult.failed('The form is closed.');
+    final missing = _missing();
+    if (missing.isNotEmpty) {
+      return LocalToolResult(ok: false, error: 'Still missing: ${missing.join(', ')}.', result: {'missing': missing});
+    }
+    final saving = _save && _name.text.trim().isNotEmpty;
+    await _cast();
+    if (mounted && _formError != null) return LocalToolResult.failed(_formError!);
+    return LocalToolResult(result: {'cast': true, 'saved': saving});
   }
 
   Future<void> _searchPlace() async {
@@ -383,19 +543,6 @@ class _JyotishOnboardingState extends State<JyotishOnboarding> {
       );
 
   Widget _composer() => Row(key: _composerKey, children: [
-        PopupMenuButton<String>(
-          tooltip: 'Language for voice input',
-          initialValue: _micLang,
-          onSelected: (v) => setState(() => _micLang = v),
-          itemBuilder: (_) => [
-            for (final e in kReadingLanguages.entries)
-              PopupMenuItem(value: e.key, child: Text(e.value.$1)),
-          ],
-          child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: Text(kReadingLanguages[_micLang]!.$1.substring(0, 2), style: Cosmic.label()),
-          ),
-        ),
         Expanded(
           child: TextField(
             controller: _input,
@@ -411,24 +558,34 @@ class _JyotishOnboardingState extends State<JyotishOnboarding> {
             ),
           ),
         ),
-        const SizedBox(width: 4),
-        ValueListenableBuilder<bool>(
-          valueListenable: widget.listener.listening,
-          builder: (_, on, __) => IconButton(
-            tooltip: on ? 'Stop listening' : 'Speak your birth details',
-            onPressed: _mic,
-            icon: Icon(on ? Icons.stop_circle_rounded : Icons.mic_rounded, color: on ? Cosmic.rose : Cosmic.gold),
-          ),
-        ),
         IconButton(
           tooltip: 'Send',
           onPressed: _thinking ? null : _send,
           icon: const Icon(Icons.send_rounded, color: Cosmic.gold),
         ),
+        const SizedBox(width: 2),
+        // The mic: Guruji asks for the details and fills the form as they
+        // are spoken. The everyday assistant is back when the talk ends.
+        widget.orb ??
+            const RoleMicOrb(
+              role: guruFormRole,
+              tint: Cosmic.sky,
+              size: 44,
+              showLabel: false,
+              // The composer scrolls away as the form fills; that is not
+              // the talk ending (as on the Home card).
+              endOnDispose: false,
+              resetRoleWhenDone: true,
+              topic: 'your birth details',
+              openingNote: _formMicNote,
+            ),
       ]);
+
+  static String? _formMicNote() => jyotishFormMicNote;
 
   Widget _form() {
     return CosmicCard(
+      key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

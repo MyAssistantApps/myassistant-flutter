@@ -19,6 +19,7 @@ import 'jyotish_service.dart';
 import 'jyotish_theme.dart';
 import 'jyotish_voice.dart';
 import 'kundli_chart.dart';
+import 'today_horoscope.dart';
 
 class JyotishScreen extends StatefulWidget {
   const JyotishScreen({
@@ -67,6 +68,8 @@ class _JyotishScreenState extends State<JyotishScreen> {
   void dispose() {
     if (widget.speaker == null) _speaker.dispose();
     if (widget.listener == null) _listener.dispose();
+    // A chart cast, saved or deleted here changes Home's Today's Horoscope.
+    if (widget.service == const JyotishService()) unawaited(TodayHoroscope.load());
     super.dispose();
   }
 

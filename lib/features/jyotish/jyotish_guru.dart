@@ -39,3 +39,38 @@ const jyotishMicNote =
     "other questions; if none is saved, ask for my name, then my date of "
     "birth, place of birth and time of birth, one question at a time, and "
     "cast and save my chart with jyotish_chart.";
+
+// ── Filling the birth details form by voice (2026-11-23) ───────────────
+
+/// The form's tools, lent to the brain while the form is open
+/// (jyotish_onboarding.dart).
+const fillBirthTool = 'fill_birth_details';
+const castBirthTool = 'cast_birth_chart';
+
+/// Guruji on the birth details form: the same voice, but it fills the form
+/// on screen (local tools) instead of casting on the server, so the person
+/// sees each answer land and can correct it.
+const guruFormRole = AssistantRole(
+  'Guruji, filling in the birth details',
+  'You are a warm, wise Vedic astrologer helping the owner fill in the birth '
+      'details form on screen by voice. Ask one short question at a time: '
+      'their name, date of birth, time of birth (they may not know it) and '
+      'place of birth (town and state). As soon as they answer anything, call '
+      '$fillBirthTool with ONLY what they said: date as YYYY-MM-DD, time as '
+      '24-hour HH:MM ("around 6:30 in the morning" is 06:30), time_unknown '
+      'true when they do not know the time. It answers with the form and '
+      'what is still missing; if it lists several places, read them out and '
+      'ask which one, then call it again with that exact place. Confirm each '
+      'answer in a few words. When nothing is missing, read the details back '
+      'and ask whether to cast the chart; on yes, call $castBirthTool. '
+      'Never invent a detail they did not say. Reply in the language they '
+      'speak, in short sentences.',
+  voice: 'cedar',
+  voiceStyle: 'deep, calm and unhurried, like a wise elderly Indian guru, in gentle Indian English',
+);
+
+/// The form mic's first words.
+const jyotishFormMicNote =
+    "[SYSTEM] I tapped the mic on the Jyotish birth details form. As Guruji, "
+    "greet me with Namaste and ask for whatever the form is still missing, "
+    "one question at a time, filling it in with $fillBirthTool as I answer.";
