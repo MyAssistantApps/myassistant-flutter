@@ -89,8 +89,16 @@ OrbMood orbMoodFor(AssistantEngine e, {bool micPaused = false}) {
 class AssistantOrbButton extends StatefulWidget {
   final VoidCallback onTap;
   final VoidCallback onLongPress;
+
+  /// The floating navbar's mic (2026-11-22): a glowing pill inside the bar
+  /// instead of the round orb docked on it. Same states, same taps.
+  final bool pill;
+
+  /// The cradle mic (2026-11-22, Manish's mockup): at rest a dark circle with
+  /// a thin violet ring and a lavender mic, instead of the violet disc.
+  final bool ringed;
   const AssistantOrbButton(
-      {super.key, required this.onTap, required this.onLongPress});
+      {super.key, required this.onTap, required this.onLongPress, this.pill = false, this.ringed = false});
 
   @override
   State<AssistantOrbButton> createState() => _AssistantOrbButtonState();
@@ -159,6 +167,7 @@ class _AssistantOrbButtonState extends State<AssistantOrbButton>
     // violet thinking, magenta working, pink speaking, green done.
     final tone =
         orbMoodColor(orbMoodFor(engine, micPaused: engine.micPausedForTyping));
+    if (widget.pill) return _pillButton(active, tone);
     // The app's main control had no label for screen readers.
     return Semantics(
       button: true,
@@ -252,6 +261,32 @@ class _AssistantOrbButtonState extends State<AssistantOrbButton>
                                     color: Neon.textHi, size: 30),
                               ),
                             )
+                          : widget.ringed
+                          ? Container(
+                              key: const ValueKey('idle-ringed'),
+                              width: 70,
+                              height: 70,
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: const Color(0xFF0D0C14),
+                                border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+                                boxShadow: [
+                                  BoxShadow(color: Colors.black.withValues(alpha: 0.55), blurRadius: 14, offset: const Offset(0, 4)),
+                                ],
+                              ),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: const Color(0xFF16141F),
+                                  border: Border.all(color: const Color(0xFF8B5CF6), width: 1.6),
+                                  boxShadow: [
+                                    BoxShadow(color: const Color(0xFF8B5CF6).withValues(alpha: 0.35), blurRadius: 10),
+                                  ],
+                                ),
+                                child: const Icon(Icons.mic_rounded, color: Color(0xFFC4B5FD), size: 31),
+                              ),
+                            )
                           : Container(
                               key: const ValueKey('idle'),
                               width: 64,
@@ -283,6 +318,86 @@ class _AssistantOrbButtonState extends State<AssistantOrbButton>
                     ),
                   ],
                 ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// The navbar pill: a raised violet stadium with a white mic at rest;
+  /// during a session a lit rim in the state's colour around Stop, its glow
+  /// breathing with the halo instead of rings spreading past the bar.
+  Widget _pillButton(bool active, Color tone) {
+    const w = 84.0, h = 52.0;
+    final r = BorderRadius.circular(h / 2);
+    return Semantics(
+      button: true,
+      label: active ? 'Stop speaking to your assistant' : 'Speak to your assistant',
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        onLongPress: widget.onLongPress,
+        child: RepaintBoundary(
+          child: EnterOnce(
+            duration: Motion.short,
+            scaleFrom: 0.85,
+            child: PressScale(
+              child: AnimatedBuilder(
+                animation: _halo,
+                builder: (_, __) {
+                  final t = active ? (_still ? 0.5 : (0.5 - (_halo.value - 0.5).abs()) * 2) : 0.0;
+                  final glow = active ? tone : Neon.violet;
+                  return AnimatedSwitcher(
+                    duration: Motion.short,
+                    switchInCurve: Motion.easeEnter,
+                    switchOutCurve: Motion.easeFadeOut,
+                    child: active
+                        ? Container(
+                            key: const ValueKey('live'),
+                            width: w,
+                            height: h,
+                            padding: const EdgeInsets.all(2.2),
+                            decoration: BoxDecoration(
+                              borderRadius: r,
+                              gradient: LinearGradient(colors: [tone, Neon.violet, Neon.pink]),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: glow.withValues(alpha: 0.35 + 0.35 * t),
+                                  blurRadius: 14 + 12 * t,
+                                  spreadRadius: 1 + 3 * t,
+                                ),
+                              ],
+                            ),
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(borderRadius: r, color: Neon.surfaceHigh),
+                              child: Icon(Icons.stop_rounded, color: Neon.textHi, size: 28),
+                            ),
+                          )
+                        : Container(
+                            key: const ValueKey('idle'),
+                            width: w,
+                            height: h,
+                            decoration: BoxDecoration(
+                              borderRadius: r,
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Color.lerp(Neon.accentFill, Colors.white, 0.18)!,
+                                  Color.lerp(Neon.accentFill, Colors.black, 0.12)!,
+                                ],
+                              ),
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
+                              boxShadow: [
+                                BoxShadow(color: Neon.violet.withValues(alpha: 0.55), blurRadius: 18, spreadRadius: 1),
+                              ],
+                            ),
+                            child: const Icon(Icons.mic_rounded, color: Colors.white, size: 26),
+                          ),
+                  );
+                },
               ),
             ),
           ),

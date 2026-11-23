@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../design/neon_tokens.dart';
 import 'flight_search_screen.dart';
+import 'hotel_search_screen.dart';
 import 'price_compare_screen.dart';
 import 'price_models.dart';
 import 'price_service.dart';
@@ -48,10 +49,12 @@ class _PriceCompareSectionState extends State<PriceCompareSection> {
 
   void _open({PriceCategory category = PriceCategory.shopping, bool focus = false, bool paste = false}) {
     HapticFeedback.selectionClick();
-    // Flights have their own page: trip type, airports, dates, travellers.
-    widget.onOpen(category == PriceCategory.flights
-        ? const FlightSearchScreen()
-        : PriceCompareScreen(category: category, focus: focus, paste: paste));
+    // Flights and hotels have their own pages (dates, travellers, rooms…).
+    widget.onOpen(switch (category) {
+      PriceCategory.flights => const FlightSearchScreen(),
+      PriceCategory.hotels => const HotelSearchScreen(),
+      _ => PriceCompareScreen(category: category, focus: focus, paste: paste),
+    });
   }
 
   @override
@@ -95,6 +98,8 @@ class _PriceCompareSectionState extends State<PriceCompareSection> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Owner, 2026-11-14: products only — the hero, the Product
+              // Compare card and the alerts strip (as on hardening).
               PriceHeroBanner(onSearch: () => _open(focus: true), onPaste: () => _open(paste: true)),
               const SizedBox(height: 16),
               PriceCategoryShowcase(onTap: (c) => _open(category: c, focus: true)),

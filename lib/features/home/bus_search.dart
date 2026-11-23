@@ -7,6 +7,7 @@ import '../../design/motion.dart';
 import '../../design/neon_tokens.dart';
 import '../../design/neon_widgets.dart';
 import 'buses_screen.dart' show BusKind, BusKindText;
+import 'voice_booking.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  BUS SEARCH (owner, 2026-11-04): from, to and date for one kind of bus.
@@ -58,6 +59,70 @@ class _BusSearchScreenState extends State<BusSearchScreen> {
   String _to = 'Chennai';
   DateTime _date = DateTime.now().add(const Duration(days: 1));
 
+  /// Spoken: "Bangalore to Chennai tomorrow". Only what was said changes;
+  /// returns what did ('' = nothing understood).
+  String _heard(String said) {
+    final v = VoiceBooking.trip(said, now: DateTime.now(), places: busCities);
+    final done = <String>[];
+    setState(() {
+      if (v.from != null) _from = v.from!;
+      if (v.to != null) _to = v.to!;
+      if (v.from != null || v.to != null) done.add('$_from → $_to');
+      if (v.date != null) {
+        final last = DateTime.now().add(const Duration(days: 90));
+        _date = v.date!.isAfter(last) ? last : v.date!;
+        done.add(MaterialLocalizations.of(context).formatMediumDate(_date));
+      }
+    });
+    return done.join(' · ');
+  }
+
+  /// The form as the booking agent sees it.
+  BookingForm _voiceForm() => BookingForm(
+        screen: '${widget.kind.title} Buses',
+        example: '"Bangalore to Chennai tomorrow"',
+        fields: const {
+          'from': 'departure city',
+          'to': 'destination city',
+          'date': 'travel date, YYYY-MM-DD, within the next 90 days',
+        },
+        places: busCities,
+        state: () => {'from': _from, 'to': _to, 'date': BookingAgent.iso(_date)},
+        apply: _applyVoice,
+        parseLocal: _heard,
+        actions: {
+          'search': ('search buses with this form', () async => _search()),
+        },
+      );
+
+  /// What the booking agent set; returns what changed.
+  String _applyVoice(Map<String, Object?> v) {
+    String? city(Object? x) {
+      final c = voiceText(x)?.toLowerCase();
+      if (c == null) return null;
+      final alias = VoiceBooking.aliases[c]?.toLowerCase() ?? c;
+      for (final b in busCities) {
+        if (b.toLowerCase() == alias) return b;
+      }
+      return null;
+    }
+
+    final done = <String>[];
+    setState(() {
+      final f = city(v['from']), t = city(v['to']);
+      if (f != null) _from = f;
+      if (t != null) _to = t;
+      if (f != null || t != null) done.add('$_from → $_to');
+      final d = voiceDate(v['date']);
+      if (d != null) {
+        final last = DateTime.now().add(const Duration(days: 90));
+        _date = d.isAfter(last) ? last : d;
+        done.add(MaterialLocalizations.of(context).formatMediumDate(_date));
+      }
+    });
+    return done.join(' · ');
+  }
+
   Future<void> _pickCity({required bool from}) async {
     final c = await showAppSheet<String>(
       context: context,
@@ -95,10 +160,12 @@ class _BusSearchScreenState extends State<BusSearchScreen> {
   Widget build(BuildContext context) {
     final k = widget.kind;
     return NeonScaffold(
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: BookingVoiceOrb(form: _voiceForm()),
       appBar: appleAppBar(context, '${k.title} Buses'),
       body: ListView(
         padding: EdgeInsets.fromLTRB(
-            16, 8, 16, 28 + MediaQuery.paddingOf(context).bottom),
+            16, 8, 16, 120 + MediaQuery.paddingOf(context).bottom),
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(Neon.rCard),
