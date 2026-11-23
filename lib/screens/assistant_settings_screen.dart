@@ -29,6 +29,7 @@ import 'avatar_identity_screen.dart';
 import 'memory_screen.dart';
 import 'overlay_section.dart';
 import '../services/app_feedback.dart';
+import '../services/app_update_service.dart';
 import '../features/widgets/widget_picker.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
@@ -500,6 +501,7 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                 const GroupLabel('About & Legal'),
                 GroupedCard(
                   children: [
+                    const _CheckForUpdatesRow(),
                     AppleRow(
                       leading: IconTile(Icons.support_agent_rounded, AppleColors.blue),
                       title: 'Help & Feedback',
@@ -651,4 +653,61 @@ class _RenameSheetState extends State<_RenameSheet> {
       ),
     );
   }
+}
+
+/// CHECK FOR UPDATES (owner, 2026-11-23): the in-app updater on demand.
+/// A newer build opens the update sheet (download with progress, then
+/// install); otherwise one line says this build is the latest. Updates
+/// also arrive on their own, quietly (AppUpdateService).
+class _CheckForUpdatesRow extends StatefulWidget {
+  const _CheckForUpdatesRow();
+
+  @override
+  State<_CheckForUpdatesRow> createState() => _CheckForUpdatesRowState();
+}
+
+class _CheckForUpdatesRowState extends State<_CheckForUpdatesRow> {
+  int _build = 0;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    AppUpdateService.runningBuild().then((b) {
+      if (mounted) setState(() => _build = b);
+    });
+  }
+
+  Future<void> _check() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final latest = await AppUpdateService.instance.publishedBuild();
+      if (!mounted) return;
+      final verdict = AppUpdateService.checkVerdict(latest, _build);
+      if (verdict != null) {
+        AppFeedback.toast(verdict,
+            tone: latest == null ? FeedbackTone.error : FeedbackTone.success);
+        return;
+      }
+      await AppUpdateService.instance
+          .check(context, force: true, userAsked: true);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => AppleRow(
+        leading: IconTile(Icons.system_update_rounded, AppleColors.green),
+        title: 'Check for Updates',
+        subtitle: _busy
+            ? 'Checking…'
+            : _build > 0
+                ? 'Build $_build'
+                : 'Get the newest version',
+        trailing:
+            Icon(Icons.chevron_right_rounded, color: Neon.textDim, size: 20),
+        onTap: _check,
+      );
 }

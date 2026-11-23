@@ -31,6 +31,9 @@ class QuietInstallJob : JobService() {
             return false
         }
         if (!File(path).exists()) return false
+        // Only ever forward: a file left from an update that already went
+        // in (or an older one) is never installed over the running build.
+        if (archiveBuild(path) <= ApkInstaller.currentBuild(applicationContext)) return false
         android.util.Log.i(TAG, "installing quietly: $path")
         ApkInstaller.install(applicationContext, path, true) { _ ->
             jobFinished(params, false)
@@ -39,6 +42,19 @@ class QuietInstallJob : JobService() {
     }
 
     override fun onStopJob(params: JobParameters): Boolean = false
+
+    /** The build number inside the APK at [path] (-1 when unreadable). */
+    @Suppress("DEPRECATION")
+    private fun archiveBuild(path: String): Long = try {
+        val pi = packageManager.getPackageArchiveInfo(path, 0)
+        when {
+            pi == null -> -1L
+            android.os.Build.VERSION.SDK_INT >= 28 -> pi.longVersionCode
+            else -> pi.versionCode.toLong()
+        }
+    } catch (_: Exception) {
+        -1L
+    }
 
     /** Is the app on screen (or visible) right now? */
     private fun inUse(): Boolean {

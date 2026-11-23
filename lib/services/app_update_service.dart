@@ -264,6 +264,38 @@ class AppUpdateService {
     } catch (_) {}
   }
 
+  /// What Settings → Check for Updates says when there is nothing to
+  /// install; null when [latest] is newer and the update sheet should open.
+  static String? checkVerdict(int? latest, int running) {
+    if (latest == null) {
+      return 'Could not check for updates. Check your internet connection and try again.';
+    }
+    if (latest <= running) return 'MyAssistant is up to date (build $running).';
+    return null;
+  }
+
+  /// The running build number.
+  static Future<int> runningBuild() async =>
+      int.tryParse((await PackageInfo.fromPlatform()).buildNumber) ?? 0;
+
+  /// The newest published build, or null when the server could not be
+  /// reached or publishes none (Settings → Check for Updates).
+  Future<int?> publishedBuild() async {
+    try {
+      final r = await http
+          .get(Uri.parse('${ApiService.baseUrl}/config'))
+          .timeout(const Duration(seconds: 10));
+      if (r.statusCode != 200) return null;
+      final cfg =
+          RemoteConfig.fromJson(jsonDecode(r.body) as Map<String, dynamic>);
+      if (cfg.apkUrl == null || cfg.apkUrl!.isEmpty) return null;
+      return cfg.latestVersionCode;
+    } catch (e) {
+      AppLog.add('update', 'published build unknown: $e');
+      return null;
+    }
+  }
+
   /// Compare the running build number with the newest published one and
   /// offer the update. Called on launch AND whenever the app returns to
   /// the foreground — a phone that keeps the app in memory for days used

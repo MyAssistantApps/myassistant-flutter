@@ -45,6 +45,21 @@ void main() {
     });
   });
 
+  group('Settings → Check for Updates', () {
+    test('a newer build opens the update sheet', () {
+      expect(AppUpdateService.checkVerdict(224, 223), isNull);
+    });
+    test('the same or an older build says it is up to date', () {
+      expect(AppUpdateService.checkVerdict(223, 223),
+          'MyAssistant is up to date (build 223).');
+      expect(AppUpdateService.checkVerdict(221, 223), contains('up to date'));
+    });
+    test('no answer from the server says what to do', () {
+      expect(AppUpdateService.checkVerdict(null, 223),
+          'Could not check for updates. Check your internet connection and try again.');
+    });
+  });
+
   group('the quiet install waits until the app has been left', () {
     final calls = <MethodCall>[];
     final apk = File('${Directory.systemTemp.path}/update-999.apk');
