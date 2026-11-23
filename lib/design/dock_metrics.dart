@@ -3,7 +3,7 @@ import 'package:flutter/widgets.dart';
 /// THE DOCK'S FOOTPRINT, IN ONE PLACE.
 ///
 /// Every tab scrolls under the same thing: a 58 dp floating glass pill
-/// (22 dp above the system navigation inset) with the mic nested in a
+/// (8 dp above the system navigation inset) with the mic nested in a
 /// cradle in its middle, rising 33 dp above the bar. Lists used to end with a
 /// hard-coded 120 dp of padding, which was 2 dp short on the owner's
 /// phone and ~32 dp short on phones with 3-button navigation: the last
@@ -14,8 +14,9 @@ abstract final class Dock {
   static const double barHeight = 58;
 
   /// THE FLOATING NAVBAR (2026-11-22): the pill floats this far above the
-  /// system navigation and this far in from each side.
-  static const double floatGap = 22;
+  /// system navigation and this far in from each side. Lowered from 22
+  /// (owner, 2026-11-23: "move the navbar a bit down").
+  static const double floatGap = 8;
   static const double sideMargin = 16;
 
   /// THE CRADLE (2026-11-22, Manish's mockup): the mic's centre sits this

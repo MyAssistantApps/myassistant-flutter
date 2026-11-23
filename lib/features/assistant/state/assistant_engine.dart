@@ -301,7 +301,10 @@ class AssistantEngine extends ChangeNotifier {
   final ValueNotifier<int> wake = ValueNotifier<int>(0);
   DateTime wokeAt = DateTime(2000);
 
-  Future<void> beginInlineConversation({String? name}) async {
+  /// [openingNote]: the page speaks first, in its own words (the Jyotish
+  /// guru greets and gives today's reading, or asks for birth details).
+  /// No generic hello is played; the note is the conversation's first turn.
+  Future<void> beginInlineConversation({String? name, String? openingNote}) async {
     // A second tap while a start is still running must not stack another
     // one on top of it.
     if (_starting) {
@@ -323,7 +326,10 @@ class AssistantEngine extends ChangeNotifier {
     // Play the shared, server-cached greeting in the same fixed female
     // voice used by every OpenAI live conversation.
     final now = DateTime.now();
-    if (_liveWanted && now.difference(_lastGreetedAt) >= _greetCooldown) {
+    if (openingNote != null) {
+      // The page's own first words replace the hello (see [openingNote]).
+      _lastGreetedAt = now;
+    } else if (_liveWanted && now.difference(_lastGreetedAt) >= _greetCooldown) {
       // A cache miss falls back to a fixed-line response from the Live voice.
       _lastGreetedAt = now;
       _openingDue = true;
@@ -373,7 +379,9 @@ class AssistantEngine extends ChangeNotifier {
       notifyListeners();
       AppLog.add('orb', 'start produced no session');
       AppFeedback.toast("I was unable to connect. Tap the orb to try again.");
+      return;
     }
+    if (openingNote != null) unawaited(_tellModel(openingNote));
   }
 
   /// True while the greeting is being synthesised through the same speech

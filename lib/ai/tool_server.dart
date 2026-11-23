@@ -14,6 +14,7 @@ import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
 
 import '../services/api_service.dart';
+import 'assistant_role.dart';
 import 'types.dart';
 
 /// What /ai/context returns for one turn.
@@ -248,6 +249,9 @@ class ToolServer {
       if (shared) 'shared': true,
       // The reply will be spoken: the model may mark how it should sound.
       if (expressive) 'expressive': true,
+      // The page's role and the tools its work needs (AssistantRole.tools).
+      if (AssistantRole.current.value?.tools.isNotEmpty ?? false)
+        'roleTools': AssistantRole.current.value!.tools,
     };
     final (status, j) = await _send('POST', '/ai/context', body, timeout);
     if (status != 200 || j == null) return null;

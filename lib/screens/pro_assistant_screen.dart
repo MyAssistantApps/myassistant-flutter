@@ -98,9 +98,37 @@ class ProProfile {
       ? const Alignment(0, -1)
       : const Alignment(0, -0.7);
 
+  /// The server tools this profession's work needs: a voice session opened
+  /// on this page (or one of its tiles) is given them up front.
+  List<String> get tools => switch (kind) {
+        ProKind.doctor => const [
+            'book_patient_appointment', 'schedule_patient_recall',
+            'complete_patient_recall', 'check_patient_dues',
+            'record_patient_payment', 'send_patient_document', 'find_document',
+            'list_person_documents', 'file_document_under_client',
+            'remember_case',
+          ],
+        ProKind.advocate => const [
+            'remember_case', 'remember_event', 'schedule_patient_recall',
+            'complete_patient_recall', 'book_patient_appointment',
+            'check_patient_dues', 'record_patient_payment', 'draft_text',
+            'find_document', 'list_person_documents',
+            'file_document_under_client', 'send_patient_document',
+            'indian_case_law',
+          ],
+        ProKind.business => const [
+            'remember_case', 'remember_event', 'schedule_patient_recall',
+            'book_patient_appointment', 'check_patient_dues', 'check_payments',
+            'record_patient_payment', 'record_entry', 'draft_text',
+            'find_document', 'list_person_documents',
+            'file_document_under_client', 'send_patient_document',
+          ],
+      };
+
   /// Who the mic orb on the page talks as.
   AssistantRole get role => AssistantRole(
       "the $name Assistant",
+      tools: tools,
       switch (kind) {
         ProKind.doctor => 'You help a doctor run their practice: patients\' '
             'files, notes and reports, follow-up visits, and payments and '
@@ -118,6 +146,7 @@ class ProProfile {
   /// tapped tile's orb lights up, and its instruction reaches the voice.
   AssistantRole roleFor(ProAction a) => AssistantRole(
       role.name,
+      tools: tools,
       '${role.brief} The owner started this conversation from the '
       '"${a.title}" tile (${a.detail}), so begin with that: '
       '${a.voice ?? 'help with exactly that, using your tools for their records.'} '
