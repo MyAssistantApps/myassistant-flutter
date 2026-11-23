@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/log.dart';
 import '../../services/api_service.dart';
+import 'wallet_preview.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  THE WALLET, AS THE APP SEES IT (2026-11-22, wallet plan Phases 1–3).
@@ -142,6 +143,17 @@ class WalletApi {
   /// The last wallet read (null = not read yet). Screens listen to it.
   final ValueNotifier<WalletSummary?> summary = ValueNotifier(null);
 
+  /// True in a debug build run with --dart-define=WALLET_PREVIEW=true: the
+  /// wallet answers from sample data on the phone (see wallet_preview.dart).
+  static bool get preview => WalletPreview.enabled;
+
+  /// Every wallet request goes through here, so preview can answer it.
+  static Future<ApiResult> _req(String method, String path,
+      {Object? body, Map<String, String> headers = const {}, Duration timeout = const Duration(seconds: 20)}) {
+    if (preview) return WalletPreview.instance.handle(method, path, body, headers);
+    return ApiService.request(method, path, body: body, headers: headers, timeout: timeout);
+  }
+
   /// A fresh idempotency key: one per user action, 32 random hex chars.
   static String newKey() {
     final r = Random.secure();
@@ -149,28 +161,28 @@ class WalletApi {
   }
 
   Future<WalletSummary?> refresh() async {
-    final r = await ApiService.request('GET', '/wallet', timeout: const Duration(seconds: 10));
+    final r = await _req('GET', '/wallet', timeout: const Duration(seconds: 10));
     if (!r.ok) return summary.value;
     final s = WalletSummary.fromJson(r.body);
     summary.value = s;
     return s;
   }
 
-  Future<ApiResult> createTopup(int paise, String key) => ApiService.request(
+  Future<ApiResult> createTopup(int paise, String key) => _req(
       'POST', '/wallet/topups', body: {'amount_paise': paise}, headers: {'Idempotency-Key': key});
 
   Future<ApiResult> verifyTopup(String topupId, {required String paymentId, required String orderId, required String signature}) =>
-      ApiService.request('POST', '/wallet/topups/$topupId/verify', body: {
+      _req('POST', '/wallet/topups/$topupId/verify', body: {
         'razorpay_payment_id': paymentId,
         'razorpay_order_id': orderId,
         'razorpay_signature': signature,
       });
 
-  Future<ApiResult> topupStatus(String topupId) => ApiService.request('GET', '/wallet/topups/$topupId');
+  Future<ApiResult> topupStatus(String topupId) => _req('GET', '/wallet/topups/$topupId');
 
   Future<(List<WalletTxn>, String?)> transactions({String? cursor, int limit = 20}) async {
     final q = cursor == null ? '' : '&cursor=${Uri.encodeQueryComponent(cursor)}';
-    final r = await ApiService.request('GET', '/wallet/transactions?limit=$limit$q');
+    final r = await _req('GET', '/wallet/transactions?limit=$limit$q');
     if (!r.ok) return (const <WalletTxn>[], null);
     final items = (r.body['items'] as List? ?? const [])
         .whereType<Map>()
@@ -180,34 +192,34 @@ class WalletApi {
   }
 
   Future<ApiResult> setPin(String pin, {String? current}) =>
-      ApiService.request('POST', '/wallet/pin', body: {'pin': pin, if (current != null) 'current_pin': current});
+      _req('POST', '/wallet/pin', body: {'pin': pin, if (current != null) 'current_pin': current});
 
   /// Trades the PIN for a 5-minute step-up token.
-  Future<ApiResult> stepUp(String pin) => ApiService.request('POST', '/wallet/step-up', body: {'pin': pin});
+  Future<ApiResult> stepUp(String pin) => _req('POST', '/wallet/step-up', body: {'pin': pin});
 
   Future<int> refundable() async {
-    final r = await ApiService.request('GET', '/wallet/refundable');
+    final r = await _req('GET', '/wallet/refundable');
     return (r.body['refundable_paise'] as num?)?.toInt() ?? 0;
   }
 
-  Future<ApiResult> requestRefund(int paise, {required String key, required String stepUpToken}) => ApiService.request(
+  Future<ApiResult> requestRefund(int paise, {required String key, required String stepUpToken}) => _req(
       'POST', '/wallet/refunds',
       body: {'amount_paise': paise}, headers: {'Idempotency-Key': key, 'X-Wallet-Step-Up': stepUpToken});
 
-  Future<ApiResult> refunds() => ApiService.request('GET', '/wallet/refunds');
+  Future<ApiResult> refunds() => _req('GET', '/wallet/refunds');
 
   /// Pays for one thing the server knows the price of.
-  Future<ApiResult> spend(String type, String id, {String? stepUpToken}) => ApiService.request(
+  Future<ApiResult> spend(String type, String id, {String? stepUpToken}) => _req(
       'POST', '/wallet/spend',
       body: {'reference_type': type, 'reference_id': id},
       headers: {if (stepUpToken != null) 'X-Wallet-Step-Up': stepUpToken});
 
   /* ---------------- referrals ---------------- */
 
-  Future<ApiResult> referralMe() => ApiService.request('GET', '/referrals/me');
-  Future<ApiResult> referralHistory() => ApiService.request('GET', '/referrals/history');
+  Future<ApiResult> referralMe() => _req('GET', '/referrals/me');
+  Future<ApiResult> referralHistory() => _req('GET', '/referrals/history');
 
-  Future<ApiResult> applyCode(String code) async => ApiService.request(
+  Future<ApiResult> applyCode(String code) async => _req(
       'POST', '/referrals/apply', body: {'code': code}, headers: {'X-Device-Id': await deviceId()});
 
   static const _deviceKey = 'wallet_install_id';

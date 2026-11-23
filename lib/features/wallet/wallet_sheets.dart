@@ -130,6 +130,11 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
     _topupId = r.body['topup_id'] as String?;
     _orderId = r.body['razorpay_order_id'] as String?;
     final prefill = (r.body['prefill'] as Map?)?.cast<String, dynamic>() ?? const {};
+    if (WalletApi.preview) {
+      // Preview: no checkout page; the payment succeeds at once.
+      await _onSuccess(PaymentSuccessResponse('pay_preview', _orderId, 'preview', null));
+      return;
+    }
     try {
       _rzp.open({
         'key': r.body['key_id'],

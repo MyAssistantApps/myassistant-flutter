@@ -75,6 +75,7 @@ class _WalletScreenState extends State<WalletScreen> {
             child: ListView(
               padding: EdgeInsets.fromLTRB(16, 8, 16, 32 + MediaQuery.paddingOf(context).bottom),
               children: [
+                if (WalletApi.preview) const _PreviewNote(),
                 _BalanceCard(summary: s, onAdd: () => _addMoney(s), onRefund: _refund),
                 const SizedBox(height: 14),
                 _RowCard(
@@ -356,6 +357,32 @@ class _Message extends StatelessWidget {
           ],
         ]),
       ),
+    );
+  }
+}
+
+/// Shown only in a preview build, so sample data is never taken for real money.
+class _PreviewNote extends StatelessWidget {
+  const _PreviewNote();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: Neon.warning.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Neon.warning.withValues(alpha: 0.4)),
+      ),
+      child: Row(children: [
+        Icon(Icons.science_rounded, size: 18, color: Neon.warning),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text('Preview: sample data on this phone only. No real money moves.',
+              style: TextStyle(color: Neon.textHi, fontSize: 13)),
+        ),
+      ]),
     );
   }
 }
