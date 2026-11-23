@@ -17,10 +17,16 @@ void main() {
   });
 
   test('a section added in a later release appears in its default place', () {
-    final saved = List.of(HomeLayout.defaults)..remove('horoscope');
+    final saved = List.of(HomeLayout.defaults)..remove('payment_apps');
     final out = HomeLayout.normalise(saved);
-    expect(out, contains('horoscope'));
-    expect(out.last, 'horoscope');
+    expect(out, contains('payment_apps'));
+    expect(out.indexOf('payment_apps'), HomeLayout.defaults.indexOf('payment_apps'));
+  });
+
+  test("a saved order from before Today's Horoscope was removed loses it", () {
+    final out = HomeLayout.normalise([...HomeLayout.defaults, 'horoscope']);
+    expect(out, isNot(contains('horoscope')));
+    expect(out, HomeLayout.defaults);
   });
 
   test('every section has a title and an icon', () {
