@@ -35,7 +35,6 @@ import '../pricecompare/price_compare_section.dart';
 import '../shopping/shopping_list_screen.dart';
 import '../shopping/shopping_service.dart';
 import 'home_extras.dart';
-import 'horoscope_card.dart';
 import 'home_redesign.dart';
 import 'pro_banners.dart';
 import 'quick_tools.dart';
@@ -210,7 +209,6 @@ class _HomeFeedViewState extends State<HomeFeedView> {
         'price_compare' => PriceCompareSection(onOpen: (page) => _do.open(context, page)),
         'payment_apps' => const PaymentApps(),
         'quick_apps' => const QuickApps(),
-        'horoscope' => const HoroscopeCard(),
         _ => null,
       };
 

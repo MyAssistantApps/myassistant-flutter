@@ -430,8 +430,9 @@ class PushService {
     }
   }
 
-  /// Runs the update flow over whatever screen is up. Small delay so a
-  /// cold start has a navigator before the sheet tries to show.
+  /// "A build was published": check now, past the throttle. Quiet on a
+  /// phone that can update quietly; the sheet only where it cannot. Small
+  /// delay so a cold start has a navigator before a sheet tries to show.
   void _checkForUpdateNow() {
     // Self-update is off: an "update published" push does nothing.
     if (!AppUpdateService.enabled) {

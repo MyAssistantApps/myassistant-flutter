@@ -20,8 +20,6 @@ import 'permissions_screen.dart';
 import 'profession_screen.dart';
 import 'photo_step_screen.dart';
 import 'welcome_screen.dart';
-import '../../features/home/horoscope_card.dart';
-import '../../services/horoscope.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 ///  NAME YOUR ASSISTANT — the last step of registration.
@@ -74,7 +72,6 @@ class _AssistantSetupGateState extends State<AssistantSetupGate> {
   @override
   void initState() {
     super.initState();
-    Horoscope.load();
     _check();
   }
 
@@ -413,20 +410,6 @@ class _AssistantSetupScreenState extends State<AssistantSetupScreen> {
                           ],
                         ),
                       ),
-                    ),
-                  ),
-                  // TODAY'S HOROSCOPE (owner, 2026-11-15): optional here,
-                  // also in Settings; Home shows the day's reading.
-                  const SizedBox(height: 20),
-                  ValueListenableBuilder<ZodiacSign?>(
-                    valueListenable: Horoscope.current,
-                    builder: (context, sign, _) => OutlinedButton.icon(
-                      onPressed: () => pickZodiacSign(context),
-                      icon: Text(sign?.symbol ?? '✦',
-                          style: TextStyle(color: Neon.violet, fontSize: 18)),
-                      label: Text(sign == null
-                          ? 'Zodiac Sign (Optional)'
-                          : 'Zodiac Sign: ${sign.name}'),
                     ),
                   ),
                   if (_error != null) ...[

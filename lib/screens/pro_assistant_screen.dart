@@ -45,7 +45,7 @@ enum ProKind { doctor, advocate, business }
 
 class ProAction {
   const ProAction(this.title, this.detail, this.icon,
-      {this.ask, this.page, this.run, this.featured = false});
+      {this.ask, this.page, this.run, this.voice, this.featured = false});
 
   /// Drawn as the wide card at the top of the page (the doctor's "Today at
   /// clinic", with the day's live numbers) instead of a grid tile.
@@ -62,6 +62,11 @@ class ProAction {
 
   /// Or run in place (a bottom sheet — "Note a payment", "Book").
   final Future<void> Function(BuildContext context)? run;
+
+  /// THE TILE'S OWN MIC (owner, 2026-11-23: the page's mic orb on every
+  /// Quick Actions tile, each tied to its tile): what a conversation
+  /// started from this tile is about, and the tools that do it by voice.
+  final String? voice;
 }
 
 class ProProfile {
@@ -108,6 +113,16 @@ class ProProfile {
             'customers.',
       });
 
+  /// Who the mic on one Quick Actions tile talks as: this page's assistant,
+  /// started on that tile's work. A role of its own per tile, so only the
+  /// tapped tile's orb lights up, and its instruction reaches the voice.
+  AssistantRole roleFor(ProAction a) => AssistantRole(
+      role.name,
+      '${role.brief} The owner started this conversation from the '
+      '"${a.title}" tile (${a.detail}), so begin with that: '
+      '${a.voice ?? 'help with exactly that, using your tools for their records.'} '
+      'Anything else they ask is still yours to do.');
+
   static ProProfile of(ProKind k) => switch (k) {
         ProKind.doctor => ProProfile(
             k,
@@ -123,6 +138,10 @@ class ProProfile {
                   page: () => const ClinicScreen(), featured: true),
               ProAction('Patient Records', 'Files, clinical notes, and reports',
                   Icons.folder_shared_rounded,
+                  voice: 'a patient\'s file, clinical notes and reports — find or list their '
+                      'documents (find_document, list_person_documents), file a new one '
+                      'under them (file_document_under_client), note their case '
+                      '(remember_case) or send them a report (send_patient_document).',
                   page: () => const ClientsScreen()),
               // BOOKED, NOT "BOOK" (owner, 2026-11-21): every appointment
               // already booked — by the doctor, by voice, the public page or
@@ -130,20 +149,35 @@ class ProProfile {
               // patient's record. New ones are the + on that screen.
               ProAction('Booked Appointments', 'Upcoming visits, with patient records',
                   Icons.event_available_rounded,
+                  voice: 'appointments — book a patient into an exact time '
+                      '(book_patient_appointment). The full list, each opening the '
+                      'patient\'s record, is on the Booked Appointments screen.',
                   page: () => const AppointmentsScreen()),
               ProAction('Follow-ups', 'Review visits with reminder calls',
                   Icons.event_repeat_rounded,
+                  voice: 'follow-up visits — schedule one (schedule_patient_recall: "review '
+                      'Ramesh in two weeks") or mark one done or cancelled '
+                      '(complete_patient_recall). Reminder calls go out on their own.',
                   page: () => const ClinicScreen(initialTab: 1)),
               ProAction('Pending Dues',
                   'Patients with unsettled dues', Icons.payments_rounded,
+                  voice: 'patients\' unsettled dues — who owes what and the total '
+                      '(check_patient_dues), and a payment or a new due '
+                      '(record_patient_payment). Answer only from that data.',
                   page: () => const ClinicScreen(initialTab: 2)),
               ProAction('Record Payment', 'Log a payment received from a patient',
                   Icons.receipt_long_rounded,
+                  voice: 'logging a payment received from a patient '
+                      '(record_patient_payment, entry_type paid: "Ramesh paid 500"). Say '
+                      'their new balance back.',
                   run: (c) => recordPayment(c)),
               // With "Today at clinic" as the wide card on top, this makes
               // six grid tiles — an even two-up grid, no orphan.
               ProAction('Practice Settings', 'Consultation hours, fee, and registration',
                   Icons.tune_rounded,
+                  voice: 'the practice settings — consultation hours, fee and '
+                      'registration. These are changed on the Practice Settings screen, '
+                      'not by voice: say so in one line and offer what you can do.',
                   page: () => const ClinicSettingsScreen()),
             ],
           ),
@@ -160,21 +194,41 @@ class ProProfile {
                   page: () => const ClinicScreen(), featured: true),
               ProAction('Cases & Hearings', 'Court, case number, and next date',
                   Icons.gavel_rounded,
+                  voice: 'cases and hearings — record a case and who it is for '
+                      '(remember_case), a hearing date (remember_event) and a reminder '
+                      'before it (schedule_patient_recall: "Sharma\'s next hearing is '
+                      'October 3"). The case diary itself is edited on its screen.',
                   page: () => const CasesScreen()),
               ProAction('Client Files', 'Briefs, notes, and case papers',
                   Icons.folder_shared_rounded,
+                  voice: 'a client\'s briefs, notes and case papers — find or list '
+                      'their documents (find_document, list_person_documents), file one '
+                      'under them (file_document_under_client) or send it '
+                      '(send_patient_document).',
                   page: () => const ClientsScreen()),
               ProAction('Draft a Document', 'Notice, affidavit, or agreement as PDF',
                   Icons.edit_note_rounded,
+                  voice: 'drafting a notice, affidavit, agreement or letter — '
+                      'collect what it needs, then write it on the draft pad '
+                      '(draft_text).',
                   page: () => const LegalDraftScreen()),
               ProAction('Book Consultation', 'Select a client and available slot',
                   Icons.event_available_rounded,
+                  voice: 'booking a consultation — a client at an exact time '
+                      '(book_patient_appointment).',
                   run: (c) => bookAppointment(c)),
               ProAction('Pending Fees', 'Unsettled fees — settle in one tap',
                   Icons.payments_rounded,
+                  voice: 'unsettled fees — who owes what and the total '
+                      '(check_patient_dues), and a payment or a new fee '
+                      '(record_patient_payment). Answer only from that data.',
                   page: () => const ClinicScreen(initialTab: 2)),
               ProAction('Raise a Fee Note', 'Fee invoice with a payment link',
                   Icons.receipt_long_rounded,
+                  voice: 'raising a fee — record what the client owes '
+                      '(record_patient_payment, entry_type due: "bill Sharma 5000 for the '
+                      'filing"). The PDF fee note with its payment link is made on the '
+                      'Raise a Fee Note screen.',
                   page: () => const InvoiceEditorScreen()),
             ],
           ),
@@ -191,21 +245,40 @@ class ProProfile {
                   page: () => const ClinicScreen(), featured: true),
               ProAction('Leads & Deals', 'Pipeline and next follow-ups',
                   Icons.trending_up_rounded,
+                  voice: 'leads and deals — note a deal and who it is with '
+                      '(remember_case), its next date (remember_event) and a follow-up '
+                      'reminder (schedule_patient_recall). The pipeline itself is edited '
+                      'on the Leads & Deals screen.',
                   page: () => const LeadsScreen()),
               ProAction('Client Accounts', 'Files, notes, and documents',
                   Icons.folder_shared_rounded,
+                  voice: 'a client\'s files, notes and documents — find or list '
+                      'them (find_document, list_person_documents), file one under them '
+                      '(file_document_under_client) or send it (send_patient_document).',
                   page: () => const ClientsScreen()),
               ProAction('New Invoice / Quote', 'GST-ready PDF with a payment link',
                   Icons.request_quote_rounded,
+                  voice: 'billing a client — record what they owe '
+                      '(record_patient_payment, entry_type due: "bill Manish 15,000"). The '
+                      'GST-ready PDF with its payment link is made on the New Invoice / '
+                      'Quote screen.',
                   page: () => const InvoiceEditorScreen()),
               ProAction('Invoices & Quotes', 'Paid, unpaid, and payment links',
                   Icons.receipt_long_rounded,
+                  voice: 'invoices — what is paid and what is still owed '
+                      '(check_patient_dues, check_payments), and a payment received '
+                      '(record_patient_payment). Answer only from that data.',
                   page: () => const InvoicesScreen()),
               ProAction('Receivables', 'Pending collections — settle in one tap',
                   Icons.account_balance_wallet_rounded,
+                  voice: 'pending collections — who owes what and the total '
+                      '(check_patient_dues), and a payment received '
+                      '(record_patient_payment). Answer only from that data.',
                   page: () => const ClinicScreen(initialTab: 2)),
               ProAction('Schedule Meeting', 'Select a client and available slot',
                   Icons.event_available_rounded,
+                  voice: 'scheduling a meeting — a client at an exact time '
+                      '(book_patient_appointment).',
                   run: (c) => bookAppointment(c)),
             ],
           ),
@@ -222,6 +295,23 @@ class ProAssistantScreen extends StatefulWidget {
 
 class _ProAssistantScreenState extends State<ProAssistantScreen> {
   ProKind get kind => widget.kind;
+
+  @override
+  void dispose() {
+    // A conversation started from a Quick Actions tile ends with the page
+    // (the tiles' orbs leave that to the page: a tile scrolled out of view
+    // is not the page being left), and the everyday assistant is back.
+    final r = AssistantRole.current.value;
+    final p = ProProfile.of(kind);
+    if (r != null && r != p.role && r.name == p.role.name) {
+      final e = AssistantEngine.instance;
+      unawaited(() async {
+        await e.endInlineConversation();
+        await e.useRole(null);
+      }());
+    }
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -569,6 +659,7 @@ class _ProAssistantScreenState extends State<ProAssistantScreen> {
               itemBuilder: (_, i) => _ActionCard(
                   action: grid[i],
                   tint: tint,
+                  role: p.roleFor(grid[i]),
                   onTap: () => _run(context, grid[i])),
             ),
           ),
@@ -853,24 +944,27 @@ class _Stat extends StatelessWidget {
 }
 
 /// One thing the assistant does: an even tile — the icon in a rounded
-/// square, the name and one line; an arrow when it opens something, a chat
-/// bubble only when it hands a question to the assistant.
+/// square, the name and one line, and the page's mic orb in small (owner,
+/// 2026-11-23): tap the tile to open it, tap its orb to talk about it.
 class _ActionCard extends StatelessWidget {
   const _ActionCard(
-      {required this.action, required this.tint, required this.onTap});
+      {required this.action,
+      required this.tint,
+      required this.role,
+      required this.onTap});
   final ProAction action;
   final Color tint;
+  final AssistantRole role;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final a = action;
-    final asks = a.page == null && a.run == null;
     final r = BorderRadius.circular(20);
     return Semantics(
+      container: true,
       button: true,
       label: '${a.title}. ${a.detail}',
-      excludeSemantics: true,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -907,26 +1001,34 @@ class _ActionCard extends StatelessWidget {
                       child: Icon(a.icon, color: tint, size: 20),
                     ),
                     const Spacer(),
-                    Icon(
-                        asks
-                            ? Icons.chat_bubble_outline_rounded
-                            : Icons.arrow_forward_rounded,
-                        color: Neon.textDim,
-                        size: 17),
+                    // Its own node ("Speak to … about Patient Records"),
+                    // reachable apart from the tile's own label.
+                    RoleMicOrb(
+                        role: role,
+                        tint: tint,
+                        size: 38,
+                        showLabel: false,
+                        endOnDispose: false,
+                        topic: a.title),
                   ],
                 ),
                 const Spacer(),
-                Text(a.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: NeonType.manrope(14.5, FontWeight.w800)
-                        .copyWith(color: Neon.textHi, height: 1.2)),
+                // Read once, as the tile's label above.
+                ExcludeSemantics(
+                  child: Text(a.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: NeonType.manrope(14.5, FontWeight.w800)
+                          .copyWith(color: Neon.textHi, height: 1.2)),
+                ),
                 const SizedBox(height: 2),
-                Text(a.detail,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        color: Neon.textLo, fontSize: 12, height: 1.25)),
+                ExcludeSemantics(
+                  child: Text(a.detail,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          color: Neon.textLo, fontSize: 12, height: 1.25)),
+                ),
               ],
             ),
           ),

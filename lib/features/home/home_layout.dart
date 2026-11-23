@@ -31,7 +31,6 @@ class HomeLayout {
     'price_compare',
     'payment_apps',
     'quick_apps',
-    'horoscope',
   ];
 
   static const sections = <String, HomeSection>{
@@ -51,8 +50,6 @@ class HomeLayout {
         'GPay, PhonePe, Paytm and PayPal', Icons.account_balance_wallet_rounded),
     'quick_apps': HomeSection('quick_apps', 'Quick Apps',
         'WhatsApp, LinkedIn, X, YouTube and more', Icons.grid_view_rounded),
-    'horoscope': HomeSection('horoscope', "Today's Horoscope",
-        'Your sign for the day', Icons.auto_awesome_rounded),
   };
 
   final ValueNotifier<List<String>> order = ValueNotifier(List.of(defaults));
