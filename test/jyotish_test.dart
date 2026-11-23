@@ -4,12 +4,14 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myassistant/ai/listen.dart';
 import 'package:myassistant/features/jyotish/jyotish_card.dart';
 import 'package:myassistant/features/jyotish/jyotish_guru.dart';
 import 'package:myassistant/features/jyotish/jyotish_models.dart';
+import 'package:myassistant/features/jyotish/jyotish_onboarding.dart';
 import 'package:myassistant/features/jyotish/jyotish_screen.dart';
 import 'package:myassistant/features/jyotish/jyotish_service.dart';
 import 'package:myassistant/features/jyotish/jyotish_theme.dart';
@@ -193,6 +195,15 @@ void main() {
       }
     });
 
+    test('after an upload, Guruji explains the chart just read, then today\'s bhavishya', () {
+      final note = guruUploadedNote('Asha');
+      expect(note, contains('uploaded a photo of my horoscope'));
+      expect(note, contains('Asha'));
+      expect(note, contains('jyotish_chart'));
+      expect(note, contains('jyotish_reading'));
+      expect(note, contains('other questions'));
+    });
+
     test('Guruji speaks only from the Jyotish tools, kindly', () {
       expect(guruRole.name, contains('Guruji'));
       expect(guruRole.brief, contains('jyotish_chart'));
@@ -219,12 +230,86 @@ void main() {
               MediaQuery(data: MediaQuery.of(ctx).copyWith(disableAnimations: true), child: w!),
         );
 
-    testWidgets('the Home card opens the horoscope', (t) async {
+    testWidgets('the Home card is Today\'s Horoscope, with the camera and the mic', (t) async {
       Widget? opened;
-      await t.pumpWidget(host(Scaffold(body: JyotishCard(onOpen: (p) => opened = p))));
-      expect(find.text('Jyotish'), findsOneWidget);
-      await t.tap(find.byType(JyotishCard));
+      await t.pumpWidget(host(Scaffold(
+          body: Padding(padding: const EdgeInsets.all(16), child: JyotishCard(onOpen: (p) => opened = p)))));
+      expect(find.text("TODAY'S HOROSCOPE"), findsOneWidget);
+      expect(find.text('Discover Your Day'), findsOneWidget);
+      // The card opens Jyotish, Guruji speaking.
+      await t.tap(find.text('Discover Your Day'));
       expect(opened, isA<JyotishScreen>());
+      expect((opened! as JyotishScreen).startWithUpload, isFalse);
+      // The camera: straight to uploading a horoscope.
+      await t.tap(find.text('Upload'));
+      expect((opened! as JyotishScreen).startWithUpload, isTrue);
+      // The mic: Guruji.
+      await t.tap(find.text('Tap to Talk'));
+      expect((opened! as JyotishScreen).startWithUpload, isFalse);
+      expect(find.bySemanticsLabel('Upload your horoscope for Guruji to read'), findsOneWidget);
+      expect(find.bySemanticsLabel('Talk to Guruji'), findsOneWidget);
+      expect(t.takeException(), isNull);
+    });
+
+    testWidgets('an uploaded horoscope fills the details to check', (t) async {
+      t.view.physicalSize = const Size(1080, 2400);
+      t.view.devicePixelRatio = 3;
+      addTearDown(t.view.reset);
+      await t.pumpWidget(host(Scaffold(
+        body: JyotishOnboarding(
+          service: _FakeService(),
+          listener: JyotishListener(_QuietRecognizer()),
+          onCast: (_, {required save}) async => true,
+          extracted: const Extracted(
+            name: 'Asha',
+            date: '2004-03-14',
+            time: '06:30',
+            timeStatus: 'exact',
+            place: 'Udupi',
+            complete: true,
+            places: [PlaceOption(name: 'Udupi, Karnataka, India', lat: 13.3409, lng: 74.7421, tz: 'Asia/Kolkata')],
+          ),
+        ),
+      )));
+      await t.pumpAndSettle();
+      expect(find.textContaining('I have read your horoscope, Asha'), findsOneWidget);
+      expect(find.text('Asha'), findsWidgets);
+      expect(find.text('14 Mar 2004'), findsOneWidget);
+      expect(find.text('6:30 AM'), findsOneWidget);
+      expect(find.text('Udupi, Karnataka, India'), findsOneWidget);
+      expect(t.takeException(), isNull);
+    });
+
+    testWidgets('the date of birth is chosen on wheels, not a calendar', (t) async {
+      t.view.physicalSize = const Size(1080, 2400);
+      t.view.devicePixelRatio = 3;
+      addTearDown(t.view.reset);
+      await t.pumpWidget(host(Scaffold(
+        body: JyotishOnboarding(
+          service: _FakeService(),
+          listener: JyotishListener(_QuietRecognizer()),
+          onCast: (_, {required save}) async => true,
+        ),
+      )));
+      await t.pumpAndSettle();
+      await t.scrollUntilVisible(find.text('Choose a date'), 120, scrollable: find.byType(Scrollable).first);
+      await t.tap(find.text('Choose a date'));
+      await t.pumpAndSettle();
+      expect(find.byType(CupertinoDatePicker), findsOneWidget);
+      expect(find.byType(CalendarDatePicker), findsNothing);
+      expect(find.text('Date of Birth'), findsOneWidget);
+      await t.tap(find.text('Done'));
+      await t.pumpAndSettle();
+      final y = DateTime.now().year - 25;
+      expect(find.text('1 Jan $y'), findsOneWidget);
+      // and the time, the same way
+      await t.tap(find.text('Choose a time'));
+      await t.pumpAndSettle();
+      expect(find.byType(CupertinoDatePicker), findsOneWidget);
+      await t.tap(find.text('Done'));
+      await t.pumpAndSettle();
+      expect(find.text('6:00 AM'), findsOneWidget);
+      expect(t.takeException(), isNull);
     });
 
     testWidgets('with no saved people: the chat fills the form', (t) async {

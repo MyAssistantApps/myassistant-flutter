@@ -447,6 +447,43 @@ class ApiService {
     return result;
   }
 
+  /// POST one file as multipart/form-data (field "file") with the usual
+  /// auth headers — the Jyotish horoscope reader (2026-11-23). The decoded
+  /// JSON on 200; otherwise null, with the server's own sentence when it
+  /// gave one ("Use a photo (JPEG or PNG) or a PDF…").
+  static Future<({Map<String, dynamic>? json, String? message})> postFile(
+    String path, {
+    required List<int> bytes,
+    required String filename,
+    required String mimeType,
+    Duration timeout = const Duration(seconds: 75),
+  }) async {
+    try {
+      final req = http.MultipartRequest('POST', Uri.parse('$baseUrl$path'))
+        ..headers.addAll(Map.of(_authHeaders)..remove('Content-Type'))
+        ..files.add(http.MultipartFile.fromBytes('file', bytes,
+            filename: filename, contentType: MediaType.parse(mimeType)));
+      final resp = await _client.send(req).timeout(timeout);
+      final body = await resp.stream.bytesToString();
+      if (resp.statusCode != 200) {
+        _flagAuthFailure(resp.statusCode);
+        AppLog.add('api', '$path -> ${resp.statusCode}');
+        String? message;
+        try {
+          final j = jsonDecode(body);
+          if (j is Map && j['message'] is String) message = j['message'] as String;
+        } catch (_) {}
+        return (json: null, message: message);
+      }
+      final j = jsonDecode(body);
+      return (json: j is Map<String, dynamic> ? j : null, message: null);
+    } catch (e) {
+      if (isConnectError(e)) NetStatus.instance.requestFailed();
+      AppLog.add('api', '$path failed: $e');
+      return (json: null, message: null);
+    }
+  }
+
   static String _errorMessage(String body) {
     try {
       final j = jsonDecode(body);

@@ -20,6 +20,7 @@ import '../../widgets/role_mic_orb.dart';
 import '../../widgets/voice_orb.dart' show OrbMood;
 import '../assistant/state/assistant_engine.dart';
 import '../assistant/state/assistant_state.dart';
+import 'jyotish_theme.dart';
 
 /// The temple palette: saffron, vermilion, sandalwood and temple gold on a
 /// maroon-to-indigo dusk.
@@ -193,18 +194,20 @@ class SilentJyotishMusic extends JyotishMusic {
 
 // ── The temple drawing ─────────────────────────────────────────────────
 
-/// The dusk gradient with a faint line drawing of temple architecture:
-/// a toran of bells along the top, carved pillars and a scalloped arch,
-/// a skyline of shikharas and a gopuram, and diyas and lotuses between.
+/// The original horoscope night sky (deep violet, nebula, twinkling stars;
+/// owner, 2026-11-23: "colour like the first one") with a faint gold line
+/// drawing of temple architecture over it: a toran of bells along the top,
+/// carved pillars and a scalloped arch, a skyline of shikharas and a
+/// gopuram, and diyas and lotuses between.
 class TempleDoodle extends StatelessWidget {
   const TempleDoodle({super.key, this.child});
   final Widget? child;
 
   @override
-  Widget build(BuildContext context) => DecoratedBox(
-        decoration: const BoxDecoration(gradient: Mandir.dusk),
+  Widget build(BuildContext context) => TwinklingSky(
+        seed: 5,
         child: CustomPaint(
-          painter: TempleDoodlePainter(),
+          painter: TempleDoodlePainter(color: const Color(0xFFE6C36A), opacity: 0.16),
           child: child ?? const SizedBox.expand(),
         ),
       );
@@ -834,6 +837,16 @@ class _GuruPageState extends State<GuruPage> {
     });
   }
 }
+
+/// Guruji's first words after a horoscope was uploaded, read and saved:
+/// what the chart shows, today's bhavishya, and an invitation to ask.
+String guruUploadedNote(String name) =>
+    "[SYSTEM] I have just uploaded a photo of my horoscope; you read it and my "
+    "birth chart is now saved (as ${name.trim()}). As Guruji, greet me with "
+    "Namaste, tell me briefly what my kundli shows — lagna, rashi, nakshatra "
+    "and the dasha running now (jyotish_chart) — then today's Jyotisha "
+    "Bhavishya (jyotish_reading, range today), and ask whether I have any "
+    "other questions.";
 
 /// For tests: the opening note a page would send.
 @visibleForTesting

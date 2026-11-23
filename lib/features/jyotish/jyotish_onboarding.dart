@@ -4,6 +4,7 @@
 
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../design/neon_tokens.dart';
@@ -21,12 +22,17 @@ class JyotishOnboarding extends StatefulWidget {
     required this.listener,
     required this.onCast,
     this.initial,
+    this.extracted,
   });
 
   final JyotishService service;
   final JyotishListener listener;
   final CastChart onCast;
   final Birth? initial;
+
+  /// What an uploaded horoscope was read as (2026-11-23): the form starts
+  /// filled with it, for the person to check.
+  final Extracted? extracted;
 
   @override
   State<JyotishOnboarding> createState() => _JyotishOnboardingState();
@@ -78,6 +84,37 @@ class _JyotishOnboardingState extends State<JyotishOnboarding> {
       _places = [_picked!];
       _gender = b.gender;
     }
+    final e = widget.extracted;
+    if (e != null) {
+      _applyFields(e);
+      _messages.add(_Msg(
+          'assistant',
+          e.complete
+              ? 'I have read your horoscope${e.name != null ? ', ${e.name}' : ''}. Check the details below${_picked == null && _places.length > 1 ? ', choose your birth place from the list,' : ''} and tap "Cast my chart".'
+              : e.followUp ?? 'I could read only part of your horoscope. Please fill in what is missing below.'));
+    }
+  }
+
+  /// What a reading found — typed, spoken or an uploaded horoscope — into
+  /// the form.
+  void _applyFields(Extracted out) {
+    if (out.name != null) _name.text = out.name!;
+    if (out.date != null) _date = DateTime.tryParse(out.date!);
+    if (out.time != null) {
+      _time = _parseTime(out.time);
+      _timeUnknown = false;
+    }
+    if (out.timeUnknown) {
+      _time = null;
+      _timeUnknown = true;
+    }
+    if (out.gender != null) _gender = out.gender;
+    if (out.place != null && out.place != _place.text) {
+      _place.text = out.place!;
+      _places = out.places;
+      _picked = out.places.length == 1 ? out.places.first : null;
+      _placeError = out.places.isEmpty ? 'No match found. Try adding the district or state.' : null;
+    }
   }
 
   @override
@@ -127,23 +164,7 @@ class _JyotishOnboardingState extends State<JyotishOnboarding> {
             "I couldn't read that just now. You can fill in the form below, or try again."));
         return;
       }
-      if (out.name != null) _name.text = out.name!;
-      if (out.date != null) _date = DateTime.tryParse(out.date!);
-      if (out.time != null) {
-        _time = _parseTime(out.time);
-        _timeUnknown = false;
-      }
-      if (out.timeUnknown) {
-        _time = null;
-        _timeUnknown = true;
-      }
-      if (out.gender != null) _gender = out.gender;
-      if (out.place != null && out.place != _place.text) {
-        _place.text = out.place!;
-        _places = out.places;
-        _picked = out.places.length == 1 ? out.places.first : null;
-        _placeError = out.places.isEmpty ? 'No match found. Try adding the district or state.' : null;
-      }
+      _applyFields(out);
       final reply = out.followUp ??
           (out.complete
               ? 'Got it${out.name != null ? ', ${out.name}' : ''}! Check the details below${_picked == null && _places.length > 1 ? ', choose your birth place from the list,' : ''} and tap "Cast my chart".'
@@ -195,27 +216,77 @@ class _JyotishOnboardingState extends State<JyotishOnboarding> {
     });
   }
 
+  // EASIER DATE OF BIRTH (owner, 2026-11-23: "filling the date of birth
+  // should be easier"): scroll wheels — day, month, year; hour, minute,
+  // AM / PM — instead of a calendar paged a month at a time back to the
+  // birth year.
+
+  /// A bottom sheet with [title], a Done button and a wheel [picker]; true
+  /// when Done was tapped.
+  Future<bool> _wheelSheet(String title, Widget picker) async {
+    final done = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: const Color(0xFF1B1245),
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 16, 4),
+            child: Row(children: [
+              Expanded(child: Text(title, style: Cosmic.title())),
+              FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Done')),
+            ]),
+          ),
+          SizedBox(
+            height: 216,
+            child: CupertinoTheme(
+              data: const CupertinoThemeData(
+                brightness: Brightness.dark,
+                textTheme: CupertinoTextThemeData(
+                  dateTimePickerTextStyle: TextStyle(color: Cosmic.ink, fontSize: 21),
+                ),
+              ),
+              child: picker,
+            ),
+          ),
+        ]),
+      ),
+    );
+    return done == true;
+  }
+
   Future<void> _pickDate() async {
     final now = DateTime.now();
-    final d = await showDatePicker(
-      context: context,
-      initialDate: _date ?? DateTime(now.year - 25, 1, 1),
-      firstDate: DateTime(1800),
-      lastDate: now,
-      helpText: 'Date of birth',
+    var chosen = _date ?? DateTime(now.year - 25, 1, 1);
+    if (chosen.isAfter(now)) chosen = now;
+    final ok = await _wheelSheet(
+      'Date of Birth',
+      CupertinoDatePicker(
+        mode: CupertinoDatePickerMode.date,
+        dateOrder: DatePickerDateOrder.dmy,
+        initialDateTime: chosen,
+        minimumDate: DateTime(1900),
+        maximumDate: now,
+        onDateTimeChanged: (d) => chosen = d,
+      ),
     );
-    if (d != null) setState(() => _date = d);
+    if (ok && mounted) setState(() => _date = DateTime(chosen.year, chosen.month, chosen.day));
   }
 
   Future<void> _pickTime() async {
-    final t = await showTimePicker(
-      context: context,
-      initialTime: _time ?? const TimeOfDay(hour: 6, minute: 0),
-      helpText: 'Time of birth',
+    final t = _time ?? const TimeOfDay(hour: 6, minute: 0);
+    var chosen = DateTime(2000, 1, 1, t.hour, t.minute);
+    final ok = await _wheelSheet(
+      'Time of Birth',
+      CupertinoDatePicker(
+        mode: CupertinoDatePickerMode.time,
+        initialDateTime: chosen,
+        onDateTimeChanged: (d) => chosen = d,
+      ),
     );
-    if (t != null) {
+    if (ok && mounted) {
       setState(() {
-        _time = t;
+        _time = TimeOfDay(hour: chosen.hour, minute: chosen.minute);
         _timeUnknown = false;
       });
     }

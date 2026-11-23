@@ -8,9 +8,14 @@
 
 import 'dart:async';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
+import '../../ai/assistant_role.dart';
 import '../../design/neon_tokens.dart';
+import '../../services/auth_service.dart';
+import '../../widgets/photo_source_sheet.dart';
+import '../assistant/state/assistant_engine.dart';
 import 'jyotish_guru.dart';
 import 'jyotish_models.dart';
 import 'jyotish_onboarding.dart';
@@ -28,6 +33,7 @@ class JyotishScreen extends StatefulWidget {
     this.listener,
     this.music,
     this.autoStartGuru = true,
+    this.startWithUpload = false,
   });
 
   final JyotishService service;
@@ -39,6 +45,10 @@ class JyotishScreen extends StatefulWidget {
 
   /// Guruji speaks as the screen opens (off in tests).
   final bool autoStartGuru;
+
+  /// Opened from the card's camera: straight to uploading a horoscope
+  /// (Guruji waits until it is read).
+  final bool startWithUpload;
 
   @override
   State<JyotishScreen> createState() => _JyotishScreenState();
@@ -101,6 +111,119 @@ class _JyotishScreenState extends State<JyotishScreen> with WidgetsBindingObserv
       if (!mounted) return;
     }
     setState(() => _loading = false);
+    if (widget.startWithUpload && !_uploadOffered) {
+      _uploadOffered = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(_upload());
+      });
+    }
+  }
+
+  bool _uploadOffered = false;
+
+  // ── A horoscope, uploaded (owner, 2026-11-23) ──────────────────────
+
+  /// A photo (camera or gallery) or a PDF of the horoscope; null when the
+  /// person closes the picker.
+  Future<({List<int> bytes, String mime, String filename})?> _pickHoroscope() async {
+    final from = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: const Color(0xFF1B1245),
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+            child: Text('Upload Your Horoscope', style: Cosmic.title()),
+          ),
+          ListTile(
+            leading: const Icon(Icons.photo_camera_rounded, color: Mandir.gold),
+            title: Text('Take a Photo', style: Cosmic.body()),
+            onTap: () => Navigator.of(ctx).pop('camera'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.photo_library_rounded, color: Mandir.gold),
+            title: Text('Choose a Photo', style: Cosmic.body()),
+            onTap: () => Navigator.of(ctx).pop('gallery'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.picture_as_pdf_rounded, color: Mandir.gold),
+            title: Text('Choose a PDF', style: Cosmic.body()),
+            onTap: () => Navigator.of(ctx).pop('pdf'),
+          ),
+        ]),
+      ),
+    );
+    if (from == null || !mounted) return null;
+    if (from == 'pdf') {
+      try {
+        final picked = await FilePicker.platform
+            .pickFiles(type: FileType.custom, allowedExtensions: const ['pdf'], withData: true);
+        final f = picked == null || picked.files.isEmpty ? null : picked.files.first;
+        final bytes = f?.bytes;
+        if (bytes == null) return null;
+        return (bytes: bytes.toList(), mime: 'application/pdf', filename: f!.name);
+      } catch (_) {
+        return null;
+      }
+    }
+    try {
+      final photo = await PhotoSourceSheet.pick(context, from);
+      if (photo == null) return null;
+      return (bytes: photo.bytes.toList(), mime: photo.mime, filename: 'horoscope.jpg');
+    } on PhotoAccessDenied {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(from == 'camera'
+                ? 'Camera access is off for this app. Allow it in Settings, then try again.'
+                : 'Photo access is off for this app. Allow it in Settings, then try again.')));
+      }
+      return null;
+    }
+  }
+
+  /// Upload → read → the details filled in to check → cast and saved →
+  /// Guruji explains it.
+  Future<void> _upload() async {
+    final file = await _pickHoroscope();
+    if (file == null || !mounted) return;
+    final nav = Navigator.of(context, rootNavigator: true);
+    unawaited(showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF1B1245),
+        content: Row(children: [
+          const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Mandir.gold, strokeWidth: 2.5)),
+          const SizedBox(width: 16),
+          Expanded(child: Text('Reading your horoscope…', style: Cosmic.body())),
+        ]),
+      ),
+    ));
+    final r = await widget.service.readHoroscope(file.bytes, filename: file.filename, mimeType: file.mime);
+    if (!mounted) return;
+    nav.pop(); // the "Reading…" dialog
+    final read = r.result;
+    if (read == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(r.error ?? 'Unable to read the horoscope. Please try again.')));
+      return;
+    }
+    _typeDetails(extracted: read, uploaded: true);
+  }
+
+  /// Guruji, started from here with [note] as his first words.
+  Future<void> _startGuru(String note) async {
+    final e = AssistantEngine.instance;
+    if (!widget.autoStartGuru) return;
+    if (e.starting || e.inlineVoice || e.liveActive) {
+      // Guruji already talking: he starts again, on the horoscope just read.
+      // Another conversation is left alone.
+      if (AssistantRole.current.value != guruRole) return;
+      await e.endInlineConversation();
+    }
+    await e.useRole(guruRole);
+    await e.beginInlineConversation(name: AuthService.instance.user?.name, openingNote: note);
   }
 
   /// Guruji saved a chart by voice: pick it up without leaving the page
@@ -133,21 +256,29 @@ class _JyotishScreenState extends State<JyotishScreen> with WidgetsBindingObserv
     return true;
   }
 
-  /// The details typed instead of spoken (also "Edit Birth Details").
-  void _typeDetails({Birth? from}) {
+  /// The details typed instead of spoken (also "Edit Birth Details"), or
+  /// [extracted] from an uploaded horoscope to check.
+  void _typeDetails({Birth? from, Extracted? extracted, bool uploaded = false}) {
     Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (ctx) => _JyotishPage(
-        title: 'Birth Details',
+        title: uploaded ? 'Check Your Details' : 'Birth Details',
         child: JyotishOnboarding(
-          key: ValueKey(from),
+          key: ValueKey(from ?? extracted),
           service: widget.service,
           listener: _listener,
           initial: from,
+          extracted: extracted,
           onCast: (birth, {required save}) async {
             final ok = await _cast(birth, save: save);
             if (ok && ctx.mounted) {
               Navigator.of(ctx).pop();
-              if (mounted) _viewKundli();
+              if (!mounted) return ok;
+              if (uploaded) {
+                // Back on Guruji's page: he explains the horoscope just read.
+                unawaited(_startGuru(guruUploadedNote(birth.name ?? 'me')));
+              } else {
+                _viewKundli();
+              }
             }
             return ok;
           },
@@ -191,7 +322,7 @@ class _JyotishScreenState extends State<JyotishScreen> with WidgetsBindingObserv
   void _showProfiles() {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF2A0F22),
+      backgroundColor: const Color(0xFF1B1245),
       showDragHandle: true,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheet) => SafeArea(
@@ -307,7 +438,7 @@ class _JyotishScreenState extends State<JyotishScreen> with WidgetsBindingObserv
     return GuruPage(
       savedName: saved,
       music: _music,
-      autoStart: widget.autoStartGuru,
+      autoStart: widget.autoStartGuru && !widget.startWithUpload,
       onChartSaved: _refresh,
       actions: [
         if (r != null)
@@ -321,6 +452,16 @@ class _JyotishScreenState extends State<JyotishScreen> with WidgetsBindingObserv
             icon: const Icon(Icons.auto_awesome_rounded, size: 18),
             label: const Text('View Your Kundli'),
           ),
+        OutlinedButton.icon(
+          onPressed: _upload,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Mandir.gold,
+            side: BorderSide(color: Mandir.gold.withValues(alpha: 0.7)),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          ),
+          icon: const Icon(Icons.photo_camera_rounded, size: 18),
+          label: const Text('Upload Horoscope'),
+        ),
         TextButton.icon(
           onPressed: () => _typeDetails(from: r?.birth),
           style: TextButton.styleFrom(foregroundColor: Mandir.sandal),
