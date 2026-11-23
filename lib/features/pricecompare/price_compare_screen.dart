@@ -10,6 +10,7 @@ import '../../design/neon_scaffold.dart';
 import '../../design/motion.dart';
 import '../../design/neon_tokens.dart';
 import 'flight_search_screen.dart';
+import 'hotel_search_screen.dart';
 import 'price_models.dart';
 import 'price_result_screen.dart';
 import 'product_screens.dart';
@@ -94,8 +95,17 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => const FlightSearchScreen()));
   }
 
+  /// Hotels have their own page (owner, 2026-11-09); what was typed here
+  /// goes along as the place.
+  void _hotels() {
+    final place = _query.text.trim();
+    FocusScope.of(context).unfocus();
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => HotelSearchScreen(place: place)));
+  }
+
   void _go([String? query, PriceCategory? cat]) {
     if (query == null && _cat == PriceCategory.flights) return _flights();
+    if (query == null && _cat == PriceCategory.hotels) return _hotels();
     final q = (query ?? _query.text).trim();
     if (q.isEmpty) {
       _focus.requestFocus();
@@ -450,6 +460,7 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
           HapticFeedback.selectionClick();
           setState(() => _cat = c);
           if (c == PriceCategory.flights) _flights();
+          if (c == PriceCategory.hotels) _hotels();
         },
         child: AnimatedContainer(
           duration: Motion.short,
@@ -503,7 +514,13 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
         selected: _cat,
         onTap: (c) {
           setState(() => _cat = c);
-          c == PriceCategory.flights ? _flights() : _focus.requestFocus();
+          if (c == PriceCategory.flights) {
+            _flights();
+          } else if (c == PriceCategory.hotels) {
+            _hotels();
+          } else {
+            _focus.requestFocus();
+          }
         },
       );
 

@@ -25,6 +25,7 @@ on:
       - "tool/claude_check.sh"
       - ".gitattributes"
       - ".github/workflows/in-app-update.yml"
+      - ".github/workflows/preview.yml"
   workflow_dispatch:
 
 concurrency:
@@ -36,6 +37,7 @@ permissions:
 
 env:
   BACKEND: https://backend.envisionsit.in
+  DEV_BACKEND: https://dev.189-72-146-77.sslip.io
 
 jobs:
   publish:
@@ -90,7 +92,10 @@ jobs:
         id: ver
         run: |
           current=$(curl -fsS -m 20 "$BACKEND/config" | python3 -c 'import json,sys; print(int(json.load(sys.stdin).get("latestVersionCode") or 0))')
-          next=$(( current + 1 ))
+          # Above any preview build too (preview.yml), so a release always
+          # installs over the preview on the owner's phone. Dev down → 0.
+          dev=$(curl -fsS -m 20 "$DEV_BACKEND/config" 2>/dev/null | python3 -c 'import json,sys; print(int(json.load(sys.stdin).get("latestVersionCode") or 0))' 2>/dev/null || echo 0)
+          next=$(( (current > dev ? current : dev) + 1 ))
           name=$(grep -m1 '^version:' pubspec.yaml | sed -E 's/version:[[:space:]]*([^+]+).*/\1/')
           echo "code=$next" >> "$GITHUB_OUTPUT"
           echo "name=$name" >> "$GITHUB_OUTPUT"

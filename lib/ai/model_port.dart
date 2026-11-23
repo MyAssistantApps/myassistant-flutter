@@ -7,6 +7,10 @@ import 'dart:async';
 
 import 'package:firebase_ai/firebase_ai.dart';
 
+// The message types a ModelRequest carries, for callers outside lib/ai
+// (they never import firebase_ai themselves).
+export 'package:firebase_ai/firebase_ai.dart' show Content, TextPart;
+
 import 'server_model_port.dart';
 
 /// One request: which model, what it is told, and the conversation.

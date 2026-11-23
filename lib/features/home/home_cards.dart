@@ -27,6 +27,7 @@ import '../../widgets/neon_cards.dart';
 import '../../widgets/whats_new_card.dart';
 import '../assistant/state/assistant_engine.dart';
 import '../briefing/brief_player.dart';
+import '../jyotish/jyotish_card.dart';
 import '../meeting_prep/meeting_prep_sheet.dart';
 import 'messages_card.dart';
 import 'appointment_strip.dart';
@@ -34,7 +35,6 @@ import '../pricecompare/price_compare_section.dart';
 import '../shopping/shopping_list_screen.dart';
 import '../shopping/shopping_service.dart';
 import 'home_extras.dart';
-import 'horoscope_card.dart';
 import 'home_redesign.dart';
 import 'pro_banners.dart';
 import 'quick_tools.dart';
@@ -207,8 +207,8 @@ class _HomeFeedViewState extends State<HomeFeedView> {
         'quick_tools' => QuickToolsSection(onOpen: (page) => _do.open(context, page)),
         'popular_apps' => PopularAppsSection(onOpen: (page) => _do.open(context, page)),
         'price_compare' => PriceCompareSection(onOpen: (page) => _do.open(context, page)),
+        'payment_apps' => const PaymentApps(),
         'quick_apps' => const QuickApps(),
-        'horoscope' => const HoroscopeCard(),
         _ => null,
       };
 
@@ -357,6 +357,12 @@ class _HomeFeedViewState extends State<HomeFeedView> {
             // above what needs the user.
             const SizedBox(height: 20),
             const WhatsNewCard(),
+            // JYOTISH (2026-11-22): the Vedic horoscope, last on Home.
+            const SizedBox(height: 20),
+            Reveal(
+              delayMs: 180,
+              child: JyotishCard(onOpen: (page) => _do.open(context, page)),
+            ),
             ]),
            ),
           ],
@@ -435,19 +441,20 @@ class _HomeFeedViewState extends State<HomeFeedView> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              for (final c in feed.also)
+              for (var i = 0; i < feed.also.length; i++)
                 KeyedSubtree(
-                    key: ValueKey(c.id),
-                    child: c.kind == HomeCardKind.message
+                    key: ValueKey(feed.also[i].id),
+                    child: feed.also[i].kind == HomeCardKind.message
                         ? Padding(
                             padding: const EdgeInsets.only(bottom: 8),
-                            child: _messagesCard(c, b))
-                        : _alsoRow(c)),
+                            child: _messagesCard(feed.also[i], b))
+                        : _alsoRow(feed.also[i], homeRowColor(i))),
             ],
           ),
         ),
         if (feed.day.isNotEmpty)
-          Reveal(delayMs: 120, child: _day(feed)),
+          // The timeline's colours carry on after the rows' (no repeats).
+          Reveal(delayMs: 120, child: _day(feed, offset: feed.also.length)),
       ],
     );
   }
@@ -649,7 +656,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
     );
   }
 
-  Widget _alsoRow(HomeCard c) {
+  Widget _alsoRow(HomeCard c, Color color) {
     final (primary, secondary) = _buttons(c);
     final act = primary ?? secondary;
     final busy = _busy.contains(c.id);
@@ -661,12 +668,42 @@ class _HomeFeedViewState extends State<HomeFeedView> {
         label: _spoken(c),
         child: _Tap(
           onTap: open == null ? null : () => _do.open(context, open),
-          child: GlassCard(
-            minHeight: 68,
+          // Its own colour (2026-11-22, Manish): a tinted card, a solid
+          // icon tile and a Done in that colour.
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 68),
             padding: const EdgeInsets.fromLTRB(Neon.s3, Neon.s2 + 2, Neon.s1, Neon.s2 + 2),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(Neon.rCard),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color.alphaBlend(color.withValues(alpha: Neon.isDark ? 0.24 : 0.14), Neon.surface),
+                  Color.alphaBlend(color.withValues(alpha: Neon.isDark ? 0.06 : 0.04), Neon.surface),
+                ],
+              ),
+              border: Border.all(color: color.withValues(alpha: 0.45), width: 1.2),
+              boxShadow: [BoxShadow(color: color.withValues(alpha: 0.18), blurRadius: 16, offset: const Offset(0, 6))],
+            ),
             child: Row(
               children: [
-                ExcludeSemantics(child: _tile(c.kind, 40)),
+                ExcludeSemantics(
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(Neon.rTile),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [color, Color.lerp(color, Colors.black, 0.25)!],
+                      ),
+                      boxShadow: [BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 10)],
+                    ),
+                    child: Icon(_look(c.kind).$1, color: Colors.white, size: 21),
+                  ),
+                ),
                 const SizedBox(width: Neon.s3),
                 Expanded(
                   child: ExcludeSemantics(
@@ -694,7 +731,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
                     ),
                   ),
                 ),
-                if (act != null) _compact(c.id, act, busy, tone: _toneOf(c.kind)),
+                if (act != null) _coloured(c.id, act, busy, color),
               ],
             ),
           ),
@@ -706,19 +743,20 @@ class _HomeFeedViewState extends State<HomeFeedView> {
   /// THE DAY AS A TIMELINE (redesign, 2026-11-01): times down the left, a
   /// rail with a dot per thing. Its heading is "Later today" above the
   /// mixed feed; the month is in the Meetings number and Hub → Calendar.
-  Widget _day(HomeFeed feed) {
+  Widget _day(HomeFeed feed, {int offset = 0}) {
     return GlassCard(
       padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
       child: Column(
         children: [
           for (var i = 0; i < feed.day.length; i++)
-            _line(feed.day[i], first: i == 0, last: i == feed.day.length - 1),
+            _line(feed.day[i],
+                first: i == 0, last: i == feed.day.length - 1, color: homeRowColor(offset + i)),
         ],
       ),
     );
   }
 
-  Widget _line(HomeLine l, {bool first = false, bool last = false}) {
+  Widget _line(HomeLine l, {bool first = false, bool last = false, Color? color}) {
     final page = l.item.kind == 'reminder'
         ? const RemindersScreen()
         : const CalendarScreen();
@@ -728,6 +766,7 @@ class _HomeFeedViewState extends State<HomeFeedView> {
       icon: l.item.kind == 'reminder' ? Icons.notifications_none_rounded : Icons.event_outlined,
       first: first,
       last: last,
+      color: color,
       onTap: () => _do.open(context, page),
     );
   }
@@ -1209,16 +1248,38 @@ class _HomeFeedViewState extends State<HomeFeedView> {
         ),
       );
 
-  /// What a card's light says it is (NeonTone): information in blue,
-  /// something to act on in magenta, something to discover in purple.
-  static NeonTone _toneOf(HomeCardKind k) => switch (k) {
-        HomeCardKind.meeting => NeonTone.info,
-        HomeCardKind.reminder || HomeCardKind.promise || HomeCardKind.birthday => NeonTone.action,
-        HomeCardKind.missedCall => NeonTone.danger,
-        HomeCardKind.message => NeonTone.discovery,
-        HomeCardKind.payment => NeonTone.warning,
-        HomeCardKind.getStarted => NeonTone.tip,
-      };
+  /// A row's button in the row's own colour.
+  Widget _coloured(String id, _Act a, bool busy, Color color) => Padding(
+        padding: const EdgeInsets.only(right: 6),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(Neon.rPill),
+            onTap: busy ? null : () => _run(id, a.run),
+            child: Ink(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(Neon.rPill),
+                color: color.withValues(alpha: Neon.isDark ? 0.22 : 0.14),
+                border: Border.all(color: color.withValues(alpha: 0.7), width: 1.2),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (busy)
+                    const NeonLoader.inline(size: 14, semanticLabel: 'In progress')
+                  else if (a.icon != null)
+                    Icon(a.icon, size: 16, color: Neon.isDark ? Color.lerp(color, Colors.white, 0.35) : color),
+                  const SizedBox(width: 6),
+                  Text(a.label,
+                      style: NeonType.manrope(NeonType.footnote + 1, FontWeight.w800)
+                          .copyWith(color: Neon.isDark ? Color.lerp(color, Colors.white, 0.35) : color)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
 
   // ── looks and words ──────────────────────────────────────────────────
 
@@ -1258,11 +1319,6 @@ class _HomeFeedViewState extends State<HomeFeedView> {
         HomeCardKind.payment => (Icons.receipt_long_rounded, Neon.accentD),
         HomeCardKind.getStarted => (Icons.graphic_eq_rounded, Neon.accentA),
       };
-
-  static Widget _tile(HomeCardKind k, double size) {
-    final (icon, tint) = _look(k);
-    return GlassTile(icon, tint, size: size);
-  }
 
 }
 

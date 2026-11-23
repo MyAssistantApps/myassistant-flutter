@@ -351,12 +351,14 @@ class VoiceListener {
   /// ends the utterance, timed from the owner's LAST words — the clock only
   /// starts once they have said something, so a slow start is never cut
   /// off. (The plugin's own pause timer runs from the moment it starts
-  /// listening; it is only given [recognizerPause], a safety net.)
+  /// listening; it is only given [recognizerPause], a safety net — or
+  /// [startPause], when a caller wants to wait longer for the first words.)
   Stream<HearEvent> listen({
     String? language,
     Duration listenFor = const Duration(seconds: 30),
     Duration pauseFor = const Duration(milliseconds: 800),
     bool preferOnDevice = true,
+    Duration? startPause,
   }) {
     _session?.cancel();
     late final _Session s;
@@ -365,7 +367,7 @@ class VoiceListener {
       onCancel: () => s.cancel(),
     );
     s = _Session(out, language ?? _config().models.ttsLanguage, listenFor, pauseFor,
-        preferOnDevice);
+        preferOnDevice, startPause: startPause);
     s.onPause = () async {
       if (!identical(_session, s) || s.cloud) return;
       try {
@@ -446,7 +448,9 @@ class VoiceListener {
         localeId: s.locale,
         onDevice: onDevice,
         listenFor: s.listenFor,
-        pauseFor: s.pauseFor > recognizerPause ? s.pauseFor : recognizerPause,
+        // [startPause] (when given) lets a form wait longer for the first
+        // words; the end of speech after them is still [pauseFor].
+        pauseFor: s.pauseFor > (s.startPause ?? recognizerPause) ? s.pauseFor : (s.startPause ?? recognizerPause),
       );
     } catch (_) {
       s.recover('unavailable');
@@ -505,7 +509,10 @@ class VoiceListener {
 }
 
 class _Session {
-  _Session(this.out, this.language, this.listenFor, this.pauseFor, this.preferOnDevice);
+  _Session(this.out, this.language, this.listenFor, this.pauseFor, this.preferOnDevice, {this.startPause});
+
+  /// The recogniser's own silence limit, when longer than [VoiceListener.recognizerPause].
+  final Duration? startPause;
 
   final StreamController<HearEvent> out;
   final String language;

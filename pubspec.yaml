@@ -100,6 +100,7 @@ dependencies:
   firebase_analytics: ^12.6.0
   simple_icons: ^16.23.0
   webview_flutter: ^4.14.1
+  flutter_tts: ^4.2.5
 
 dev_dependencies:
   flutter_test:
@@ -149,6 +150,7 @@ flutter:
     - assets/splash/eye_left.png
     - assets/splash/eye_right.png
     - assets/sounds/
+    - assets/jyotish/
     # Doctor's, Advocate's and Business banners (Pexels licence, CREDITS.md).
     - assets/pro/
     - assets/tryon/

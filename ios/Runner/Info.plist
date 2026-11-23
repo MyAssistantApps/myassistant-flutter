@@ -2,6 +2,11 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Home's Quick Apps: canLaunchUrl may only ask about schemes listed here. -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>paypal</string>
+	</array>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Microphone access allows you to speak to your assistant.</string>
 	<key>NSCameraUsageDescription</key>

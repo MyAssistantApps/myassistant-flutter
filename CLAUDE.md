@@ -52,8 +52,12 @@ branch protection, collaborators, secrets or workflows for a teammate.
 **Every push to `production` (except docs-only) releases the app** through
 `.github/workflows/in-app-update.yml`: tests, then a build signed with the
 team key, numbered one above what the backend publishes now, uploaded to
-the backend's update channel. Installed apps offer it on their next
-launch. The commit's first line is the "What's new" text users see — write
+the backend's update channel. Installed apps (build 222 and later) update
+themselves QUIETLY (owner, 2026-11-23): on Wi-Fi they download it with
+nothing on screen and install it once the app has been in the background
+for three minutes — no prompt on Android 12+; older phones get the
+"Update available" sheet. So a push to `production` reaches every
+installed app, testers and users alike, within hours. The commit's first line is the "What's new" text users see — write
 it for them. Actions → in-app update → Run workflow publishes on demand.
 
 App Distribution is no longer used (the last one was build 207,

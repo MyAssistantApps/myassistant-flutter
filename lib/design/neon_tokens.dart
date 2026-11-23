@@ -303,6 +303,12 @@ class Neon {
   /// The lit edge's colours (a brand card's rim): violet, lit to deep.
   static List<Color> get rim => [Color.lerp(violet, Colors.white, 0.22)!, accentFill];
 
+  // Used by the price compare cards (restored after production removed it).
+  static LinearGradient get gVioletPink => LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [violet, pink]);
+
   /// THE BRAND FILL — one violet, lit from the top-left (light premium,
   /// 2026-11-02; was violet into magenta). The mic, the active tab, the
   /// Next card: a tactile, raised violet, not a two-colour wash.

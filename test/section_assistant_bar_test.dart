@@ -52,7 +52,13 @@ void main() {
       expect(find.byType(SectionAssistantBar), findsOneWidget);
       expect(find.text('Ask the $name Assistant'), findsOneWidget);
       expect(find.text('Camera'), findsOneWidget);
-      expect(find.text('Tap to talk'), findsOneWidget);
+      // Scoped to the bar: Hotels also has production's floating booking
+      // mic (BookingVoiceOrb), which says "Tap to talk" too.
+      expect(
+          find.descendant(
+              of: find.byType(SectionAssistantBar),
+              matching: find.text('Tap to talk')),
+          findsOneWidget);
       expect(t.takeException(), isNull);
     });
   }

@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../core/store_build.dart';
+import '../../home/quick_app_store.dart';
 import '../../home/ride_strip.dart';
 import '../../home/order_strip.dart';
 import 'contact_pick.dart';
@@ -15,6 +16,7 @@ import '../../../screens/linked_accounts_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../jyotish/jyotish_screen.dart';
 import '../../../ai/assistant_role.dart';
 import '../../../ai/brain.dart';
 import '../../../ai/listen.dart';
@@ -299,7 +301,10 @@ class AssistantEngine extends ChangeNotifier {
   final ValueNotifier<int> wake = ValueNotifier<int>(0);
   DateTime wokeAt = DateTime(2000);
 
-  Future<void> beginInlineConversation({String? name}) async {
+  /// [openingNote]: the page speaks first, in its own words (the Jyotish
+  /// guru greets and gives today's reading, or asks for birth details).
+  /// No generic hello is played; the note is the conversation's first turn.
+  Future<void> beginInlineConversation({String? name, String? openingNote}) async {
     // A second tap while a start is still running must not stack another
     // one on top of it.
     if (_starting) {
@@ -321,7 +326,10 @@ class AssistantEngine extends ChangeNotifier {
     // Play the shared, server-cached greeting in the same fixed female
     // voice used by every OpenAI live conversation.
     final now = DateTime.now();
-    if (_liveWanted && now.difference(_lastGreetedAt) >= _greetCooldown) {
+    if (openingNote != null) {
+      // The page's own first words replace the hello (see [openingNote]).
+      _lastGreetedAt = now;
+    } else if (_liveWanted && now.difference(_lastGreetedAt) >= _greetCooldown) {
       // A cache miss falls back to a fixed-line response from the Live voice.
       _lastGreetedAt = now;
       _openingDue = true;
@@ -371,7 +379,9 @@ class AssistantEngine extends ChangeNotifier {
       notifyListeners();
       AppLog.add('orb', 'start produced no session');
       AppFeedback.toast("I was unable to connect. Tap the orb to try again.");
+      return;
     }
+    if (openingNote != null) unawaited(_tellModel(openingNote));
   }
 
   /// True while the greeting is being synthesised through the same speech
@@ -3125,7 +3135,11 @@ class AssistantEngine extends ChangeNotifier {
         // claiming an app opened.
         {
           final want = (e['name'] as String? ?? '').trim();
-          final pkg = (e['pkg'] as String? ?? '').trim();
+          var pkg = (e['pkg'] as String? ?? '').trim();
+          // AN APP THEY ADDED TO HOME (Quick Apps / Payments → Add App):
+          // its exact package, so "open <their app>" never lands on a
+          // lookalike by label.
+          if (pkg.isEmpty) pkg = await QuickAppStore.instance.pkgFor(want) ?? '';
           // INSTALL ONLY ON THE OWNER'S WORDS. Owner, 2026-09-24: "open X"
           // on a phone without X installed it unasked. The server now says
           // whether they asked to install / download it (or said yes to
@@ -3323,7 +3337,8 @@ class AssistantEngine extends ChangeNotifier {
                 '[SYSTEM] In-app updates are switched off on this phone; '
                 'nothing is being checked or installed. Say so plainly.');
           } else if (ctx != null) {
-            unawaited(AppUpdateService.instance.check(ctx, force: true));
+            unawaited(AppUpdateService.instance
+                .check(ctx, force: true, userAsked: true));
           } else {
             // NEVER LET "opening the installer" STAND WHEN NOTHING OPENED.
             // The tool has already spoken by the time this runs, so the
@@ -4705,6 +4720,8 @@ class AssistantEngine extends ChangeNotifier {
                   ? null
                   : (e['category'] as String).trim(),
             ),
+        // "Open my kundli" (jyotish, 2026-11-22): the Vedic horoscope.
+        'jyotish' => (_) => const JyotishScreen(),
         _ => null,
       };
 
@@ -4841,8 +4858,8 @@ class AssistantEngine extends ChangeNotifier {
     _leftForExternalApp = true;
     String? opened;
     try {
-      opened = await const MethodChannel('hari/intent')
-          .invokeMethod<String>('launchApp', {'name': app, 'pkg': ''});
+      opened = await const MethodChannel('hari/intent').invokeMethod<String>(
+          'launchApp', {'name': app, 'pkg': await QuickAppStore.instance.pkgFor(app) ?? ''});
     } catch (_) {}
     if (opened == null || opened.isEmpty) {
       _leftForExternalApp = false;
