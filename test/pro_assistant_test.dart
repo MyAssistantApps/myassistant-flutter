@@ -21,6 +21,28 @@ void main() {
     expect(ProProfile.of(ProKind.business).name, 'Business');
   });
 
+  test('every Quick Actions tile has its own mic, started on that tile', () {
+    for (final k in ProKind.values) {
+      final p = ProProfile.of(k);
+      final roles = <Object>{};
+      for (final a in p.actions.where((a) => !a.featured)) {
+        // What the tile's conversation is about, naming how it is done.
+        expect(a.voice?.trim(), isNotEmpty, reason: '${p.name}: ${a.title}');
+        final r = p.roleFor(a);
+        // The page's own assistant, told which tile it was started from.
+        expect(r.name, p.role.name);
+        expect(r.brief, startsWith(p.role.brief));
+        expect(r.brief, contains('"${a.title}"'));
+        expect(r.brief, contains(a.voice!));
+        roles.add(r);
+      }
+      // One role per tile: only the tapped tile's orb lights up, and the
+      // page's own orb (p.role) is a different one again.
+      expect(roles.length, p.actions.where((a) => !a.featured).length);
+      expect(roles, isNot(contains(p.role)));
+    }
+  });
+
   for (final k in ProKind.values) {
     testWidgets('${ProProfile.of(k).name} Assistant page draws its actions', (t) async {
       // A phone's screen (360 x 800).
@@ -38,6 +60,14 @@ void main() {
       for (final a in ProProfile.of(k).actions) {
         await t.scrollUntilVisible(find.text(a.title), 120, scrollable: scroller);
         expect(find.text(a.title), findsOneWidget);
+        // Each Quick Actions tile carries its own mic orb (2026-11-23).
+        if (!a.featured) {
+          expect(
+              find.bySemanticsLabel(
+                  'Speak to the ${ProProfile.of(k).name} Assistant about ${a.title}'),
+              findsOneWidget,
+              reason: a.title);
+        }
       }
       // The ask card's message box (2026-11-14) carries this label.
       final chat = find.bySemanticsLabel('Chat with the ${ProProfile.of(k).name} Assistant');
