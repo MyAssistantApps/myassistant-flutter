@@ -194,20 +194,19 @@ class SilentJyotishMusic extends JyotishMusic {
 
 // ── The temple drawing ─────────────────────────────────────────────────
 
-/// The original horoscope night sky (deep violet, nebula, twinkling stars;
-/// owner, 2026-11-23: "colour like the first one") with a faint gold line
-/// drawing of temple architecture over it: a toran of bells along the top,
-/// carved pillars and a scalloped arch, a skyline of shikharas and a
-/// gopuram, and diyas and lotuses between.
+/// The first Jyotish screen's colours (owner, 2026-11-23: "the design and
+/// colour should be like the first one") — deep indigo and starlight — with
+/// a faint gold line drawing of temple architecture over it: a toran of
+/// bells along the top, carved pillars and a scalloped arch, a skyline of
+/// shikharas and a gopuram, and diyas and lotuses between.
 class TempleDoodle extends StatelessWidget {
   const TempleDoodle({super.key, this.child});
   final Widget? child;
 
   @override
-  Widget build(BuildContext context) => TwinklingSky(
-        seed: 5,
+  Widget build(BuildContext context) => CosmicBackdrop(
         child: CustomPaint(
-          painter: TempleDoodlePainter(color: const Color(0xFFE6C36A), opacity: 0.16),
+          painter: TempleDoodlePainter(color: Cosmic.gold, opacity: 0.15),
           child: child ?? const SizedBox.expand(),
         ),
       );

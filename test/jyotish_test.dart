@@ -230,21 +230,21 @@ void main() {
               MediaQuery(data: MediaQuery.of(ctx).copyWith(disableAnimations: true), child: w!),
         );
 
-    testWidgets('the Home card is Today\'s Horoscope, with the camera and the mic', (t) async {
+    testWidgets('the Home card: the first Jyotish design, today\'s horoscope, the camera and the mic', (t) async {
       Widget? opened;
       await t.pumpWidget(host(Scaffold(
           body: Padding(padding: const EdgeInsets.all(16), child: JyotishCard(onOpen: (p) => opened = p)))));
-      expect(find.text("TODAY'S HOROSCOPE"), findsOneWidget);
-      expect(find.text('Discover Your Day'), findsOneWidget);
+      expect(find.text('Jyotish'), findsOneWidget);
+      expect(find.textContaining("TODAY'S HOROSCOPE"), findsOneWidget);
       // The card opens Jyotish, Guruji speaking.
-      await t.tap(find.text('Discover Your Day'));
+      await t.tap(find.text('Jyotish'));
       expect(opened, isA<JyotishScreen>());
       expect((opened! as JyotishScreen).startWithUpload, isFalse);
       // The camera: straight to uploading a horoscope.
-      await t.tap(find.text('Upload'));
+      await t.tap(find.text('Upload Horoscope'));
       expect((opened! as JyotishScreen).startWithUpload, isTrue);
       // The mic: Guruji.
-      await t.tap(find.text('Tap to Talk'));
+      await t.tap(find.text('Talk to Guruji'));
       expect((opened! as JyotishScreen).startWithUpload, isFalse);
       expect(find.bySemanticsLabel('Upload your horoscope for Guruji to read'), findsOneWidget);
       expect(find.bySemanticsLabel('Talk to Guruji'), findsOneWidget);

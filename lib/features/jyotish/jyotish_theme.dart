@@ -1,13 +1,11 @@
 // JYOTISH THEME (2026-11-22) — the horoscope's own night sky: always dark
 // and cosmic (deep indigo, starlight, gold), whatever the app's theme.
 
-import 'dart:io' show Platform;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
 import '../../design/neon_tokens.dart';
-import '../home/cosmic_painter.dart';
 import 'kundli_chart.dart';
 
 class Cosmic {
@@ -228,53 +226,4 @@ String prettyTime(String? hm) {
   final h = int.tryParse(p[0]) ?? 0;
   final m = p.length > 1 ? p[1] : '00';
   return '${h % 12 == 0 ? 12 : h % 12}:$m ${h < 12 ? 'AM' : 'PM'}';
-}
-
-/// THE ORIGINAL NIGHT SKY (owner, 2026-11-23: "the design and colour should
-/// be like the first one"): the Today's Horoscope card's deep violet, its
-/// nebula glow and a starfield that twinkles slowly — still when motion is
-/// reduced, and under test, where a looping animation would never settle.
-class TwinklingSky extends StatefulWidget {
-  const TwinklingSky({super.key, this.seed = 7, this.child});
-  final int seed;
-  final Widget? child;
-
-  @override
-  State<TwinklingSky> createState() => _TwinklingSkyState();
-}
-
-class _TwinklingSkyState extends State<TwinklingSky> with SingleTickerProviderStateMixin {
-  late final AnimationController _c =
-      AnimationController(vsync: this, duration: const Duration(seconds: 7));
-
-  static final bool _underTest = Platform.environment.containsKey('FLUTTER_TEST');
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final still = _underTest || MediaQuery.maybeDisableAnimationsOf(context) == true;
-    if (still) {
-      _c.stop();
-    } else if (!_c.isAnimating) {
-      _c.repeat();
-    }
-  }
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => RepaintBoundary(
-        child: AnimatedBuilder(
-          animation: _c,
-          builder: (_, child) => CustomPaint(
-            painter: CosmicPainter(seed: widget.seed, t: _c.value),
-            child: child,
-          ),
-          child: widget.child,
-        ),
-      );
 }
