@@ -365,6 +365,20 @@ class MainActivity : FlutterFragmentActivity() {
                     ) { ok -> result.success(ok) }
                     // Quiet updates: Android 12+ and not refused for this build.
                     "silentPossible" -> result.success(ApkInstaller.silentPossible(applicationContext))
+                    // The app was left: install the verified build a few
+                    // minutes from now (a system job — survives freezing).
+                    "scheduleQuietInstall" -> result.success(
+                        QuietInstallJob.schedule(
+                            applicationContext,
+                            call.argument<String>("path") ?: "",
+                            (call.argument<Number>("delayMs") ?: 180000).toLong()
+                        )
+                    )
+                    // The app is in use again: not now.
+                    "cancelQuietInstall" -> {
+                        QuietInstallJob.cancel(applicationContext)
+                        result.success(true)
+                    }
                     // Is the connection one the user pays for by the
                     // megabyte? A ~200 MB update must not start itself on
                     // mobile data. Unknown state is treated as metered:

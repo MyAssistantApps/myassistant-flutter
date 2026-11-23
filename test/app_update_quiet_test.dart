@@ -1,6 +1,6 @@
 // Quiet updates (owner, 2026-11-23: "update silently without the user
-// knowing"): an automatic check downloads on Wi-Fi with nothing on screen
-// and installs only after the app has been left for three minutes.
+// knowing"): an automatic check downloads on Wi-Fi with nothing on screen;
+// once the app is left, a system job installs it three minutes later.
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -46,14 +46,14 @@ void main() {
   });
 
   group('the quiet install waits until the app has been left', () {
-    final calls = <Map<Object?, Object?>>[];
+    final calls = <MethodCall>[];
     final apk = File('${Directory.systemTemp.path}/update-999.apk');
 
     setUp(() {
       calls.clear();
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(const MethodChannel('hari/updater'), (c) async {
-        if (c.method == 'install') calls.add(c.arguments as Map<Object?, Object?>);
+        calls.add(c);
         return true;
       });
     });
@@ -63,42 +63,45 @@ void main() {
           .setMockMethodCallHandler(const MethodChannel('hari/updater'), null);
     });
 
-    testWidgets('three minutes in the background, then a silent install', (t) async {
+    Iterable<MethodCall> named(String m) => calls.where((c) => c.method == m);
+
+    testWidgets('leaving the app hands the install to a system job, three minutes on',
+        (t) async {
       t.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       AppUpdateService.instance.debugQuietReady(apk, 999);
       await t.pump(const Duration(minutes: 10));
-      expect(calls, isEmpty, reason: 'never while the app is in use');
+      expect(calls, isEmpty, reason: 'nothing while the app is in use');
 
       t.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-      await t.pump(const Duration(minutes: 2));
-      expect(calls, isEmpty, reason: 'a quick switch away is not "left"');
-      await t.pump(const Duration(minutes: 1, seconds: 1));
-      expect(calls, hasLength(1));
-      expect(calls.single['silent'], isTrue);
-      expect(calls.single['path'], apk.path);
-
-      // Once per build per run: no second attempt in the background.
+      await t.pump();
+      expect(named('scheduleQuietInstall'), isNotEmpty);
+      final args = named('scheduleQuietInstall').last.arguments as Map<Object?, Object?>;
+      expect(args['path'], apk.path);
+      expect(args['delayMs'], const Duration(minutes: 3).inMilliseconds);
+      // The app never installs itself from a timer of its own: Android
+      // freezes it in the background, and the timer would fire on return.
+      expect(named('install'), isEmpty);
       t.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-      await t.pump(const Duration(minutes: 5));
-      expect(calls, hasLength(1));
-      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await t.pump();
     });
 
-    testWidgets('coming back before three minutes starts the wait again', (t) async {
+    testWidgets('coming back cancels it; leaving again schedules it again', (t) async {
       t.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       AppUpdateService.instance.debugQuietReady(apk, 1000);
       t.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-      await t.pump(const Duration(minutes: 2));
+      await t.pump();
       t.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-      await t.pump(const Duration(minutes: 5));
-      expect(calls, isEmpty, reason: 'back in use: the app is never replaced');
+      await t.pump();
+      expect(calls.last.method, 'cancelQuietInstall',
+          reason: 'back in use: the app is never replaced under the user');
 
+      calls.clear();
       t.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-      await t.pump(const Duration(minutes: 3, seconds: 1));
-      expect(calls, hasLength(1));
-      expect(calls.single['silent'], isTrue);
+      await t.pump();
+      expect(named('scheduleQuietInstall'), isNotEmpty);
+      expect(named('install'), isEmpty);
       t.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await t.pump();
     });
   });
 }

@@ -101,13 +101,13 @@ class AppUpdateService {
     final t = now ?? DateTime.now();
     if (s == AppLifecycleState.paused || s == AppLifecycleState.hidden) {
       _backgroundedAt ??= t;
-      // A quietly downloaded build installs once the app has been left.
-      if (_readyApk != null && _installTimer == null) _scheduleInstall();
+      // A quietly downloaded build installs a few minutes after the app
+      // is left.
+      if (_readyApk != null) unawaited(_scheduleInstall());
     } else if (s == AppLifecycleState.resumed) {
-      // Back in use before the quiet wait ran out: never replace the app
-      // under the user. The next time it is left, the wait starts again.
-      _installTimer?.cancel();
-      _installTimer = null;
+      // Back in use before the wait ran out: never replace the app under
+      // the user. The next time it is left, the wait starts again.
+      if (_readyApk != null) unawaited(_cancelInstall());
       final away = _backgroundedAt;
       _backgroundedAt = null;
       if (away != null && t.difference(away) >= _awayResets && _snoozes.isNotEmpty) {
@@ -123,7 +123,6 @@ class AppUpdateService {
   void debugQuietReady(File apk, int versionCode) {
     _readyApk = apk;
     _readyVersion = versionCode;
-    _quietTried.remove(versionCode);
     _watchLifecycle();
   }
 
@@ -157,12 +156,6 @@ class AppUpdateService {
   bool _quietRunning = false;
   File? _readyApk;
   int _readyVersion = 0;
-  Timer? _installTimer;
-
-  /// One quiet install attempt per build per run: a failure is retried
-  /// after the next launch, never in a loop while the app sits in the
-  /// background.
-  final Set<int> _quietTried = {};
 
   /// Can this phone install an update with no prompt at all? Android 12+,
   /// unless a quiet attempt from this very build turned into a
@@ -179,7 +172,7 @@ class AppUpdateService {
 
   Future<void> _quietUpdate(RemoteConfig cfg) async {
     final v = cfg.latestVersionCode;
-    if (_quietRunning || _quietTried.contains(v) || _readyVersion == v) return;
+    if (_quietRunning || _readyVersion == v) return;
     _quietRunning = true;
     try {
       final file = await _download(cfg, onProgress: (_) {});
@@ -191,7 +184,7 @@ class AppUpdateService {
       final state = WidgetsBinding.instance.lifecycleState;
       if (state != null && state != AppLifecycleState.resumed) {
         _backgroundedAt ??= DateTime.now();
-        _scheduleInstall();
+        await _scheduleInstall();
       }
     } catch (e) {
       AppLog.add('update', 'quiet download of build $v failed: $e');
@@ -200,30 +193,31 @@ class AppUpdateService {
     }
   }
 
-  void _scheduleInstall() {
-    _installTimer?.cancel();
-    _installTimer = Timer(_quietFor, () {
-      _installTimer = null;
-      unawaited(_installQuietly());
-    });
+  /// The install itself is a system job (QuietInstallJob): Android freezes
+  /// an app soon after it is left, so a timer here would only fire when the
+  /// user came back — and the update would then close the app they had just
+  /// opened. The job runs [_quietFor] later even for a frozen app, skips if
+  /// the app is in use, and is cancelled when it is opened again.
+  Future<void> _scheduleInstall() async {
+    final file = _readyApk;
+    if (file == null) return;
+    try {
+      final ok = await const MethodChannel('hari/updater').invokeMethod<bool>(
+          'scheduleQuietInstall',
+          {'path': file.path, 'delayMs': _quietFor.inMilliseconds});
+      AppLog.add('update',
+          'build $_readyVersion installs quietly in ${_quietFor.inMinutes} min'
+          '${ok == true ? '' : ' (not scheduled)'}');
+    } catch (e) {
+      AppLog.add('update', 'quiet install not scheduled: $e');
+    }
   }
 
-  Future<void> _installQuietly() async {
-    final file = _readyApk;
-    final v = _readyVersion;
-    if (file == null || _quietTried.contains(v)) return;
-    if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
-      return; // in use again — wait for the next time it is left
-    }
-    _quietTried.add(v);
-    _readyApk = null;
-    AppLog.add('update', 'installing build $v quietly');
+  Future<void> _cancelInstall() async {
     try {
       await const MethodChannel('hari/updater')
-          .invokeMethod<bool>('install', {'path': file.path, 'silent': true});
-    } catch (e) {
-      AppLog.add('update', 'quiet install of build $v failed: $e');
-    }
+          .invokeMethod<bool>('cancelQuietInstall');
+    } catch (_) {}
   }
 
   /// True when the active connection is metered (mobile data, a metered
