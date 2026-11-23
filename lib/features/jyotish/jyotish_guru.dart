@@ -55,6 +55,7 @@ const guruRole = AssistantRole(
       'those tools return — never invent planetary positions. Readings are '
       'for reflection, not certainty: never frighten anyone about doshas or '
       'sade sati, and never sell remedies. Reply in the language they speak.',
+  tools: ['jyotish_chart', 'jyotish_reading'],
 );
 
 /// Guruji's first words: today's bhavishya for a saved chart, otherwise the

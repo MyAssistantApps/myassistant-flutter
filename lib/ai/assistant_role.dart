@@ -7,13 +7,19 @@ import 'package:flutter/foundation.dart';
 /// that assistant. Null is the everyday assistant.
 @immutable
 class AssistantRole {
-  const AssistantRole(this.name, this.brief);
+  const AssistantRole(this.name, this.brief, {this.tools = const []});
 
   /// How the assistant introduces itself ("the Doctor's Assistant").
   final String name;
 
   /// What it looks after, in a sentence.
   final String brief;
+
+  /// The server tools its work needs (2026-11-23). Sent with every context
+  /// request (roleTools): a fast-voice session takes its tools once, when
+  /// it opens, and without these "Ramesh paid 500" or "how is my career this
+  /// month" reached a session that had no such tool.
+  final List<String> tools;
 
   static final ValueNotifier<AssistantRole?> current = ValueNotifier(null);
 
@@ -30,8 +36,11 @@ class AssistantRole {
 
   @override
   bool operator ==(Object other) =>
-      other is AssistantRole && other.name == name && other.brief == brief;
+      other is AssistantRole &&
+      other.name == name &&
+      other.brief == brief &&
+      listEquals(other.tools, tools);
 
   @override
-  int get hashCode => Object.hash(name, brief);
+  int get hashCode => Object.hash(name, brief, Object.hashAll(tools));
 }
