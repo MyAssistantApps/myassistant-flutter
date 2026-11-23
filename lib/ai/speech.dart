@@ -18,6 +18,7 @@ import 'dart:typed_data';
 import 'package:firebase_ai/firebase_ai.dart';
 
 import '../core/log.dart';
+import 'assistant_role.dart';
 import 'config.dart';
 import 'model_port.dart';
 import 'speech_markup.dart';
@@ -446,12 +447,17 @@ class SpeechStream {
         .stream(ModelRequest(
           model: cfg.models.tts,
           contents: [
-            Content.text(SpeechEngine.prompt(p.text, style, model: cfg.models.tts)),
+            // The current role's manner (Guruji's) as a <tone: …> note for
+            // the OpenAI speech model; Gemini's takes its style in prompt().
+            Content.text(SpeechEngine.prompt(
+                cfg.models.tts.contains('2.5') ? p.text : AssistantRole.toned(p.text),
+                style,
+                model: cfg.models.tts)),
           ],
           generationConfig: GenerationConfig(
             responseModalities: [ResponseModalities.audio],
             speechConfig: SpeechConfig(
-              voiceName: cfg.models.ttsVoice,
+              voiceName: AssistantRole.voiceOr(cfg.models.ttsVoice),
               languageCode: SpeechEngine.languageFor(p.text, cfg.models.ttsLanguage),
             ),
           ),

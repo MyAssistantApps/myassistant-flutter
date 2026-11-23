@@ -56,6 +56,10 @@ const guruRole = AssistantRole(
       'for reflection, not certainty: never frighten anyone about doshas or '
       'sade sati, and never sell remedies. Reply in the language they speak.',
   tools: ['jyotish_chart', 'jyotish_reading'],
+  // A natural male voice (owner, 2026-11-23: "I need a male voice for
+  // Jyotish, like a real one"), whatever voice the everyday assistant uses.
+  voice: 'cedar',
+  voiceStyle: 'deep, calm and unhurried, like a wise elderly Indian guru, in gentle Indian English',
 );
 
 /// Guruji's first words: today's bhavishya for a saved chart, otherwise the
