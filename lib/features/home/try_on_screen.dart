@@ -307,7 +307,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
               ),
             ),
             ExcludeSemantics(
-              child: Image.asset('assets/tryon/${c.art}.png',
+              child: Image.asset(TryNowLook.art(c),
                   width: 104, height: 104, fit: BoxFit.contain),
             ),
           ],
