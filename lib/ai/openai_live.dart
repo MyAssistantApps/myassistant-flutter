@@ -154,8 +154,9 @@ class OpenAiLiveSession implements LiveSessionPort, CancellableReply {
         _responding = true;
       case 'input_audio_buffer.speech_started':
         _speechStartedAt = DateTime.now();
-        // Never an interruption (the owner, 2026-10-02): a voice in the room
-        // does not stop her; the Interrupt button does ([cancelReply]).
+        // Not the server's call: the phone decides whether the owner is
+        // talking over her (LiveVoice's measured check, which knows her own
+        // echo) and then cancels the reply itself ([cancelReply]).
         break;
       case 'input_audio_buffer.speech_stopped':
         final started = _speechStartedAt;

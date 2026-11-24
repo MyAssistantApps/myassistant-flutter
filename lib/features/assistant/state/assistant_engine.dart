@@ -140,9 +140,10 @@ class AssistantEngine extends ChangeNotifier {
   /// Talking over her: the microphone listens while she speaks.
   BargeInWatch? _bargeMade;
   BargeInWatch get _barge => _bargeMade ??= BargeInWatch(player: _player);
-  // Off since 2026-10-02 (the owner: "remove interruption completely"):
-  // the Interrupt button on the voice screen calls [bargeIn].
-  bool _bargeWatchOn = false;
+  // On again since 2026-11-24 (the owner: "when we start speaking, it
+  // should hold and listen"); off from 2026-10-02. The Interrupt button on
+  // the voice screen still calls [bargeIn] too.
+  bool _bargeWatchOn = true;
 
   // ---------------- THE FAST VOICE (Gemini Live) ----------------
   // 2026-09-30: a spoken conversation runs on ONE Gemini Live session

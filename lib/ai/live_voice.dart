@@ -1051,9 +1051,12 @@ class LiveVoice {
   /// gone (the cascade listens instead).
   Future<bool> resume() => start();
 
-  /// Talking over her stops her (off since 2026-10-02: only the
-  /// Interrupt button does). Tests of the old behaviour turn it on.
-  static bool autoBargeIn = false;
+  /// Talking over her stops her (owner, 2026-11-24: "when we start
+  /// speaking, it should hold and listen"). It was off from 2026-10-02 to
+  /// 2026-11-24, when only the Interrupt button stopped her. The measured
+  /// check (BargeInDetector) keeps her own voice from the speaker, and
+  /// ordinary room noise, from counting as the owner.
+  static bool autoBargeIn = true;
 
   /// A tap on her: she stops now, and the rest of that answer is dropped.
   Future<void> interrupt() async {
@@ -1197,10 +1200,8 @@ class LiveVoice {
       _preRoll.clear();
     }
     _preRoll.add(c, ms);
-    // NO VOICE INTERRUPTION (the owner, 2026-10-02: "it interrupts when
-    // someone speaks — remove interruption completely and add a button"):
-    // while she speaks the room is not sent, so nothing anyone says stops
-    // her. The Interrupt button on the voice screen does ([interrupt]).
+    // Interruption off ([autoBargeIn] false): while she speaks the room is
+    // not sent, so only the Interrupt button stops her ([interrupt]).
     if (!autoBargeIn) {
       _send(Uint8List(c.length));
       return;
@@ -1248,6 +1249,11 @@ class LiveVoice {
       t.cutOffAfter ??= _heardChars(t);
       _dropOutput = !t.serverDone;
     }
+    // The model stops making the rest of her reply too, as with the
+    // Interrupt button (OpenAI: response.cancel); otherwise it carried on
+    // and the owner's words met a reply still in progress.
+    final s = _session;
+    if (s case final CancellableReply c) c.cancelReply();
     unawaited(_player.stop());
     _wasPlaying = false;
     _emit(const LiveInterrupted());
