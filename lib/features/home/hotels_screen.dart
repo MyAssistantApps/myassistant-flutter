@@ -3,11 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../design/apple_kit.dart';
+import '../../design/motion.dart';
 import '../../design/neon_tokens.dart';
 import '../../design/neon_widgets.dart';
 import '../../services/api_service.dart';
 import 'bus_search.dart' show busCities;
+import '../pricecompare/price_models.dart' show rupees;
 import 'flight_search.dart' show indianAirports, worldAirports;
+import 'hotel_prices.dart';
 import 'voice_booking.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
@@ -40,6 +43,42 @@ class _HotelsScreenState extends State<HotelsScreen> {
       end: DateTime.now().add(const Duration(days: 2)));
   int _adults = 2;
   int _rooms = 1;
+
+  /// LIVE PRICES (2026-11-24): Google Hotels through our server.
+  bool _busy = false;
+  List<HotelHit>? _hotels;
+  String _error = '';
+  int _run = 0;
+
+  Future<void> _comparePrices() async {
+    final place = _city.text.trim();
+    if (place.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter a city, area or hotel.')));
+      return;
+    }
+    FocusScope.of(context).unfocus();
+    HapticFeedback.mediumImpact();
+    final run = ++_run;
+    setState(() {
+      _busy = true;
+      _error = '';
+      _hotels = null;
+    });
+    final r = await HotelPrices.search(
+        place: place, checkIn: _iso(_stay.start), checkOut: _iso(_stay.end), adults: _adults);
+    if (!mounted || run != _run) return;
+    setState(() {
+      _busy = false;
+      _hotels = r.hotels;
+      _error = r.error;
+    });
+  }
+
+  Future<void> _openHotel(HotelHit h) async {
+    if (h.link.isEmpty) return _open('booking');
+    HapticFeedback.selectionClick();
+    await launchUrl(Uri.parse(h.link), mode: LaunchMode.externalApplication);
+  }
 
   @override
   void dispose() {
@@ -323,6 +362,24 @@ class _HotelsScreenState extends State<HotelsScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: 14),
+            SizedBox(
+              height: 52,
+              child: FilledButton.icon(
+                onPressed: _busy ? null : _comparePrices,
+                style: FilledButton.styleFrom(
+                  backgroundColor: Neon.accentFill,
+                  foregroundColor: Neon.onAccent,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                icon: _busy
+                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.2))
+                    : const Icon(Icons.price_check_rounded),
+                label: Text(_busy ? 'Comparing Prices…' : 'Compare Prices',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+              ),
+            ),
+            ..._results(),
             const SizedBox(height: 22),
             Padding(
               padding: const EdgeInsets.only(left: 4, bottom: 10),
@@ -372,6 +429,146 @@ class _HotelsScreenState extends State<HotelsScreen> {
                   ),
                 ),
               ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// The live results: a note, the hotels cheapest first, or why not.
+  List<Widget> _results() {
+    final hotels = _hotels;
+    if (_error.isNotEmpty) {
+      return [
+        const SizedBox(height: 12),
+        EnterOnce(
+          rise: 8,
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: Neon.glassBox(Neon.rLg),
+            child: Row(children: [
+              Icon(Icons.info_outline_rounded, color: Neon.warning),
+              const SizedBox(width: 10),
+              Expanded(child: Text(_error, style: TextStyle(color: Neon.textLo, fontSize: 13.5, height: 1.35))),
+            ]),
+          ),
+        ),
+      ];
+    }
+    if (hotels == null) return const [];
+    if (hotels.isEmpty) {
+      return [
+        const SizedBox(height: 12),
+        Text('No hotels were found for this place and these dates. Please try another place or dates.',
+            style: TextStyle(color: Neon.textLo, fontSize: 13.5)),
+      ];
+    }
+    final nights = _stay.end.difference(_stay.start).inDays;
+    return [
+      const SizedBox(height: 18),
+      Row(children: [
+        Expanded(
+          child: Text('${hotels.length} Hotels · Cheapest First',
+              style: NeonType.manrope(17, FontWeight.w800).copyWith(color: Neon.textHi)),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+          decoration: BoxDecoration(
+            color: Neon.success.withValues(alpha: Neon.isDark ? 0.16 : 0.10),
+            borderRadius: BorderRadius.circular(Neon.rPill),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.verified_rounded, size: 14, color: Neon.success),
+            const SizedBox(width: 5),
+            Text('Live · Google Hotels',
+                style: TextStyle(color: Neon.success, fontSize: 12, fontWeight: FontWeight.w700)),
+          ]),
+        ),
+      ]),
+      const SizedBox(height: 12),
+      for (final (i, h) in hotels.indexed)
+        Reveal(
+          delayMs: 40 * i,
+          child: Padding(padding: const EdgeInsets.only(bottom: 10), child: _hotelCard(h, nights, cheapest: i == 0)),
+        ),
+      Text('Prices per night from Google Hotels; taxes and the final price are shown on the booking site.',
+          style: TextStyle(color: Neon.textDim, fontSize: 11.5)),
+    ];
+  }
+
+  Widget _hotelCard(HotelHit h, int nights, {required bool cheapest}) {
+    final photo = Container(
+      width: 92,
+      height: 92,
+      decoration: BoxDecoration(color: Neon.surfaceHigh, borderRadius: BorderRadius.circular(14)),
+      clipBehavior: Clip.antiAlias,
+      child: h.image.isEmpty
+          ? Icon(Icons.hotel_rounded, color: Neon.violet.withValues(alpha: 0.6), size: 34)
+          : Image.network(h.image,
+              fit: BoxFit.cover,
+              cacheWidth: 300,
+              errorBuilder: (_, __, ___) => Icon(Icons.hotel_rounded, color: Neon.violet.withValues(alpha: 0.6))),
+    );
+    return Tappable(
+      onTap: () => _openHotel(h),
+      scale: 0.985,
+      semanticLabel: '${h.name}, ${rupees(h.pricePerNight)} a night',
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Neon.surface,
+          borderRadius: BorderRadius.circular(Neon.rLg),
+          border: Border.all(color: cheapest ? Neon.success.withValues(alpha: 0.6) : Neon.hairline, width: cheapest ? 1.4 : 1),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            photo,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(h.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: NeonType.manrope(15, FontWeight.w800).copyWith(color: Neon.textHi, height: 1.25)),
+                  const SizedBox(height: 4),
+                  Wrap(spacing: 8, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
+                    if (h.stars != null)
+                      Text('${'★' * h.stars!} ${h.stars}-star',
+                          style: TextStyle(color: Neon.warning, fontSize: 12, fontWeight: FontWeight.w600)),
+                    if (h.rating != null)
+                      Text('${h.rating!.toStringAsFixed(1)}/5${h.reviews == null ? '' : ' (${h.reviews})'}',
+                          style: TextStyle(color: Neon.success, fontSize: 12, fontWeight: FontWeight.w700)),
+                    if (cheapest)
+                      Text('LOWEST PRICE',
+                          style: TextStyle(color: Neon.success, fontSize: 10.5, fontWeight: FontWeight.w800)),
+                  ]),
+                  const SizedBox(height: 8),
+                  Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(rupees(h.pricePerNight),
+                            style: NeonType.manrope(18, FontWeight.w800).copyWith(color: Neon.textHi)),
+                      ),
+                    ),
+                    Text(' / night', style: TextStyle(color: Neon.textLo, fontSize: 12.5)),
+                  ]),
+                  Text(
+                    [
+                      if (h.cheapestSite.isNotEmpty) 'Lowest on ${h.cheapestSite}',
+                      if (h.total != null) '${rupees(h.total!)} for $nights night${nights == 1 ? '' : 's'}',
+                    ].join(' · '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Neon.textLo, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),

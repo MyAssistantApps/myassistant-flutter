@@ -10,8 +10,8 @@ import '../screens/splash_screen.dart' show LogoGeo, LogoLayers;
 /// robot there, the same robot we have in the splash screen").
 ///
 /// The splash's own layers (screens/splash_screen.dart), cropped to the
-/// ring: the robot in its glowing ring, the ring turning slowly and the
-/// eyes blinking now and then — the same picture, only small. With
+/// ring: the robot in its glowing ring, the ring turning slowly (for a few
+/// seconds at a time) and the eyes blinking now and then — the same picture, only small. With
 /// "Remove animations" on it stands still.
 class RobotBadge extends StatefulWidget {
   const RobotBadge({super.key, this.size = 52});
@@ -28,8 +28,19 @@ class _RobotBadgeState extends State<RobotBadge> with TickerProviderStateMixin {
       AnimationController(vsync: this, duration: const Duration(milliseconds: 260));
   LogoLayers? _layers;
   Timer? _next;
+  Timer? _rest;
   bool _still = false;
+  bool _seen = true;
+  ScrollPosition? _scroll;
   final _rand = math.Random();
+
+  /// HOW LONG THE RING TURNS (2026-11-24, measured on an RMX5003): a ring
+  /// turning for ever made Flutter draw the whole screen 60–120 times a
+  /// second with nobody touching it — on that phone 9–12 ms a frame, over
+  /// the 8.3 ms a 120 Hz frame has, so Home stuttered and the battery ran
+  /// down. It now turns while it is first seen (and each time it comes back
+  /// into view), then rests; it never turns off screen. The blink stays.
+  static const _turnFor = Duration(seconds: 8);
 
   @override
   void initState() {
@@ -43,14 +54,46 @@ class _RobotBadgeState extends State<RobotBadge> with TickerProviderStateMixin {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _still = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    final scroll = Scrollable.maybeOf(context)?.position;
+    if (scroll != _scroll) {
+      _scroll?.removeListener(_whereAmI);
+      _scroll = scroll?..addListener(_whereAmI);
+    }
     if (_still) {
       _spin.stop();
+      _rest?.cancel();
       _blink.value = 0;
       _next?.cancel();
       _next = null;
     } else {
-      if (!_spin.isAnimating) _spin.repeat();
+      _turn();
       _next ??= _schedule(first: true);
+    }
+  }
+
+  /// Turn the ring for [_turnFor], then rest.
+  void _turn() {
+    if (_still || !_seen) return;
+    if (!_spin.isAnimating) _spin.repeat();
+    _rest?.cancel();
+    _rest = Timer(_turnFor, () {
+      if (mounted) _spin.stop(canceled: false);
+    });
+  }
+
+  /// On a scroll: is the badge on screen? Off it, nothing turns or blinks.
+  void _whereAmI() {
+    final box = context.findRenderObject();
+    if (box is! RenderBox || !box.attached || !box.hasSize) return;
+    final top = box.localToGlobal(Offset.zero).dy;
+    final seen = top + box.size.height > 0 && top < MediaQuery.sizeOf(context).height;
+    if (seen == _seen) return;
+    _seen = seen;
+    if (seen) {
+      _turn();
+    } else {
+      _spin.stop(canceled: false);
+      _rest?.cancel();
     }
   }
 
@@ -58,7 +101,7 @@ class _RobotBadgeState extends State<RobotBadge> with TickerProviderStateMixin {
         Duration(milliseconds: first ? 1500 : 3000 + _rand.nextInt(2500)),
         () async {
           if (!mounted || _still) return;
-          await _blink.forward(from: 0);
+          if (_seen && TickerMode.valuesOf(context).enabled) await _blink.forward(from: 0);
           if (mounted && !_still) _schedule();
         },
       );
@@ -66,6 +109,8 @@ class _RobotBadgeState extends State<RobotBadge> with TickerProviderStateMixin {
   @override
   void dispose() {
     _next?.cancel();
+    _rest?.cancel();
+    _scroll?.removeListener(_whereAmI);
     _spin.dispose();
     _blink.dispose();
     super.dispose();

@@ -685,6 +685,12 @@ class ProductHit {
     this.url = '',
   });
 
+  /// The same product under [name].
+  ProductHit named(String name) => name == this.name
+      ? this
+      : ProductHit(
+          name: name, price: price, store: store, mrp: mrp, image: image, rating: rating, reviews: reviews, url: url);
+
   final String name;
   final double price;
   final double? mrp;

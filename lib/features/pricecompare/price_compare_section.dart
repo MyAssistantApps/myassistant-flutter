@@ -8,6 +8,7 @@ import 'price_compare_screen.dart';
 import 'price_models.dart';
 import 'price_service.dart';
 import '../../widgets/neon_cards.dart';
+import '../../widgets/role_mic_orb.dart';
 import 'price_widgets.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
@@ -47,13 +48,14 @@ class _PriceCompareSectionState extends State<PriceCompareSection> {
     if (mounted) setState(() {});
   }
 
-  void _open({PriceCategory category = PriceCategory.shopping, bool focus = false, bool paste = false}) {
+  void _open(
+      {PriceCategory category = PriceCategory.shopping, bool focus = false, bool paste = false, bool camera = false}) {
     HapticFeedback.selectionClick();
     // Flights and hotels have their own pages (dates, travellers, rooms…).
     widget.onOpen(switch (category) {
       PriceCategory.flights => const FlightSearchScreen(),
       PriceCategory.hotels => const HotelSearchScreen(),
-      _ => PriceCompareScreen(category: category, focus: focus, paste: paste),
+      _ => PriceCompareScreen(category: category, focus: focus, paste: paste, camera: camera),
     });
   }
 
@@ -100,9 +102,26 @@ class _PriceCompareSectionState extends State<PriceCompareSection> {
             children: [
               // Owner, 2026-11-14: products only — the hero, the Product
               // Compare card and the alerts strip (as on hardening).
-              PriceHeroBanner(onSearch: () => _open(focus: true), onPaste: () => _open(paste: true)),
-              const SizedBox(height: 16),
-              PriceCategoryShowcase(onTap: (c) => _open(category: c, focus: true)),
+              // Owner, 2026-11-24: the Smart Shopping banner is gone; the
+              // Product Compare card carries the search, the camera and the
+              // mic.
+              PriceCategoryShowcase(
+                onTap: (c) => _open(category: c, focus: true),
+                onSearch: () => _open(focus: true),
+                onCamera: () => _open(camera: true),
+                // The mic talks as the Price Compare assistant here on
+                // Home; the everyday assistant is back when it ends.
+                mic: RoleMicOrb(
+                  role: priceCompareRole,
+                  tint: Neon.violet,
+                  size: 34,
+                  showLabel: false,
+                  endOnDispose: false,
+                  resetRoleWhenDone: true,
+                  topic: 'prices',
+                  openingNote: () => priceMicNote,
+                ),
+              ),
               const SizedBox(height: 14),
               _insights(hit),
             ],

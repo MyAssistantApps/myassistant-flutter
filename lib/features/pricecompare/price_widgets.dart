@@ -234,9 +234,16 @@ class _ExampleCompare extends StatelessWidget {
 /// wide card on top; the other four as a 2 × 2 of full-photo cards. Five
 /// tiles as 3 + 2 left a ragged, centred last row.
 class PriceCategoryShowcase extends StatelessWidget {
-  const PriceCategoryShowcase({super.key, required this.onTap, this.selected, this.only});
+  const PriceCategoryShowcase(
+      {super.key, required this.onTap, this.selected, this.only, this.onSearch, this.onCamera, this.mic});
   final void Function(PriceCategory c) onTap;
   final PriceCategory? selected;
+
+  /// A search box along the bottom of the Product Compare card, with the
+  /// camera and the mic in it (Home, 2026-11-24). Shown when [onSearch] is.
+  final VoidCallback? onSearch;
+  final VoidCallback? onCamera;
+  final Widget? mic;
 
   /// When set, only these categories, as long bordered cards one under
   /// another (Home shows just flights and hotels, 2026-11-09).
@@ -257,6 +264,9 @@ class PriceCategoryShowcase extends StatelessWidget {
             wide: true,
             selected: selected == PriceCategory.shopping,
             onTap: () => onTap(PriceCategory.shopping),
+            onSearch: onSearch,
+            onCamera: onCamera,
+            mic: mic,
           ),
         if (small)
           // Side by side, photo on top, name under it (Manish, 2026-11-10).
@@ -316,6 +326,9 @@ class _PhotoCard extends StatelessWidget {
     this.wide = false,
     this.selected = false,
     this.small = false,
+    this.onSearch,
+    this.onCamera,
+    this.mic,
   });
   final PriceCategory category;
   final String title;
@@ -324,6 +337,9 @@ class _PhotoCard extends StatelessWidget {
   final bool wide;
   final bool selected;
   final bool small;
+  final VoidCallback? onSearch;
+  final VoidCallback? onCamera;
+  final Widget? mic;
 
   @override
   Widget build(BuildContext context) {
@@ -464,7 +480,11 @@ class _PhotoCard extends StatelessWidget {
           ],
         ),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
         children: [
           Expanded(
             child: Column(
@@ -550,13 +570,17 @@ class _PhotoCard extends StatelessWidget {
           const SizedBox(width: 10),
           const _CompareArt(),
         ],
+          ),
+          if (onSearch != null) ...[const SizedBox(height: 14), _searchBox()],
+        ],
       ),
     );
     return Semantics(
       button: true,
       selected: selected,
       label: '$title. $line',
-      excludeSemantics: true,
+      // The search box's own buttons stay reachable by a screen reader.
+      excludeSemantics: onSearch == null,
       child: DecoratedBox(
         // The border is a gradient, so it is drawn as a padded backdrop.
         decoration: BoxDecoration(
@@ -582,6 +606,53 @@ class _PhotoCard extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  /// The search box: tap to type, the camera, the mic. White in both
+  /// themes (Manish, 2026-11-24), as the banner's was, so all three read.
+  Widget _searchBox() {
+    final r = BorderRadius.circular(Neon.rMd);
+    const ink = Color(0xFF5B2EFF);
+    return Material(
+      color: Colors.white,
+      borderRadius: r,
+      elevation: 0,
+      child: Row(
+        children: [
+          Expanded(
+            child: InkWell(
+              borderRadius: r,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                onSearch!();
+              },
+              child: const Padding(
+                padding: EdgeInsets.fromLTRB(12, 13, 8, 13),
+                child: Row(children: [
+                  Icon(Icons.search_rounded, color: ink, size: 21),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text('Search a product',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: Color(0xFF6B6880), fontSize: 14.5, fontWeight: FontWeight.w500)),
+                  ),
+                ]),
+              ),
+            ),
+          ),
+          if (onCamera != null || mic != null) Container(width: 1, height: 24, color: const Color(0x1A141627)),
+          if (onCamera != null)
+            IconButton(
+              tooltip: 'Compare a product from a photo',
+              onPressed: onCamera,
+              visualDensity: VisualDensity.compact,
+              icon: const Icon(Icons.photo_camera_outlined, color: ink, size: 23),
+            ),
+          if (mic != null) Padding(padding: const EdgeInsets.only(left: 2, right: 6), child: mic),
+        ],
       ),
     );
   }

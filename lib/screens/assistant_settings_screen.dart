@@ -22,6 +22,8 @@ import 'account_section.dart';
 import 'help_feedback_sheet.dart';
 import 'linked_accounts_screen.dart';
 import '../features/premium/premium_screen.dart';
+import '../features/wallet/wallet_api.dart';
+import '../features/wallet/wallet_screen.dart';
 import 'app_lock_section.dart';
 import 'theme_colour_screen.dart';
 import 'voice_picker_screen.dart';
@@ -58,6 +60,7 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
   void initState() {
     super.initState();
     _load();
+    WalletApi.instance.refresh();
   }
 
   @override
@@ -210,6 +213,38 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                   ],
                 ),
                 const SizedBox(height: 24),
+
+                // WALLET (2026-11-24): on the You page as well as Hub; shown
+                // only when the server says the wallet is on for this user.
+                ValueListenableBuilder<WalletSummary?>(
+                  valueListenable: WalletApi.instance.summary,
+                  builder: (_, s, __) {
+                    if (s?.available != true) return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 24),
+                      child: GroupedCard(
+                        dividerInset: 60,
+                        children: [
+                          AppleRow(
+                            leading: IconTile(
+                                Icons.account_balance_wallet_rounded,
+                                AppleColors.green),
+                            title: 'Wallet',
+                            subtitle: s!.frozen
+                                ? 'Your wallet is on hold'
+                                : 'Balance ${rupees(s.total)} · add money and refer friends',
+                            trailing: Icon(Icons.chevron_right_rounded,
+                                color: Neon.textDim, size: 20),
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                  builder: (_) => const WalletScreen()),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
 
                 // LINKED ACCOUNTS (2026-11-21): Uber, Swiggy… so the
                 // assistant books and orders on the user's own account.

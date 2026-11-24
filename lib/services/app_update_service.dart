@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:convert/convert.dart' show AccumulatorSink;
 import 'package:crypto/crypto.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
 import '../design/neon_widgets.dart';
 import 'package:flutter/services.dart';
@@ -41,7 +42,10 @@ class AppUpdateService {
   /// SELF-UPDATE IS ON, QUIETLY (owner, 2026-11-23). It was off from
   /// 2026-11-03 ("turn off auto update features completely"); false turns
   /// the whole flow off again — no check, download or install anywhere.
-  static const bool enabled = true;
+  /// Release builds only (2026-11-24): a `flutter run` debug or profile
+  /// build was replaced by the published release within minutes of being
+  /// installed.
+  static const bool enabled = kReleaseMode;
 
   /// How an available update is taken. The sheet whenever the user asked,
   /// the update is forced, or this phone cannot install without a prompt;

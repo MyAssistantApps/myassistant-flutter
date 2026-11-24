@@ -9,6 +9,7 @@ import '../../ai/config.dart';
 import '../../ai/model_port.dart';
 import '../../ai/types.dart';
 import '../../core/log.dart';
+import '../../services/api_service.dart';
 import '../../services/notification_service.dart';
 import 'flight_fares.dart';
 import 'flight_trip.dart';
@@ -24,10 +25,14 @@ class PriceAnswer {
 /// A flight search: the flights with every site's fare, the same as a
 /// plain comparison ([result], for alerts), and the pages it came from.
 class FlightAnswer {
-  const FlightAnswer(this.fares, this.result, {this.sources = const []});
+  const FlightAnswer(this.fares, this.result, {this.sources = const [], this.live = false});
   final FlightFares fares;
   final PriceResult result;
   final List<SourceLink> sources;
+
+  /// Real fares from Google Flights through our server; false when the AI
+  /// read them off the web (an estimate, and said so).
+  final bool live;
 }
 
 class PriceCompareException implements Exception {
@@ -140,7 +145,7 @@ class PriceService extends ChangeNotifier {
 A shopper in India searches for "$q". Use Google Search to find up to 12 matching products on $stores (and other big Indian stores) with their current prices — different models and variants, most popular first. Each one as listed on one store.
 
 Answer with ONLY this JSON (no markdown):
-{"products": [{"name": "full product name with variant", "price": 0, "mrp": 0, "store": "store name", "rating": 4.5, "reviews": 2850, "image": "an https product photo URL from the store or brand, or empty", "url": "the store's https product page, or empty"}]}
+{"products": [{"name": "the full product name as the store lists it, starting with the brand and model, e.g. Apple iPhone 16 (128 GB) - Teal — never only a colour or a size", "price": 0, "mrp": 0, "store": "store name", "rating": 4.5, "reviews": 2850, "image": "an https product photo URL from the store or brand, or empty", "url": "the store's https product page, or empty"}]}
 Prices are numbers in rupees. Leave out mrp, rating, reviews, image or url you could not find — never guess them.""";
     final ({String text, List<SourceLink> sources}) out;
     try {
@@ -151,7 +156,7 @@ Prices are numbers in rupees. Leave out mrp, rating, reviews, image or url you c
       AppLog.add('price', 'product search failed: $e');
       throw const PriceCompareException("Unable to reach the price search. Check your internet connection and try again.");
     }
-    var hits = ProductHit.listFrom(out.text);
+    var hits = [for (final h in ProductHit.listFrom(out.text)) h.named(fullProductName(h.name, q))];
     if (hits.isEmpty) {
       final raw = out.text.replaceAll(RegExp(r'\s+'), ' ');
       AppLog.add(
@@ -191,6 +196,24 @@ Prices are numbers in rupees. Leave out mrp, rating, reviews, image or url you c
   Future<FlightAnswer> compareFlights(FlightTrip trip) async {
     await load();
     final query = trip.describe();
+    final l0 = trip.legs.first;
+    final product0 = '${l0.from!.city} → ${l0.to!.city}, ${fullDate(l0.date!)}';
+    // REAL FARES FIRST (2026-11-24): Google Flights through our server. Only
+    // when the server has no flight search does the AI read fares off the
+    // web, and the results then say they are estimates.
+    final live = await _liveFlights(trip);
+    if (live != null) {
+      if (live.flights.isEmpty) {
+        throw const PriceCompareException(
+            'No flights were found for this route on this date. Please select another date.');
+      }
+      final result = live.toResult(query: query, product: product0, at: DateTime.now());
+      _remember(result);
+      unawaited(_save());
+      notifyListeners();
+      return FlightAnswer(live, result,
+          live: true, sources: const [SourceLink(uri: 'https://www.google.com/travel/flights', title: 'Google Flights')]);
+    }
     final prompt = flightPromptFor(trip, now: DateTime.now());
     final ({String text, List<SourceLink> sources}) out;
     try {
@@ -233,6 +256,37 @@ Prices are numbers in rupees. Leave out mrp, rating, reviews, image or url you c
     unawaited(_save());
     notifyListeners();
     return FlightAnswer(fares, result, sources: sources);
+  }
+
+  /// Test seam for the server's flight search (GET /flights/search).
+  @visibleForTesting
+  Future<Map<String, dynamic>?> Function(String path)? fetchFlights;
+
+  /// The server's real flights for [trip], or null when it has no flight
+  /// search (no key, an older server, offline) — then the AI estimates.
+  Future<FlightFares?> _liveFlights(FlightTrip trip) async {
+    final l = trip.legs.first;
+    final from = l.from?.code ?? '', to = l.to?.code ?? '', d = l.date;
+    if (from.isEmpty || to.isEmpty || d == null) return null;
+    String two(int n) => n.toString().padLeft(2, '0');
+    final path = Uri(path: '/flights/search', queryParameters: {
+      'from': from,
+      'to': to,
+      'date': '${d.year}-${two(d.month)}-${two(d.day)}',
+      'adults': '${trip.adults}',
+      'children': '${trip.children}',
+      'infants': '${trip.infants}',
+      'cabin': trip.cabin.name,
+      if (trip.nonStop) 'nonStop': '1',
+    }).toString();
+    final j = await (fetchFlights ?? (p) => ApiService.getJson(p, timeout: const Duration(seconds: 30)))(path);
+    if (j == null || j['ok'] != true) {
+      if (j != null) AppLog.add('price', 'live flights unavailable: ${j['error'] ?? 'not configured'}');
+      return null;
+    }
+    final flights = j['flights'];
+    if (flights is List && flights.isEmpty) return const FlightFares(flights: []);
+    return FlightFares.parse(jsonEncode(j));
   }
 
   @visibleForTesting
@@ -375,7 +429,51 @@ Answer with ONLY this JSON (no markdown):
     }
   }
 
-  Future<({String text, List<SourceLink> sources})> _askGemini(String prompt) async {
+  /// A product name that says what it is: the model sometimes answers with
+  /// only the variant ("Teal", "128 GB"); then the search goes in front.
+  @visibleForTesting
+  static String fullProductName(String name, String query) {
+    final n = name.trim(), q = query.trim();
+    if (n.isEmpty) return q;
+    if (q.isEmpty || q.startsWith('http')) return n;
+    final words = n.toLowerCase().split(RegExp(r'[^a-z0-9]+')).where((w) => w.length > 1).toSet();
+    final asked = q.toLowerCase().split(RegExp(r'[^a-z0-9]+')).where((w) => w.length > 1);
+    return asked.any(words.contains) ? n : '$q $n';
+  }
+
+  /// THE CAMERA (2026-11-24): the product in a photo, named the way a
+  /// store lists it, to compare like a typed search. Null when the photo
+  /// shows no product the model can name.
+  Future<String?> productFromPhoto(Uint8List bytes, {String mime = 'image/jpeg'}) async {
+    final r = await _askGemini(_photoPrompt,
+        system: _photoSystem,
+        attachments: [AiAttachment(kind: 'image', mimeType: mime, bytes: bytes)]);
+    return productNameFrom(r.text);
+  }
+
+  static const _photoSystem = 'You identify products in photos for shoppers in India. '
+      'Answer with ONE JSON object and nothing else.';
+
+  static const _photoPrompt = 'Name the product in this photo the way an Indian online store lists it: '
+      'brand, model and variant (size, colour, storage) when you can see them. '
+      'Answer {"product": "the name"}, or {"product": ""} when there is no product you can name.';
+
+  /// The product name in the model's answer, or null.
+  @visibleForTesting
+  static String? productNameFrom(String text) {
+    final m = RegExp(r'\{[\s\S]*\}').firstMatch(text);
+    if (m == null) return null;
+    try {
+      final j = jsonDecode(m.group(0)!);
+      final name = j is Map ? '${j['product'] ?? ''}'.trim() : '';
+      return name.isEmpty ? null : name;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<({String text, List<SourceLink> sources})> _askGemini(String prompt,
+      {String system = _system, List<AiAttachment> attachments = const []}) async {
     final config = await AiConfigStore.instance.get();
     final engine = CloudEngine(ModelPorts.cloud());
     Future<CloudFinished> run(String model) async {
@@ -383,7 +481,8 @@ Answer with ONLY this JSON (no markdown):
       await for (final e in engine.search(CloudRequest(
         model: model,
         text: prompt,
-        system: _system,
+        system: system,
+        attachments: attachments,
         roundTimeout: const Duration(seconds: 60),
         firstTimeout: const Duration(seconds: 30),
       ))) {

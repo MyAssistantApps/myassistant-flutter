@@ -97,8 +97,11 @@ void main() {
     ));
     await t.pump();
     expect(find.text('Price Compare'), findsOneWidget);
-    expect(find.text('Same Product.\nLower Price.'), findsOneWidget);
-    expect(find.text('Search or paste a link'), findsOneWidget);
+    // Owner, 2026-11-24: the Smart Shopping banner is gone; the Product
+    // Compare card has the search, the camera and the mic.
+    expect(find.text('Same Product.\nLower Price.'), findsNothing);
+    expect(find.text('Search a product'), findsOneWidget);
+    expect(find.byTooltip('Compare a product from a photo'), findsOneWidget);
     expect(find.text('Product Compare'), findsOneWidget);
     // Owner, 2026-11-14: flights, hotels, rides and grocery are gone.
     for (final title in ['Flights', 'Hotels', 'Rides', 'Grocery']) {

@@ -258,6 +258,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                         'Relax the filters to view the other ${a.fares.flights.length} flights.',
                         clear: true)
                   else if (a != null) ...[
+                    _sourceBadge(a),
                     for (final o in shown) ...[_card(o, a.fares), const SizedBox(height: 12)],
                     ..._footer(a),
                   ],
@@ -267,6 +268,30 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  /// Where these fares come from: live from Google Flights, or the
+  /// assistant's estimate from the web (2026-11-24).
+  Widget _sourceBadge(FlightAnswer a) {
+    final c = a.live ? Neon.success : Neon.warning;
+    return Padding(
+      padding: const EdgeInsets.only(top: 6, bottom: 10),
+      child: Row(children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: c.withValues(alpha: Neon.isDark ? 0.16 : 0.10),
+            borderRadius: BorderRadius.circular(Neon.rPill),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(a.live ? Icons.verified_rounded : Icons.info_outline_rounded, size: 15, color: c),
+            const SizedBox(width: 6),
+            Text(a.live ? 'Live Fares · Google Flights' : 'Estimated Fares',
+                style: TextStyle(color: c, fontSize: 12.5, fontWeight: FontWeight.w700)),
+          ]),
+        ),
+      ]),
     );
   }
 
@@ -857,7 +882,10 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
             ),
           const SizedBox(height: 8),
         ],
-        Text('Fares were retrieved from the web and may change at booking. Please confirm the final price on the site.',
+        Text(
+            a.live
+                ? 'Live fares from Google Flights. They may change at booking; please confirm the final price on the site.'
+                : 'Estimated fares, read from the web by the assistant. They may be out of date; please confirm the price on the site.',
             style: TextStyle(color: Neon.textDim, fontSize: 11.5)),
         if (a.sources.isNotEmpty) ...[
           const SizedBox(height: 12),

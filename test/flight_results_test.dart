@@ -81,6 +81,7 @@ void main() {
     t.view.physicalSize = const Size(1080, 2400);
     t.view.devicePixelRatio = 3;
     addTearDown(t.view.reset);
+    PriceService.instance.fetchFlights = (_) async => null; // no live search here
     PriceService.instance.ask = (_) async => (text: _answer, sources: const <SourceLink>[]);
     final date = DateTime.now().add(const Duration(days: 5));
     final trip = FlightTrip(legs: [FlightLeg(from: airports[0], to: airports[1], date: date)]);
@@ -112,6 +113,7 @@ void main() {
     t.view.devicePixelRatio = 3;
     addTearDown(t.view.reset);
     final asked = <String>[];
+    PriceService.instance.fetchFlights = (_) async => null; // no live search here
     PriceService.instance.ask = (p) async {
       asked.add(p);
       return (text: _answer, sources: const <SourceLink>[]);
@@ -141,6 +143,7 @@ void main() {
   test('an empty flight list falls back to the plain comparison, read into cards', () async {
     SharedPreferences.setMockInitialValues({});
     var n = 0;
+    PriceService.instance.fetchFlights = (_) async => null; // no live search here
     PriceService.instance.ask = (p) async {
       n++;
       final text = n == 1

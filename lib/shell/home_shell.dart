@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math' show sqrt;
-import 'dart:ui' show ImageFilter, PathOperation;
 
 import '../screens/chat_screen.dart' show ChatThreadScreen;
 import '../screens/chat_group_screen.dart';
@@ -1229,16 +1228,12 @@ class _FloatingDock extends StatelessWidget {
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            // The glass: what scrolls behind, blurred inside the outline.
-            Positioned.fill(
-              child: ClipPath(
-                clipper: const _DockOutline(),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                  child: const SizedBox.expand(),
-                ),
-              ),
-            ),
+            // NO LIVE BLUR (2026-11-24, measured on an RMX5003 in profile
+            // mode): the blur behind the bar was re-run on every frame of
+            // every scroll and animation — about 3 ms of the 8.3 ms a frame
+            // has at 120 Hz — while the smoky fill over it was already 75%
+            // opaque, so it showed little. The fill below is a little more
+            // solid instead, and looks the same.
             Positioned.fill(
               child: RepaintBoundary(
                 child: CustomPaint(
@@ -1351,14 +1346,6 @@ class _TabHighlight extends StatelessWidget {
   }
 }
 
-class _DockOutline extends CustomClipper<Path> {
-  const _DockOutline();
-  @override
-  Path getClip(Size size) => dockOutline(size);
-  @override
-  bool shouldReclip(_DockOutline old) => false;
-}
-
 class _DockGlassPainter extends CustomPainter {
   _DockGlassPainter({required this.tint, required this.edge, required this.dark});
   final Color tint;
@@ -1387,7 +1374,7 @@ class _DockGlassPainter extends CustomPainter {
           ..shader = const LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xB83A3946), Color(0xC7222129)],
+            colors: [Color(0xE03A3946), Color(0xEB222129)],
           ).createShader(Offset.zero & size));
     canvas.drawPath(
         outline,

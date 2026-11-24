@@ -1,32 +1,56 @@
-import 'dart:math' as math;
-
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 
-import '../../design/apple_kit.dart';
-import '../../design/neon_scaffold.dart';
+import '../../ai/assistant_role.dart';
 import '../../design/motion.dart';
 import '../../design/neon_tokens.dart';
+import '../../design/neon_widgets.dart';
+import '../../services/app_feedback.dart';
+import '../../widgets/role_mic_orb.dart';
 import 'flight_search_screen.dart';
 import 'hotel_search_screen.dart';
 import 'price_models.dart';
 import 'price_result_screen.dart';
-import 'product_screens.dart';
 import 'price_service.dart';
 import 'price_widgets.dart';
+import 'product_screens.dart';
 import 'shop_browser.dart';
 
+/// THE PRICE COMPARE MIC (2026-11-24): the page's own assistant, like the
+/// Jyotish and Documents pages — finds current prices by voice.
+const priceCompareRole = AssistantRole(
+  'the Price Compare Assistant',
+  'You help shoppers in India compare prices before they pay, on the Price '
+      'Compare screen. Ask which product they want (brand, model and variant), '
+      'then use web_search for its CURRENT price on the big Indian stores '
+      '(Amazon, Flipkart, Croma, Reliance Digital and the brand store). Say '
+      'the lowest price and the store first, then two or three others. Speak '
+      'only of prices you found today — never invent a price, a coupon or a '
+      'discount. Reply in the language they speak.',
+  tools: ['web_search'],
+);
+
+const priceMicNote = "[SYSTEM] I tapped the mic on the Price Compare screen. "
+    "Greet me in one short sentence and ask which product I want to compare.";
+
 /// ─────────────────────────────────────────────────────────────────────────
-///  PRICE COMPARE, THE HUB (2026-11-04, owner: "layout of the feature like
-///  BuyHatke"): the search on top — pick what you are comparing, type it
-///  or paste a link, an optional budget — then your price alerts and
-///  what you compared lately. A comparison opens PriceResultScreen.
+///  PRICE COMPARE, REDESIGNED (2026-11-24, Manish: "completely redesign the
+///  price comparison page"). One lit card on top: the title, the search,
+///  and three ways in — a photo, the voice, a copied link — then popular
+///  searches, the stores it checks (each opens in the app), your price
+///  alerts and what you compared lately. A product search opens
+///  ProductSearchScreen; a link opens its product page at once.
 /// ─────────────────────────────────────────────────────────────────────────
 class PriceCompareScreen extends StatefulWidget {
-  const PriceCompareScreen({super.key, this.category = PriceCategory.shopping, this.focus = false, this.paste = false});
+  const PriceCompareScreen(
+      {super.key, this.category = PriceCategory.shopping, this.focus = false, this.paste = false, this.camera = false});
   final PriceCategory category;
+
+  /// Open with the camera up (Home's camera button).
+  final bool camera;
 
   /// Open with the keyboard up (Home's search box).
   final bool focus;
@@ -44,6 +68,7 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
   final _budget = TextEditingController();
   final _focus = FocusNode();
   final svc = PriceService.instance;
+  bool _reading = false;
 
   @override
   void initState() {
@@ -51,7 +76,9 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
     svc.addListener(_changed);
     _focus.addListener(_changed);
     unawaited(svc.load().then((_) => svc.checkWatches()));
-    if (widget.paste) {
+    if (widget.camera) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _fromPhoto());
+    } else if (widget.paste) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _paste());
     } else if (widget.focus) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _focus.requestFocus());
@@ -78,10 +105,7 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
       final d = await Clipboard.getData(Clipboard.kTextPlain);
       final t = d?.text?.trim() ?? '';
       if (t.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(const SnackBar(content: Text('Copy a product link from Amazon or Flipkart first.')));
-        }
+        if (mounted) AppFeedback.show('Copy a product link from Amazon or Flipkart first.', context: context);
         return;
       }
       _query.text = t;
@@ -114,7 +138,7 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
     HapticFeedback.mediumImpact();
     final budget = double.tryParse(_budget.text.replaceAll(RegExp(r'[^\d.]'), ''));
     final c = cat ?? _cat;
-    // Products: a results grid to pick from (a pasted link goes straight
+    // Products: a results list to pick from (a pasted link goes straight
     // to its product page); the rest compare at once.
     final link = q.startsWith('http://') || q.startsWith('https://');
     Navigator.of(context).push(MaterialPageRoute(
@@ -124,356 +148,39 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
     ));
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return NeonScaffold(
-      appBar: appleAppBar(context, 'Price Compare'),
-      body: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
-        child: ListView(
-          padding: EdgeInsets.fromLTRB(16, 4, 16, 32 + MediaQuery.paddingOf(context).bottom),
-          children: [
-            _searchCard(),
-            const SizedBox(height: 22),
-            _sectionTitle('Shop in the App'),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(4, 2, 4, 10),
-              child: Text('Open a store here. On any product page, tap Compare to view its price across stores.',
-                  style: TextStyle(color: Neon.textLo, fontSize: 13, height: 1.35)),
-            ),
-            _shopStores(),
-            const SizedBox(height: 22),
-            _sectionTitle('Select a Category'),
-            const SizedBox(height: 10),
-            _categories(),
-            if (svc.watches.isNotEmpty) ...[
-              const SizedBox(height: 24),
-              _sectionTitle('Your Price Alerts'),
-              const SizedBox(height: 10),
-              _alerts(),
-            ],
-            if (svc.recent.isNotEmpty) ...[
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(child: _sectionTitle('Recently Compared')),
-                  TextButton(onPressed: svc.clearRecent, child: const Text('Clear')),
-                ],
-              ),
-              const SizedBox(height: 4),
-              _recent(),
-            ],
-            const SizedBox(height: 22),
-            Text(
-              'Prices are sourced from the web via Google Search and may change at any time — the store '
-              'shows the final price at checkout. Price alerts are checked each time you open Price Compare.',
-              style: TextStyle(color: Neon.textDim, fontSize: NeonType.caption, height: 1.4),
-            ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton(
-                onPressed: () => showPhotoCredits(context),
-                child: const Text('Photo Credits'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// THE STORES THAT RUN IN THE APP: each opens its site in
-  /// [ShopBrowserScreen], where a product page brings up Compare. Round
-  /// app icons with their names, like a phone's dock.
-  Widget _shopStores() {
-    final stores = [
-      for (final s in PriceStores.shopping) (s, PriceCategory.shopping),
-      for (final s in PriceStores.grocery) (s, PriceCategory.grocery),
-    ];
-    return SizedBox(
-      height: 28 + MediaQuery.textScalerOf(context).scale(58),
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        itemCount: stores.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 14),
-        itemBuilder: (_, i) {
-          final (s, cat) = stores[i];
-          final logo = brandLogoFor(store: s);
-          return Semantics(
-            button: true,
-            label: 'Open ${s.name} in the app',
-            child: InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: () => openInShopBrowser(
-                  context,
-                  s == PriceStores.instamart ? 'https://www.swiggy.com/instamart' : 'https://www.${s.domains.first}/',
-                  cat),
-              child: SizedBox(
-                width: 64,
-                child: Column(
-                  children: [
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.25), blurRadius: 10, offset: const Offset(0, 4)),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: logo == null
-                            ? StoreMark(s, size: 56)
-                            : Image.asset(logo, width: 56, height: 56, fit: BoxFit.cover),
-                      ),
-                    ),
-                    const SizedBox(height: 7),
-                    Text(s.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Neon.textHi, fontSize: 11.5, fontWeight: FontWeight.w600)),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _sectionTitle(String t) => Semantics(
-        header: true,
-        child: Padding(
-          padding: const EdgeInsets.only(left: 4),
-          child:
-              Text(t, style: NeonType.manrope(17, FontWeight.w800).copyWith(color: Neon.textHi, letterSpacing: -0.3)),
-        ),
-      );
-
-  /// THE SEARCH (2026-11-07, Manish: "improve this page"): a short title,
-  /// one row of category tiles, one search pill (paste and go inside it),
-  /// tap-to-try examples, two small extras, and the stores it checks.
-  Widget _searchCard() {
-    final stores = _cat.stores;
-    final examples = _cat.example
-        .replaceFirst(RegExp(r'^e\.g\.\s*'), '')
-        .split(',')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .take(3)
-        .toList();
-    final tint = _cat.tint(Neon.violet);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Title
-        Padding(
-          padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text.rich(
-                TextSpan(children: [
-                  const TextSpan(text: 'Compare Before\n'),
-                  TextSpan(text: 'You Pay', style: TextStyle(color: Neon.violet)),
-                ]),
-                style:
-                    NeonType.manrope(30, FontWeight.w800).copyWith(color: Neon.textHi, letterSpacing: -1, height: 1.1),
-              ),
-              const SizedBox(height: 8),
-              Text('Prices across stores, price history, and an AI buy-or-wait recommendation.',
-                  style: TextStyle(color: Neon.textLo, fontSize: 14, height: 1.35)),
-            ],
-          ),
-        ),
-        const SizedBox(height: 18),
-        // Categories: one row of tiles (only when there is more than one).
-        if (PriceCategory.shown.length > 1)
-        Row(
-          children: [
-            for (final c in PriceCategory.shown) ...[
-              if (c != PriceCategory.shown.first) const SizedBox(width: 8),
-              Expanded(child: _catTile(c)),
-            ],
-          ],
-        ),
-        const SizedBox(height: 16),
-        // The search pill
-        AnimatedContainer(
-          duration: Motion.short,
-          padding: const EdgeInsets.fromLTRB(16, 4, 6, 4),
-          decoration: BoxDecoration(
-            color: Neon.surfaceHigh.withValues(alpha: 0.85),
-            borderRadius: BorderRadius.circular(Neon.rPill),
-            border: Border.all(color: _focus.hasFocus ? tint : Neon.hairline, width: _focus.hasFocus ? 1.6 : 1),
-            boxShadow: _focus.hasFocus ? Neon.halo(tint, strength: 0.25) : Neon.glassShadow,
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.search_rounded, color: Neon.textLo, size: 22),
-              const SizedBox(width: 10),
-              Expanded(
-                child: TextField(
-                  controller: _query,
-                  focusNode: _focus,
-                  textInputAction: TextInputAction.search,
-                  onSubmitted: (_) => _go(),
-                  onTap: () => setState(() {}),
-                  style: TextStyle(color: Neon.textHi, fontSize: 16),
-                  decoration: InputDecoration(
-                    hintText: _cat.ask,
-                    hintStyle: TextStyle(color: Neon.textDim, fontSize: 15),
-                    filled: false,
-                    isDense: true,
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                  ),
-                ),
-              ),
-              if (_cat == PriceCategory.shopping || _cat == PriceCategory.grocery)
-                IconButton(
-                  tooltip: 'Paste a product link',
-                  onPressed: _paste,
-                  icon: Icon(Icons.content_paste_rounded, color: Neon.textLo, size: 21),
-                ),
-              Material(
-                color: Neon.accentFill,
-                shape: const CircleBorder(),
-                child: InkWell(
-                  customBorder: const CircleBorder(),
-                  onTap: _go,
-                  child: const Padding(
-                    padding: EdgeInsets.all(12),
-                    child: Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 22),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        // Examples to try
-        if (examples.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Text('Examples', style: TextStyle(color: Neon.textDim, fontSize: 13)),
-              for (final e in examples)
-                ActionChip(
-                  label: Text(e),
-                  labelStyle: TextStyle(color: Neon.textHi, fontSize: 12.5),
-                  backgroundColor: Neon.surfaceHigh.withValues(alpha: 0.5),
-                  side: BorderSide(color: Neon.hairline),
-                  shape: const StadiumBorder(),
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () {
-                    _query.text = e;
-                    _go();
-                  },
-                ),
-            ],
-          ),
-        ],
-        // Budget, and the stores it checks
-        const SizedBox(height: 14),
-        Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 10,
-          runSpacing: 8,
-          children: [
-            if (_cat != PriceCategory.flights)
-              ActionChip(
-                avatar: Icon(Icons.account_balance_wallet_rounded, size: 16, color: Neon.cyan),
-                label: Text(_budget.text.isEmpty ? 'Add Budget' : 'Budget ₹${_budget.text}'),
-                labelStyle: TextStyle(color: Neon.textHi, fontSize: 12.5),
-                backgroundColor: Neon.cyan.withValues(alpha: 0.10),
-                side: BorderSide(color: Neon.cyan.withValues(alpha: 0.4)),
-                shape: const StadiumBorder(),
-                visualDensity: VisualDensity.compact,
-                onPressed: _askBudget,
-              ),
-            if (stores.isNotEmpty)
-              Row(mainAxisSize: MainAxisSize.min, children: [
-                Text('Stores', style: TextStyle(color: Neon.textDim, fontSize: 12.5)),
-                const SizedBox(width: 6),
-                SizedBox(
-                  height: 26,
-                  width: 26 + 16.0 * (math.min(stores.length, 5) - 1),
-                  child: Stack(
-                    children: [
-                      for (final (i, s) in stores.take(5).indexed)
-                        Positioned(
-                          left: 16.0 * i,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Neon.bg, width: 2),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
-                              child: brandLogoFor(store: s) == null
-                                  ? StoreMark(s, size: 22)
-                                  : Image.asset(brandLogoFor(store: s)!, width: 22, height: 22, fit: BoxFit.cover),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ]),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _catTile(PriceCategory c) {
-    final on = c == _cat;
-    final tint = c.tint(Neon.violet);
-    return Semantics(
-      button: true,
-      selected: on,
-      label: c.label,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(Neon.rLg),
-        onTap: () {
-          HapticFeedback.selectionClick();
-          setState(() => _cat = c);
-          if (c == PriceCategory.flights) _flights();
-          if (c == PriceCategory.hotels) _hotels();
-        },
-        child: AnimatedContainer(
-          duration: Motion.short,
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: on ? tint.withValues(alpha: Neon.isDark ? 0.22 : 0.14) : Neon.surfaceHigh.withValues(alpha: 0.45),
-            borderRadius: BorderRadius.circular(Neon.rLg),
-            border: Border.all(color: on ? tint : Neon.hairline, width: on ? 1.5 : 1),
-          ),
-          child: Column(
-            children: [
-              Icon(c.icon, color: on ? tint : Neon.textLo, size: 24),
-              const SizedBox(height: 5),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(c.label,
-                    maxLines: 1,
-                    style: NeonType.manrope(11.5, FontWeight.w800).copyWith(color: on ? Neon.textHi : Neon.textLo)),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  /// THE CAMERA (2026-11-24): photograph a product (or its box) and it is
+  /// named and compared like a typed search.
+  Future<void> _fromPhoto() async {
+    if (_reading) return;
+    HapticFeedback.selectionClick();
+    XFile? shot;
+    try {
+      shot = await ImagePicker().pickImage(source: ImageSource.camera, maxWidth: 1600, maxHeight: 1600, imageQuality: 82);
+    } catch (_) {
+      if (mounted) {
+        AppFeedback.show('The camera could not be opened. Please check the camera permission and try again.',
+            context: context);
+      }
+      return;
+    }
+    if (shot == null || !mounted) return;
+    setState(() => _reading = true);
+    String? name;
+    try {
+      final bytes = await shot.readAsBytes();
+      name = await svc.productFromPhoto(bytes, mime: shot.path.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
+    } catch (_) {
+      name = null;
+    }
+    if (!mounted) return;
+    setState(() => _reading = false);
+    if (name == null) {
+      AppFeedback.show('No product could be recognised in that photo. Please try again closer, or type its name.',
+          context: context);
+      return;
+    }
+    _query.text = name;
+    _go(name, PriceCategory.shopping);
   }
 
   Future<void> _askBudget() async {
@@ -499,66 +206,372 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
     if (v != null && mounted) setState(() => _budget.text = v);
   }
 
-  Widget _categories() => PriceCategoryShowcase(
-        selected: _cat,
-        onTap: (c) {
-          setState(() => _cat = c);
-          if (c == PriceCategory.flights) {
-            _flights();
-          } else if (c == PriceCategory.hotels) {
-            _hotels();
-          } else {
-            _focus.requestFocus();
-          }
+  // ── the page ─────────────────────────────────────────────────────────
+
+  /// What was searched lately, newest first, for the chips.
+  List<String> get _recentQueries {
+    final seen = <String>{};
+    return [
+      for (final r in svc.recent)
+        if (!r.query.startsWith('http') && seen.add(r.query.toLowerCase())) r.query,
+    ].take(6).toList();
+  }
+
+  String get _examplesText => _cat.example.replaceFirst(RegExp(r'^e\.g\.\s*'), '');
+
+  @override
+  Widget build(BuildContext context) {
+    final recentQ = _recentQueries;
+    final examples = _examplesText.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).take(3);
+    var i = 0;
+    Widget reveal(Widget w) => Reveal(delayMs: 50 * i++, child: w);
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: (Neon.isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
+          .copyWith(statusBarColor: Colors.transparent),
+      child: Scaffold(
+        backgroundColor: Neon.bg,
+        body: SafeArea(
+          bottom: false,
+          child: GestureDetector(
+            onTap: () => FocusScope.of(context).unfocus(),
+            child: ListView(
+              padding: EdgeInsets.fromLTRB(16, 10, 16, 32 + MediaQuery.paddingOf(context).bottom),
+              children: [
+                // The search: back, the field, the camera and the mic.
+                PriceSearchPill(
+                  controller: _query,
+                  focus: _focus,
+                  onSubmit: _go,
+                  hint: 'Search or paste a link',
+                  trailing: [
+                    SizedBox(
+                      width: 42,
+                      child: _reading
+                          ? const Center(child: NeonLoader.inline(semanticLabel: 'Reading the photo'))
+                          : IconButton(
+                              tooltip: 'Compare a product from a photo',
+                              onPressed: _fromPhoto,
+                              icon: Icon(Icons.photo_camera_outlined, color: Neon.violet, size: 23),
+                            ),
+                    ),
+                    RoleMicOrb(
+                      role: priceCompareRole,
+                      tint: Neon.violet,
+                      size: 34,
+                      showLabel: false,
+                      topic: 'prices',
+                      openingNote: () => priceMicNote,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // Recent searches, then ways in and suggestions.
+                SizedBox(
+                  height: 40,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    clipBehavior: Clip.none,
+                    children: [
+                      for (final q in recentQ)
+                        PriceChip(icon: Icons.history_rounded, label: q, onTap: () => _go(q, PriceCategory.shopping)),
+                      PriceChip(icon: Icons.content_paste_rounded, label: 'Paste Link', onTap: _paste),
+                      if (_cat != PriceCategory.flights)
+                        PriceChip(
+                          icon: Icons.account_balance_wallet_outlined,
+                          label: _budget.text.isEmpty ? 'Add Budget' : 'Budget ₹${_budget.text}',
+                          on: _budget.text.isNotEmpty,
+                          onTap: _askBudget,
+                        ),
+                      for (final e in examples)
+                        if (!recentQ.any((q) => q.toLowerCase() == e.toLowerCase()))
+                          PriceChip(icon: Icons.search_rounded, label: e, onTap: () => _go(e, PriceCategory.shopping)),
+                    ],
+                  ),
+                ),
+                if (PriceCategory.shown.length > 1) ...[
+                  const SizedBox(height: 28),
+                  _sectionTitle('Select a Category'),
+                  PriceCategoryShowcase(
+                    selected: _cat,
+                    onTap: (c) {
+                      setState(() => _cat = c);
+                      if (c == PriceCategory.flights) {
+                        _flights();
+                      } else if (c == PriceCategory.hotels) {
+                        _hotels();
+                      } else {
+                        _focus.requestFocus();
+                      }
+                    },
+                  ),
+                ],
+                if (svc.recent.isNotEmpty) ...[
+                  const SizedBox(height: 28),
+                  reveal(_sectionTitle('Recently Viewed',
+                      action: _pillButton('Clear', Icons.delete_outline_rounded, svc.clearRecent))),
+                  productGrid(context, rating: svc.recent.take(6).any((r) => r.facts.num('rating') != null), [
+                    for (final r in svc.recent.take(6))
+                      ProductCard(
+                        name: r.product,
+                        store: r.lowest?.store ?? '',
+                        image: _imageOf(r),
+                        price: r.lowest?.price,
+                        mrp: r.lowest?.mrp,
+                        rating: r.facts.num('rating'),
+                        reviews: r.facts.num('reviews'),
+                        onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => r.category == PriceCategory.shopping
+                              ? ProductDetailScreen(query: r.query, earlier: r)
+                              : PriceResultScreen(category: r.category, query: r.query, earlier: r),
+                        )),
+                      ),
+                  ]),
+                ],
+                if (svc.watches.isNotEmpty) ...[
+                  const SizedBox(height: 28),
+                  reveal(_sectionTitle('Your Price Alerts')),
+                  for (final w in svc.watches)
+                    reveal(Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _alertRow(w),
+                    )),
+                ],
+                const SizedBox(height: 28),
+                reveal(_sectionTitle('Stores We Compare', sub: 'Tap a store to shop in the app. On any product page, tap Compare.')),
+                reveal(_stores()),
+                if (svc.recent.isEmpty && svc.watches.isEmpty) ...[
+                  const SizedBox(height: 28),
+                  reveal(_howItWorks()),
+                ],
+                const SizedBox(height: 24),
+                Text(
+                  'Prices are sourced from the web via Google Search and may change at any time — the store '
+                  'shows the final price at checkout. Price alerts are checked each time you open Price Compare.',
+                  style: TextStyle(color: Neon.textDim, fontSize: NeonType.caption, height: 1.4),
+                ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(onPressed: () => showPhotoCredits(context), child: const Text('Photo Credits')),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _imageOf(PriceResult r) {
+    final i = r.facts.str('image');
+    if (i.isNotEmpty) return i;
+    for (final o in r.offers) {
+      if (o.info.str('image').isNotEmpty) return o.info.str('image');
+    }
+    return '';
+  }
+
+  Widget _pillButton(String label, IconData icon, VoidCallback onTap) => Tappable(
+        onTap: onTap,
+        semanticLabel: label,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(14, 7, 12, 7),
+          decoration: BoxDecoration(
+            color: Neon.violet.withValues(alpha: Neon.isDark ? 0.16 : 0.09),
+            borderRadius: BorderRadius.circular(Neon.rPill),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Text(label, style: TextStyle(color: Neon.violet, fontSize: 14, fontWeight: FontWeight.w600)),
+            const SizedBox(width: 6),
+            Icon(icon, color: Neon.violet, size: 18),
+          ]),
+        ),
+      );
+
+  Widget _sectionTitle(String t, {String? sub, Widget? action}) => Padding(
+        padding: const EdgeInsets.fromLTRB(2, 0, 0, 14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Semantics(
+                    header: true,
+                    child: Text(t,
+                        style: NeonType.manrope(21, FontWeight.w800).copyWith(color: Neon.textHi, letterSpacing: -0.4)),
+                  ),
+                  if (sub != null) ...[
+                    const SizedBox(height: 3),
+                    Text(sub, style: TextStyle(color: Neon.textLo, fontSize: 13, height: 1.35)),
+                  ],
+                ],
+              ),
+            ),
+            if (action != null) action,
+          ],
+        ),
+      );
+
+  /// THE STORES THAT RUN IN THE APP: each opens its site in
+  /// [ShopBrowserScreen], where a product page brings up Compare.
+  Widget _stores() {
+    final stores = [
+      for (final s in PriceStores.shopping) (s, PriceCategory.shopping),
+      for (final s in PriceStores.grocery) (s, PriceCategory.grocery),
+    ];
+    return SizedBox(
+      // Padding 20 + logo 44 + gap 7 + one line of 11.5 pt text, and a
+      // little room so the row never clips the tile (it once did by 8 dp).
+      height: 76 + MediaQuery.textScalerOf(context).scale(20),
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
+        itemCount: stores.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (_, i) {
+          final (s, cat) = stores[i];
+          final logo = brandLogoFor(store: s);
+          return Tappable(
+            semanticLabel: 'Open ${s.name} in the app',
+            onTap: () => openInShopBrowser(
+                context,
+                s == PriceStores.instamart ? 'https://www.swiggy.com/instamart' : 'https://www.${s.domains.first}/',
+                cat),
+            child: Container(
+              width: 78,
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                color: Neon.surface,
+                borderRadius: BorderRadius.circular(Neon.rMd),
+                border: Border.all(color: Neon.hairline),
+              ),
+              child: Column(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: logo == null ? StoreMark(s, size: 44) : Image.asset(logo, width: 44, height: 44, fit: BoxFit.cover),
+                  ),
+                  const SizedBox(height: 7),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Text(s.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Neon.textHi, fontSize: 11.5, fontWeight: FontWeight.w600)),
+                  ),
+                ],
+              ),
+            ),
+          );
         },
-      );
+      ),
+    );
+  }
 
-  Widget _alerts() => Container(
-        decoration: Neon.glassBox(Neon.rCard),
-        child: Column(
+  Widget _alertRow(PriceWatch w) {
+    final tint = w.reached ? Neon.success : Neon.violet;
+    return Tappable(
+      onTap: () => _go(w.query, w.category),
+      scale: 0.985,
+      semanticLabel: '${w.product}, alert at ${rupees(w.target)}${w.reached ? ', price reached' : ''}',
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Neon.surface,
+          borderRadius: BorderRadius.circular(Neon.rLg),
+          border: Border.all(color: Neon.hairline),
+        ),
+        child: Row(
           children: [
-            for (final w in svc.watches)
-              AppleRow(
-                leading: IconTile(w.reached ? Icons.trending_down_rounded : Icons.notifications_active_rounded,
-                    w.reached ? Neon.success : Neon.violet),
-                title: w.product,
-                subtitle: [
-                  'Alert at ${rupees(w.target)}',
-                  if (w.last != null) 'currently ${rupees(w.last!)}${w.store.isEmpty ? '' : ' on ${w.store}'}',
-                ].join(' · '),
-                onTap: () => _go(w.query, w.category),
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(color: tint.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(12)),
+              child: Icon(w.reached ? Icons.trending_down_rounded : Icons.notifications_active_outlined, color: tint, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(w.product,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: Neon.textHi, fontSize: 14.5, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 2),
+                  Text('Alert at ${rupees(w.target)}${w.store.isEmpty ? '' : ' · ${w.store}'}',
+                      maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Neon.textLo, fontSize: 12.5)),
+                ],
               ),
+            ),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (w.last != null)
+                  Text(rupees(w.last!), style: NeonType.manrope(15, FontWeight.w800).copyWith(color: Neon.textHi)),
+                if (w.reached)
+                  Text('Price reached', style: TextStyle(color: Neon.success, fontSize: 11.5, fontWeight: FontWeight.w700)),
+              ],
+            ),
+            Icon(Icons.chevron_right_rounded, color: Neon.textDim, size: 20),
           ],
         ),
-      );
+      ),
+    );
+  }
 
-  Widget _recent() => Container(
-        decoration: Neon.glassBox(Neon.rCard),
-        child: Column(
-          children: [
-            for (final r in svc.recent)
-              AppleRow(
-                leading: IconTile(r.category.icon, r.category.tint(Neon.violet)),
-                title: r.product,
-                subtitle: r.lowest == null
-                    ? r.category.label
-                    : 'Lowest ${rupees(r.lowest!.price)} on ${r.lowest!.store} · ${_ago(r.at)}',
-                onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => r.category == PriceCategory.shopping
-                      ? ProductDetailScreen(query: r.query, earlier: r)
-                      : PriceResultScreen(category: r.category, query: r.query, earlier: r),
-                )),
+  /// Shown until there is history of one's own: what the feature does.
+  Widget _howItWorks() {
+    Widget step(IconData icon, String title, String text, Color c) => Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(color: c.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(12)),
+                child: Icon(icon, color: c, size: 20),
               ),
-          ],
-        ),
-      );
-}
-
-String _ago(DateTime? at) {
-  if (at == null) return 'earlier';
-  final d = DateTime.now().difference(at);
-  if (d.inMinutes < 2) return 'just now';
-  if (d.inHours < 1) return '${d.inMinutes} min ago';
-  if (d.inDays < 1) return '${d.inHours} h ago';
-  return d.inDays == 1 ? 'yesterday' : '${d.inDays} days ago';
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: TextStyle(color: Neon.textHi, fontSize: 14.5, fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 2),
+                    Text(text, style: TextStyle(color: Neon.textLo, fontSize: 13, height: 1.35)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 16, 14, 2),
+      decoration: BoxDecoration(
+        color: Neon.surface,
+        borderRadius: BorderRadius.circular(Neon.rCard),
+        border: Border.all(color: Neon.hairline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: Text('How It Works', style: NeonType.manrope(17, FontWeight.w800).copyWith(color: Neon.textHi)),
+          ),
+          step(Icons.search_rounded, 'Search, Scan or Paste',
+              'Type a product, photograph it with the camera, ask by voice, or paste a link.', Neon.violet),
+          step(Icons.compare_arrows_rounded, 'Compare Every Store',
+              'See the price at each store side by side, cheapest first.', Neon.cyan),
+          step(Icons.notifications_active_outlined, 'Buy or Set an Alert',
+              'Buy at the lowest price, or be told when it drops to your target.', Neon.success),
+        ],
+      ),
+    );
+  }
 }
