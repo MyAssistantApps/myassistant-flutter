@@ -127,6 +127,36 @@ class StarsPainter extends CustomPainter {
   bool shouldRepaint(StarsPainter old) => old.count != count || old.seed != seed;
 }
 
+/// Hindu detailing in faint gold over the sky (2026-11-24): a toran — the
+/// festoon hung over doorways — along the top edge.
+class HinduMotifPainter extends CustomPainter {
+  const HinduMotifPainter({this.color = Cosmic.gold});
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final line = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.3
+      ..color = color.withValues(alpha: 0.55);
+    final fill = Paint()..color = color.withValues(alpha: 0.65);
+
+    // Toran: a cord with scallops, a bead hanging from each.
+    const swag = 22.0;
+    canvas.drawLine(const Offset(0, 4), Offset(size.width, 4), line);
+    for (var x = 0.0; x < size.width; x += swag) {
+      final arc = Path()
+        ..moveTo(x, 4)
+        ..quadraticBezierTo(x + swag / 2, 14, x + swag, 4);
+      canvas.drawPath(arc, line);
+      canvas.drawCircle(Offset(x + swag / 2, 12.5), 1.6, fill);
+    }
+  }
+
+  @override
+  bool shouldRepaint(HinduMotifPainter old) => old.color != color;
+}
+
 /// A translucent panel on the sky.
 class CosmicCard extends StatelessWidget {
   const CosmicCard({super.key, required this.child, this.padding = const EdgeInsets.all(16), this.glow = false});

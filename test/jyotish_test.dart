@@ -198,8 +198,8 @@ void main() {
     testWidgets('the Home card opens the horoscope; its camera uploads one; it has a mic', (t) async {
       Widget? opened;
       await t.pumpWidget(host(Scaffold(body: JyotishCard(onOpen: (p) => opened = p))));
-      expect(find.text('Jyotish'), findsOneWidget);
-      await t.tap(find.text('Jyotish'));
+      expect(find.text('Your Vedic Horoscope'), findsOneWidget);
+      await t.tap(find.text('Your Vedic Horoscope'));
       expect(opened, isA<JyotishScreen>());
       expect((opened! as JyotishScreen).startWithUpload, isFalse);
       await t.tap(find.bySemanticsLabel('Upload your horoscope'));
