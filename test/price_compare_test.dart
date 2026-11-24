@@ -85,7 +85,7 @@ void main() {
     }
   });
 
-  testWidgets('the Home section draws its hero, search and Product compare only', (t) async {
+  testWidgets('the Home section draws Product compare only, with camera and mic search', (t) async {
     SharedPreferences.setMockInitialValues({});
     t.view.physicalSize = const Size(1080, 2400);
     t.view.devicePixelRatio = 3;
@@ -97,9 +97,11 @@ void main() {
     ));
     await t.pump();
     expect(find.text('Price Compare'), findsOneWidget);
-    expect(find.text('Same Product.\nLower Price.'), findsOneWidget);
-    expect(find.text('Search or paste a link'), findsOneWidget);
+    // 2026-11-24: the Smart Shopping hero is gone.
+    expect(find.text('Same Product.\nLower Price.'), findsNothing);
     expect(find.text('Product Compare'), findsOneWidget);
+    expect(find.byIcon(Icons.photo_camera_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
     // Owner, 2026-11-14: flights, hotels, rides and grocery are gone.
     for (final title in ['Flights', 'Hotels', 'Rides', 'Grocery']) {
       expect(find.text(title), findsNothing, reason: title);

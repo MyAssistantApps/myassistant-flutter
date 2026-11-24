@@ -80,18 +80,18 @@ class _Logo extends StatelessWidget {
   }
 }
 
+/// A product photo that always shows: [url], else a real photo of [name]
+/// (ProductPhoto, price_widgets.dart).
 class _Photo extends StatelessWidget {
-  const _Photo(this.url, {this.icon = Icons.shopping_bag_outlined});
+  const _Photo(this.url, {required this.name, this.pick = 0, this.icon = Icons.shopping_bag_outlined});
   final String url;
+  final String name;
+  final int pick;
   final IconData icon;
 
   @override
-  Widget build(BuildContext context) {
-    final ph = Center(child: Icon(icon, color: _inkDim, size: 40));
-    if (!url.startsWith('https://')) return ph;
-    return Image.network(url,
-        fit: BoxFit.contain, errorBuilder: (_, __, ___) => ph, loadingBuilder: (_, child, p) => p == null ? child : ph);
-  }
+  Widget build(BuildContext context) =>
+      ProductPhoto(url, name: name, pick: pick, icon: icon, iconColor: _inkDim);
 }
 
 Widget _ratingChip(double rating, double? reviews) => Container(
@@ -454,7 +454,7 @@ class _HitCard extends StatelessWidget {
                   padding: const EdgeInsets.all(10),
                   child: Stack(
                     children: [
-                      Positioned.fill(child: _Photo(h.image)),
+                      Positioned.fill(child: _Photo(h.image, name: h.name)),
                       Positioned(left: 0, bottom: 0, child: _Logo(h.store, size: 24)),
                     ],
                   ),
@@ -732,7 +732,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       padding: EdgeInsets.only(top: top + 56),
       color: _bg,
       child: photos.isEmpty
-          ? const _Photo('', icon: Icons.image_outlined)
+          ? _Photo('', name: _name, icon: Icons.image_outlined)
           : Column(
               children: [
                 Expanded(
@@ -741,7 +741,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     onPageChanged: (i) => setState(() => _photo = i),
                     itemBuilder: (_, i) => Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: _Photo(photos[i]),
+                      child: _Photo(photos[i], name: _name, pick: i),
                     ),
                   ),
                 ),
@@ -1118,7 +1118,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 height: 92,
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
-                child: _Photo(photo),
+                child: _Photo(photo, name: o.title.isNotEmpty ? o.title : _name),
               ),
               const SizedBox(width: 12),
               Expanded(
