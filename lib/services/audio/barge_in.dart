@@ -1,6 +1,8 @@
 import 'dart:collection';
 import 'dart:math' as math;
 
+import 'mic_preroll.dart';
+
 /// IS THE OWNER REALLY TALKING OVER HER? (build 113, 2026-09-26)
 ///
 /// The owner: "interrupt should be there… a strong valid one interrupt…
@@ -106,6 +108,20 @@ class BargeInDetector {
   /// [floor] the room's noise on the mic's scale; [speechBar] the session's
   /// ordinary speech threshold; [ms] the frame's length. True once, at the
   /// moment an interruption is confirmed.
+  /// How far above her predicted echo a frame must be to sound like the
+  /// owner's voice (softer than [echoMargin]: it only marks where his words
+  /// began, it never stops her).
+  static const voicedMargin = 1.4;
+
+  /// Does this frame sound like the owner speaking (not only her echo)?
+  bool voiced({
+    required double mic,
+    required double echo,
+    required double floor,
+    required double speechBar,
+  }) =>
+      mic > math.max(speechBar, floor + coupling * echo * voicedMargin);
+
   bool feed({
     required double mic,
     required double echo,
@@ -138,6 +154,12 @@ class BargeInDetector {
       resetRun();
       return false;
     }
+    // His softer words (above her echo, not yet enough to stop her) are
+    // not her echo: learnt as it, they raised the bar and made him harder to
+    // hear the more softly he began (2026-11-24).
+    if (warm && voiced(mic: mic, echo: echo, floor: floor, speechBar: speechBar)) {
+      return false;
+    }
     // Her voice alone: learn how much of it comes back.
     if (echo >= minEcho) {
       _ratios.add(math.max(0.0, mic - floor) / echo);
@@ -147,5 +169,38 @@ class BargeInDetector {
       _heardMs += ms;
     }
     return false;
+  }
+}
+
+/// TALKING OVER HER, FRAME BY FRAME (2026-11-24): what the microphone heard
+/// while she spoke, held until [BargeInDetector] confirms the owner is
+/// talking over her — and then all of what he said, from where his words
+/// began ([MicPreRoll.drainFromSpeech]), not only the last moment.
+class OwnerOverHer {
+  OwnerOverHer(this.detector, {int keepMs = 3000}) : _roll = MicPreRoll(keepMs: keepMs);
+
+  final BargeInDetector detector;
+  final MicPreRoll _roll;
+
+  /// She has started speaking: nothing held yet.
+  void herTurnBegins() {
+    detector.resetRun();
+    _roll.clear();
+  }
+
+  /// One frame while she speaks. Null while the owner is not (yet) talking
+  /// over her; once he is, the frames of what he said, oldest first.
+  List<List<int>>? feed(
+    List<int> frame, {
+    required int ms,
+    required double mic,
+    required double echo,
+    required double floor,
+    required double speechBar,
+  }) {
+    _roll.add(frame, ms,
+        voiced: detector.voiced(mic: mic, echo: echo, floor: floor, speechBar: speechBar));
+    final confirmed = detector.feed(mic: mic, echo: echo, floor: floor, speechBar: speechBar, ms: ms);
+    return confirmed ? _roll.drainFromSpeech() : null;
   }
 }

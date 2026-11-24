@@ -77,7 +77,7 @@ class OpenAiLiveConnector implements LiveConnector {
 
 /// One realtime session over a socket. Takes the incoming frames and two
 /// callbacks rather than a socket type, so a test can drive it.
-class OpenAiLiveSession implements LiveSessionPort, CancellableReply {
+class OpenAiLiveSession implements LiveSessionPort, CancellableReply, TruncatableReply {
   OpenAiLiveSession(Stream<dynamic> incoming, this._send, this._close) {
     _out = StreamController<LiveIn>(onListen: () {
       // connect() waits for OpenAI's acknowledgement before returning, so
@@ -179,6 +179,9 @@ class OpenAiLiveSession implements LiveSessionPort, CancellableReply {
         }
       case 'response.output_audio.delta':
       case 'response.audio.delta':
+        // The reply item being spoken: what [truncateHeard] cuts short.
+        final item = e['item_id'];
+        if (item is String && item.isNotEmpty) _audioItemId = item;
         final b64 = (e['delta'] ?? '').toString();
         if (b64.isNotEmpty)
           _emit(LiveInContent(
@@ -305,6 +308,24 @@ class OpenAiLiveSession implements LiveSessionPort, CancellableReply {
     if (!_responding) return;
     _cutOff = true;
     _event({'type': 'response.cancel'});
+  }
+
+  /// The reply item whose audio is being played.
+  String? _audioItemId;
+
+  /// She was cut off [audioEndMs] into her spoken reply: the model keeps
+  /// only what was heard (OpenAI: conversation.item.truncate), instead of
+  /// carrying on as if the owner heard all of it.
+  @override
+  void truncateHeard(int audioEndMs) {
+    final id = _audioItemId;
+    if (id == null || audioEndMs < 0) return;
+    _event({
+      'type': 'conversation.item.truncate',
+      'item_id': id,
+      'content_index': 0,
+      'audio_end_ms': audioEndMs,
+    });
   }
 
   @override

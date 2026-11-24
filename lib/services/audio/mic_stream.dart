@@ -331,6 +331,16 @@ class VoiceActivityDetector {
   /// The real audio of the moments that led to the onset (then empty).
   List<List<int>> takeLeadIn() => _preRoll.drain();
 
+  /// The owner is already speaking (he talked over her): his utterance is
+  /// under way — no new onset to wait for, and its end is watched from now.
+  void continueSpeech() {
+    speaking = true;
+    _aboveMs = 0;
+    _belowMs = 0;
+    _utteranceMs = 0;
+    _preRoll.clear();
+  }
+
   /// A new session: nobody is talking. [forgetRoom] also forgets the
   /// room's noise and this microphone's loudest level.
   void reset({bool forgetRoom = false}) {
