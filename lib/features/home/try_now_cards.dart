@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../design/neon_tokens.dart';
+import '../../services/auth_service.dart';
 import 'try_on_screen.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
@@ -13,8 +15,13 @@ import 'try_on_screen.dart';
 ///  photo, add your own words if you like, and see yourself in it.
 ///
 ///  A card opens its own try-on screen (TryOnScreen): your photo, the
-///  reference, your words, and the result — nothing else in between. The robot on each card is the app's own mascot, dressed for
-///  the job (assets/tryon/).
+///  reference, your words, and the result — nothing else in between.
+///
+///  REAL PEOPLE ON THE CARDS (owner, 2026-11-24: "instead of this picture,
+///  put real pictures … and give options for boys also"): each card shows a
+///  model dressed for the job — women or men, the user's choice above the
+///  cards (TryNowLook). The pictures are AI-generated, photorealistic
+///  people (no real person's likeness): assets/tryon/<art>_<women|men>.png.
 ///
 ///  Slides every 4 s; a finger on the cards pauses it, and "Remove
 ///  animations" stops it.
@@ -39,6 +46,48 @@ class TryNowCard {
   final String refLabel;
   final String refHint;
   final String notesHint;
+}
+
+/// Whose pictures the cards show.
+enum TryNowModels { women, men }
+
+/// The Women / Men choice for the Try Now pictures: the user's own, kept on
+/// the phone; until they choose, men for a profile that says male, women
+/// otherwise.
+abstract final class TryNowLook {
+  static const _key = 'try_now_models';
+  static final ValueNotifier<TryNowModels> models = ValueNotifier(TryNowModels.women);
+  static bool _loaded = false;
+
+  static Future<void> load() async {
+    if (_loaded) return;
+    _loaded = true;
+    String? saved;
+    try {
+      saved = (await SharedPreferences.getInstance()).getString(_key);
+    } catch (_) {}
+    models.value = fromSaved(saved, AuthService.instance.user?.gender);
+  }
+
+  /// The choice from what was saved, else from the profile's gender.
+  @visibleForTesting
+  static TryNowModels fromSaved(String? saved, String? gender) {
+    for (final m in TryNowModels.values) {
+      if (m.name == saved) return m;
+    }
+    return (gender ?? '').trim().toLowerCase() == 'male' ? TryNowModels.men : TryNowModels.women;
+  }
+
+  static Future<void> set(TryNowModels m) async {
+    models.value = m;
+    try {
+      await (await SharedPreferences.getInstance()).setString(_key, m.name);
+    } catch (_) {}
+  }
+
+  /// The card's picture for [m] (the current choice when null).
+  static String art(TryNowCard c, [TryNowModels? m]) =>
+      'assets/tryon/${c.art}_${(m ?? models.value).name}.png';
 }
 
 const tryNowCards = <TryNowCard>[
@@ -88,6 +137,7 @@ class _TryNowSectionState extends State<TryNowSection> {
   @override
   void initState() {
     super.initState();
+    unawaited(TryNowLook.load());
     _restart();
   }
 
@@ -146,19 +196,32 @@ class _TryNowSectionState extends State<TryNowSection> {
                     style: NeonType.manrope(21, FontWeight.w800)
                         .copyWith(color: Neon.textHi, letterSpacing: -0.6)),
                 const SizedBox(width: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: Neon.violet.withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(20),
-                    border:
-                        Border.all(color: Neon.violet.withValues(alpha: 0.4)),
+                // The badge gives way on a narrow phone, so the Women / Men
+                // choice always fits beside it.
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Neon.violet.withValues(alpha: 0.16),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                              color: Neon.violet.withValues(alpha: 0.4)),
+                        ),
+                        child: Text('AI STUDIO',
+                            style: NeonType.manrope(10, FontWeight.w800)
+                                .copyWith(
+                                    color: Neon.violet, letterSpacing: 1.2)),
+                      ),
+                    ),
                   ),
-                  child: Text('AI STUDIO',
-                      style: NeonType.manrope(10, FontWeight.w800).copyWith(
-                          color: Neon.violet, letterSpacing: 1.2)),
                 ),
+                const SizedBox(width: 8),
+                const _ModelsToggle(),
               ],
             ),
           ),
@@ -177,9 +240,13 @@ class _TryNowSectionState extends State<TryNowSection> {
                 onPageChanged: (i) => setState(() => _at = i),
                 itemBuilder: (_, i) => Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: _Card(
-                      card: tryNowCards[i],
-                      onTap: () => _open(tryNowCards[i])),
+                  child: ValueListenableBuilder<TryNowModels>(
+                    valueListenable: TryNowLook.models,
+                    builder: (_, m, __) => _Card(
+                        card: tryNowCards[i],
+                        art: TryNowLook.art(tryNowCards[i], m),
+                        onTap: () => _open(tryNowCards[i])),
+                  ),
                 ),
               ),
             ),
@@ -209,11 +276,58 @@ class _TryNowSectionState extends State<TryNowSection> {
   }
 }
 
+/// Women or Men, for the cards' pictures: two small pills beside the
+/// title, the chosen one lit.
+class _ModelsToggle extends StatelessWidget {
+  const _ModelsToggle();
+
+  @override
+  Widget build(BuildContext context) => ValueListenableBuilder<TryNowModels>(
+        valueListenable: TryNowLook.models,
+        builder: (_, chosen, __) => Container(
+          padding: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            color: Neon.violet.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Neon.violet.withValues(alpha: 0.35)),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            for (final m in TryNowModels.values)
+              Semantics(
+                button: true,
+                selected: m == chosen,
+                label: m == TryNowModels.women ? 'Show women' : 'Show men',
+                excludeSemantics: true,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    unawaited(TryNowLook.set(m));
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: m == chosen ? Neon.violet : Colors.transparent,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(m == TryNowModels.women ? 'Women' : 'Men',
+                        style: NeonType.manrope(12, FontWeight.w800).copyWith(
+                            color: m == chosen ? Colors.white : Neon.textLo)),
+                  ),
+                ),
+              ),
+          ]),
+        ),
+      );
+}
+
 /// One look: glass tinted with its own colour, the name and what it does
-/// on the left, a Try now pill, and the dressed robot on the right.
+/// on the left, a Try now pill, and the model dressed for it on the right.
 class _Card extends StatelessWidget {
-  const _Card({required this.card, required this.onTap});
+  const _Card({required this.card, required this.art, required this.onTap});
   final TryNowCard card;
+  final String art;
   final VoidCallback onTap;
 
   Color get _tint {
@@ -258,17 +372,22 @@ class _Card extends StatelessWidget {
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                // The robot, standing in the card's right side.
+                // The model, standing in the card's right side, cut off at
+                // the card's bottom edge.
                 Positioned(
                   right: 4,
                   top: 6,
                   bottom: 0,
                   width: 150,
                   child: ExcludeSemantics(
-                    child: Image.asset('assets/tryon/${card.art}.png',
-                        fit: BoxFit.contain,
-                        alignment: Alignment.bottomCenter,
-                        filterQuality: FilterQuality.medium),
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                          bottomRight: Radius.circular(Neon.rCard)),
+                      child: Image.asset(art,
+                          fit: BoxFit.contain,
+                          alignment: Alignment.bottomCenter,
+                          filterQuality: FilterQuality.medium),
+                    ),
                   ),
                 ),
                 Padding(
