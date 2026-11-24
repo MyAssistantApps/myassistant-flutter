@@ -16,6 +16,7 @@ import '../design/neon_tokens.dart';
 import '../widgets/contact_picker_sheet.dart';
 import '../widgets/ambient_background.dart';
 import '../widgets/inline_voice.dart';
+import '../widgets/mic_hint.dart';
 import '../widgets/voice_orb.dart' show OrbMood;
 import '../widgets/activity_pill.dart';
 import '../widgets/news_panel.dart';
@@ -36,6 +37,7 @@ import '../services/auth_service.dart';
 import '../services/overlay_bridge.dart';
 import '../features/assistant/widgets/action_cards.dart' show DocumentGalleryScreen;
 import '../screens/assistant_settings_screen.dart';
+import '../screens/mic_color_screen.dart';
 import '../screens/home_dashboard.dart';
 import '../screens/meetings/meetings_screen.dart';
 import '../services/telemetry.dart';
@@ -227,6 +229,7 @@ class _HomeShellState extends State<HomeShell>
   @override
   void dispose() {
     _newsWarm?.cancel();
+    _micHold?.cancel();
     BriefService.instance.removeListener(_syncDayWidget);
     HomeShell.requestedTab.removeListener(_onTabRequested);
     AssistantEngine.instance.removeListener(_onEngineForPicker);
@@ -980,8 +983,23 @@ class _HomeShellState extends State<HomeShell>
                   onPointerDown: (_) {
                     final e = AssistantEngine.instance;
                     if (!e.starting && !e.inlineVoice && !e.liveActive) e.prewarmVoice();
+                    _startMicHold();
                   },
-                  child: AssistantOrbButton(
+                  // Let go before 3 s: no customisation page.
+                  onPointerUp: (_) => _micHold?.cancel(),
+                  onPointerCancel: (_) => _micHold?.cancel(),
+                  // "Tap to talk, hold for 3 seconds to customise" above the mic
+                  // every 5 minutes (2026-11-24); hidden during a conversation.
+                  child: MicHint(
+                    listenable: AssistantEngine.instance,
+                    quiet: () {
+                      final e = AssistantEngine.instance;
+                      return e.starting ||
+                          e.inlineVoice ||
+                          e.liveActive ||
+                          (e.phase != AssistantPhase.idle && e.phase != AssistantPhase.completed);
+                    },
+                    child: AssistantOrbButton(
                     ringed: true,
                     onTap: () async {
                       HapticFeedback.mediumImpact();
@@ -1015,6 +1033,7 @@ class _HomeShellState extends State<HomeShell>
                       }
                     },
                   ),
+                  ),
                 ),
       ),
       ),
@@ -1037,6 +1056,20 @@ class _HomeShellState extends State<HomeShell>
         ),
       ),
     );
+  }
+
+  /// HOLD THE MIC FOR 3 SECONDS → THE MIC CUSTOMISATION PAGE (2026-11-24).
+  /// Separate from the mic's own tap and long press, which are unchanged.
+  Timer? _micHold;
+
+  void _startMicHold() {
+    _micHold?.cancel();
+    _micHold = Timer(const Duration(seconds: 3), () {
+      if (!mounted) return;
+      HapticFeedback.heavyImpact();
+      AppLog.add('orb', 'hold 3 s → customise mic');
+      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const MicColorScreen()));
+    });
   }
 
   /// One tab (2026-11-22, Manish's mockup). The violet highlight behind

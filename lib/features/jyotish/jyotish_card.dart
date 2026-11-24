@@ -1,7 +1,8 @@
 // JYOTISH CARD (2026-11-22) — the last card on Home: the way into the
 // Vedic horoscope (jyotish_screen.dart). With a camera, to upload a
 // horoscope for the assistant to read, and a mic, to talk about it
-// (owner, 2026-11-23).
+// (owner, 2026-11-23). Under them, today's horoscope for all twelve signs
+// as a carousel (2026-11-24, today_horoscope.dart).
 
 import 'package:flutter/material.dart';
 
@@ -10,6 +11,7 @@ import '../../widgets/role_mic_orb.dart';
 import 'jyotish_guru.dart';
 import 'jyotish_screen.dart';
 import 'jyotish_theme.dart';
+import 'today_horoscope.dart';
 
 class JyotishCard extends StatelessWidget {
   const JyotishCard({super.key, this.onOpen});
@@ -57,7 +59,8 @@ class JyotishCard extends StatelessWidget {
                 painter: StarsPainter(count: 28, seed: 3),
                 child: Padding(
                   padding: const EdgeInsets.all(18),
-                  child: Row(children: [
+                  child: Column(children: [
+                  Row(children: [
                     ExcludeSemantics(
                       child: Container(
                         width: 52,
@@ -141,6 +144,9 @@ class JyotishCard extends StatelessWidget {
                       topic: 'your horoscope',
                       openingNote: () => jyotishMicNote,
                     ),
+                  ]),
+                  const SizedBox(height: 16),
+                  const TodayHoroscopeCarousel(),
                   ]),
                 ),
               ),

@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../design/neon_tokens.dart';
 import 'airlines.dart';
 import 'price_models.dart';
+import 'price_service.dart';
 
 /// A store's mark: its initial on its own colour (no logos are bundled).
 class StoreMark extends StatelessWidget {
@@ -36,196 +37,81 @@ class StoreMark extends StatelessWidget {
   }
 }
 
-/// THE HERO (2026-11-08, Manish: "the aeroplane image is not looking good —
-/// redesign it so it attracts the user"). No photo: a warm gradient that
-/// says "deals", the promise, a small example of what a comparison looks
-/// like (real store logos, marked "e.g."), and the search field inside it.
-class PriceHeroBanner extends StatelessWidget {
-  const PriceHeroBanner({super.key, required this.onSearch, required this.onPaste});
-  final VoidCallback onSearch;
-  final VoidCallback onPaste;
-
-  static const _c1 = Color(0xFF5B2EFF), _c2 = Color(0xFFB026E0), _c3 = Color(0xFFFF7A45);
+/// A PRODUCT PHOTO THAT ALWAYS SHOWS (2026-11-24): the [url] the search
+/// gave, and when it is missing or will not load (made-up links, stores
+/// that refuse apps), a real photo of [name] found on the server
+/// (PriceService.photosFor) — the [pick]-th, so a gallery shows different
+/// ones. The [icon] only when nothing at all can be found.
+class ProductPhoto extends StatefulWidget {
+  const ProductPhoto(this.url,
+      {super.key, required this.name, this.pick = 0, this.icon = Icons.shopping_bag_outlined, this.iconColor});
+  final String url;
+  final String name;
+  final int pick;
+  final IconData icon;
+  final Color? iconColor;
 
   @override
-  Widget build(BuildContext context) {
-    final r = BorderRadius.circular(Neon.rCard);
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: r,
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [_c1, _c2, _c3],
-          stops: [0, 0.55, 1],
-        ),
-        boxShadow: [BoxShadow(color: _c2.withValues(alpha: 0.35), blurRadius: 24, offset: const Offset(0, 10))],
-      ),
-      child: ClipRRect(
-        borderRadius: r,
-        child: Stack(
-          children: [
-            // Two soft lights in the corners, so the gradient has depth.
-            Positioned(right: -60, top: -70, child: _glow(200, Colors.white.withValues(alpha: 0.16))),
-            Positioned(left: -50, bottom: -80, child: _glow(180, _c3.withValues(alpha: 0.35))),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(Neon.rPill),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                    ),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      const Icon(Icons.auto_awesome_rounded, size: 13, color: Colors.white),
-                      const SizedBox(width: 5),
-                      Text('SMART SHOPPING',
-                          style: NeonType.manrope(10.5, FontWeight.w800)
-                              .copyWith(color: Colors.white, letterSpacing: 1.1)),
-                    ]),
-                  ),
-                  const SizedBox(height: 12),
-                  Text('Same Product.\nLower Price.',
-                      style: NeonType.manrope(27, FontWeight.w800)
-                          .copyWith(color: Colors.white, letterSpacing: -0.8, height: 1.08)),
-                  const SizedBox(height: 6),
-                  Text('Every store is compared within seconds. Select the lowest price.',
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13.5, height: 1.3)),
-                  const SizedBox(height: 14),
-                  const _ExampleCompare(),
-                  const SizedBox(height: 14),
-                  _search(),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _glow(double size, Color c) => IgnorePointer(
-        child: Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(colors: [c, c.withValues(alpha: 0)]),
-          ),
-        ),
-      );
-
-  /// White on the gradient: the one thing to tap, impossible to miss.
-  Widget _search() {
-    final r = BorderRadius.circular(Neon.rMd);
-    return Material(
-      color: Colors.white,
-      borderRadius: r,
-      elevation: 0,
-      child: Row(
-        children: [
-          Expanded(
-            child: InkWell(
-              borderRadius: r,
-              onTap: () {
-                HapticFeedback.selectionClick();
-                onSearch();
-              },
-              child: const Padding(
-                padding: EdgeInsets.fromLTRB(14, 14, 8, 14),
-                child: Row(children: [
-                  Icon(Icons.search_rounded, color: _c1, size: 22),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text('Search or paste a link',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: Color(0xFF6B6880), fontSize: 14.5, fontWeight: FontWeight.w500)),
-                  ),
-                ]),
-              ),
-            ),
-          ),
-          Container(width: 1, height: 24, color: const Color(0x1A141627)),
-          IconButton(
-            tooltip: 'Paste a Product Link',
-            onPressed: onPaste,
-            icon: const Icon(Icons.content_paste_rounded, color: _c1, size: 21),
-          ),
-        ],
-      ),
-    );
-  }
+  State<ProductPhoto> createState() => _ProductPhotoState();
 }
 
-/// What a comparison looks like: three stores, one marked LOWEST. An
-/// illustration ("e.g."), not a live price.
-class _ExampleCompare extends StatelessWidget {
-  const _ExampleCompare();
+class _ProductPhotoState extends State<ProductPhoto> {
+  late bool _fallback;
+  Future<List<String>>? _found;
+  int _skip = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _reset();
+  }
+
+  @override
+  void didUpdateWidget(ProductPhoto old) {
+    super.didUpdateWidget(old);
+    if (old.url != widget.url || old.name != widget.name || old.pick != widget.pick) _reset();
+  }
+
+  void _reset() {
+    _fallback = !widget.url.startsWith('https://');
+    _found = _fallback ? PriceService.instance.photosFor(widget.name) : null;
+    _skip = 0;
+  }
+
+  void _later(VoidCallback f) => WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(f);
+      });
+
+  Widget get _icon => Center(child: Icon(widget.icon, color: widget.iconColor ?? Neon.textDim, size: 40));
+
+  Widget _net(String url, {required VoidCallback onError}) => Image.network(
+        url,
+        fit: BoxFit.contain,
+        gaplessPlayback: true,
+        loadingBuilder: (_, child, p) => p == null ? child : _icon,
+        errorBuilder: (_, __, ___) {
+          onError();
+          return _icon;
+        },
+      );
 
   @override
   Widget build(BuildContext context) {
-    const rows = [
-      ('amazon', 'Amazon', '₹1,099', true),
-      ('flipkart', 'Flipkart', '₹1,299', false),
-      ('croma', 'Croma', '₹1,499', false),
-    ];
-    return ExcludeSemantics(
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.14),
-          borderRadius: BorderRadius.circular(Neon.rMd),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('e.g. boAt Airdopes 141',
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.75), fontSize: 11.5, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 6),
-            for (final (logo, name, price, best) in rows)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 3),
-                child: Row(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: Image.asset('assets/brands/$logo.png', width: 24, height: 24, cacheWidth: 72),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(name,
-                          style: TextStyle(
-                              color: Colors.white.withValues(alpha: best ? 1 : 0.85),
-                              fontSize: 13.5,
-                              fontWeight: best ? FontWeight.w700 : FontWeight.w500)),
-                    ),
-                    if (best) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(color: const Color(0xFF22C55E), borderRadius: BorderRadius.circular(5)),
-                        child: Text('LOWEST',
-                            style: NeonType.manrope(9, FontWeight.w800).copyWith(color: Colors.white, letterSpacing: 0.6)),
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                    Text(price,
-                        style: NeonType.manrope(best ? 15 : 13.5, FontWeight.w800).copyWith(
-                          color: Colors.white.withValues(alpha: best ? 1 : 0.7),
-                          decoration: best ? null : TextDecoration.lineThrough,
-                          decorationColor: Colors.white.withValues(alpha: 0.6),
-                        )),
-                  ],
-                ),
-              ),
-          ],
-        ),
-      ),
+    if (!_fallback) {
+      return _net(widget.url, onError: () => _later(() {
+            _fallback = true;
+            _found = PriceService.instance.photosFor(widget.name);
+          }));
+    }
+    return FutureBuilder<List<String>>(
+      future: _found,
+      builder: (_, snap) {
+        final list = snap.data ?? const <String>[];
+        if (list.isEmpty || _skip >= list.length) return _icon;
+        final url = list[(widget.pick + _skip) % list.length];
+        // A photo that will not load: the next one found.
+        return _net(url, onError: () => _later(() => _skip++));
+      },
     );
   }
 }
@@ -235,15 +121,21 @@ class _ExampleCompare extends StatelessWidget {
 /// tiles as 3 + 2 left a ragged, centred last row.
 class PriceCategoryShowcase extends StatelessWidget {
   const PriceCategoryShowcase(
-      {super.key, required this.onTap, this.selected, this.only, this.onSearch, this.onCamera, this.mic});
+      {super.key, required this.onTap, this.selected, this.only, this.onSearch, this.onCamera, this.onMic, this.mic});
   final void Function(PriceCategory c) onTap;
   final PriceCategory? selected;
 
-  /// A search box along the bottom of the Product Compare card, with the
-  /// camera and the mic in it (Home, 2026-11-24). Shown when [onSearch] is.
+  /// A white search box along the bottom of the Product Compare card, with
+  /// the camera and [mic] in it (Home, Manish, 2026-11-24). Shown when
+  /// [onSearch] is; then the round buttons below are not.
   final VoidCallback? onSearch;
-  final VoidCallback? onCamera;
   final Widget? mic;
+
+  /// Search by photo / by voice: round buttons on the Product Compare card
+  /// beside Compare now (Allen, 2026-11-24, in place of the Smart Shopping
+  /// hero). The camera goes in the search box when there is one.
+  final VoidCallback? onCamera;
+  final VoidCallback? onMic;
 
   /// When set, only these categories, as long bordered cards one under
   /// another (Home shows just flights and hotels, 2026-11-09).
@@ -266,6 +158,7 @@ class PriceCategoryShowcase extends StatelessWidget {
             onTap: () => onTap(PriceCategory.shopping),
             onSearch: onSearch,
             onCamera: onCamera,
+            onMic: onMic,
             mic: mic,
           ),
         if (small)
@@ -328,6 +221,7 @@ class _PhotoCard extends StatelessWidget {
     this.small = false,
     this.onSearch,
     this.onCamera,
+    this.onMic,
     this.mic,
   });
   final PriceCategory category;
@@ -339,6 +233,7 @@ class _PhotoCard extends StatelessWidget {
   final bool small;
   final VoidCallback? onSearch;
   final VoidCallback? onCamera;
+  final VoidCallback? onMic;
   final Widget? mic;
 
   @override
@@ -541,28 +436,18 @@ class _PhotoCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 14),
-                Container(
-                  padding: const EdgeInsets.fromLTRB(14, 8, 10, 8),
-                  decoration: BoxDecoration(
-                    color: Neon.accentFill,
-                    borderRadius: BorderRadius.circular(Neon.rPill),
-                    boxShadow: [
-                      BoxShadow(color: accent.withValues(alpha: 0.35), blurRadius: 14, offset: const Offset(0, 4))
+                Row(
+                  children: [
+                    Flexible(child: _compareNow(accent)),
+                    if (onCamera != null && onSearch == null) ...[
+                      const SizedBox(width: 8),
+                      _roundAction(Icons.photo_camera_rounded, 'Search by Photo', onCamera!, accent),
                     ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text('Compare now',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: NeonType.manrope(13, FontWeight.w800).copyWith(color: Neon.onAccent)),
-                      ),
-                      const SizedBox(width: 6),
-                      Icon(Icons.arrow_forward_rounded, color: Neon.onAccent, size: 16),
+                    if (onMic != null && onSearch == null) ...[
+                      const SizedBox(width: 8),
+                      _roundAction(Icons.mic_rounded, 'Search by Voice', onMic!, accent),
                     ],
-                  ),
+                  ],
                 ),
               ],
             ),
@@ -579,8 +464,8 @@ class _PhotoCard extends StatelessWidget {
       button: true,
       selected: selected,
       label: '$title. $line',
-      // The search box's own buttons stay reachable by a screen reader.
-      excludeSemantics: onSearch == null,
+      // The search box, camera and mic stay reachable on their own.
+      excludeSemantics: onSearch == null && onCamera == null && onMic == null,
       child: DecoratedBox(
         // The border is a gradient, so it is drawn as a padded backdrop.
         decoration: BoxDecoration(
@@ -656,6 +541,47 @@ class _PhotoCard extends StatelessWidget {
       ),
     );
   }
+
+  /// A round accent-tinted button on the card (camera, mic).
+  Widget _roundAction(IconData icon, String tooltip, VoidCallback onPressed, Color accent) => Tooltip(
+        message: tooltip,
+        child: Material(
+          color: accent.withValues(alpha: 0.16),
+          shape: CircleBorder(side: BorderSide(color: accent.withValues(alpha: 0.35))),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onPressed();
+            },
+            child: SizedBox(width: 36, height: 36, child: Icon(icon, size: 19, color: accent)),
+          ),
+        ),
+      );
+
+  Widget _compareNow(Color accent) => Container(
+                  padding: const EdgeInsets.fromLTRB(14, 8, 10, 8),
+                  decoration: BoxDecoration(
+                    color: Neon.accentFill,
+                    borderRadius: BorderRadius.circular(Neon.rPill),
+                    boxShadow: [
+                      BoxShadow(color: accent.withValues(alpha: 0.35), blurRadius: 14, offset: const Offset(0, 4))
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text('Compare now',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: NeonType.manrope(13, FontWeight.w800).copyWith(color: Neon.onAccent)),
+                      ),
+                      const SizedBox(width: 6),
+                      Icon(Icons.arrow_forward_rounded, color: Neon.onAccent, size: 16),
+                    ],
+                  ),
+                );
 
   /// A store as its own app icon (the logos bundled in assets/brands/, as
   /// Popular apps and the shop browser show them), ringed in the card

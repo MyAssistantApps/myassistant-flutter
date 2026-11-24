@@ -48,14 +48,19 @@ class _PriceCompareSectionState extends State<PriceCompareSection> {
     if (mounted) setState(() {});
   }
 
-  void _open(
-      {PriceCategory category = PriceCategory.shopping, bool focus = false, bool paste = false, bool camera = false}) {
+  void _open({
+    PriceCategory category = PriceCategory.shopping,
+    bool focus = false,
+    bool paste = false,
+    bool camera = false,
+    bool voice = false,
+  }) {
     HapticFeedback.selectionClick();
     // Flights and hotels have their own pages (dates, travellers, rooms…).
     widget.onOpen(switch (category) {
       PriceCategory.flights => const FlightSearchScreen(),
       PriceCategory.hotels => const HotelSearchScreen(),
-      _ => PriceCompareScreen(category: category, focus: focus, paste: paste, camera: camera),
+      _ => PriceCompareScreen(category: category, focus: focus, paste: paste, camera: camera, voice: voice),
     });
   }
 
@@ -100,11 +105,10 @@ class _PriceCompareSectionState extends State<PriceCompareSection> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Owner, 2026-11-14: products only — the hero, the Product
-              // Compare card and the alerts strip (as on hardening).
-              // Owner, 2026-11-24: the Smart Shopping banner is gone; the
-              // Product Compare card carries the search, the camera and the
-              // mic.
+              // Owner, 2026-11-14: products only. 2026-11-24: the Smart
+              // Shopping hero is gone; the Product Compare card carries a
+              // white search box with the camera (search by photo) and the
+              // mic, then the alerts strip.
               PriceCategoryShowcase(
                 onTap: (c) => _open(category: c, focus: true),
                 onSearch: () => _open(focus: true),

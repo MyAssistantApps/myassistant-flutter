@@ -2,18 +2,17 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../ai/assistant_role.dart';
 import '../../design/motion.dart';
 import '../../design/neon_tokens.dart';
-import '../../design/neon_widgets.dart';
 import '../../services/app_feedback.dart';
 import '../../widgets/role_mic_orb.dart';
 import 'flight_search_screen.dart';
 import 'hotel_search_screen.dart';
 import 'price_models.dart';
 import 'price_result_screen.dart';
+import 'product_snap_search.dart';
 import 'price_service.dart';
 import 'price_widgets.dart';
 import 'product_screens.dart';
@@ -45,18 +44,27 @@ const priceMicNote = "[SYSTEM] I tapped the mic on the Price Compare screen. "
 ///  ProductSearchScreen; a link opens its product page at once.
 /// ─────────────────────────────────────────────────────────────────────────
 class PriceCompareScreen extends StatefulWidget {
-  const PriceCompareScreen(
-      {super.key, this.category = PriceCategory.shopping, this.focus = false, this.paste = false, this.camera = false});
+  const PriceCompareScreen({
+    super.key,
+    this.category = PriceCategory.shopping,
+    this.focus = false,
+    this.paste = false,
+    this.camera = false,
+    this.voice = false,
+  });
   final PriceCategory category;
-
-  /// Open with the camera up (Home's camera button).
-  final bool camera;
 
   /// Open with the keyboard up (Home's search box).
   final bool focus;
 
   /// Open by comparing the link on the clipboard (Home's paste button).
   final bool paste;
+
+  /// Open by searching from a photo (Home's camera button).
+  final bool camera;
+
+  /// Open by searching from what is said (Home's microphone button).
+  final bool voice;
 
   @override
   State<PriceCompareScreen> createState() => _PriceCompareScreenState();
@@ -68,7 +76,6 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
   final _budget = TextEditingController();
   final _focus = FocusNode();
   final svc = PriceService.instance;
-  bool _reading = false;
 
   @override
   void initState() {
@@ -76,10 +83,10 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
     svc.addListener(_changed);
     _focus.addListener(_changed);
     unawaited(svc.load().then((_) => svc.checkWatches()));
-    if (widget.camera) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _fromPhoto());
-    } else if (widget.paste) {
+    if (widget.paste) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _paste());
+    } else if (widget.camera || widget.voice) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _snap(voice: widget.voice));
     } else if (widget.focus) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _focus.requestFocus());
     }
@@ -111,6 +118,18 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
       _query.text = t;
       _go();
     } catch (_) {}
+  }
+
+  /// SEARCH BY CAMERA OR VOICE: the product found becomes the search.
+  Future<void> _snap({required bool voice}) async {
+    final q = voice ? await ProductSnapSearch.byVoice(context) : await ProductSnapSearch.byPhoto(context);
+    if (!mounted) return;
+    if (q == null) {
+      _focus.requestFocus();
+      return;
+    }
+    _query.text = q;
+    _go();
   }
 
   void _flights() {
@@ -146,41 +165,6 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
           ? (link ? ProductDetailScreen(query: q) : ProductSearchScreen(query: q))
           : PriceResultScreen(category: c, query: q, budget: budget),
     ));
-  }
-
-  /// THE CAMERA (2026-11-24): photograph a product (or its box) and it is
-  /// named and compared like a typed search.
-  Future<void> _fromPhoto() async {
-    if (_reading) return;
-    HapticFeedback.selectionClick();
-    XFile? shot;
-    try {
-      shot = await ImagePicker().pickImage(source: ImageSource.camera, maxWidth: 1600, maxHeight: 1600, imageQuality: 82);
-    } catch (_) {
-      if (mounted) {
-        AppFeedback.show('The camera could not be opened. Please check the camera permission and try again.',
-            context: context);
-      }
-      return;
-    }
-    if (shot == null || !mounted) return;
-    setState(() => _reading = true);
-    String? name;
-    try {
-      final bytes = await shot.readAsBytes();
-      name = await svc.productFromPhoto(bytes, mime: shot.path.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
-    } catch (_) {
-      name = null;
-    }
-    if (!mounted) return;
-    setState(() => _reading = false);
-    if (name == null) {
-      AppFeedback.show('No product could be recognised in that photo. Please try again closer, or type its name.',
-          context: context);
-      return;
-    }
-    _query.text = name;
-    _go(name, PriceCategory.shopping);
   }
 
   Future<void> _askBudget() async {
@@ -244,15 +228,11 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
                   onSubmit: _go,
                   hint: 'Search or paste a link',
                   trailing: [
-                    SizedBox(
-                      width: 42,
-                      child: _reading
-                          ? const Center(child: NeonLoader.inline(semanticLabel: 'Reading the photo'))
-                          : IconButton(
-                              tooltip: 'Compare a product from a photo',
-                              onPressed: _fromPhoto,
-                              icon: Icon(Icons.photo_camera_outlined, color: Neon.violet, size: 23),
-                            ),
+                    // Allen's search by photo (camera or gallery), 2026-11-24.
+                    IconButton(
+                      tooltip: 'Compare a product from a photo',
+                      onPressed: () => _snap(voice: false),
+                      icon: Icon(Icons.photo_camera_outlined, color: Neon.violet, size: 23),
                     ),
                     RoleMicOrb(
                       role: priceCompareRole,

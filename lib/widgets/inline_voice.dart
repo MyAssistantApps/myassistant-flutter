@@ -17,6 +17,7 @@ import '../features/assistant/state/assistant_state.dart';
 import '../services/app_feedback.dart';
 import '../services/assistant_identity.dart';
 import '../services/auth_service.dart';
+import '../services/mic_color.dart';
 import 'caption_scroll.dart';
 import 'neuron_orb.dart';
 import 'streaming_caption.dart';
@@ -262,31 +263,7 @@ class _AssistantOrbButtonState extends State<AssistantOrbButton>
                               ),
                             )
                           : widget.ringed
-                          ? Container(
-                              key: const ValueKey('idle-ringed'),
-                              width: 70,
-                              height: 70,
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: const Color(0xFF0D0C14),
-                                border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
-                                boxShadow: [
-                                  BoxShadow(color: Colors.black.withValues(alpha: 0.55), blurRadius: 14, offset: const Offset(0, 4)),
-                                ],
-                              ),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: const Color(0xFF16141F),
-                                  border: Border.all(color: const Color(0xFF8B5CF6), width: 1.6),
-                                  boxShadow: [
-                                    BoxShadow(color: const Color(0xFF8B5CF6).withValues(alpha: 0.35), blurRadius: 10),
-                                  ],
-                                ),
-                                child: const Icon(Icons.mic_rounded, color: Color(0xFFC4B5FD), size: 31),
-                              ),
-                            )
+                          ? const RingedMic(key: ValueKey('idle-ringed'))
                           : Container(
                               key: const ValueKey('idle'),
                               width: 64,
@@ -405,6 +382,51 @@ class _AssistantOrbButtonState extends State<AssistantOrbButton>
       ),
     );
   }
+}
+
+/// THE CRADLE MIC AT REST (2026-11-22, Manish's mockup): a dark circle
+/// with a thin ring and a mic. Its colour is the one chosen on the mic
+/// customisation page (MicColorStore, 2026-11-24) unless [option] is
+/// given (the page's preview); the design itself never changes.
+class RingedMic extends StatelessWidget {
+  const RingedMic({super.key, this.option});
+  final MicColorOption? option;
+
+  @override
+  Widget build(BuildContext context) {
+    final fixed = option;
+    if (fixed != null) return _ring(fixed);
+    MicColorStore.instance.load(); // once; the saved colour arrives through the notifier
+    return ValueListenableBuilder<MicColorOption>(
+      valueListenable: MicColorStore.instance,
+      builder: (_, o, __) => _ring(o),
+    );
+  }
+
+  Widget _ring(MicColorOption o) => Container(
+        width: 70,
+        height: 70,
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: const Color(0xFF0D0C14),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.55), blurRadius: 14, offset: const Offset(0, 4)),
+          ],
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: const Color(0xFF16141F),
+            border: Border.all(color: o.ring, width: 1.6),
+            boxShadow: [
+              BoxShadow(color: o.ring.withValues(alpha: 0.35), blurRadius: 10),
+            ],
+          ),
+          child: Icon(Icons.mic_rounded, color: o.glyph, size: 31),
+        ),
+      );
 }
 
 /// Two staggered rings breathing outward from the orb. Radii scale with

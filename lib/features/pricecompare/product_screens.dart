@@ -86,31 +86,18 @@ class StoreLogo extends StatelessWidget {
   }
 }
 
-bool _hasPhoto(String url) => url.startsWith('https://');
-
-/// Where a photo sits: white for a real photo (as the stores show them), a
-/// soft tile of the theme's own when there is none.
-Color _photoBg(String url) => _hasPhoto(url) ? Colors.white : Neon.surfaceHigh;
-
+/// A product photo that always shows: [url], else a real photo of [name]
+/// found on the server (Allen's ProductPhoto, price_widgets.dart), fading in.
 class _Photo extends StatelessWidget {
-  const _Photo(this.url, {this.icon = Icons.shopping_bag_outlined});
+  const _Photo(this.url, {required this.name, this.pick = 0, this.icon = Icons.shopping_bag_outlined});
   final String url;
+  final String name;
+  final int pick;
   final IconData icon;
 
   @override
-  Widget build(BuildContext context) {
-    final ph = Center(
-      child: Icon(icon, color: _hasPhoto(url) ? Colors.black26 : _accent.withValues(alpha: 0.55), size: 38),
-    );
-    if (!url.startsWith('https://')) return ph;
-    return Image.network(url,
-        fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) => ph,
-        frameBuilder: (_, child, frame, sync) => sync
-            ? child
-            : AnimatedOpacity(opacity: frame == null ? 0 : 1, duration: Motion.short, child: child),
-        loadingBuilder: (_, child, p) => p == null ? child : ph);
-  }
+  Widget build(BuildContext context) =>
+      ProductPhoto(url, name: name, pick: pick, icon: icon, iconColor: Colors.black26);
 }
 
 Widget _ratingChip(double rating, double? reviews) => Container(
@@ -290,8 +277,8 @@ class ProductCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final photo = Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: _photoBg(image), borderRadius: BorderRadius.circular(Neon.rMd)),
-      child: _Photo(image),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(Neon.rMd)),
+      child: _Photo(image, name: name),
     );
     final off = _off;
     return Tappable(
@@ -991,7 +978,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final photos = _photos;
     final top = MediaQuery.paddingOf(context).top;
     Widget page(int i) {
-      final p = Padding(padding: const EdgeInsets.symmetric(horizontal: 36), child: _Photo(photos[i]));
+      final p = Padding(padding: const EdgeInsets.symmetric(horizontal: 36), child: _Photo(photos[i], name: _name, pick: i));
       return i == 0 && widget.heroTag != null ? Hero(tag: widget.heroTag!, child: p) : p;
     }
 
@@ -999,13 +986,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       height: 330 + top,
       padding: EdgeInsets.only(top: top + 58, bottom: 14),
       decoration: BoxDecoration(
-        color: photos.isEmpty ? Neon.surfaceHigh : Colors.white,
+        color: Colors.white,
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
       ),
       child: photos.isEmpty
           ? (widget.heroTag != null
-              ? Hero(tag: widget.heroTag!, child: const _Photo('', icon: Icons.shopping_bag_outlined))
-              : const _Photo('', icon: Icons.image_outlined))
+              ? Hero(tag: widget.heroTag!, child: _Photo('', name: _name, icon: Icons.shopping_bag_outlined))
+              : _Photo('', name: _name, icon: Icons.image_outlined))
           : Column(
               children: [
                 Expanded(

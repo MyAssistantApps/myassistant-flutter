@@ -3,6 +3,7 @@
 // Home section draws.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:myassistant/widgets/role_mic_orb.dart';
 import 'package:myassistant/ai/types.dart';
 import 'package:myassistant/features/pricecompare/price_compare_section.dart';
 import 'package:myassistant/features/pricecompare/price_models.dart';
@@ -85,7 +86,7 @@ void main() {
     }
   });
 
-  testWidgets('the Home section draws its hero, search and Product compare only', (t) async {
+  testWidgets('the Home section draws Product compare only, with camera and mic search', (t) async {
     SharedPreferences.setMockInitialValues({});
     t.view.physicalSize = const Size(1080, 2400);
     t.view.devicePixelRatio = 3;
@@ -97,11 +98,14 @@ void main() {
     ));
     await t.pump();
     expect(find.text('Price Compare'), findsOneWidget);
-    // Owner, 2026-11-24: the Smart Shopping banner is gone; the Product
-    // Compare card has the search, the camera and the mic.
+    // 2026-11-24: the Smart Shopping hero is gone; the Product Compare card
+    // has a white search box with the camera (search by photo) and the mic.
     expect(find.text('Same Product.\nLower Price.'), findsNothing);
     expect(find.text('Search a product'), findsOneWidget);
     expect(find.byTooltip('Compare a product from a photo'), findsOneWidget);
+    expect(find.byType(RoleMicOrb), findsOneWidget);
+    // Not twice: the round camera and mic buttons give way to the box.
+    expect(find.byIcon(Icons.photo_camera_rounded), findsNothing);
     expect(find.text('Product Compare'), findsOneWidget);
     // Owner, 2026-11-14: flights, hotels, rides and grocery are gone.
     for (final title in ['Flights', 'Hotels', 'Rides', 'Grocery']) {
