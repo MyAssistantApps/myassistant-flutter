@@ -44,7 +44,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/log.dart';
 import '../services/audio/barge_in.dart';
-import '../services/audio/mic_preroll.dart';
 import '../services/audio/mic_stats.dart';
 import '../services/audio/mic_stream.dart';
 import '../services/audio/pcm_player.dart';
@@ -190,6 +189,13 @@ abstract interface class LiveSessionPort {
 /// A session that can stop the reply being made (OpenAI Realtime).
 abstract interface class CancellableReply {
   void cancelReply();
+}
+
+/// A session that can be told how much of her spoken reply was actually
+/// heard before she was cut off (OpenAI Realtime: conversation.item.truncate),
+/// so the model does not carry on as if the owner heard all of it.
+abstract interface class TruncatableReply {
+  void truncateHeard(int audioEndMs);
 }
 
 /// Opens Live sessions (OpenAI Realtime, or a test's).
@@ -640,7 +646,16 @@ class LiveVoice {
   /// the …") ended his turn on this phone and the TV gate fed Live
   /// silence, so half a sentence was answered.
   VoiceActivityDetector room = VoiceActivityDetector(hangoverMs: 700);
-  final _preRoll = MicPreRoll(keepMs: 480);
+  /// What the owner says while she speaks, until it is confirmed that he
+  /// is talking over her — then all of it, from where his words began.
+  final _overHer = OwnerOverHer(BargeInWatch.detector);
+
+  /// He has just talked over her: his turn, even while her player is still
+  /// winding down. Until the player has stopped (or her next reply begins),
+  /// a frame is never treated as "she is speaking" — which muted his next
+  /// words and demanded a fresh confirmation (2026-11-24, "only the last
+  /// word").
+  bool _bargedIn = false;
   Completer<bool>? _openingGreetingDone;
 
   /// THE TV GATE (2026-09-30, measured on gemini-3.8-live with a TV mixed
@@ -1065,6 +1080,7 @@ class LiveVoice {
     // The model stops making the rest of it too (OpenAI: response.cancel).
     final s = _session;
     if (s case final CancellableReply c) c.cancelReply();
+    if (answering) _truncateHeard(t);
     if (answering) {
       t.interrupted = true;
       t.cutOffAfter ??= _heardChars(t);
@@ -1117,6 +1133,7 @@ class LiveVoice {
     _backlog.clear();
     _cancelledIds.clear();
     _dropOutput = false;
+    _bargedIn = false;
     _goingAway = false;
     _reconnecting = false;
     _reconnectedSinceTurn = false;
@@ -1159,7 +1176,8 @@ class LiveVoice {
     final ms = MicStream.msOf(c);
     final now = _now();
     _lastFrameUs = now;
-    if (!_player.playing) {
+    if (_bargedIn && !_player.playing) _bargedIn = false;
+    if (!_player.playing || _bargedIn) {
       _wasPlaying = false;
       final ev = room.feed(c, level);
       final loud = level > room.threshold;
@@ -1192,14 +1210,11 @@ class LiveVoice {
       return;
     }
     // SHE IS SPEAKING: only a confirmed interruption reaches Live.
-    final detector = BargeInWatch.detector;
     if (!_wasPlaying) {
       _wasPlaying = true;
       _ungate(flush: false);
-      detector.resetRun();
-      _preRoll.clear();
+      _overHer.herTurnBegins();
     }
-    _preRoll.add(c, ms);
     // Interruption off ([autoBargeIn] false): while she speaks the room is
     // not sent, so only the Interrupt button stops her ([interrupt]).
     if (!autoBargeIn) {
@@ -1209,19 +1224,39 @@ class LiveVoice {
     final heardUs = now - PcmPlayer.ringLatencyUs;
     final echo =
         _player.echo.maxBetween(heardUs - ms * 1000 - 300000, heardUs + 100000);
-    final confirmed = detector.feed(
+    final said = _overHer.feed(
+      c,
+      ms: ms,
       mic: level,
       echo: echo,
       floor: room.noiseFloor,
       speechBar: room.threshold,
-      ms: ms,
     );
-    if (!confirmed) {
+    if (said == null) {
       // Silence keeps Live's clock running without her echo in it.
       _send(Uint8List(c.length));
       return;
     }
-    _bargeIn(now);
+    _bargeIn(now, said);
+  }
+
+  /// How much of her reply [t] had been heard, in ms of its audio.
+  int _heardMs(_LiveTurn t) {
+    final start = t.playUs;
+    if (start == null || t.audioMs <= 0) return 0;
+    return ((_now() - start - PcmPlayer.ringLatencyUs) / 1000)
+        .clamp(0, t.audioMs)
+        .round();
+  }
+
+  /// The model is told where she was cut off, when some of her reply was
+  /// still unheard.
+  void _truncateHeard(_LiveTurn? t) {
+    if (t == null || !t.spoke) return;
+    final heard = _heardMs(t);
+    if (heard >= t.audioMs - 100) return;
+    final s = _session;
+    if (s case final TruncatableReply r) r.truncateHeard(heard);
   }
 
   /// Live hears the room again; [flush] sends the frames held back.
@@ -1238,11 +1273,11 @@ class LiveVoice {
 
   /// The owner is talking over her: she stops here at once, and Live gets
   /// the moments that led up to it, so it hears them too and interrupts.
-  void _bargeIn(int now) {
+  /// [said] is what he said while she was still speaking, from where his
+  /// words began (OwnerOverHer).
+  void _bargeIn(int now, List<List<int>> said) {
     MicStats.bargeIns++;
     MicStats.echoCoupling = BargeInWatch.detector.coupling;
-    AppLog.add('voice',
-        'barge-in (live, leak ${BargeInWatch.detector.coupling.toStringAsFixed(2)})');
     final t = _turn;
     if (t != null && !t.finished) {
       t.interrupted = true;
@@ -1251,20 +1286,33 @@ class LiveVoice {
     }
     // The model stops making the rest of her reply too, as with the
     // Interrupt button (OpenAI: response.cancel); otherwise it carried on
-    // and the owner's words met a reply still in progress.
+    // and the owner's words met a reply still in progress. It is also told
+    // how much of the reply he actually heard.
     final s = _session;
     if (s case final CancellableReply c) c.cancelReply();
+    _truncateHeard(t);
     unawaited(_player.stop());
     _wasPlaying = false;
+    _bargedIn = true;
     _emit(const LiveInterrupted());
     if (t != null && !t.finished) _finish(t);
-    for (final f in _preRoll.drain()) {
-      _send(Uint8List.fromList(f));
+    // The owner's turn has begun — with everything he said over her, and
+    // the room's detector already in his utterance, watching for its end.
+    final turn = _turn = _LiveTurn(++_turns);
+    var saidMs = 0;
+    for (final f in said) {
+      final frame = Uint8List.fromList(f);
+      final ms = MicStream.msOf(frame);
+      saidMs += ms;
+      _send(frame);
+      _keep(frame, ms);
     }
-    // The owner's new turn has begun.
-    room.reset();
+    turn.onsetUs = now - saidMs * 1000;
+    room.continueSpeech();
     _lastLoudUs = now;
-    _turn = _LiveTurn(++_turns);
+    AppLog.add('voice',
+        'barge-in (live, leak ${BargeInWatch.detector.coupling.toStringAsFixed(2)}, '
+            '${saidMs}ms of his words kept)');
   }
 
   /// How many characters of her reply had been heard (a cut-off turn).
@@ -1545,6 +1593,7 @@ class LiveVoice {
 
   void _onAudio(Uint8List pcm, int rate) {
     if (_dropOutput || pcm.length < 2) return;
+    _bargedIn = false;
     final t = _current();
     _watch?.cancel();
     _stalls = 0;
