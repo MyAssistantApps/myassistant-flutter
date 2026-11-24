@@ -4,12 +4,14 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myassistant/ai/listen.dart';
 import 'package:myassistant/features/jyotish/jyotish_card.dart';
 import 'package:myassistant/features/jyotish/jyotish_guru.dart';
 import 'package:myassistant/features/jyotish/jyotish_models.dart';
+import 'package:myassistant/features/jyotish/jyotish_onboarding.dart';
 import 'package:myassistant/features/jyotish/jyotish_screen.dart';
 import 'package:myassistant/features/jyotish/jyotish_service.dart';
 import 'package:myassistant/features/jyotish/jyotish_theme.dart';
@@ -171,60 +173,103 @@ void main() {
     });
   });
 
-  group('Guruji', () {
-    test('with a saved chart, Guruji opens with today\'s bhavishya and asks for more', () {
-      final note = guruOpeningNote('Asha');
-      expect(note, contains('Asha'));
-      expect(note, contains("today's Jyotisha Bhavishya"));
-      expect(note, contains('jyotish_reading'));
-      expect(note, contains('range today'));
-      expect(note, contains('other questions'));
-      expect(note, isNot(contains('jyotish_chart')));
+  group('the Jyotish voice', () {
+    test('the card\'s mic: today\'s bhavishya from a saved chart, or the birth questions', () {
+      expect(jyotishMicNote, contains('jyotish_chart'));
+      expect(jyotishMicNote, contains("today's Jyotisha Bhavishya"));
+      expect(jyotishMicNote, contains('jyotish_reading'));
+      expect(jyotishMicNote, contains('one question at a time'));
+      expect(jyotishMicNote, contains('other questions'));
     });
 
-    test('with nothing saved, Guruji asks for the birth details and casts the chart', () {
-      for (final none in [null, '', '  ']) {
-        final note = guruOpeningNote(none);
-        expect(note, contains('no birth chart is saved'));
-        expect(note, contains('my name first'));
-        expect(note, contains('one question at a time'));
-        expect(note, contains('jyotish_chart'));
-        expect(note, contains("today's Jyotisha Bhavishya"));
-      }
-    });
-
-    test('Guruji speaks only from the Jyotish tools, kindly', () {
-      expect(guruRole.name, contains('Guruji'));
+    test('it speaks only from the Jyotish tools, kindly, in a male voice', () {
       expect(guruRole.brief, contains('jyotish_chart'));
       expect(guruRole.brief, contains('jyotish_reading'));
       expect(guruRole.brief, contains('never invent planetary positions'));
       expect(guruRole.brief, contains('never sell remedies'));
-    });
-
-    testWidgets('the temple drawing and the orb paint on a phone', (t) async {
-      await t.pumpWidget(const MaterialApp(
-          home: Scaffold(
-              body: TempleDoodle(
-                  child: Center(child: SizedBox(width: 220, height: 220, child: CustomPaint(painter: _Orb())))))));
-      expect(t.takeException(), isNull);
+      expect(guruRole.voice, 'cedar');
+      expect(guruRole.tools, ['jyotish_chart', 'jyotish_reading']);
     });
   });
 
   group('screens', () {
-    // Reduced motion: the guru's mandala stays still, so pumpAndSettle can
-    // settle (it turns forever otherwise).
-    Widget host(Widget child) => MaterialApp(
-          home: child,
-          builder: (ctx, w) =>
-              MediaQuery(data: MediaQuery.of(ctx).copyWith(disableAnimations: true), child: w!),
-        );
+    Widget host(Widget child) => MaterialApp(home: child);
 
-    testWidgets('the Home card opens the horoscope', (t) async {
+    testWidgets('the Home card opens the horoscope; its camera uploads one; it has a mic', (t) async {
       Widget? opened;
       await t.pumpWidget(host(Scaffold(body: JyotishCard(onOpen: (p) => opened = p))));
-      expect(find.text('Jyotish'), findsOneWidget);
-      await t.tap(find.byType(JyotishCard));
+      expect(find.text('Your Vedic Horoscope'), findsOneWidget);
+      await t.tap(find.text('Your Vedic Horoscope'));
       expect(opened, isA<JyotishScreen>());
+      expect((opened! as JyotishScreen).startWithUpload, isFalse);
+      await t.tap(find.bySemanticsLabel('Upload your horoscope'));
+      expect((opened! as JyotishScreen).startWithUpload, isTrue);
+      // A mic, no "Talk to Guruji" button.
+      expect(find.bySemanticsLabel(RegExp(r'^Speak to .* about your horoscope$')), findsOneWidget);
+      expect(find.text('Talk to Guruji'), findsNothing);
+      expect(t.takeException(), isNull);
+      await t.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('an uploaded horoscope fills the details to check', (t) async {
+      t.view.physicalSize = const Size(1080, 2400);
+      t.view.devicePixelRatio = 3;
+      addTearDown(t.view.reset);
+      await t.pumpWidget(host(Scaffold(
+        body: JyotishOnboarding(
+          service: _FakeService(),
+          listener: JyotishListener(_QuietRecognizer()),
+          onCast: (_, {required save}) async => true,
+          extracted: const Extracted(
+            name: 'Asha',
+            date: '2004-03-14',
+            time: '06:30',
+            timeStatus: 'exact',
+            place: 'Udupi',
+            complete: true,
+            places: [PlaceOption(name: 'Udupi, Karnataka, India', lat: 13.3409, lng: 74.7421, tz: 'Asia/Kolkata')],
+          ),
+        ),
+      )));
+      await t.pumpAndSettle();
+      expect(find.textContaining('I have read your horoscope, Asha'), findsOneWidget);
+      expect(find.text('Asha'), findsWidgets);
+      expect(find.text('14 Mar 2004'), findsOneWidget);
+      expect(find.text('6:30 AM'), findsOneWidget);
+      expect(find.text('Udupi, Karnataka, India'), findsOneWidget);
+      expect(t.takeException(), isNull);
+    });
+
+    testWidgets('the date of birth is chosen on wheels, not a calendar', (t) async {
+      t.view.physicalSize = const Size(1080, 2400);
+      t.view.devicePixelRatio = 3;
+      addTearDown(t.view.reset);
+      await t.pumpWidget(host(Scaffold(
+        body: JyotishOnboarding(
+          service: _FakeService(),
+          listener: JyotishListener(_QuietRecognizer()),
+          onCast: (_, {required save}) async => true,
+        ),
+      )));
+      await t.pumpAndSettle();
+      await t.scrollUntilVisible(find.text('Choose a date'), 120, scrollable: find.byType(Scrollable).first);
+      await t.tap(find.text('Choose a date'));
+      await t.pumpAndSettle();
+      expect(find.byType(CupertinoDatePicker), findsOneWidget);
+      expect(find.byType(CalendarDatePicker), findsNothing);
+      expect(find.text('Date of Birth'), findsOneWidget);
+      await t.tap(find.text('Done'));
+      await t.pumpAndSettle();
+      final y = DateTime.now().year - 25;
+      expect(find.text('1 Jan $y'), findsOneWidget);
+      // and the time, the same way
+      await t.tap(find.text('Choose a time'));
+      await t.pumpAndSettle();
+      expect(find.byType(CupertinoDatePicker), findsOneWidget);
+      await t.tap(find.text('Done'));
+      await t.pumpAndSettle();
+      expect(find.text('6:00 AM'), findsOneWidget);
+      expect(t.takeException(), isNull);
     });
 
     testWidgets('with no saved people: the chat fills the form', (t) async {
@@ -242,20 +287,10 @@ void main() {
           places: [PlaceOption(name: 'Udupi, Karnataka, India', lat: 13.3409, lng: 74.7421, tz: 'Asia/Kolkata')],
         );
       await t.pumpWidget(host(JyotishScreen(
-          service: svc,
-          speaker: _QuietSpeaker(),
-          listener: JyotishListener(_QuietRecognizer()),
-          music: SilentJyotishMusic(),
-          autoStartGuru: false)));
-      await t.pumpAndSettle();
-      // Guruji first: the orb, and how to begin.
-      expect(find.text('Tap to Talk to Guruji'), findsOneWidget);
-      expect(find.textContaining('tell Guruji your date, time and place of birth'), findsOneWidget);
-      expect(find.text('View Your Kundli'), findsNothing);
-      // Typing stays as the fallback.
-      await t.tap(find.text('Type the Details Instead'));
+          service: svc, speaker: _QuietSpeaker(), listener: JyotishListener(_QuietRecognizer()))));
       await t.pumpAndSettle();
       expect(find.textContaining('Tell me when and where you were born'), findsOneWidget);
+      expect(find.byTooltip('Upload Horoscope'), findsOneWidget);
       await t.enterText(find.byType(TextField).first, 'I was born 14 March 2004 around 6:30 am in Udupi');
       await t.tap(find.byTooltip('Send'));
       await t.pumpAndSettle();
@@ -275,15 +310,7 @@ void main() {
       final birth = Birth.fromJson(_fixture()['birth'])!;
       final svc = _FakeService(profileList: [SavedProfile(id: 1, name: 'Asha', birth: birth)]);
       await t.pumpWidget(host(JyotishScreen(
-          service: svc,
-          speaker: _QuietSpeaker(),
-          listener: JyotishListener(_QuietRecognizer()),
-          music: SilentJyotishMusic(),
-          autoStartGuru: false)));
-      await t.pumpAndSettle();
-      // Guruji has a saved chart to read from; the kundli is a tap away.
-      expect(find.textContaining("Guruji will tell you today's bhavishya"), findsOneWidget);
-      await t.tap(find.text('View Your Kundli'));
+          service: svc, speaker: _QuietSpeaker(), listener: JyotishListener(_QuietRecognizer()))));
       await t.pumpAndSettle();
       for (final tab in ['Kundli', 'Planets', 'Dasha', 'Predictions']) {
         expect(find.text(tab), findsOneWidget);
@@ -299,16 +326,4 @@ void main() {
       expect(t.takeException(), isNull);
     });
   });
-}
-
-class _Orb extends CustomPainter {
-  const _Orb();
-  @override
-  void paint(Canvas canvas, Size size) {
-    GuruOrbPainter(turn: 0.3, energy: 0.6, talking: true).paint(canvas, size);
-    TempleDoodlePainter(skylineOnly: true).paint(canvas, size);
-  }
-
-  @override
-  bool shouldRepaint(_Orb old) => false;
 }

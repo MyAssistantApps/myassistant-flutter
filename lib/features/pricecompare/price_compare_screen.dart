@@ -14,6 +14,7 @@ import 'hotel_search_screen.dart';
 import 'price_models.dart';
 import 'price_result_screen.dart';
 import 'product_screens.dart';
+import 'product_snap_search.dart';
 import 'price_service.dart';
 import 'price_widgets.dart';
 import 'shop_browser.dart';
@@ -25,7 +26,14 @@ import 'shop_browser.dart';
 ///  what you compared lately. A comparison opens PriceResultScreen.
 /// ─────────────────────────────────────────────────────────────────────────
 class PriceCompareScreen extends StatefulWidget {
-  const PriceCompareScreen({super.key, this.category = PriceCategory.shopping, this.focus = false, this.paste = false});
+  const PriceCompareScreen({
+    super.key,
+    this.category = PriceCategory.shopping,
+    this.focus = false,
+    this.paste = false,
+    this.camera = false,
+    this.voice = false,
+  });
   final PriceCategory category;
 
   /// Open with the keyboard up (Home's search box).
@@ -33,6 +41,12 @@ class PriceCompareScreen extends StatefulWidget {
 
   /// Open by comparing the link on the clipboard (Home's paste button).
   final bool paste;
+
+  /// Open by searching from a photo (Home's camera button).
+  final bool camera;
+
+  /// Open by searching from what is said (Home's microphone button).
+  final bool voice;
 
   @override
   State<PriceCompareScreen> createState() => _PriceCompareScreenState();
@@ -53,6 +67,8 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
     unawaited(svc.load().then((_) => svc.checkWatches()));
     if (widget.paste) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _paste());
+    } else if (widget.camera || widget.voice) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _snap(voice: widget.voice));
     } else if (widget.focus) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _focus.requestFocus());
     }
@@ -87,6 +103,18 @@ class _PriceCompareScreenState extends State<PriceCompareScreen> {
       _query.text = t;
       _go();
     } catch (_) {}
+  }
+
+  /// SEARCH BY CAMERA OR VOICE: the product found becomes the search.
+  Future<void> _snap({required bool voice}) async {
+    final q = voice ? await ProductSnapSearch.byVoice(context) : await ProductSnapSearch.byPhoto(context);
+    if (!mounted) return;
+    if (q == null) {
+      _focus.requestFocus();
+      return;
+    }
+    _query.text = q;
+    _go();
   }
 
   void _flights() {

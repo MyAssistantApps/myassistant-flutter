@@ -132,7 +132,7 @@ class ProductDetailsCard extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (image.startsWith('https://')) ...[
+                    if (result.category == PriceCategory.shopping || image.startsWith('https://')) ...[
                       ClipRRect(
                         borderRadius: BorderRadius.circular(14),
                         child: Container(
@@ -140,10 +140,10 @@ class ProductDetailsCard extends StatelessWidget {
                           height: 84,
                           color: Colors.white,
                           padding: const EdgeInsets.all(6),
-                          child: Image.network(image,
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, __, ___) =>
-                                  Icon(Icons.inventory_2_rounded, color: Neon.textDim, size: 36)),
+                          // Always a photo: this one, else one found by name.
+                          child: ProductPhoto(image,
+                              name: result.product.isNotEmpty ? result.product : result.query,
+                              icon: Icons.inventory_2_rounded),
                         ),
                       ),
                       const SizedBox(width: 14),

@@ -355,7 +355,8 @@ class LiveVoicePrefs {
     } catch (_) {}
   }
 
-  /// The voice a session uses: the owner's pick, else the server's.
+  /// The voice a session uses: the current role's own (Guruji's), else the
+  /// owner's pick, else the server's.
   static String voiceFor(AiLive live) {
     String? offeredMatch(String value) {
       final normalized = value.trim().toLowerCase();
@@ -366,7 +367,8 @@ class LiveVoicePrefs {
       return null;
     }
 
-    return offeredMatch(chosenVoice ?? '') ??
+    return offeredMatch(AssistantRole.current.value?.voice ?? '') ??
+        offeredMatch(chosenVoice ?? '') ??
         offeredMatch(live.voice) ??
         (live.voices.isNotEmpty ? live.voices.first : live.voice);
   }

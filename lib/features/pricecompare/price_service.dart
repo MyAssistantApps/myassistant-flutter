@@ -6,9 +6,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../ai/cloud.dart';
 import '../../ai/config.dart';
+import '../../ai/listen.dart';
 import '../../ai/model_port.dart';
 import '../../ai/types.dart';
 import '../../core/log.dart';
+import '../../services/api_service.dart';
 import '../../services/notification_service.dart';
 import 'flight_fares.dart';
 import 'flight_trip.dart';
@@ -127,6 +129,124 @@ class PriceService extends ChangeNotifier {
     notifyListeners();
     return PriceAnswer(result, sources: out.sources);
   }
+
+  /// Real photos by product name (bing thumbnails via our server); replaced
+  /// in tests.
+  @visibleForTesting
+  Future<List<String>> Function(String name)? findPhotos;
+
+  final Map<String, Future<List<String>>> _photoCache = {};
+
+  /// PHOTOS FOR A PRODUCT (2026-11-24): the model's "image" URLs are often
+  /// missing or made up, so every product photo falls back to these —
+  /// found by name on the server (GET /price/photos). One look-up per name
+  /// while the app runs; a failed or empty one is asked again next time.
+  Future<List<String>> photosFor(String name) {
+    final q = name.trim();
+    final key = q.toLowerCase();
+    if (key.length < 2) return Future.value(const <String>[]);
+    return _photoCache.putIfAbsent(key, () async {
+      List<String> found;
+      try {
+        found = await (findPhotos ?? _fetchPhotos)(q);
+      } catch (e) {
+        AppLog.add('price', 'photo search failed: $e');
+        found = const [];
+      }
+      if (found.isEmpty) _photoCache.remove(key);
+      return found;
+    });
+  }
+
+  Future<List<String>> _fetchPhotos(String name) async {
+    final j = await ApiService.getJson('/price/photos?q=${Uri.encodeQueryComponent(name)}&n=8',
+        timeout: const Duration(seconds: 12));
+    final list = j?['photos'];
+    return list is List ? [for (final u in list) if (u is String && u.startsWith('https://')) u] : const <String>[];
+  }
+
+  /// The photo look-up (bytes, mime → reply text); replaced in tests.
+  @visibleForTesting
+  Future<String> Function(Uint8List bytes, String mime)? see;
+
+  /// The speech look-up (audio, mime → words); replaced in tests.
+  @visibleForTesting
+  Future<String> Function(Uint8List audio, String mime)? hear;
+
+  /// SEARCH BY CAMERA: the product in a photo, named the way a store lists
+  /// it ("boAt Airdopes 141"), ready to search. Throws when no product can
+  /// be made out.
+  Future<String> productInPhoto(Uint8List bytes, String mime) async {
+    final String reply;
+    try {
+      reply = await (see ?? _askVision)(bytes, mime);
+    } on TimeoutException {
+      throw const PriceCompareException('The request timed out. Check your internet connection and try again.');
+    } catch (e) {
+      AppLog.add('price', 'photo look-up failed: $e');
+      throw const PriceCompareException('Unable to read the photo. Check your internet connection and try again.');
+    }
+    final name = productNameOf(reply);
+    if (name.isEmpty) {
+      throw const PriceCompareException(
+          'No product was recognised in the photo. Take a clearer photo of the product or its label.');
+    }
+    return name;
+  }
+
+  /// SEARCH BY VOICE: what was said, written down. Throws when nothing
+  /// was heard.
+  Future<String> productFromSpeech(Uint8List audio, String mime) async {
+    final words = (await (hear ?? _transcribe)(audio, mime)).trim();
+    if (words.isEmpty) {
+      throw const PriceCompareException('Nothing was heard. Tap the microphone and say the product name.');
+    }
+    return words;
+  }
+
+  /// The product name in the model's reply: its first line, without
+  /// quotes or a label; empty when it says there is none.
+  @visibleForTesting
+  static String productNameOf(String reply) {
+    final line = reply.trim().split('\n').first.trim();
+    final name = line
+        .replaceFirst(RegExp(r'^(product( name)?|name)\s*:\s*', caseSensitive: false), '')
+        .replaceAll(RegExp(r'^["“\x27*]+|["”\x27*.]+$'), '')
+        .trim();
+    if (name.isEmpty || RegExp(r'^none$', caseSensitive: false).hasMatch(name)) return '';
+    return name;
+  }
+
+  // A best guess, never a refusal: a brand it cannot read is described
+  // instead ("NONE" for any doubt made every unbranded photo fail).
+  static const _visionPrompt = 'You help a shopper in India find the product in this photo in online '
+      'stores. Reply with ONE short search phrase only, no other words. If you can read or recognise the '
+      'brand and model, give them as a store would list them (for example: boAt Airdopes 141 or Apple '
+      'iPhone 15 128GB Black). If not, describe the product in a few words a store search would match '
+      '(for example: black wireless earbuds with charging case). Reply NONE only if the photo shows no '
+      'product at all.';
+
+  Future<String> _askVision(Uint8List bytes, String mime) async {
+    final config = await AiConfigStore.instance.get();
+    final engine = CloudEngine(ModelPorts.cloud());
+    CloudFinished? done;
+    await for (final e in engine.turn(
+      CloudRequest(
+        model: config.models.cloud,
+        text: _visionPrompt,
+        attachments: [AiAttachment(kind: 'image', mimeType: mime, bytes: bytes)],
+        roundTimeout: const Duration(seconds: 45),
+        firstTimeout: const Duration(seconds: 30),
+      ),
+      runTool: (_, __) async => const {},
+    )) {
+      if (e is CloudFinished) done = e;
+    }
+    return done?.text ?? '';
+  }
+
+  Future<String> _transcribe(Uint8List audio, String mime) =>
+      CloudTranscriber(port: ModelPorts.cloud()).transcribe(audio, mime);
 
   /// THE RESULTS GRID for a product search: up to 12 matching products
   /// on the stores we cover, with photo, price, rating and store.

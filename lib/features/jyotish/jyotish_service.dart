@@ -24,6 +24,23 @@ class JyotishService {
     return j == null ? null : Extracted.fromJson(j);
   }
 
+  /// A photo or PDF of a horoscope (janam kundli) → the birth details read
+  /// from it, to check before the chart is cast. [error] says what went
+  /// wrong when [result] is null.
+  Future<({Extracted? result, String? error})> readHoroscope(
+      List<int> bytes, {required String filename, required String mimeType}) async {
+    final r = await ApiService.postFile('/jyotish/read',
+        bytes: bytes, filename: filename, mimeType: mimeType);
+    final j = r.json;
+    if (j == null) {
+      return (
+        result: null,
+        error: r.message ?? 'Unable to read the horoscope. Check your connection and try again.'
+      );
+    }
+    return (result: Extracted.fromJson(j), error: null);
+  }
+
   /// Up to five places for what the user typed. Null when the lookup failed.
   Future<List<PlaceOption>?> places(String q) async {
     final j = await ApiService.getJson(
