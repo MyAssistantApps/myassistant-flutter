@@ -10,7 +10,10 @@
     SMS app instead (sms_service.dart); the missed-calls card simply asks
     for nothing and stays hidden.
   - REQUEST_INSTALL_PACKAGES, UPDATE_PACKAGES_WITHOUT_USER_ACTION: Play
-    forbids self-updating outside Play. The in-app updater is off anyway.
+    forbids self-updating outside Play. The in-app updater is compiled out
+    of this build (AppUpdateService.enabled = !kPlayStoreBuild), and its
+    two components — the quiet install job and the install-result
+    receiver — are removed below so nothing that installs packages ships.
   - REQUEST_DELETE_PACKAGES, PACKAGE_USAGE_STATS: need declarations this
     build does not make (uninstall by voice, screen-time reports).
   - READ_MEDIA_IMAGES/VIDEO (merged from a plugin): the photo picker is
@@ -37,4 +40,8 @@
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove" />
     <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove" />
     <uses-permission android:name="Manifest.permission.CAPTURE_AUDIO_OUTPUT" tools:node="remove" />
+    <application>
+        <receiver android:name=".InstallResultReceiver" tools:node="remove" />
+        <service android:name=".QuietInstallJob" tools:node="remove" />
+    </application>
 </manifest>

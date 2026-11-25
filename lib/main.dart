@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 
 import 'ai/config.dart' show AiConfigStore;
 import 'services/overlay_bridge.dart';
+import 'core/build_error_note.dart';
 import 'core/bundled_fonts.dart';
 import 'design/accent_controller.dart';
 import 'design/motion.dart';
@@ -25,6 +26,7 @@ import 'widgets/net_banner.dart';
 import 'services/app_feedback.dart';
 import 'services/app_lock.dart';
 import 'services/auth_service.dart';
+import 'services/sign_out_cleanup.dart';
 import 'services/avatar_message_service.dart';
 import 'services/brief_service.dart';
 import 'services/clinic_service.dart';
@@ -38,6 +40,8 @@ import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // A widget that fails to build shows one calm sentence, not a grey box.
+  installBuildErrorNote();
   // PORTRAIT ONLY: the app's layouts are built for an upright phone, so
   // turning it sideways must not rotate the UI.
   unawaited(SystemChrome.setPreferredOrientations(
@@ -59,6 +63,9 @@ Future<void> main() async {
     await AiConfigStore.instance.refresh();
   });
   AuthService.instance.onSignOut(() async => AiConfigStore.instance.clear());
+  // The next account starts clean, and an ended session returns to the
+  // sign-in screen instead of leaving a dead screen on top of it.
+  AuthService.instance.onSignOut(SignOutCleanup.run);
   try {
     await Firebase.initializeApp();
     // Crashes, unhandled errors, turn traces and usage — from here on.

@@ -6,4 +6,9 @@
 <full-backup-content>
     <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
     <exclude domain="sharedpref" path="FlutterSecureKeyStorage.xml" />
+    <!-- The notification reader's own copy of the session token
+         (NotifyPrefs.kt): encrypted, and a plain file when the keystore
+         fails, which is exactly what happens on a restored phone. -->
+    <exclude domain="sharedpref" path="hari_overlay_prefs.xml" />
+    <exclude domain="sharedpref" path="hari_overlay_prefs_plain.xml" />
 </full-backup-content>

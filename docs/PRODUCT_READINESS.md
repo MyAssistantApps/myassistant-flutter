@@ -83,8 +83,9 @@ hard gate, a dead-end Premium CTA, Play-blocking permissions.
 
 ## Decisions
 
-- In-app self-update stays OFF (owner, 2026-11-03); releases go out via
-  Firebase App Distribution. CLAUDE.md's "in-app update" text is stale.
+- In-app self-update is ON, quietly, for the sideloaded build (owner,
+  2026-11-23; it was off from 2026-11-03). It is compiled out of a Google
+  Play build: `AppUpdateService.enabled = !kPlayStoreBuild` (2026-11-25).
 - Premium shows an early-access list until Play Billing exists
   (`kBillingLive` in premium_plans.dart); interest lands in the Feedback
   inbox with source "premium" — use it to validate pricing.
@@ -122,6 +123,43 @@ App:
   AndroidManifest.xml`, `-Pstore=play` in build.gradle.kts (verified: the
   merged release manifest drops SEND_SMS, READ_CALL_LOG, install/delete
   packages, usage stats, media images/video, AD_ID).
+
+## Changes made (2026-11-25, launch-readiness audit)
+
+A full pre-launch audit was run on 2026-11-25 (both repos, the live server,
+Play policy and cost). The owner holds the report; the code changes were:
+
+App (`test/launch_readiness_test.dart`):
+- The chat list polls only while its tab is shown (a hidden tab asked the
+  server 12 times a minute from every open phone).
+- `NetStatus`: an answer below 500 is "the server answers" (a 429 read as
+  "server down" and kept re-probing).
+- Phone verification requests time out after 30 s.
+- `SignOutCleanup` (a sign-out hook): the next account does not inherit the
+  assistant's name, price searches or the calendar month; an ended session
+  returns to the sign-in screen.
+- A release build follows a server override only to our own domains
+  (`ApiService.ownDomains`).
+- The native copy of the session token is excluded from backups.
+- `MicService.acquire` refuses without the microphone permission (Android
+  14+ killed the app for a microphone service that could not start).
+- Play build: the updater is off, its job and receiver are removed from the
+  Play manifest, and Check for Updates is hidden.
+- Premium: the "payment is secure" strip and card marks wait for
+  `kBillingLive`.
+- A widget that fails to build shows one sentence, not a grey box.
+
+Backend (`scripts/hardening-test.js`, `call-code-test.js`, `connect-test.js`):
+- Default image model `gpt-image-1.5` (`gpt-image-1` no longer exists on the
+  account; every picture had been failing).
+- General rate limit per account when signed in (`src/infra/rateKey.js`),
+  `/health` not counted; sign-in limit counts refusals tightly.
+- Verification-code tries are claimed atomically.
+- `GET /legal/delete-account` (Play's account deletion URL).
+- Orders, cabs and parcels ask first after outside content.
+- Held on branch `owner/reminder-call-fix`, NOT released: the appointment
+  and hearing reminder-call queries (they have never run on live; releasing
+  the fix starts real phone calls to patients and clients).
 
 ## Open items (ranked)
 

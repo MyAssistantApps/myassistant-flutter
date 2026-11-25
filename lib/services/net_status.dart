@@ -72,12 +72,18 @@ class NetStatus {
     return await _internetWorks() ? NetState.serverDown : NetState.offline;
   }
 
+  /// Any answer below 500 is the server answering (2026-11-25). A 429
+  /// ("too many requests from this network") used to read as "server
+  /// down", and the 10-second re-probe that follows kept the limit full.
+  @visibleForTesting
+  static bool answered(int statusCode) => statusCode < 500;
+
   Future<bool> _serverAnswers() async {
     try {
       final r = await http
           .get(Uri.parse('${ApiService.baseUrl}/health'))
           .timeout(const Duration(seconds: 6));
-      return r.statusCode == 200;
+      return answered(r.statusCode);
     } catch (_) {
       return false;
     }

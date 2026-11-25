@@ -501,7 +501,7 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                 const GroupLabel('About & Legal'),
                 GroupedCard(
                   children: [
-                    const _CheckForUpdatesRow(),
+                    if (AppUpdateService.enabled) const _CheckForUpdatesRow(),
                     AppleRow(
                       leading: IconTile(Icons.support_agent_rounded, AppleColors.blue),
                       title: 'Help & Feedback',

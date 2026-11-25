@@ -50,6 +50,12 @@ void main() {
     await tester.pump(const Duration(milliseconds: 600));
     expect(tester.takeException(), isNull);
 
+    // No "payment is secure" strip or card marks while nothing is paid
+    // for here: the buttons only join the early-access list.
+    expect(kBillingLive, isFalse);
+    expect(find.text('Your payment is 100% secure'), findsNothing);
+    expect(find.text('RuPay'), findsNothing);
+
     // Yearly is the default.
     expect(find.text('₹4,999'), findsOneWidget);
     expect(find.text('Included in Pro'), findsOneWidget);
