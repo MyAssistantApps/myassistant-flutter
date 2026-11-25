@@ -60,9 +60,16 @@ echo "→ compiling the Play variant (release, -Pstore=play; nothing is packaged
 MANIFEST=$(find build/app -type f -name AndroidManifest.xml -path '*merged_manifest*' -path '*elease*' | head -1)
 [ -n "$MANIFEST" ] || fail "the merged release manifest was not found under build/app"
 grep -q 'android.permission.RECORD_AUDIO' "$MANIFEST" || fail "$MANIFEST does not look like the app's manifest"
+# Declarations only (android:name="…"): the merger carries the overlay's
+# explanatory comment into the merged file, and that comment names them.
 for gone in REQUEST_INSTALL_PACKAGES UPDATE_PACKAGES_WITHOUT_USER_ACTION InstallResultReceiver QuietInstallJob; do
-  if grep -n "$gone" "$MANIFEST"; then fail "$gone is in the Play build's merged manifest ($MANIFEST)"; fi
+  if grep -nE "android:name=\"[^\"]*${gone}\"" "$MANIFEST"; then
+    fail "$gone is declared in the Play build's merged manifest ($MANIFEST)"
+  fi
 done
+# The check can see a declaration when there is one: the microphone is.
+grep -qE 'android:name="android.permission.RECORD_AUDIO"' "$MANIFEST" \
+  || fail "the declaration pattern matches nothing in $MANIFEST"
 ok "merged manifest: no install permission, no installer component ($MANIFEST)"
 
 CLASSES=$(find build/app -type f -name 'MainActivity*.class' -path '*elease*' | head -1)
