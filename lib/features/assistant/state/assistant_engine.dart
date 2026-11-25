@@ -3333,10 +3333,16 @@ class AssistantEngine extends ChangeNotifier {
         {
           final ctx = AvatarMessageService.navigatorKey.currentContext;
           if (!AppUpdateService.enabled) {
-            // Self-update is off (owner, 2026-11-03): nothing to open.
-            await _tellModel(
-                '[SYSTEM] In-app updates are switched off on this phone; '
-                'nothing is being checked or installed. Say so plainly.');
+            // No self-update in this build: nothing to open. A Google Play
+            // build is updated by the Play Store (2026-11-25), so that is
+            // where the user is sent.
+            await _tellModel(kPlayStoreBuild
+                ? '[SYSTEM] This app is updated by the Google Play Store, not '
+                    'from inside the app. Nothing was checked or installed. '
+                    'Tell them to open the Play Store and update MyAssistant '
+                    'there.'
+                : '[SYSTEM] In-app updates are switched off on this phone; '
+                    'nothing is being checked or installed. Say so plainly.');
           } else if (ctx != null) {
             unawaited(AppUpdateService.instance
                 .check(ctx, force: true, userAsked: true));

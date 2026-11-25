@@ -5,7 +5,6 @@ import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
-import android.net.ConnectivityManager
 import android.net.Uri
 import android.os.Process
 import android.provider.Settings
@@ -355,43 +354,12 @@ class MainActivity : FlutterFragmentActivity() {
                 }
             }
 
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "hari/updater")
-            .setMethodCallHandler { call, result ->
-                when (call.method) {
-                    "install" -> ApkInstaller.install(
-                        applicationContext,
-                        call.argument<String>("path") ?: "",
-                        call.argument<Boolean>("silent") ?: false
-                    ) { ok -> result.success(ok) }
-                    // Quiet updates: Android 12+ and not refused for this build.
-                    "silentPossible" -> result.success(ApkInstaller.silentPossible(applicationContext))
-                    // The app was left: install the verified build a few
-                    // minutes from now (a system job — survives freezing).
-                    "scheduleQuietInstall" -> result.success(
-                        QuietInstallJob.schedule(
-                            applicationContext,
-                            call.argument<String>("path") ?: "",
-                            (call.argument<Number>("delayMs") ?: 180000).toLong()
-                        )
-                    )
-                    // The app is in use again: not now.
-                    "cancelQuietInstall" -> {
-                        QuietInstallJob.cancel(applicationContext)
-                        result.success(true)
-                    }
-                    // Is the connection one the user pays for by the
-                    // megabyte? A ~200 MB update must not start itself on
-                    // mobile data. Unknown state is treated as metered:
-                    // the cost of asking is a tap, the cost of guessing
-                    // wrong is the user's data plan.
-                    "isMetered" -> {
-                        val cm = applicationContext
-                            .getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
-                        result.success(cm?.isActiveNetworkMetered ?: true)
-                    }
-                    else -> result.notImplemented()
-                }
-            }
+        // The self-updater's channel (hari/updater). Its code is in
+        // src/sideload/kotlin and is compiled only into the sideloaded
+        // build; a Google Play build gets an empty stand-in from
+        // src/play/kotlin (build.gradle.kts), so nothing that installs a
+        // package ships to Google Play.
+        UpdaterChannel.register(flutterEngine.dartExecutor.binaryMessenger, applicationContext)
 
         // INTENT URIs. Tools that reach the phone's own apps — the clock for
         // alarms and timers, the launcher for Home, an app's settings page —

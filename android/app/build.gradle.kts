@@ -101,6 +101,15 @@ android {
         getByName("release") {
             if (playStoreBuild) manifest.srcFile("src/playRelease/AndroidManifest.xml")
         }
+        // THE SELF-UPDATER IS NOT IN A PLAY BUILD (2026-11-25). Its native
+        // half — the "hari/updater" channel, ApkInstaller, QuietInstallJob —
+        // lives in src/sideload/kotlin and is compiled only into the
+        // sideloaded build. A Play build compiles src/play/kotlin instead:
+        // an UpdaterChannel of the same name with nothing behind it.
+        // tool/check_play_build.sh proves the result on CI.
+        getByName("main") {
+            kotlin.srcDir(if (playStoreBuild) "src/play/kotlin" else "src/sideload/kotlin")
+        }
     }
 
     buildTypes {
