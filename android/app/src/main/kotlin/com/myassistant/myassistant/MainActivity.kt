@@ -43,6 +43,17 @@ class MainActivity : FlutterFragmentActivity() {
         super.onPause()
     }
 
+    /**
+     * The app swiped away while a conversation held the call stream: the
+     * process can live on (the notification listener), so the phone's audio
+     * mode is handed back here as well (issue #6). Not on a rotation, which
+     * also destroys the screen but keeps the conversation going.
+     */
+    override fun onDestroy() {
+        if (isFinishing) VoiceClip.releaseRoute(applicationContext)
+        super.onDestroy()
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
@@ -1276,6 +1287,8 @@ class MainActivity : FlutterFragmentActivity() {
             } else {
                 focusRequest?.let { am.abandonAudioFocusRequest(it) }
                 focusRequest = null
+                // The opening's call mode and loudspeaker go back too (issue #6).
+                VoiceClip.releaseRoute(ctx)
                 true
             }
         } catch (e: Exception) {

@@ -24,6 +24,9 @@ object VoiceClip {
     private val main = Handler(Looper.getMainLooper())
     @Volatile private var track: AudioTrack? = null
 
+    /** The phone's audio mode before the opening took the call stream; null when untouched. */
+    @Volatile private var modeBefore: Int? = null
+
     /** Plays 16-bit mono [pcm] at [rate]; [done] is called once, when it ends or fails. */
     fun play(ctx: Context, pcm: ByteArray, rate: Int, done: (Boolean) -> Unit) {
         stop()
@@ -37,6 +40,7 @@ object VoiceClip {
         }
         try {
             val am = ctx.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            if (modeBefore == null) modeBefore = am.mode
             am.mode = AudioManager.MODE_IN_COMMUNICATION
             if (Build.VERSION.SDK_INT >= 31) {
                 am.availableCommunicationDevices
@@ -81,5 +85,30 @@ object VoiceClip {
         track = null
         try { t.stop() } catch (_: Exception) {}
         try { t.release() } catch (_: Exception) {}
+    }
+
+    /**
+     * GIVES THE PHONE ITS AUDIO BACK (2026-11-25, issue #6). [play] puts the
+     * phone in call mode on the loudspeaker for the whole conversation, so
+     * the live voice sounds the same; nothing used to undo it, and music in
+     * other apps stayed quieter (on Bluetooth, moved to the call profile)
+     * after the conversation ended. Called when the conversation lets go of
+     * the audio focus and when the app's screen is destroyed. Does nothing
+     * if no opening has played since the last release.
+     */
+    fun releaseRoute(ctx: Context) {
+        stop()
+        val before = modeBefore ?: return
+        modeBefore = null
+        try {
+            val am = ctx.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            if (Build.VERSION.SDK_INT >= 31) {
+                am.clearCommunicationDevice()
+            } else {
+                @Suppress("DEPRECATION")
+                am.isSpeakerphoneOn = false
+            }
+            if (am.mode == AudioManager.MODE_IN_COMMUNICATION) am.mode = before
+        } catch (_: Exception) {}
     }
 }

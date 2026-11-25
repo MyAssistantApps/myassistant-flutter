@@ -77,9 +77,15 @@ Future<void> main() async {
   } catch (e) {
     debugPrint('Firebase init failed (missing google-services.json?): $e');
   }
+  // OTHER APPS' MUSIC KEEPS ITS VOLUME (2026-11-25, issue #6). On Android,
+  // the global context is applied to the system AudioManager at once, at
+  // every start: speakerphone on re-routed the whole phone, and music
+  // playing in another app (over Bluetooth too) dropped in volume each
+  // time the app was opened. The app's sounds play as media, which reach
+  // the speaker or headphones without it.
   AudioPlayer.global.setAudioContext(AudioContext(
     android: const AudioContextAndroid(
-      isSpeakerphoneOn: true,
+      isSpeakerphoneOn: false,
       stayAwake: true,
       contentType: AndroidContentType.speech,
       usageType: AndroidUsageType.media,
