@@ -148,8 +148,15 @@ class _PremiumScreenState extends State<PremiumScreen> {
                   const SizedBox(height: 22),
                   _CreditPacks(onBuy: (p) => _buy('credits_${p.credits}')),
                   const SizedBox(height: 18),
-                  const _SecureStrip(),
-                  const SizedBox(height: 20),
+                  // "Your payment is 100% secure" and the UPI, VISA and
+                  // RuPay marks belong beside a payment. Until billing is
+                  // live the buttons only join the early-access list, so
+                  // the strip would promise something that does not happen
+                  // (2026-11-25).
+                  if (kBillingLive) ...[
+                    const _SecureStrip(),
+                    const SizedBox(height: 20),
+                  ],
                   const _Footer(),
                 ],
               ),

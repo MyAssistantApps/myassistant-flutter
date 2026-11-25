@@ -110,6 +110,17 @@ class MicService : Service() {
         private val holders = mutableSetOf<String>()
 
         fun acquire(ctx: Context, who: String): Boolean = synchronized(holders) {
+            // No microphone permission, no microphone service (2026-11-25).
+            // Android 14+ refuses a microphone foreground service without
+            // it: startForeground throws, the service stops itself, and the
+            // system then kills the whole app for a foreground service that
+            // never started. The caller carries on; the app itself asks for
+            // the microphone when the conversation opens.
+            if (ctx.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) !=
+                android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                Log.w("HariOverlay", "mic service: no microphone permission ($who)")
+                return@synchronized false
+            }
             holders.add(who)
             try {
                 ctx.startForegroundService(Intent(ctx, MicService::class.java)); true

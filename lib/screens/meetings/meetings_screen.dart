@@ -242,9 +242,16 @@ class _MeetingsScreenState extends State<MeetingsScreen> {
     _load();
     ChatGroupScreen.pushed.addListener(_onPush);
     ChatThreadScreen.pushed.addListener(_onPush);
-    // New messages and unread counts while the list is on screen.
+    // New messages and unread counts while the list is on screen. ON SCREEN
+    // means this tab is the one shown (2026-11-25): a hidden tab stays built
+    // (TabDeck keeps it Offstage with its tickers off) and its route is still
+    // "current", so every open app asked the server three things every 15 s
+    // from a screen nobody was looking at — 12 requests a minute per phone,
+    // which is what filled a shared network address's limit. A push still
+    // refreshes the list at once (_onPush).
     _poll = Timer.periodic(const Duration(seconds: 15), (_) {
       if (!mounted || ModalRoute.of(context)?.isCurrent != true) return;
+      if (!TickerMode.valuesOf(context).enabled) return;
       if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) return;
       _load(quiet: true);
     });

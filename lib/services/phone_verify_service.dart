@@ -48,7 +48,14 @@ class PhoneVerifyService {
         Uri.parse('${ApiService.baseUrl}$path'),
         headers: {'Content-Type': 'application/json', ...ApiService.authHeaders},
         body: jsonEncode(body),
-      );
+        // A connection that opens and then says nothing left "Verifying Your
+        // Number" up for ever, with Sign Out disabled while it waited
+        // (2026-11-25). The callers already treat a throw as "unable to
+        // reach the server".
+      ).timeout(postTimeout);
+
+  /// How long a verification request may take before it counts as failed.
+  static const Duration postTimeout = Duration(seconds: 30);
 
   /// Which ways in this phone AND this server allow. Asked rather than
   /// assumed, so no button appears that the other side would refuse.

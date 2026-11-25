@@ -15,6 +15,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../core/log.dart';
+import '../core/store_build.dart';
 import '../design/motion.dart';
 import '../design/neon_tokens.dart';
 import '../models/remote_config.dart';
@@ -41,7 +42,11 @@ class AppUpdateService {
   /// SELF-UPDATE IS ON, QUIETLY (owner, 2026-11-23). It was off from
   /// 2026-11-03 ("turn off auto update features completely"); false turns
   /// the whole flow off again — no check, download or install anywhere.
-  static const bool enabled = true;
+  ///
+  /// NEVER IN A GOOGLE PLAY BUILD (2026-11-25): Play forbids an app that
+  /// updates itself, and the Play manifest already drops the install
+  /// permissions, so there the flow is off and Play updates the app.
+  static const bool enabled = !kPlayStoreBuild;
 
   /// How an available update is taken. The sheet whenever the user asked,
   /// the update is forced, or this phone cannot install without a prompt;

@@ -43,6 +43,14 @@ class CalendarService {
 
   static String _mk(int y, int m) => '$y-$m';
 
+  /// Forgets every month and saved window held in memory: they belong to
+  /// the account that just signed out (sign_out_cleanup.dart).
+  static void reset() {
+    _months.clear();
+    _inflight.clear();
+    _mem.clear();
+  }
+
   /// This run's copy of a month, if it was seen.
   static Map<int, List<CalendarEntry>>? cachedMonth(int y, int m) =>
       _months[_mk(y, m)];

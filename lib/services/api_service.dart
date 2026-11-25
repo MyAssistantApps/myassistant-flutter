@@ -47,8 +47,22 @@ class ApiService {
   /// token to it, and Diagnostics (reachable by voice) could point release
   /// builds at a plain-http host. Release builds accept https only; debug
   /// builds may use a local http server.
-  static bool overrideAllowed(String url, {bool release = kReleaseMode}) =>
-      release ? url.startsWith('https://') : url.startsWith('http');
+  ///
+  /// AND ONLY OUR OWN SERVERS (2026-11-25): "any https address" still let
+  /// someone talk a user into saying or pasting a stranger's URL, and the
+  /// session token and every request then went there. A release build
+  /// follows an override only to a host under [ownDomains].
+  static bool overrideAllowed(String url, {bool release = kReleaseMode}) {
+    if (!release) return url.startsWith('http');
+    final u = Uri.tryParse(url);
+    if (u == null || u.scheme != 'https' || u.host.isEmpty || u.userInfo.isNotEmpty) return false;
+    final host = u.host.toLowerCase();
+    return ownDomains.any((d) => host == d || host.endsWith('.$d'));
+  }
+
+  /// The domains this product's servers live under: production, and the
+  /// development server the owner previews against.
+  static const ownDomains = <String>['envisionsit.in', '189-72-146-77.sslip.io'];
 
   /// Load a saved runtime override (called once at app start).
   static Future<void> loadServerOverride() async {

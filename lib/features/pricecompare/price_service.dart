@@ -67,6 +67,15 @@ class PriceService extends ChangeNotifier {
   List<PriceWatch> get watches => _watches.values.toList()..sort((a, b) => a.product.compareTo(b.product));
   PriceWatch? watchFor(PriceCategory c, String query) => _watches[PriceWatch.keyFor(c, query)];
 
+  /// Forgets this account's searches and watches held in memory; the next
+  /// account loads its own (sign_out_cleanup.dart removes the saved copy).
+  void reset() {
+    _recent.clear();
+    _watches.clear();
+    _loaded = false;
+    notifyListeners();
+  }
+
   Future<void> load() async {
     if (_loaded) return;
     _loaded = true;
