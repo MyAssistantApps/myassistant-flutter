@@ -41,3 +41,11 @@ jobs:
       - run: flutter test
 
       - run: flutter build apk --debug
+
+      # A Google Play build must contain no self-updater (Play forbids an
+      # app that updates itself). This compiles the Play variant and looks
+      # inside it: no install permission in the merged manifest, no
+      # installer class among the compiled ones. Nothing is packaged, so
+      # no upload key is needed.
+      - name: Play build contains no self-updater
+        run: tool/check_play_build.sh --gradle

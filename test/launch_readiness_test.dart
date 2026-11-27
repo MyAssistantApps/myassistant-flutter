@@ -100,6 +100,67 @@ void main() {
     });
   });
 
+  group('a Google Play build contains no installer code', () {
+    const pkg = 'com/myassistant/myassistant';
+    const src = 'android/app/src';
+    // What only the updater uses (tool/check_play_build.sh has the same list
+    // and, on CI, also inspects the compiled Play variant).
+    final installer = RegExp('PackageInstaller|InstallResultReceiver|ApkInstaller|QuietInstallJob|'
+        'package-archive|ACTION_INSTALL_PACKAGE|canRequestPackageInstalls|REQUEST_INSTALL_PACKAGES');
+
+    test('the installer lives only in the sideloaded build\'s source folder', () {
+      for (final f in const ['ApkInstaller.kt', 'QuietInstallJob.kt', 'UpdaterChannel.kt']) {
+        expect(File('$src/sideload/kotlin/$pkg/$f').existsSync(), isTrue, reason: f);
+        expect(File('$src/main/kotlin/$pkg/$f').existsSync(), isFalse,
+            reason: '$f in src/main would be compiled into the Play build');
+      }
+      for (final f in Directory('$src/main/kotlin').listSync(recursive: true).whereType<File>()) {
+        if (!f.path.endsWith('.kt')) continue;
+        expect(installer.hasMatch(f.readAsStringSync()), isFalse,
+            reason: '${f.path} holds installer code; it belongs in src/sideload/kotlin');
+      }
+    });
+
+    test('the build picks the folder by store, and the activity only knows the channel\'s name', () {
+      final gradle = File('android/app/build.gradle.kts').readAsStringSync();
+      expect(gradle,
+          contains('kotlin.srcDir(if (playStoreBuild) "src/play/kotlin" else "src/sideload/kotlin")'));
+      final activity = File('$src/main/kotlin/$pkg/MainActivity.kt').readAsStringSync();
+      expect(activity, contains('UpdaterChannel.register('));
+      expect(activity.contains('"hari/updater"'), isFalse,
+          reason: 'the channel is registered by UpdaterChannel, not by the activity');
+    });
+
+    test('the Play stand-in has the same shape and does nothing', () {
+      final real = File('$src/sideload/kotlin/$pkg/UpdaterChannel.kt').readAsStringSync();
+      final play = File('$src/play/kotlin/$pkg/UpdaterChannel.kt').readAsStringSync();
+      const shape = 'fun register(messenger: BinaryMessenger, app: Context)';
+      expect(real, contains(shape));
+      expect(play, contains(shape));
+      expect(real, contains('const val AVAILABLE = true'));
+      expect(play, contains('const val AVAILABLE = false'));
+      // Code lines only: its comment may name what it replaces.
+      final code = play
+          .split('\n')
+          .where((l) => !RegExp(r'^\s*(\*|/\*\*|//)').hasMatch(l))
+          .join('\n');
+      expect(installer.hasMatch(code), isFalse);
+      expect(code.contains('MethodChannel'), isFalse, reason: 'no channel is registered on Play');
+      // The real one answers every method the Dart side calls.
+      final dart = File('lib/services/app_update_service.dart').readAsStringSync();
+      final called = RegExp(r"invokeMethod<bool>\(\s*'(\w+)'").allMatches(dart).map((m) => m.group(1)!).toSet();
+      expect(called, isNotEmpty);
+      for (final m in called) {
+        expect(real, contains('"$m" ->'), reason: 'the sideloaded channel handles $m');
+      }
+    });
+
+    test('on Play, asking for an update points to the Play Store', () {
+      final engine = File('lib/features/assistant/state/assistant_engine.dart').readAsStringSync();
+      expect(engine, contains('This app is updated by the Google Play Store'));
+    });
+  });
+
   test('the native copy of the session token is kept out of backups', () {
     for (final f in const [
       'android/app/src/main/res/xml/backup_rules.xml',
