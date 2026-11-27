@@ -31,8 +31,13 @@ class _App {
         // The server's Home group ("Daily needs" for Porter, Urban
         // Company…), else the partner's own category.
         category = '${j['homeGroup'] ?? j['category']}',
-        pkg = j['pkg'] as String?;
+        pkg = j['pkg'] as String?,
+        cashback = j['cashback'] == true;
   final String id;
+
+  /// A purchase here earns the user cashback: opened through the tracked
+  /// link, never straight into the installed app (partner_app.dart).
+  final bool cashback;
   /// Its Android app: opened when installed, else its Play Store page.
   final String? pkg;
   final String name;
@@ -81,8 +86,12 @@ class _PopularAppsSectionState extends State<PopularAppsSection> {
   }
 
   Future<void> _openPlain(_App a) async {
-    // Its own app when installed, else its Play Store page (2026-11-13).
-    if (await openPartnerApp(a.id, a.pkg)) return;
+    // Its own app when installed, else its Play Store page (2026-11-13) —
+    // unless it earns cashback: then only the tracked link will do.
+    if (opensInstalledAppFirst(pkg: a.pkg, cashback: a.cashback) &&
+        await openPartnerApp(a.id, a.pkg)) {
+      return;
+    }
     final j = await ApiService.getJson('/go/${a.id}');
     final url = j?['url'] as String?;
     if (url == null || !mounted) return;

@@ -7,6 +7,7 @@ import '../../design/motion.dart';
 import '../../design/neon_tokens.dart';
 import '../../design/neon_widgets.dart';
 import '../../services/api_service.dart';
+import '../cashback/cashback_screen.dart';
 import 'partner_app.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
@@ -24,8 +25,17 @@ class _Partner {
         name = '${j['name']}',
         category = '${j['category']}',
         pkg = j['pkg'] as String?,
+        cashback = j['cashback'] == true,
+        cashbackText = '${j['cashbackText'] ?? ''}'.trim(),
         color = _hex('${j['color'] ?? ''}');
   final String id;
+
+  /// A purchase here earns the user cashback (2026-11-27): opened through
+  /// the tracked link, never straight into the installed app.
+  final bool cashback;
+
+  /// "Up to 6%" when the owner set a rate; empty otherwise.
+  final String cashbackText;
   /// Its Android app: opened when installed, else its Play Store page.
   final String? pkg;
   final String name;
@@ -83,8 +93,12 @@ class _ServicesScreenState extends State<ServicesScreen> {
 
   Future<void> _open(_Partner p) async {
     HapticFeedback.selectionClick();
-    // Its own app when installed, else its Play Store page (2026-11-13).
-    if (await openPartnerApp(p.id, p.pkg)) return;
+    // Its own app when installed, else its Play Store page (2026-11-13) —
+    // unless it earns cashback: then only the tracked link will do.
+    if (opensInstalledAppFirst(pkg: p.pkg, cashback: p.cashback) &&
+        await openPartnerApp(p.id, p.pkg)) {
+      return;
+    }
     final j = await ApiService.getJson('/go/${p.id}');
     final url = j?['url'] as String?;
     if (url == null) {
@@ -141,6 +155,14 @@ class _ServicesScreenState extends State<ServicesScreen> {
         Text('Shopping, moving, travel and more, in one place.',
             style: TextStyle(color: Neon.textLo, fontSize: 14.5)),
         const SizedBox(height: 14),
+        // Cashback (2026-11-27): shown only when the server offers it on
+        // at least one partner.
+        if (all.any((p) => p.cashback)) ...[
+          CashbackBanner(
+              onOpen: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                  builder: (_) => const CashbackScreen()))),
+          const SizedBox(height: 14),
+        ],
         TextField(
           onChanged: (v) => setState(() => _q = v),
           style: TextStyle(color: Neon.textHi),
@@ -197,7 +219,9 @@ class _ServicesScreenState extends State<ServicesScreen> {
     final ink = p.color.computeLuminance() > 0.5 ? Colors.black : Colors.white;
     return Semantics(
       button: true,
-      label: 'Open ${p.name}',
+      label: p.cashback
+          ? 'Open ${p.name}. Earns cashback${p.cashbackText.isEmpty ? '' : ', ${p.cashbackText}'}'
+          : 'Open ${p.name}',
       excludeSemantics: true,
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
@@ -206,7 +230,9 @@ class _ServicesScreenState extends State<ServicesScreen> {
           children: [
             // THE BRAND'S OWN ICON (owner, 2026-11-04: "use real brand
             // icons"), bundled in assets/brands/; its colour and initials
-            // only if the image is ever missing.
+            // only if the image is ever missing. A small ₹ marks a
+            // partner where a purchase earns cashback.
+            Stack(clipBehavior: Clip.none, children: [
             Container(
               width: 60,
               height: 60,
@@ -231,6 +257,9 @@ class _ServicesScreenState extends State<ServicesScreen> {
                                 .copyWith(color: ink, letterSpacing: -0.3)),
                       )),
             ),
+            if (p.cashback)
+              const Positioned(top: -5, right: -5, child: CashbackDot()),
+            ]),
             const SizedBox(height: 7),
             Text(p.name,
                 textAlign: TextAlign.center,

@@ -1,6 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../features/calendar/calendar_service.dart';
+import '../features/cashback/cashback_service.dart';
 import '../features/pricecompare/price_service.dart';
 import 'assistant_identity.dart';
 import 'avatar_message_service.dart';
@@ -47,6 +48,7 @@ class SignOutCleanup {
     }
     AssistantIdentity.notifier.value = AssistantIdentity.fallback;
     PriceService.instance.reset();
+    CashbackService.instance.reset();
     CalendarService.reset();
     // Back to the root, where AuthGate shows the sign-in screen.
     try {
